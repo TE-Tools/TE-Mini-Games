@@ -1,0 +1,105 @@
+{
+  "$comment": "Maschinenlesbare Zonendefinition der 500-Level-Karte. Spezifikation, noch nicht im Code verdrahtet. Siehe README.md.",
+  "version": 1,
+  "maxLevel": 500,
+  "levelsPerZone": 100,
+  "aspectRatio": "9:16",
+  "direction": "bottom-to-top",
+  "zones": [
+    {
+      "id": "jungle",
+      "index": 1,
+      "nameDe": "Urwald",
+      "nameEn": "Jungle",
+      "levelFrom": 1,
+      "levelTo": 100,
+      "descriptionDe": "Dichter, saftig grüner Dschungel mit Palmen, Farnen und Erdpfad.",
+      "creatures": ["Triceratops", "Stegosaurus", "kleine Raptoren", "Pteranodon"],
+      "palette": {
+        "ground": "#4d8a32",
+        "groundLight": "#7ec850",
+        "accent": "#2f7d32",
+        "path": "#cbb27a",
+        "sky": "#47b6d6"
+      },
+      "milestoneLevel": 100,
+      "gateNameDe": "Tor zum Vulkanland"
+    },
+    {
+      "id": "volcanic",
+      "index": 2,
+      "nameDe": "Vulkanland",
+      "nameEn": "Volcanic lands",
+      "levelFrom": 101,
+      "levelTo": 200,
+      "descriptionDe": "Trockene, felsige Vulkanlandschaft, rauchige Luft, kleine aktive Vulkane im Hintergrund.",
+      "creatures": ["Pachycephalosaurus", "Carnotaurus"],
+      "palette": {
+        "ground": "#8a4b2a",
+        "groundLight": "#c4703a",
+        "accent": "#e2542a",
+        "path": "#b9a07e",
+        "sky": "#6b5b52"
+      },
+      "milestoneLevel": 200,
+      "gateNameDe": "Tor zur Felswüste"
+    },
+    {
+      "id": "canyon",
+      "index": 3,
+      "nameDe": "Felswüste",
+      "nameEn": "Rock desert & canyonlands",
+      "levelFrom": 201,
+      "levelTo": 300,
+      "descriptionDe": "Karge Felswüste und Canyons, der Weg ist in tiefen Fels geschlagen.",
+      "creatures": ["Allosaurus", "Ankylosaurus", "Spinosaurus"],
+      "palette": {
+        "ground": "#c98b52",
+        "groundLight": "#e0b077",
+        "accent": "#7a4b28",
+        "path": "#d9c39a",
+        "sky": "#8fc7dd"
+      },
+      "milestoneLevel": 300,
+      "gateNameDe": "Tor zur Eiszeit"
+    },
+    {
+      "id": "iceage",
+      "index": 4,
+      "nameDe": "Eiszeit",
+      "nameEn": "Ice age",
+      "levelFrom": 301,
+      "levelTo": 400,
+      "descriptionDe": "Schnee, Gletscher und gefrorene Wasserfälle; harter Übergang von Fels zu Eis.",
+      "creatures": ["Wollhaarmammut", "Säbelzahnkatze", "Wollnashorn"],
+      "palette": {
+        "ground": "#8fc3de",
+        "groundLight": "#cfe9f5",
+        "accent": "#5a93b8",
+        "path": "#e6eef2",
+        "sky": "#79c4e0"
+      },
+      "milestoneLevel": 400,
+      "gateNameDe": "Tor zum Gletschergipfel"
+    },
+    {
+      "id": "glacier",
+      "index": 5,
+      "nameDe": "Gletschergipfel",
+      "nameEn": "Glaciated peak",
+      "levelFrom": 401,
+      "levelTo": 500,
+      "descriptionDe": "Höchster, vollständig vergletscherter Gipfel bei extremem Frost; endet am uralten, aus Eis geschlagenen Bauwerk auf Level 500.",
+      "creatures": ["Wollnashorn", "Eisvogelsaurier (Deko)"],
+      "palette": {
+        "ground": "#a9ddf2",
+        "groundLight": "#dff3fb",
+        "accent": "#7fd4ff",
+        "path": "#f2fbff",
+        "sky": "#63b9dd"
+      },
+      "milestoneLevel": 500,
+      "gateNameDe": "Eispalast (Finale)"
+    }
+  ]
+}

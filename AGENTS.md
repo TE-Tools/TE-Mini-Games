@@ -17,3 +17,14 @@ See the full product specification for requirements.
 6. Never commit secrets, `.env` with real keys, or API keys.
 7. After meaningful changes: lint, typecheck, unit tests, build.
 8. Prefer clean, testable, extensible solutions over quick hacks.
+
+## Design specifications
+
+Binding design specs live in `docs/design/`. Follow them when implementing the
+corresponding feature; do not invent a competing design.
+
+- **Level map 1–500 („Zeitreise“):** `docs/design/level-map-500/` – five biomes of
+  100 levels each (jungle → volcanic → rock desert → ice age → glacier peak),
+  one winding vertical path, level 500 as the final ice palace.
+  Machine-readable zone data: `docs/design/level-map-500/zones.json`.
+  Status: specification only, **not implemented** – implement only when asked.
