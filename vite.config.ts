@@ -15,8 +15,8 @@ export default defineConfig({
         short_name: 'TE-Mini Games',
         description:
           'Kurze Geschicklichkeits-, Gedächtnis-, Reaktions- und Logikspiele. Nur noch eine Runde.',
-        theme_color: '#7c5cfc',
-        background_color: '#fefbf3',
+        theme_color: '#16141c',
+        background_color: '#16141c',
         display: 'standalone',
         orientation: 'portrait-primary',
         start_url: '/',

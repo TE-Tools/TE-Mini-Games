@@ -10,7 +10,7 @@ export const whatIsMissingGame: GameDefinition = {
   icon: '👁️',
   maxLevel: 100,
   createLevel: (level, seed) => {
-    const cfg = createWhatIsMissingLevel(level, seed)
+    const cfg = createWhatIsMissingLevel(level, seed == null ? undefined : String(seed))
     return {
       level: cfg.level,
       objectCount: cfg.objectCount,
