@@ -101,6 +101,12 @@ export function HomePage() {
             </span>
             Rangliste
           </Link>
+          <Link to="/achievements" className={styles.secondaryButton}>
+            <span className={styles.secondaryIcon} aria-hidden="true">
+              🏅
+            </span>
+            Abzeichen
+          </Link>
           <Link to="/auth" className={styles.secondaryButton}>
             <span className={styles.secondaryIcon} aria-hidden="true">
               👤
