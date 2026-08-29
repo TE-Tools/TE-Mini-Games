@@ -3,10 +3,6 @@ import { Link } from 'react-router-dom'
 import styles from './HomePage.module.css'
 import { getOrCreateGuestProfile, type LocalProfile } from '@/offline'
 
-/**
- * Start page – focused on playing.
- * Shows level, XP, streak from local offline storage.
- */
 export function HomePage() {
   const [profile, setProfile] = useState<LocalProfile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -84,6 +80,10 @@ export function HomePage() {
             👁️
           </span>
           <span className={styles.gameName}>Was fehlt?</span>
+        </Link>
+
+        <Link to="/daily" className={styles.secondaryButton}>
+          Daily Challenge
         </Link>
 
         <Link to="/family" className={styles.secondaryButton}>
