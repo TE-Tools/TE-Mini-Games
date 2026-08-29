@@ -11,31 +11,42 @@ import {
   recordLevelComplete,
   saveGameResult,
   addXp,
+  getOrCreateGuestProfile,
 } from '@/offline'
 import { processAfterResult } from '@/progression'
+import { milestoneBonusXp } from '@/games/milestones'
+import { LevelMap } from '@/components/level-map/LevelMap'
 import styles from './WhatIsMissingPage.module.css'
 
-type Phase = 'ready' | 'memorize' | 'choose' | 'result'
+type Phase = 'map' | 'ready' | 'memorize' | 'choose' | 'result'
 
 export function WhatIsMissingPage() {
   const navigate = useNavigate()
   const [level, setLevel] = useState(1)
+  const [highest, setHighest] = useState(1)
+  const [avatarId, setAvatarId] = useState<string | null>(null)
   const [config, setConfig] = useState<WhatIsMissingLevel | null>(null)
-  const [phase, setPhase] = useState<Phase>('ready')
+  const [phase, setPhase] = useState<Phase>('map')
   const [countdown, setCountdown] = useState(0)
   const [scoreResult, setScoreResult] = useState<WhatIsMissingScoreResult | null>(null)
   const [pickedId, setPickedId] = useState<string | null>(null)
+  const [milestoneXp, setMilestoneXp] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
     ;(async () => {
       try {
-        const progress = await getOrCreateGameProgress('what-is-missing')
+        const [progress, profile] = await Promise.all([
+          getOrCreateGameProgress('what-is-missing'),
+          getOrCreateGuestProfile(),
+        ])
         if (!cancelled) {
-          const L = progress.currentLevel
-          setLevel(L)
-          setConfig(createWhatIsMissingLevel(L))
+          setLevel(progress.currentLevel)
+          setHighest(progress.highestLevel)
+          setAvatarId(profile.avatar)
+          setConfig(createWhatIsMissingLevel(progress.currentLevel))
+          setPhase('map')
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -44,6 +55,15 @@ export function WhatIsMissingPage() {
     return () => {
       cancelled = true
     }
+  }, [])
+
+  const selectLevel = useCallback((L: number) => {
+    setLevel(L)
+    setConfig(createWhatIsMissingLevel(L))
+    setPhase('ready')
+    setScoreResult(null)
+    setPickedId(null)
+    setMilestoneXp(0)
   }, [])
 
   const startRound = useCallback(() => {
@@ -72,25 +92,32 @@ export function WhatIsMissingPage() {
       const result = calculateWhatIsMissingScore({ correct, level: config.level })
       setScoreResult(result)
 
+      const bonus = correct ? milestoneBonusXp(config.level) : 0
+      setMilestoneXp(bonus)
+      const xpTotal = result.xp + bonus
+
       await saveGameResult({
         gameId: 'what-is-missing',
         level: config.level,
         score: result.score,
-        xp: result.xp,
+        xp: xpTotal,
         resultData: {
           correct,
           missingObjectId: config.missingObject.id,
           pickedObjectId: objectId,
           seed: config.seed,
           objectCount: config.objectCount,
+          milestoneBonus: bonus,
         },
         stars: result.stars,
         isPersonalRecord: correct,
       })
 
-      if (result.xp > 0) {
-        await addXp('guest', result.xp)
-        await recordLevelComplete('what-is-missing', config.level, result.xp)
+      if (xpTotal > 0) {
+        await addXp('guest', xpTotal)
+        const progress = await recordLevelComplete('what-is-missing', config.level, xpTotal)
+        setHighest(progress.highestLevel)
+        setLevel(progress.currentLevel)
       }
 
       await processAfterResult({
@@ -110,17 +137,8 @@ export function WhatIsMissingPage() {
     setPhase('ready')
     setScoreResult(null)
     setPickedId(null)
+    setMilestoneXp(0)
   }, [level])
-
-  const nextLevel = useCallback(async () => {
-    const progress = await getOrCreateGameProgress('what-is-missing')
-    const next = Math.min(100, progress.currentLevel)
-    setLevel(next)
-    setConfig(createWhatIsMissingLevel(next))
-    setPhase('ready')
-    setScoreResult(null)
-    setPickedId(null)
-  }, [])
 
   if (loading || !config) {
     return (
@@ -133,12 +151,33 @@ export function WhatIsMissingPage() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <button type="button" className={styles.back} onClick={() => navigate('/')} aria-label="Zurück">
+        <button
+          type="button"
+          className={styles.back}
+          onClick={() => (phase === 'map' ? navigate('/') : setPhase('map'))}
+          aria-label="Zurück"
+        >
           ←
         </button>
         <h1 className={styles.title}>Was fehlt?</h1>
-        <span className={styles.levelBadge}>Level {config.level}</span>
+        <span className={styles.levelBadge}>L{config.level}</span>
       </header>
+
+      {phase === 'map' && (
+        <section className={styles.ready}>
+          <LevelMap
+            currentLevel={level}
+            highestLevel={highest}
+            avatarId={avatarId}
+            onSelectLevel={selectLevel}
+            gameLabel="Was fehlt?"
+          />
+          <p className={styles.hint}>Tippe ein freies Level – so siehst du, wo du stehst.</p>
+          <Link to="/profile" className={styles.homeLink}>
+            Avatar ändern
+          </Link>
+        </section>
+      )}
 
       {phase === 'ready' && (
         <section className={styles.ready}>
@@ -150,6 +189,9 @@ export function WhatIsMissingPage() {
           </p>
           <button type="button" className={styles.primaryBtn} onClick={startRound}>
             Start
+          </button>
+          <button type="button" className={styles.secondaryBtn} onClick={() => setPhase('map')}>
+            Zur Karte
           </button>
         </section>
       )}
@@ -225,16 +267,19 @@ export function WhatIsMissingPage() {
               </p>
               <p className={styles.scoreLine}>
                 <strong>+{scoreResult.score}</strong> Punkte ·{' '}
-                <strong>+{scoreResult.xp}</strong> XP
+                <strong>+{scoreResult.xp + milestoneXp}</strong> XP
               </p>
+              {milestoneXp > 0 && (
+                <p className={styles.correct}>🎉 Meilenstein-Bonus +{milestoneXp} XP!</p>
+              )}
             </>
           )}
           <div className={styles.resultActions}>
             <button type="button" className={styles.primaryBtn} onClick={playAgain}>
               Noch einmal
             </button>
-            <button type="button" className={styles.secondaryBtn} onClick={() => void nextLevel()}>
-              Weiter
+            <button type="button" className={styles.secondaryBtn} onClick={() => setPhase('map')}>
+              Zur Karte
             </button>
           </div>
           <Link to="/" className={styles.homeLink}>
