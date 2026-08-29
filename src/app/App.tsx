@@ -9,6 +9,7 @@ import { DailyPage } from '@/pages/daily/DailyPage'
 import { LeaderboardPage } from '@/pages/leaderboard/LeaderboardPage'
 import { AchievementsPage } from '@/pages/achievements/AchievementsPage'
 import { AuthPage } from '@/auth/AuthPage'
+import { ProfilePage } from '@/pages/profile/ProfilePage'
 import { registerAllGames } from '@/games/register'
 import { initRemoteSync, trySyncNow } from '@/services/remoteSync'
 import { onAuthStateChange } from '@/auth/authService'
@@ -35,6 +36,7 @@ export function App() {
         <Route path="/leaderboard" element={<LeaderboardPage />} />
         <Route path="/achievements" element={<AchievementsPage />} />
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>

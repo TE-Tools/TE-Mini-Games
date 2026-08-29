@@ -54,3 +54,31 @@ export async function updateStreak(userId: string, streakDays: number): Promise<
   await db.profiles.put(updated)
   return updated
 }
+
+export async function setAvatar(
+  avatarId: string,
+  userId: string = GUEST_USER_ID,
+): Promise<LocalProfile> {
+  const profile = (await getProfile(userId)) ?? (await getOrCreateGuestProfile())
+  const updated: LocalProfile = {
+    ...profile,
+    avatar: avatarId,
+    updatedAt: nowIso(),
+  }
+  await db.profiles.put(updated)
+  return updated
+}
+
+export async function setDisplayName(
+  displayName: string,
+  userId: string = GUEST_USER_ID,
+): Promise<LocalProfile> {
+  const profile = (await getProfile(userId)) ?? (await getOrCreateGuestProfile())
+  const updated: LocalProfile = {
+    ...profile,
+    displayName: displayName.trim() || profile.displayName,
+    updatedAt: nowIso(),
+  }
+  await db.profiles.put(updated)
+  return updated
+}
