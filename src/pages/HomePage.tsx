@@ -44,7 +44,7 @@ export function HomePage() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <h1 className={styles.title}>MINI CHALLENGE</h1>
+        <h1 className={styles.title}>TE-Mini Games</h1>
         <p className={styles.tagline}>Nur noch eine Runde. ✨</p>
       </header>
 
