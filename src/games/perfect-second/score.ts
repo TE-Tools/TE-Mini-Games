@@ -1,28 +1,6 @@
 /**
  * Perfect Second – Score & XP.
- *
- * absoluteDeviation = abs(actualTime - targetTime)
- *
- * Score (0–1000):
- *   If deviation >= tolerance → 0
- *   Else: score = floor( 1000 * (1 - deviation / tolerance)^2 )
- *
- * Perfect (deviation 0) → 1000
- * At half tolerance     → 250
- * At full tolerance     → 0
- *
- * Stars:
- *   5: score >= 900
- *   4: score >= 750
- *   3: score >= 500
- *   2: score >= 250
- *   1: score >= 1
- *   0: score === 0
- *
- * XP:
- *   base = floor(score / 10)           // 0–100
- *   levelBonus = floor(level / 5)      // slight reward for harder levels
- *   xp = base + levelBonus
+ * Perfect hit (deviation <= 1ms): score 1000 + perfectHit + XP bonus.
  */
 
 export interface ScoreInput {
@@ -38,7 +16,10 @@ export interface ScoreResult {
   stars: number
   xp: number
   withinTolerance: boolean
+  perfectHit: boolean
 }
+
+export const PERFECT_HIT_THRESHOLD = 0.001
 
 export function calculateDeviation(targetTime: number, actualTime: number): number {
   return Math.abs(actualTime - targetTime)
@@ -62,12 +43,16 @@ export function calculateScore(input: ScoreInput): ScoreResult {
       stars: 0,
       xp: 0,
       withinTolerance: false,
+      perfectHit: false,
     }
   }
 
-  const withinTolerance = absoluteDeviation < tolerance
+  const perfectHit = absoluteDeviation <= PERFECT_HIT_THRESHOLD
+  const withinTolerance = absoluteDeviation < tolerance || perfectHit
   let score = 0
-  if (withinTolerance) {
+  if (perfectHit) {
+    score = 1000
+  } else if (withinTolerance) {
     const ratio = 1 - absoluteDeviation / tolerance
     score = Math.floor(1000 * ratio * ratio)
     score = Math.max(0, Math.min(1000, score))
@@ -76,9 +61,10 @@ export function calculateScore(input: ScoreInput): ScoreResult {
   const stars = starsFromScore(score)
   const base = Math.floor(score / 10)
   const levelBonus = Math.floor(Math.max(1, level) / 5)
-  const xp = score > 0 ? base + levelBonus : 0
+  const perfectBonus = perfectHit ? 50 + Math.floor(level * 2) : 0
+  const xp = score > 0 ? base + levelBonus + perfectBonus : 0
 
-  return { absoluteDeviation, score, stars, xp, withinTolerance }
+  return { absoluteDeviation, score, stars, xp, withinTolerance, perfectHit }
 }
 
 export function starsFromScore(score: number): number {

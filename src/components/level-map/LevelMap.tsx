@@ -10,7 +10,10 @@ export interface LevelMapProps {
   gameLabel: string
 }
 
-/** Levelübersicht: Pfad + Avatar, klickbare freigeschaltete Level. */
+/**
+ * Playful land-map path: levels wind bottom→top in a snake.
+ * Green land + water blobs – not geo-accurate, just gamey.
+ */
 export function LevelMap({
   currentLevel,
   highestLevel,
@@ -21,33 +24,44 @@ export function LevelMap({
 }: LevelMapProps) {
   const avatar = getAvatar(avatarId)
   const unlocked = Math.max(1, highestLevel, currentLevel)
-  const start = Math.max(1, unlocked - 2)
-  const end = Math.min(maxLevel, Math.max(unlocked + 8, 12))
+  const start = Math.max(1, unlocked - 1)
+  const end = Math.min(maxLevel, Math.max(unlocked + 7, 10))
   const levels = Array.from({ length: end - start + 1 }, (_, i) => start + i)
+  const visual = [...levels].reverse()
 
   return (
     <section className={styles.map} aria-label={`Levelkarte ${gameLabel}`}>
       <h2 className={styles.heading}>Levelübersicht</h2>
       <p className={styles.caption}>
         Du bist hier: <strong>Level {currentLevel}</strong>
-        {unlocked > currentLevel ? ` · freigeschaltet bis ${unlocked}` : ''}
+        {unlocked > currentLevel ? ` · frei bis ${unlocked}` : ''}
       </p>
 
-      <div className={styles.track}>
+      <div className={styles.land}>
+        <div className={styles.water1} aria-hidden="true" />
+        <div className={styles.water2} aria-hidden="true" />
+        <div className={styles.water3} aria-hidden="true" />
+        <div className={styles.hill} aria-hidden="true" />
+
         <ol className={styles.path}>
-          {start > 1 && (
-            <li className={styles.ellipsis} aria-hidden="true">
-              …
-            </li>
-          )}
-          {levels.map((L, index) => {
+          {visual.map((L, index) => {
             const isLocked = L > unlocked
             const isCurrent = L === currentLevel
             const isMilestone = L === 10 || L === 20 || L === 50 || L === 100
-            const isDone = L < unlocked || (L < currentLevel && L <= unlocked)
+            const isDone = L < unlocked
+            const lane = index % 3 === 0 ? 'left' : index % 3 === 1 ? 'center' : 'right'
+
             return (
-              <li key={L} className={styles.nodeWrap}>
-                {index > 0 && <span className={styles.connector} aria-hidden="true" />}
+              <li
+                key={L}
+                className={[styles.nodeWrap, styles[`lane_${lane}`]].join(' ')}
+              >
+                {index > 0 && (
+                  <span
+                    className={[styles.snake, styles[`snake_${lane}`]].join(' ')}
+                    aria-hidden="true"
+                  />
+                )}
                 <button
                   type="button"
                   className={[
@@ -66,7 +80,7 @@ export function LevelMap({
                     isLocked
                       ? `Level ${L} gesperrt`
                       : isCurrent
-                        ? `Level ${L}, aktuell – tippen zum Spielen`
+                        ? `Level ${L}, aktuell`
                         : `Level ${L} spielen`
                   }
                 >
@@ -77,32 +91,24 @@ export function LevelMap({
                   ) : isMilestone ? (
                     <span className={styles.nodeInner}>
                       <span aria-hidden="true">⭐</span>
-                      <span className={styles.nodeNum}>{L}</span>
+                      <span>{L}</span>
                     </span>
                   ) : isLocked ? (
                     <span className={styles.nodeInner}>
                       <span aria-hidden="true">🔒</span>
-                      <span className={styles.nodeNum}>{L}</span>
+                      <span>{L}</span>
                     </span>
                   ) : (
                     L
                   )}
                 </button>
-                {isMilestone && <span className={styles.milestoneTag}>Bonus</span>}
               </li>
             )
           })}
-          {end < maxLevel && (
-            <li className={styles.ellipsis} aria-hidden="true">
-              …
-            </li>
-          )}
         </ol>
       </div>
 
-      <p className={styles.hint}>
-        Tippe auf ein freies Level – oder nutze den Button darunter.
-      </p>
+      <p className={styles.hint}>Tippe ein Level oder „Weiter spielen“ unten.</p>
     </section>
   )
 }
