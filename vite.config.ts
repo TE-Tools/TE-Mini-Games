@@ -11,12 +11,12 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icons/*.png', 'icons/*.svg'],
       manifest: {
-        name: 'MINI CHALLENGE',
-        short_name: 'Mini Challenge',
+        name: 'TE-Mini Games',
+        short_name: 'TE-Mini Games',
         description:
           'Kurze Geschicklichkeits-, Gedächtnis-, Reaktions- und Logikspiele. Nur noch eine Runde.',
-        theme_color: '#0f172a',
-        background_color: '#0f172a',
+        theme_color: '#7c5cfc',
+        background_color: '#fefbf3',
         display: 'standalone',
         orientation: 'portrait-primary',
         start_url: '/',
