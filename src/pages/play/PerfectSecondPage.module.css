@@ -8,8 +8,6 @@
   margin: 0 auto;
   width: 100%;
   gap: var(--space-4);
-  background:
-    radial-gradient(ellipse 70% 40% at 50% 0%, rgb(212 160 23 / 0.15), transparent);
 }
 
 .header {
@@ -29,27 +27,29 @@
   border-radius: var(--radius-full);
   font-size: var(--text-xl);
   color: var(--color-text-muted);
-  background: var(--color-bg-elevated);
+  background: linear-gradient(180deg, #ffffff, #fff6dd);
   border: 2px solid var(--color-border);
+  box-shadow: var(--btn-shadow);
 }
 
 .title {
   font-size: var(--text-lg);
   font-weight: 800;
   text-align: center;
-  color: var(--color-text);
 }
 
 .levelBadge {
   font-size: var(--text-sm);
   font-weight: 700;
-  color: var(--color-gold-deep, #b8860b);
+  color: var(--color-gold-deep);
   background: var(--color-game-a-soft);
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-full);
   border: 2px solid var(--color-game-a);
+  box-shadow: var(--btn-shadow);
 }
 
+.mapScreen,
 .ready,
 .running,
 .result {
@@ -60,27 +60,24 @@
   width: 100%;
   text-align: center;
   flex: 1;
-  justify-content: center;
 }
 
 .targetLabel {
   font-size: var(--text-sm);
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   color: var(--color-text-muted);
+  text-transform: uppercase;
 }
 
 .targetValue {
-  font-size: clamp(2.5rem, 12vw, 3.5rem);
+  font-size: var(--text-4xl);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-  color: var(--color-game-a);
-  line-height: 1;
+  color: var(--color-gold-deep);
 }
 
 .tolerance {
-  font-size: var(--text-base);
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--color-text-muted);
 }
@@ -89,102 +86,86 @@
   font-size: var(--text-sm);
   color: var(--color-text-muted);
   max-width: 22rem;
+  font-weight: 600;
 }
 
 .primaryBtn {
   min-height: var(--touch-min);
   min-width: 12rem;
   padding: var(--space-4) var(--space-8);
-  background: linear-gradient(135deg, var(--color-primary), #9b7cff);
-  color: var(--color-primary-text);
+  background: linear-gradient(180deg, #ffe08a 0%, #e6b800 45%, #c4920f 100%);
+  color: #2a1f12;
   border-radius: var(--radius-2xl);
   font-weight: 800;
   font-size: var(--text-lg);
-  box-shadow: var(--shadow-md);
-  border: none;
+  box-shadow: var(--btn-shadow);
+  border: 2px solid #a67c00;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .primaryBtn:hover {
-  background: linear-gradient(135deg, var(--color-primary-hover), var(--color-primary));
+  transform: translateY(-3px);
+  box-shadow: var(--btn-shadow-hover);
+}
+
+.primaryBtn:active {
+  transform: translateY(2px);
+  box-shadow: var(--btn-shadow-active);
 }
 
 .secondaryBtn {
   min-height: var(--touch-min);
   min-width: 12rem;
   padding: var(--space-3) var(--space-6);
-  background: var(--color-bg-elevated);
+  background: linear-gradient(180deg, #ffffff, #f5f0ff);
   border: 2px solid var(--color-border);
   border-radius: var(--radius-xl);
   font-weight: 700;
+  box-shadow: var(--btn-shadow);
+}
+
+.runningHint {
+  font-size: var(--text-2xl);
+  font-weight: 800;
+}
+
+.targetDuring {
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+  font-weight: 600;
 }
 
 .stopBtn {
   min-height: 140px;
   min-width: 140px;
   border-radius: var(--radius-full);
-  background: linear-gradient(145deg, #f43f5e, #e11d48);
+  background: linear-gradient(180deg, #fb7185 0%, #e11d48 55%, #be123c 100%);
   color: #fff;
   font-weight: 800;
   font-size: var(--text-2xl);
-  box-shadow: 0 8px 28px rgb(244 63 94 / 0.35);
+  box-shadow: var(--btn-shadow);
   border: 4px solid #fff;
 }
 
-.runningHint {
-  font-size: var(--text-xl);
-  font-weight: 700;
-  color: var(--color-text);
-}
-
-.targetDuring {
-  font-size: var(--text-base);
-  font-weight: 600;
-  color: var(--color-game-a);
+.stopBtn:active {
+  transform: translateY(3px) scale(0.98);
+  box-shadow: var(--btn-shadow-active);
 }
 
 .record {
   font-size: var(--text-lg);
   font-weight: 800;
-  color: var(--color-gold-deep, #b8860b);
-  background: var(--color-game-a-soft);
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-full);
-  border: 2px solid var(--color-game-a);
+  color: var(--color-gold-deep);
 }
 
 .resultTime {
-  font-size: var(--text-3xl);
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-}
-
-.resultMeta {
-  display: flex;
-  gap: var(--space-6);
-  list-style: none;
-}
-
-.resultMeta div {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.resultMeta dt {
-  font-size: var(--text-xs);
+  font-size: var(--text-xl);
   font-weight: 700;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-}
-
-.resultMeta dd {
-  font-weight: 700;
-  font-size: var(--text-lg);
 }
 
 .stars {
   font-size: var(--text-2xl);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
 }
 
 .scoreLine {
