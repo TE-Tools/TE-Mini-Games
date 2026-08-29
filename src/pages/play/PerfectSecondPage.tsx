@@ -48,9 +48,10 @@ export function PerfectSecondPage() {
         ])
         if (!cancelled) {
           setLevel(progress.currentLevel)
-          setHighest(progress.highestLevel)
+          setHighest(Math.max(progress.highestLevel, progress.currentLevel))
           setAvatarId(profile.avatar)
           setConfig(createPerfectSecondLevel(progress.currentLevel))
+          setPhase('map')
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -196,7 +197,7 @@ export function PerfectSecondPage() {
       </header>
 
       {phase === 'map' && (
-        <section className={styles.ready}>
+        <section className={styles.mapScreen}>
           <LevelMap
             currentLevel={level}
             highestLevel={highest}
@@ -204,7 +205,9 @@ export function PerfectSecondPage() {
             onSelectLevel={selectLevel}
             gameLabel="Die perfekte Sekunde"
           />
-          <p className={styles.hint}>Tippe ein freies Level, um zu spielen.</p>
+          <button type="button" className={styles.primaryBtn} onClick={() => selectLevel(level)}>
+            Weiter spielen · Level {level}
+          </button>
           <Link to="/profile" className={styles.homeLink}>
             Avatar ändern
           </Link>
@@ -223,9 +226,14 @@ export function PerfectSecondPage() {
               Du brauchst {config.hitsRequired} Treffer hintereinander in der Toleranz.
             </p>
           )}
-          {hitsDone > 0 && <p className={styles.record}>✓ Treffer {hitsDone} geschafft – weiter so!</p>}
+          {hitsDone > 0 && (
+            <p className={styles.record}>✓ Treffer {hitsDone} geschafft – weiter so!</p>
+          )}
           <button type="button" className={styles.primaryBtn} onClick={startTimer}>
             {hitsDone > 0 ? 'Nächster Treffer' : 'Start'}
+          </button>
+          <button type="button" className={styles.secondaryBtn} onClick={() => setPhase('map')}>
+            Zur Übersicht
           </button>
         </section>
       )}
@@ -248,10 +256,12 @@ export function PerfectSecondPage() {
           ) : (
             <p className={styles.muted}>Daneben – versuch’s nochmal</p>
           )}
-          <p className={styles.resultTime}>Abweichung {formatTime(scoreResult.absoluteDeviation)}</p>
-          <p className={styles.stars}>{'\u2b50'.repeat(scoreResult.stars) || '\u2014'}</p>
+          <p className={styles.resultTime}>
+            Abweichung {formatTime(scoreResult.absoluteDeviation)}
+          </p>
+          <p className={styles.stars}>{'⭐'.repeat(scoreResult.stars) || '—'}</p>
           <p className={styles.scoreLine}>
-            <strong>{scoreResult.score}</strong> Punkte \u00b7 <strong>+{scoreResult.xp}</strong> XP
+            <strong>{scoreResult.score}</strong> Punkte · <strong>+{scoreResult.xp}</strong> XP
           </p>
           {milestoneXp > 0 && (
             <p className={styles.record}>🎉 Meilenstein-Bonus +{milestoneXp} XP!</p>
@@ -272,7 +282,7 @@ export function PerfectSecondPage() {
               Noch einmal
             </button>
             <button type="button" className={styles.secondaryBtn} onClick={() => setPhase('map')}>
-              Zur Karte
+              Zur Übersicht
             </button>
           </div>
           <Link to="/" className={styles.homeLink}>
