@@ -16,3 +16,12 @@ export type { StreakState } from './streak'
 
 export { processAfterResult } from './afterResult'
 export type { AfterResultInput, AfterResultOutput } from './afterResult'
+
+export {
+  todayKey,
+  dailySeed,
+  dailyGameId,
+  getDailyChallenge,
+  DAILY_LEVEL,
+} from './daily'
+export type { DailyChallengeConfig } from './daily'

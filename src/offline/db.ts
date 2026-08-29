@@ -90,6 +90,18 @@ export interface LocalFamilyResult {
   createdAt: string
 }
 
+/** One daily challenge attempt per calendar day (local) */
+export interface LocalDailyAttempt {
+  id: string
+  dateKey: string
+  gameId: string
+  seed: string
+  level: number
+  score: number
+  resultData: Record<string, unknown>
+  completedAt: string
+}
+
 export class MiniChallengeDB extends Dexie {
   profiles!: EntityTable<LocalProfile, 'id'>
   gameProgress!: EntityTable<LocalGameProgress, 'id'>
@@ -99,6 +111,7 @@ export class MiniChallengeDB extends Dexie {
   syncOutbox!: EntityTable<SyncOutboxItem, 'id'>
   familySessions!: EntityTable<LocalFamilySession, 'id'>
   familyResults!: EntityTable<LocalFamilyResult, 'id'>
+  dailyAttempts!: EntityTable<LocalDailyAttempt, 'id'>
 
   constructor() {
     super('mini-challenge')
@@ -119,6 +132,17 @@ export class MiniChallengeDB extends Dexie {
       syncOutbox: 'id, type, createdAt',
       familySessions: 'id, status, createdAt',
       familyResults: 'id, sessionId, playerIndex',
+    })
+    this.version(3).stores({
+      profiles: 'id, updatedAt',
+      gameProgress: 'id, userId, gameId, updatedAt',
+      gameResults: 'id, userId, gameId, createdAt, synced',
+      personalRecords: 'id, userId, gameId, level',
+      achievements: 'id, userId, achievementId, synced',
+      syncOutbox: 'id, type, createdAt',
+      familySessions: 'id, status, createdAt',
+      familyResults: 'id, sessionId, playerIndex',
+      dailyAttempts: 'id, dateKey, gameId',
     })
   }
 }

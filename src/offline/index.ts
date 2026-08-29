@@ -52,3 +52,9 @@ export {
   getActiveFamilySessions,
 } from './family'
 export type { FamilyStanding } from './family'
+
+export {
+  getDailyAttempt,
+  hasCompletedDaily,
+  saveDailyAttempt,
+} from './daily'
