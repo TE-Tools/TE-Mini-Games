@@ -35,6 +35,8 @@ export function PerfectSecondPage() {
   const [hitsDone, setHitsDone] = useState(0)
   const [isRecord, setIsRecord] = useState(false)
   const [milestoneXp, setMilestoneXp] = useState(0)
+  const [completedLevel, setCompletedLevel] = useState<number | null>(null)
+  const [hadPerfectHit, setHadPerfectHit] = useState(false)
   const [loading, setLoading] = useState(true)
   const timerRef = useRef<ReturnType<typeof createTimer> | null>(null)
 
@@ -70,6 +72,8 @@ export function PerfectSecondPage() {
     setHitScores([])
     setHitsDone(0)
     setMilestoneXp(0)
+    setCompletedLevel(null)
+    setHadPerfectHit(false)
   }, [])
 
   const startTimer = useCallback(() => {
@@ -95,6 +99,8 @@ export function PerfectSecondPage() {
       setHitScores([])
       setHitsDone(0)
       setIsRecord(false)
+      setCompletedLevel(null)
+      setHadPerfectHit(false)
       setPhase('result')
       await saveGameResult({
         gameId: 'perfect-second',
@@ -151,21 +157,25 @@ export function PerfectSecondPage() {
         hitsRequired: config.hitsRequired,
         hits: nextHits.map((h) => h.absoluteDeviation),
         milestoneBonus: bonus,
+        perfectHits: nextHits.filter((h) => h.perfectHit).length,
       },
       stars,
       isPersonalRecord: record,
     })
 
+    const clearedLevel = config.level
+    setCompletedLevel(clearedLevel)
+    setHadPerfectHit(nextHits.some((h) => h.perfectHit))
+
     if (totalXp + bonus > 0) {
       await addXp('guest', totalXp + bonus)
-      const progress = await recordLevelComplete('perfect-second', config.level, totalXp + bonus)
+      const progress = await recordLevelComplete('perfect-second', clearedLevel, totalXp + bonus)
       setHighest(progress.highestLevel)
-      setLevel(progress.currentLevel)
     }
 
     await processAfterResult({
       gameId: 'perfect-second',
-      level: config.level,
+      level: clearedLevel,
       deviation: result.absoluteDeviation,
       isPersonalRecord: record,
     })
@@ -266,22 +276,60 @@ export function PerfectSecondPage() {
           {milestoneXp > 0 && (
             <p className={styles.record}>🎉 Meilenstein-Bonus +{milestoneXp} XP!</p>
           )}
+          {hadPerfectHit && (
+            <p className={styles.record}>✨ Haargenau! Sonder-XP für perfekten Treffer</p>
+          )}
           <div className={styles.resultActions}>
+            {completedLevel != null && scoreResult.score > 0 && (
+              <button
+                type="button"
+                className={styles.primaryBtn}
+                onClick={() => {
+                  const next = Math.min(100, completedLevel + 1)
+                  setLevel(next)
+                  setConfig(createPerfectSecondLevel(next))
+                  setHitScores([])
+                  setHitsDone(0)
+                  setCompletedLevel(null)
+                  setHadPerfectHit(false)
+                  setMilestoneXp(0)
+                  setScoreResult(null)
+                  setPhase('ready')
+                }}
+              >
+                Weiter zu Level {Math.min(100, completedLevel + 1)}
+              </button>
+            )}
             <button
               type="button"
-              className={styles.primaryBtn}
+              className={styles.secondaryBtn}
               onClick={() => {
-                setConfig(createPerfectSecondLevel(level))
+                const L = completedLevel ?? level
+                setLevel(L)
+                setConfig(createPerfectSecondLevel(L))
                 setHitScores([])
                 setHitsDone(0)
                 setPhase('ready')
                 setScoreResult(null)
                 setMilestoneXp(0)
+                setHadPerfectHit(false)
               }}
             >
               Noch einmal
             </button>
-            <button type="button" className={styles.secondaryBtn} onClick={() => setPhase('map')}>
+            <button
+              type="button"
+              className={styles.secondaryBtn}
+              onClick={() => {
+                if (completedLevel != null) {
+                  setLevel(Math.min(100, completedLevel + 1))
+                }
+                setPhase('map')
+                setScoreResult(null)
+                setCompletedLevel(null)
+                setHadPerfectHit(false)
+              }}
+            >
               Zur Übersicht
             </button>
           </div>
