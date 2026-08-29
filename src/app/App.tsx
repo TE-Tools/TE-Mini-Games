@@ -6,6 +6,7 @@ import { PerfectSecondPage } from '@/pages/play/PerfectSecondPage'
 import { WhatIsMissingPage } from '@/pages/play/WhatIsMissingPage'
 import { FamilyPage } from '@/pages/family/FamilyPage'
 import { DailyPage } from '@/pages/daily/DailyPage'
+import { LeaderboardPage } from '@/pages/leaderboard/LeaderboardPage'
 import { AuthPage } from '@/auth/AuthPage'
 import { registerAllGames } from '@/games/register'
 import { initRemoteSync, trySyncNow } from '@/services/remoteSync'
@@ -30,6 +31,7 @@ export function App() {
         <Route path="/play/what-is-missing" element={<WhatIsMissingPage />} />
         <Route path="/family" element={<FamilyPage />} />
         <Route path="/daily" element={<DailyPage />} />
+        <Route path="/leaderboard" element={<LeaderboardPage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
