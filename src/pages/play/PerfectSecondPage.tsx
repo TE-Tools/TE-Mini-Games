@@ -15,6 +15,7 @@ import {
   addXp,
   getPersonalRecord,
 } from '@/offline'
+import { processAfterResult } from '@/progression'
 import styles from './PerfectSecondPage.module.css'
 
 type Phase = 'ready' | 'running' | 'result'
@@ -94,6 +95,13 @@ export function PerfectSecondPage() {
       await addXp('guest', result.xp)
       await recordLevelComplete('perfect-second', config.level, result.xp)
     }
+
+    await processAfterResult({
+      gameId: 'perfect-second',
+      level: config.level,
+      deviation: result.absoluteDeviation,
+      isPersonalRecord: saved.isPersonalRecord,
+    })
 
     setPhase('result')
   }, [phase, config])
