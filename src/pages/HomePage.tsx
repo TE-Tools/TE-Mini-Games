@@ -1,15 +1,49 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import styles from './HomePage.module.css'
+import { getOrCreateGuestProfile, type LocalProfile } from '@/offline'
 
 /**
  * Start page – focused on playing.
- * Shows level, XP, streak and the main game buttons.
+ * Shows level, XP, streak from local offline storage.
  */
 export function HomePage() {
-  // Placeholder values – will be replaced by real progression in Phase 5
-  const playerLevel = 1
-  const totalXp = 0
-  const streakDays = 0
+  const [profile, setProfile] = useState<LocalProfile | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const p = await getOrCreateGuestProfile()
+        if (!cancelled) setProfile(p)
+      } catch (err) {
+        console.error('[HomePage] failed to load profile', err)
+        if (!cancelled) {
+          setProfile({
+            id: 'guest',
+            displayName: 'Gast',
+            avatar: null,
+            totalXp: 0,
+            playerLevel: 1,
+            streakDays: 0,
+            lastPlayedAt: null,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          })
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const playerLevel = profile?.playerLevel ?? 1
+  const totalXp = profile?.totalXp ?? 0
+  const streakDays = profile?.streakDays ?? 0
 
   return (
     <main className={styles.page}>
@@ -18,19 +52,21 @@ export function HomePage() {
         <p className={styles.tagline}>Nur noch eine Runde.</p>
       </header>
 
-      <section className={styles.stats} aria-label="Spielerfortschritt">
+      <section className={styles.stats} aria-label="Spielerfortschritt" aria-busy={loading}>
         <div className={styles.stat}>
           <span className={styles.statLabel}>Dein Level</span>
-          <span className={styles.statValue}>{playerLevel}</span>
+          <span className={styles.statValue}>{loading ? '…' : playerLevel}</span>
         </div>
         <div className={styles.stat}>
           <span className={styles.statLabel}>XP</span>
-          <span className={styles.statValue}>{totalXp.toLocaleString('de-DE')}</span>
+          <span className={styles.statValue}>
+            {loading ? '…' : totalXp.toLocaleString('de-DE')}
+          </span>
         </div>
         <div className={styles.stat}>
           <span className={styles.statLabel}>Streak</span>
           <span className={styles.statValue}>
-            {streakDays > 0 ? `🔥 ${streakDays} Tage` : '—'}
+            {loading ? '…' : streakDays > 0 ? `🔥 ${streakDays} Tage` : '—'}
           </span>
         </div>
       </section>
