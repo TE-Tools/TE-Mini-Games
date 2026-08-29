@@ -12,6 +12,7 @@ import {
   saveGameResult,
   addXp,
 } from '@/offline'
+import { processAfterResult } from '@/progression'
 import styles from './WhatIsMissingPage.module.css'
 
 type Phase = 'ready' | 'memorize' | 'choose' | 'result'
@@ -91,6 +92,12 @@ export function WhatIsMissingPage() {
         await addXp('guest', result.xp)
         await recordLevelComplete('what-is-missing', config.level, result.xp)
       }
+
+      await processAfterResult({
+        gameId: 'what-is-missing',
+        level: config.level,
+        isPersonalRecord: correct,
+      })
 
       setPhase('result')
     },
