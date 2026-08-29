@@ -45,12 +45,12 @@ export function HomePage() {
     <main className={styles.page}>
       <header className={styles.header}>
         <h1 className={styles.title}>MINI CHALLENGE</h1>
-        <p className={styles.tagline}>Nur noch eine Runde.</p>
+        <p className={styles.tagline}>Nur noch eine Runde. ✨</p>
       </header>
 
       <section className={styles.stats} aria-label="Spielerfortschritt" aria-busy={loading}>
         <div className={styles.stat}>
-          <span className={styles.statLabel}>Dein Level</span>
+          <span className={styles.statLabel}>Level</span>
           <span className={styles.statValue}>{loading ? '…' : playerLevel}</span>
         </div>
         <div className={styles.stat}>
@@ -62,7 +62,7 @@ export function HomePage() {
         <div className={styles.stat}>
           <span className={styles.statLabel}>Streak</span>
           <span className={styles.statValue}>
-            {loading ? '…' : streakDays > 0 ? `🔥 ${streakDays} Tage` : '—'}
+            {loading ? '…' : streakDays > 0 ? `🔥 ${streakDays}` : '—'}
           </span>
         </div>
       </section>
@@ -77,26 +77,37 @@ export function HomePage() {
 
         <Link to="/play/what-is-missing" className={styles.gameButton} data-game="what-is-missing">
           <span className={styles.gameIcon} aria-hidden="true">
-            👁️
+            👀
           </span>
           <span className={styles.gameName}>Was fehlt?</span>
         </Link>
 
-        <Link to="/daily" className={styles.secondaryButton}>
-          Daily Challenge
-        </Link>
-
-        <Link to="/family" className={styles.secondaryButton}>
-          Familie
-        </Link>
-
-        <Link to="/leaderboard" className={styles.secondaryButton}>
-          Rangliste
-        </Link>
-
-        <Link to="/auth" className={styles.secondaryButton}>
-          Konto
-        </Link>
+        <div className={styles.secondaryGrid}>
+          <Link to="/daily" className={styles.secondaryButton}>
+            <span className={styles.secondaryIcon} aria-hidden="true">
+              📅
+            </span>
+            Daily
+          </Link>
+          <Link to="/family" className={styles.secondaryButton}>
+            <span className={styles.secondaryIcon} aria-hidden="true">
+              👨‍👩‍👧
+            </span>
+            Familie
+          </Link>
+          <Link to="/leaderboard" className={styles.secondaryButton}>
+            <span className={styles.secondaryIcon} aria-hidden="true">
+              🏆
+            </span>
+            Rangliste
+          </Link>
+          <Link to="/auth" className={styles.secondaryButton}>
+            <span className={styles.secondaryIcon} aria-hidden="true">
+              👤
+            </span>
+            Konto
+          </Link>
+        </div>
       </nav>
     </main>
   )

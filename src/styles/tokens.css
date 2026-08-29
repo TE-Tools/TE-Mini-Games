@@ -1,21 +1,26 @@
 :root {
-  /* Colors – Light */
-  --color-bg: #f8fafc;
+  /* Soft, playful light theme – kid-friendly & modern */
+  --color-bg: #fef7f0;
   --color-bg-elevated: #ffffff;
-  --color-surface: #f1f5f9;
-  --color-border: #e2e8f0;
-  --color-text: #0f172a;
-  --color-text-muted: #64748b;
-  --color-primary: #6366f1;
-  --color-primary-hover: #4f46e5;
+  --color-surface: #fff1e6;
+  --color-border: #ffd4b8;
+  --color-text: #2d1b4e;
+  --color-text-muted: #7c6b8a;
+  --color-primary: #7c5cfc;
+  --color-primary-hover: #6547e8;
   --color-primary-text: #ffffff;
   --color-success: #22c55e;
   --color-warning: #f59e0b;
-  --color-danger: #ef4444;
-  --color-accent: #8b5cf6;
+  --color-danger: #f43f5e;
+  --color-accent: #06b6d4;
   --color-streak: #f97316;
+  --color-game-a: #ff6b9d;
+  --color-game-a-soft: #ffe4ef;
+  --color-game-b: #4ecdc4;
+  --color-game-b-soft: #e0faf7;
+  --color-daily: #ffc107;
+  --color-family: #a78bfa;
 
-  /* Spacing */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -26,16 +31,15 @@
   --space-10: 2.5rem;
   --space-12: 3rem;
 
-  /* Radius */
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.25rem;
+  --radius-sm: 0.75rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
   --radius-full: 9999px;
 
-  /* Typography */
   --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-mono: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace;
+  --font-mono: ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace;
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-base: 1rem;
@@ -45,55 +49,54 @@
   --text-3xl: 1.875rem;
   --text-4xl: 2.25rem;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-sm: 0 2px 8px rgb(124 92 252 / 0.08);
+  --shadow-md: 0 6px 20px rgb(124 92 252 / 0.12);
+  --shadow-lg: 0 12px 32px rgb(124 92 252 / 0.16);
+  --shadow-game: 0 8px 24px rgb(0 0 0 / 0.1);
 
-  /* Touch targets */
   --touch-min: 48px;
-
-  /* Transitions */
   --transition-fast: 150ms ease;
   --transition-normal: 250ms ease;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg: #0f172a;
-    --color-bg-elevated: #1e293b;
-    --color-surface: #334155;
-    --color-border: #475569;
-    --color-text: #f8fafc;
-    --color-text-muted: #94a3b8;
-    --color-primary: #818cf8;
-    --color-primary-hover: #a5b4fc;
-    --color-primary-text: #0f172a;
+    --color-bg: #1a1228;
+    --color-bg-elevated: #2a1f3d;
+    --color-surface: #3d2f54;
+    --color-border: #5a4a72;
+    --color-text: #fef7f0;
+    --color-text-muted: #c4b5d4;
+    --color-primary: #a78bfa;
+    --color-primary-hover: #c4b5fd;
+    --color-primary-text: #1a1228;
+    --color-game-a-soft: #4a2840;
+    --color-game-b-soft: #1e3d3a;
   }
 }
 
 [data-theme='light'] {
-  --color-bg: #f8fafc;
+  --color-bg: #fef7f0;
   --color-bg-elevated: #ffffff;
-  --color-surface: #f1f5f9;
-  --color-border: #e2e8f0;
-  --color-text: #0f172a;
-  --color-text-muted: #64748b;
-  --color-primary: #6366f1;
-  --color-primary-hover: #4f46e5;
+  --color-surface: #fff1e6;
+  --color-border: #ffd4b8;
+  --color-text: #2d1b4e;
+  --color-text-muted: #7c6b8a;
+  --color-primary: #7c5cfc;
+  --color-primary-hover: #6547e8;
   --color-primary-text: #ffffff;
 }
 
 [data-theme='dark'] {
-  --color-bg: #0f172a;
-  --color-bg-elevated: #1e293b;
-  --color-surface: #334155;
-  --color-border: #475569;
-  --color-text: #f8fafc;
-  --color-text-muted: #94a3b8;
-  --color-primary: #818cf8;
-  --color-primary-hover: #a5b4fc;
-  --color-primary-text: #0f172a;
+  --color-bg: #1a1228;
+  --color-bg-elevated: #2a1f3d;
+  --color-surface: #3d2f54;
+  --color-border: #5a4a72;
+  --color-text: #fef7f0;
+  --color-text-muted: #c4b5d4;
+  --color-primary: #a78bfa;
+  --color-primary-hover: #c4b5fd;
+  --color-primary-text: #1a1228;
 }
 
 @media (prefers-reduced-motion: reduce) {
