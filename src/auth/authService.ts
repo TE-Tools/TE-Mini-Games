@@ -7,8 +7,23 @@ export type AuthState = {
   configured: boolean
 }
 
+const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/
+
 export function getAuthConfigured(): boolean {
   return isSupabaseConfigured
+}
+
+export function validateUsername(username: string): string | null {
+  const u = username.trim()
+  if (u.length < 3) return 'Benutzername mindestens 3 Zeichen'
+  if (u.length > 20) return 'Benutzername maximal 20 Zeichen'
+  if (!USERNAME_RE.test(u)) return 'Nur Buchstaben, Zahlen und _'
+  return null
+}
+
+export function validatePassword(password: string): string | null {
+  if (password.length < 8) return 'Passwort mindestens 8 Zeichen'
+  return null
 }
 
 export async function getSession(): Promise<Session | null> {
@@ -23,6 +38,19 @@ export async function getCurrentUser(): Promise<User | null> {
   return data.user
 }
 
+export async function isUsernameAvailable(username: string): Promise<{
+  available: boolean
+  error: string | null
+}> {
+  if (!supabase) return { available: false, error: 'Supabase nicht konfiguriert' }
+  const u = username.trim().toLowerCase()
+  const { data, error } = await supabase.rpc('is_username_available', {
+    p_username: u,
+  })
+  if (error) return { available: false, error: error.message }
+  return { available: Boolean(data), error: null }
+}
+
 export async function signInWithEmail(
   email: string,
   password: string,
@@ -35,15 +63,50 @@ export async function signInWithEmail(
 export async function signUpWithEmail(
   email: string,
   password: string,
+  username: string,
   displayName?: string,
 ): Promise<{ error: string | null }> {
   if (!supabase) return { error: 'Supabase nicht konfiguriert' }
-  const { error } = await supabase.auth.signUp({
-    email,
+
+  const nameErr = validateUsername(username)
+  if (nameErr) return { error: nameErr }
+  const passErr = validatePassword(password)
+  if (passErr) return { error: passErr }
+
+  const { available, error: checkErr } = await isUsernameAvailable(username)
+  if (checkErr) return { error: checkErr }
+  if (!available) return { error: 'Benutzername ist bereits vergeben' }
+
+  const { data, error } = await supabase.auth.signUp({
+    email: email.trim(),
     password,
     options: {
-      data: { display_name: displayName ?? 'Spieler' },
+      data: {
+        display_name: displayName?.trim() || username.trim(),
+        username: username.trim().toLowerCase(),
+      },
     },
+  })
+  if (error) return { error: error.message }
+
+  if (data.user) {
+    await supabase.from('profiles').upsert({
+      id: data.user.id,
+      display_name: displayName?.trim() || username.trim(),
+      username: username.trim().toLowerCase(),
+      updated_at: new Date().toISOString(),
+    })
+  }
+
+  return { error: null }
+}
+
+export async function signInWithGoogle(): Promise<{ error: string | null }> {
+  if (!supabase) return { error: 'Supabase nicht konfiguriert' }
+  const redirectTo = `${window.location.origin}/auth`
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo },
   })
   return { error: error?.message ?? null }
 }

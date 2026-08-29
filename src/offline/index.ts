@@ -30,7 +30,7 @@ export {
   getRecentResults,
 } from './results'
 
-export { enqueueOutbox, listOutbox, removeOutboxItem } from './outbox'
+export { enqueueOutbox, getPendingOutbox, markOutboxSuccess, markOutboxFailure } from './outbox'
 export { getUnlockedAchievements, unlockMany } from './achievements'
 export * from './family'
 export * from './daily'
