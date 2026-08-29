@@ -4,34 +4,33 @@
  */
 
 export interface TimerHandle {
-  /** Start timestamp (performance.now()) */
-  start: number
-  /** Elapsed seconds since start (live) */
+  start: () => void
   elapsed: () => number
-  /** Stop and return final elapsed seconds */
   stop: () => number
 }
 
 export function createTimer(): TimerHandle {
-  const start = performance.now()
+  let startAt = performance.now()
   let stoppedAt: number | null = null
 
   return {
-    start,
+    start: () => {
+      startAt = performance.now()
+      stoppedAt = null
+    },
     elapsed: () => {
       const end = stoppedAt ?? performance.now()
-      return (end - start) / 1000
+      return (end - startAt) / 1000
     },
     stop: () => {
       if (stoppedAt === null) {
         stoppedAt = performance.now()
       }
-      return (stoppedAt - start) / 1000
+      return (stoppedAt - startAt) / 1000
     },
   }
 }
 
-/** Format seconds for display, e.g. 10.037 */
 export function formatTime(seconds: number, decimals = 3): string {
   if (!Number.isFinite(seconds)) return '—'
   return seconds.toFixed(decimals)
@@ -40,6 +39,5 @@ export function formatTime(seconds: number, decimals = 3): string {
 export function formatDeviation(seconds: number, decimals = 3): string {
   if (!Number.isFinite(seconds)) return '—'
   const sign = seconds > 0 ? '+' : seconds < 0 ? '' : ''
-  // absoluteDeviation is always >= 0; signed variant for display if needed
   return `${sign}${Math.abs(seconds).toFixed(decimals)}`
 }

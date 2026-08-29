@@ -1,51 +1,54 @@
 /**
- * Perfect Second – Level difficulty formulas.
+ * Perfect Second – difficulty curve (kid-friendly start, ramps up).
  *
- * Target time (seconds):
- *   target(L) = 3 + 57 * (L - 1) / 99
- *   Level 1  → 3.00 s
- *   Level 10 → ~8.18 s
- *   Level 30 → ~19.73 s  (spec example ~15s – close enough; continuous formula)
- *   Level 50 → ~31.18 s
- *   Level 100 → 60.00 s
- *
- * Tolerance (seconds, ±):
- *   tolerance(L) = 0.50 * (0.04)^((L - 1) / 99)
- *   which is equivalent to exponential decay from 0.50 → 0.02
- *   Level 1  → 0.50 s
- *   Level 10 → ~0.30 s
- *   Level 30 → ~0.14 s
- *   Level 50 → ~0.08 s
- *   Level 100 → 0.02 s
- *
- * Spec examples are approximate anchors; the continuous formulas avoid 100 hard-coded cases.
+ * Target ~2.8s early; absolute tolerance L1 ~0.35s, L10 ~0.25s, then tighter.
+ * Multi-hit: L20+ needs 2 consecutive hits; L50+ needs 3.
  */
 
 export interface PerfectSecondLevel {
   level: number
   targetTime: number
   tolerance: number
+  hitsRequired: number
+  maxDeviationRatio: number
 }
 
 export function createPerfectSecondLevel(level: number): PerfectSecondLevel {
   const L = Math.max(1, Math.min(100, Math.floor(level)))
   const t = (L - 1) / 99
 
-  const targetTime = round3(3 + 57 * t)
-  // Exponential: 0.50 * (0.02/0.50)^t = 0.50 * 0.04^t
-  const tolerance = round3(0.5 * Math.pow(0.04, t))
+  const targetTime = round3(2.8 + 9.2 * Math.pow(t, 1.15))
+  const tolerance = round3(0.35 * Math.pow(0.04 / 0.35, t))
 
-  return { level: L, targetTime, tolerance }
+  let hitsRequired = 1
+  let maxDeviationRatio = 0.3
+  if (L >= 50) {
+    hitsRequired = 3
+    maxDeviationRatio = L >= 80 ? 0.1 : 0.15
+  } else if (L >= 20) {
+    hitsRequired = 2
+    maxDeviationRatio = L >= 35 ? 0.15 : 0.2
+  } else if (L >= 10) {
+    hitsRequired = 1
+    maxDeviationRatio = 0.25
+  }
+
+  return { level: L, targetTime, tolerance, hitsRequired, maxDeviationRatio }
 }
 
 function round3(n: number): number {
   return Math.round(n * 1000) / 1000
 }
 
-/** Deterministic level from date seed (for Daily Challenge later). */
 export function createLevelFromSeed(level: number, seed: string): PerfectSecondLevel {
-  // Base level config; seed can slightly vary target within a small band later.
-  // For V1 we return the standard level; seed is reserved for daily/family reproducibility.
   void seed
   return createPerfectSecondLevel(level)
+}
+
+export function isHitWithinTolerance(
+  targetTime: number,
+  actualTime: number,
+  tolerance: number,
+): boolean {
+  return Math.abs(actualTime - targetTime) <= tolerance
 }
