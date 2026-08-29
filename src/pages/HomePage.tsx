@@ -93,6 +93,10 @@ export function HomePage() {
         <Link to="/leaderboard" className={styles.secondaryButton}>
           Rangliste
         </Link>
+
+        <Link to="/auth" className={styles.secondaryButton}>
+          Konto
+        </Link>
       </nav>
     </main>
   )
