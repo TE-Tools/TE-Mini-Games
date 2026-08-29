@@ -1,9 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   getAuthConfigured,
   signInWithEmail,
   signUpWithEmail,
+  signInWithGoogle,
+  signOut,
+  getCurrentUser,
+  validateUsername,
+  validatePassword,
+  isUsernameAvailable,
 } from '@/auth/authService'
 import { trySyncNow } from '@/services/remoteSync'
 import styles from './AuthPage.module.css'
@@ -14,21 +20,69 @@ export function AuthPage() {
   const [mode, setMode] = useState<'in' | 'up'>('in')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('')
   const [displayName, setDisplayName] = useState('')
+  const [honeypot, setHoneypot] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [info, setInfo] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [usernameStatus, setUsernameStatus] = useState<string | null>(null)
+
+  useEffect(() => {
+    void getCurrentUser().then((u) => setUserEmail(u?.email ?? null))
+  }, [])
+
+  useEffect(() => {
+    if (mode !== 'up' || username.trim().length < 3) {
+      setUsernameStatus(null)
+      return
+    }
+    const err = validateUsername(username)
+    if (err) {
+      setUsernameStatus(err)
+      return
+    }
+    const t = window.setTimeout(() => {
+      void isUsernameAvailable(username).then(({ available, error: e }) => {
+        if (e) setUsernameStatus(e)
+        else setUsernameStatus(available ? '✓ Verfügbar' : 'Bereits vergeben')
+      })
+    }, 400)
+    return () => window.clearTimeout(t)
+  }, [username, mode])
 
   if (!configured) {
     return (
       <main className={styles.page}>
         <h1 className={styles.title}>Konto</h1>
         <p className={styles.hint}>
-          Online-Funktionen sind noch nicht konfiguriert. Du kannst offline als Gast spielen.
+          Online-Login ist noch nicht aktiv. Du kannst offline als Gast spielen.
         </p>
         <p className={styles.muted}>
-          Setze <code>VITE_SUPABASE_URL</code> und <code>VITE_SUPABASE_ANON_KEY</code> in{' '}
-          <code>.env</code> – siehe <code>docs/supabase-setup.md</code>.
+          Zum Aktivieren: Supabase-Projekt anlegen, Migrationen ausführen und in Cloudflare Pages
+          die Variablen <code>VITE_SUPABASE_URL</code> und <code>VITE_SUPABASE_ANON_KEY</code>{' '}
+          setzen. Details: <code>docs/supabase-setup.md</code>.
         </p>
+        <Link to="/" className={styles.link}>
+          Zur Startseite
+        </Link>
+      </main>
+    )
+  }
+
+  if (userEmail) {
+    return (
+      <main className={styles.page}>
+        <h1 className={styles.title}>Angemeldet</h1>
+        <p className={styles.hint}>{userEmail}</p>
+        <button
+          type="button"
+          className={styles.primaryBtn}
+          onClick={() => void signOut().then(() => setUserEmail(null))}
+        >
+          Abmelden
+        </button>
         <Link to="/" className={styles.link}>
           Zur Startseite
         </Link>
@@ -38,18 +92,52 @@ export function AuthPage() {
 
   const submit = async () => {
     setError(null)
+    setInfo(null)
+    if (honeypot.trim() !== '') {
+      setError('Registrierung fehlgeschlagen')
+      return
+    }
     setBusy(true)
     try {
-      const result =
-        mode === 'in'
-          ? await signInWithEmail(email, password)
-          : await signUpWithEmail(email, password, displayName || undefined)
+      if (mode === 'in') {
+        const result = await signInWithEmail(email, password)
+        if (result.error) {
+          setError(result.error)
+          return
+        }
+        await trySyncNow()
+        navigate('/')
+        return
+      }
+
+      const nameErr = validateUsername(username)
+      if (nameErr) {
+        setError(nameErr)
+        return
+      }
+      const passErr = validatePassword(password)
+      if (passErr) {
+        setError(passErr)
+        return
+      }
+      const result = await signUpWithEmail(email, password, username, displayName || username)
       if (result.error) {
         setError(result.error)
         return
       }
-      await trySyncNow()
-      navigate('/')
+      setInfo('Konto erstellt. Prüfe ggf. deine E-Mail zur Bestätigung, dann anmelden.')
+      setMode('in')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const google = async () => {
+    setError(null)
+    setBusy(true)
+    try {
+      const result = await signInWithGoogle()
+      if (result.error) setError(result.error)
     } finally {
       setBusy(false)
     }
@@ -57,62 +145,105 @@ export function AuthPage() {
 
   return (
     <main className={styles.page}>
-      <h1 className={styles.title}>{mode === 'in' ? 'Anmelden' : 'Registrieren'}</h1>
-      <p className={styles.hint}>Optional – Spielen geht auch ohne Konto (Gast, offline).</p>
+      <h1 className={styles.title}>{mode === 'in' ? 'Anmelden' : 'Konto erstellen'}</h1>
+      <p className={styles.hint}>
+        Mit Konto speicherst du Fortschritt online. Spielen geht auch ohne (Gast).
+      </p>
 
       {mode === 'up' && (
-        <label className={styles.label}>
-          Anzeigename
-          <input
-            className={styles.input}
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            autoComplete="nickname"
-          />
-        </label>
+        <>
+          <label className={styles.label}>
+            Benutzername *
+            <input
+              className={styles.input}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              autoComplete="username"
+              maxLength={20}
+              required
+            />
+          </label>
+          {usernameStatus && (
+            <p className={styles.muted} aria-live="polite">
+              {usernameStatus}
+            </p>
+          )}
+          <label className={styles.label}>
+            Anzeigename (optional)
+            <input
+              className={styles.input}
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              autoComplete="nickname"
+            />
+          </label>
+        </>
       )}
+
       <label className={styles.label}>
-        E-Mail
+        E-Mail *
         <input
           className={styles.input}
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
+          required
         />
       </label>
       <label className={styles.label}>
-        Passwort
+        Passwort *
         <input
           className={styles.input}
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete={mode === 'in' ? 'current-password' : 'new-password'}
+          minLength={8}
+          required
+        />
+      </label>
+
+      <label className={styles.hp} aria-hidden="true">
+        Website
+        <input
+          tabIndex={-1}
+          autoComplete="off"
+          value={honeypot}
+          onChange={(e) => setHoneypot(e.target.value)}
         />
       </label>
 
       {error && <p className={styles.error}>{error}</p>}
+      {info && <p className={styles.hint}>{info}</p>}
 
       <button
         type="button"
         className={styles.primaryBtn}
-        disabled={busy || !email || password.length < 6}
+        disabled={busy || !email || !password || (mode === 'up' && !username)}
         onClick={() => void submit()}
       >
-        {mode === 'in' ? 'Anmelden' : 'Konto erstellen'}
+        {busy ? '…' : mode === 'in' ? 'Anmelden' : 'Registrieren'}
+      </button>
+
+      <button type="button" className={styles.googleBtn} disabled={busy} onClick={() => void google()}>
+        Mit Google anmelden
       </button>
 
       <button
         type="button"
         className={styles.switch}
-        onClick={() => setMode(mode === 'in' ? 'up' : 'in')}
+        onClick={() => {
+          setMode((m) => (m === 'in' ? 'up' : 'in'))
+          setError(null)
+          setInfo(null)
+        }}
       >
-        {mode === 'in' ? 'Neu hier? Registrieren' : 'Schon Konto? Anmelden'}
+        {mode === 'in' ? 'Noch kein Konto? Registrieren' : 'Schon Konto? Anmelden'}
       </button>
 
       <Link to="/" className={styles.link}>
-        Weiter als Gast
+        Zur Startseite
       </Link>
     </main>
   )
