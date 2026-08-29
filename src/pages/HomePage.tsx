@@ -107,6 +107,12 @@ export function HomePage() {
             </span>
             Abzeichen
           </Link>
+          <Link to="/profile" className={styles.secondaryButton}>
+            <span className={styles.secondaryIcon} aria-hidden="true">
+              🎭
+            </span>
+            Avatar
+          </Link>
           <Link to="/auth" className={styles.secondaryButton}>
             <span className={styles.secondaryIcon} aria-hidden="true">
               👤
