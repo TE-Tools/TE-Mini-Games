@@ -12,11 +12,21 @@ html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
   height: 100%;
+  color-scheme: dark;
+}
+
+html[data-theme='light'] {
+  color-scheme: light;
 }
 
 body {
   font-family: var(--font-sans);
   background-color: var(--color-bg);
+  background-image:
+    radial-gradient(ellipse 90% 60% at 50% -30%, rgb(124 92 252 / 0.14), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 100% 20%, rgb(230 195 92 / 0.08), transparent 50%),
+    radial-gradient(ellipse 45% 35% at 0% 90%, rgb(45 212 191 / 0.07), transparent 50%);
+  background-attachment: fixed;
   color: var(--color-text);
   line-height: 1.5;
   min-height: 100%;
@@ -51,6 +61,11 @@ a {
   text-decoration: none;
 }
 
+ul,
+ol {
+  list-style: none;
+}
+
 :focus-visible {
   outline: 3px solid var(--color-primary);
   outline-offset: 2px;
@@ -67,7 +82,6 @@ a {
   }
 }
 
-/* Utility */
 .sr-only {
   position: absolute;
   width: 1px;
