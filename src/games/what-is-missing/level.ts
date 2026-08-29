@@ -1,23 +1,5 @@
 /**
  * What Is Missing – Level difficulty formulas.
- *
- * Object count:
- *   count(L) = round(5 + 35 * (L - 1) / 99)
- *   Level 1  → 5
- *   Level 10 → ~8
- *   Level 30 → ~15
- *   Level 50 → ~23
- *   Level 100 → 40
- *
- * Display time (seconds):
- *   time(L) = 5 - 3.5 * (L - 1) / 99
- *   Level 1  → 5.0 s
- *   Level 10 → ~4.7 s
- *   Level 30 → ~4.0 s
- *   Level 50 → ~3.2 s
- *   Level 100 → 1.5 s
- *
- * Continuous formulas – no hard-coded jumps.
  */
 
 import { OBJECT_CATALOG, type GameObject } from './objects'
@@ -27,11 +9,13 @@ export interface WhatIsMissingLevel {
   level: number
   objectCount: number
   displayTimeSeconds: number
-  /** Objects shown in the memorization phase */
+  /** Objects shown in the memorization phase (includes the one that will go missing) */
   shownObjects: GameObject[]
-  /** Object that will be removed */
+  /** Objects still visible after one is removed */
+  remainingObjects: GameObject[]
+  /** Object that was removed */
   missingObject: GameObject
-  /** Objects shown in the choice phase */
+  /** Options for the player to choose from (always includes missingObject) */
   choiceObjects: GameObject[]
   seed: string
 }
@@ -52,26 +36,41 @@ function clampLevel(level: number): number {
 }
 
 /**
- * Create a deterministic level from level number + optional seed.
- * Same seed + level → same objects and missing item.
+ * Create a level from level number + optional seed.
+ * Without seed → new random layout each call (play again stays fresh).
+ * With seed (Daily / Family) → deterministic.
  */
 export function createWhatIsMissingLevel(level: number, seed?: string): WhatIsMissingLevel {
   const L = clampLevel(level)
-  const resolvedSeed = seed ?? `wim-level-${L}`
+  const resolvedSeed =
+    seed ??
+    `wim-level-${L}-${typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`}`
   const rng = createRng(resolvedSeed)
   const count = objectCountForLevel(L)
   const displayTimeSeconds = displayTimeForLevel(L)
 
   const selected = pickN(OBJECT_CATALOG, count, rng)
+  if (selected.length < 2) {
+    throw new Error('Need at least 2 objects for What Is Missing')
+  }
+
   const missingIndex = Math.floor(rng() * selected.length)
   const missingObject = selected[missingIndex]!
   const shownObjects = selected
-  const others = selected.filter((o) => o.id !== missingObject.id)
-  const maxChoices = Math.min(selected.length, 12)
-  const choicePool = shuffle([missingObject, ...others], rng).slice(0, maxChoices)
+  const remainingObjects = selected.filter((o) => o.id !== missingObject.id)
+
+  const distractors = remainingObjects
+  const maxChoices = Math.min(Math.max(4, Math.min(selected.length, 8)), selected.length)
+  let choicePool = shuffle([missingObject, ...distractors], rng).slice(0, maxChoices)
   if (!choicePool.some((o) => o.id === missingObject.id)) {
-    choicePool[0] = missingObject
+    choicePool = [missingObject, ...choicePool.slice(0, maxChoices - 1)]
   }
+  const seen = new Set<string>()
+  choicePool = choicePool.filter((o) => {
+    if (seen.has(o.id)) return false
+    seen.add(o.id)
+    return true
+  })
   const choiceObjects = shuffle(choicePool, rng)
 
   return {
@@ -79,6 +78,7 @@ export function createWhatIsMissingLevel(level: number, seed?: string): WhatIsMi
     objectCount: count,
     displayTimeSeconds,
     shownObjects,
+    remainingObjects,
     missingObject,
     choiceObjects,
     seed: resolvedSeed,
