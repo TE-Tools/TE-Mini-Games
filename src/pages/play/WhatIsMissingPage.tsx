@@ -174,6 +174,17 @@ export function WhatIsMissingPage() {
 
       {phase === 'choose' && (
         <section className={styles.choose} aria-label="Auswahl">
+          <p className={styles.hint}>Schau genau hin – eines fehlt:</p>
+          <ul className={styles.grid} role="list" aria-label="Noch sichtbare Objekte">
+            {config.remainingObjects.map((obj) => (
+              <li key={obj.id} className={styles.cell}>
+                <span className={styles.emoji} aria-hidden="true">
+                  {obj.emoji}
+                </span>
+                <span className={styles.label}>{obj.label}</span>
+              </li>
+            ))}
+          </ul>
           <p className={styles.question}>Welches Objekt fehlt?</p>
           <ul className={styles.choiceGrid} role="list">
             {config.choiceObjects.map((obj) => (
