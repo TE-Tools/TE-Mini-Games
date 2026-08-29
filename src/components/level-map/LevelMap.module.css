@@ -21,103 +21,6 @@
   margin: 0;
 }
 
-/* Zone colours come from src/progression/zones.ts via inline custom properties. */
-.land {
-  position: relative;
-  width: 100%;
-  max-height: 58vh;
-  overflow-y: auto;
-  overflow-x: hidden;
-  border-radius: var(--radius-2xl);
-  border: 4px solid var(--zone-accent, #5a8f3c);
-  box-shadow: var(--btn-shadow);
-  background:
-    radial-gradient(ellipse 40% 30% at 15% 70%, var(--zone-sky, #7ec8e3) 0%, transparent 55%),
-    radial-gradient(ellipse 35% 25% at 85% 25%, var(--zone-sky, #6eb5d8) 0%, transparent 50%),
-    radial-gradient(ellipse 50% 40% at 70% 80%, var(--zone-sky, #8fd3ea) 0%, transparent 45%),
-    linear-gradient(
-      165deg,
-      var(--zone-ground-light, #8fbc6a) 0%,
-      var(--zone-ground, #6fa84a) 45%,
-      var(--zone-ground, #5a9a3c) 75%,
-      var(--zone-accent, #4d8a32) 100%
-    );
-  padding: var(--space-4) var(--space-2) var(--space-5);
-  -webkit-overflow-scrolling: touch;
-  transition: border-color var(--transition-fast);
-}
-
-/* Per-zone accents on top of the shared palette variables. */
-.zone_volcanic {
-  background-blend-mode: multiply, normal, normal, normal;
-}
-
-.zone_iceage,
-.zone_glacier {
-  color: #12313f;
-}
-
-.water1,
-.water2,
-.water3 {
-  position: absolute;
-  border-radius: 50% 40% 55% 45%;
-  background: linear-gradient(135deg, var(--zone-blob, #7ec8e3), var(--zone-sky, #4fa8c8));
-  opacity: 0.85;
-  pointer-events: none;
-  border: 2px solid rgb(255 255 255 / 0.35);
-}
-
-.water1 {
-  width: 28%;
-  height: 18%;
-  left: 4%;
-  bottom: 12%;
-}
-
-.water2 {
-  width: 22%;
-  height: 14%;
-  right: 6%;
-  top: 18%;
-}
-
-.water3 {
-  width: 18%;
-  height: 12%;
-  right: 20%;
-  bottom: 28%;
-  opacity: 0.7;
-}
-
-.hill {
-  position: absolute;
-  width: 40%;
-  height: 20%;
-  left: 30%;
-  top: 8%;
-  background: radial-gradient(ellipse at center, var(--zone-ground-light, #78a046), transparent 70%);
-  opacity: 0.5;
-  pointer-events: none;
-}
-
-.decor {
-  position: absolute;
-  bottom: 0.75rem;
-  font-size: 1.5rem;
-  opacity: 0.7;
-  pointer-events: none;
-  filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.25));
-}
-
-.decorLeft {
-  left: 6%;
-}
-
-.decorRight {
-  right: 6%;
-}
-
 .zoneLine {
   display: flex;
   align-items: center;
@@ -142,164 +45,266 @@
   font-weight: 600;
 }
 
-.path {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.35rem;
+/* Zone colours come from src/progression/zones.ts via inline custom properties. */
+.land {
   position: relative;
-  z-index: 1;
-  min-height: 14rem;
+  width: 100%;
+  max-height: 58vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-radius: var(--radius-2xl);
+  border: 4px solid var(--zone-accent, #5a8f3c);
+  box-shadow:
+    var(--btn-shadow),
+    0 0 60px rgb(0 0 0 / 0.25) inset;
+  background:
+    radial-gradient(ellipse 45% 12% at 18% 22%, var(--zone-blob, #7ec8e3) 0%, transparent 70%),
+    radial-gradient(ellipse 38% 10% at 84% 58%, var(--zone-blob, #7ec8e3) 0%, transparent 70%),
+    radial-gradient(ellipse 55% 14% at 30% 88%, var(--zone-blob, #7ec8e3) 0%, transparent 70%),
+    radial-gradient(ellipse 70% 30% at 50% 0%, var(--zone-sky, #7ec8e3) 0%, transparent 60%),
+    linear-gradient(
+      168deg,
+      var(--zone-ground-light, #8fbc6a) 0%,
+      var(--zone-ground, #6fa84a) 40%,
+      var(--zone-ground, #5a9a3c) 72%,
+      var(--zone-accent, #4d8a32) 100%
+    );
+  background-attachment: local;
+  -webkit-overflow-scrolling: touch;
+  transition: border-color var(--transition-fast);
 }
 
-.nodeWrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.zone_iceage,
+.zone_glacier {
+  color: #12313f;
+}
+
+.canvas {
   position: relative;
   width: 100%;
 }
 
-.lane_left {
-  align-items: flex-start;
-  padding-left: 12%;
-}
-
-.lane_center {
-  align-items: center;
-}
-
-.lane_right {
-  align-items: flex-end;
-  padding-right: 12%;
-}
-
-.snake {
-  display: block;
-  width: 3.5rem;
-  height: 1.35rem;
-  margin-bottom: 0.15rem;
-  background: transparent;
-  position: relative;
-}
-
-.snake::before {
+/* Painterly speckle so the ground does not look like flat CSS. */
+.canvas::before {
   content: '';
   position: absolute;
   inset: 0;
-  border: 3px solid var(--zone-path, #c4a35a);
-  border-top: none;
-  border-radius: 0 0 50% 50%;
-  box-shadow: 0 2px 0 rgb(255 255 255 / 0.25);
+  pointer-events: none;
+  opacity: 0.35;
+  background-image:
+    radial-gradient(circle at 20% 12%, rgb(255 255 255 / 0.5) 0 2px, transparent 3px),
+    radial-gradient(circle at 72% 26%, rgb(0 0 0 / 0.28) 0 3px, transparent 4px),
+    radial-gradient(circle at 38% 58%, rgb(255 255 255 / 0.4) 0 2px, transparent 3px),
+    radial-gradient(circle at 86% 74%, rgb(0 0 0 / 0.22) 0 2px, transparent 3px),
+    radial-gradient(circle at 12% 84%, rgb(0 0 0 / 0.2) 0 3px, transparent 4px);
+  background-size: 190px 190px;
 }
 
-.snake_left::before {
-  border-radius: 0 0 60% 20%;
-  transform: rotate(-12deg);
-  width: 4rem;
+/* The winding road – one continuous path under all level slabs. */
+.road {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
 }
 
-.snake_center::before {
-  border-radius: 0 0 50% 50%;
+.roadEdge,
+.roadSurface,
+.roadSeams {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
 }
 
-.snake_right::before {
-  border-radius: 0 0 20% 60%;
-  transform: rotate(12deg);
-  width: 4rem;
-  right: 0;
-  left: auto;
+.roadEdge {
+  stroke: rgb(60 40 18 / 0.45);
+  stroke-width: 40;
 }
 
+.roadSurface {
+  stroke: var(--zone-path, #cbb27a);
+  stroke-width: 32;
+}
+
+/* Seams between the stone slabs of the road. */
+.roadSeams {
+  stroke: rgb(60 40 18 / 0.22);
+  stroke-width: 32;
+  stroke-linecap: butt;
+  stroke-dasharray: 3 26;
+}
+
+.stop {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.decor {
+  position: absolute;
+  top: 50%;
+  font-size: 1.6rem;
+  line-height: 1;
+  opacity: 0.85;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.3));
+  transform: translateY(-50%);
+}
+
+.decorLeft {
+  right: 4.5rem;
+}
+
+.decorRight {
+  left: 4.5rem;
+}
+
+/* Level slab: a round stone disc lying on the road. */
 .node {
-  width: 3.75rem;
-  height: 3.75rem;
+  width: 3.5rem;
+  height: 3.5rem;
   border-radius: var(--radius-full);
   font-weight: 800;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(180deg, #fffef5, var(--zone-path, #f5e6b8));
-  border: 3px solid var(--zone-accent, #8b6914);
+  line-height: 1;
+  background:
+    radial-gradient(circle at 35% 28%, rgb(255 255 255 / 0.75), transparent 55%),
+    linear-gradient(180deg, #f7ecc9, #d9c091 60%, #c2a877);
+  border: 3px solid #8b6914;
   box-shadow:
-    0 1px 0 rgb(255 255 255 / 0.6) inset,
-    0 4px 0 rgb(0 0 0 / 0.12),
-    0 8px 16px rgb(0 0 0 / 0.15);
-  color: #2a1f12;
-  z-index: 2;
-  transition: transform var(--transition-fast);
+    0 1px 0 rgb(255 255 255 / 0.7) inset,
+    0 -2px 4px rgb(90 60 20 / 0.35) inset,
+    0 5px 0 rgb(80 55 20 / 0.35),
+    0 9px 16px rgb(0 0 0 / 0.28);
+  color: #3b2a12;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.55);
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
-.node:not(:disabled):hover {
+.node:not(:disabled):hover,
+.node:not(:disabled):focus-visible {
   transform: scale(1.08);
 }
 
-.nodeCurrent {
-  border-color: #7c5cfc;
-  background: linear-gradient(180deg, #ede9fe, #c4b5fd);
-  transform: scale(1.12);
-  box-shadow:
-    0 0 0 4px rgb(124 92 252 / 0.35),
-    0 6px 16px rgb(0 0 0 / 0.2);
+.nodeNumber {
+  font-variant-numeric: tabular-nums;
+}
+
+.nodeIcon {
+  font-size: 0.85rem;
+  line-height: 1;
+  margin-top: 0.1rem;
 }
 
 .nodeDone {
   border-color: #15803d;
-  background: linear-gradient(180deg, #dcfce7, #86efac);
+  background:
+    radial-gradient(circle at 35% 28%, rgb(255 255 255 / 0.7), transparent 55%),
+    linear-gradient(180deg, #dcfce7, #86efac 60%, #5fd68b);
+}
+
+.nodeCurrent {
+  width: 4rem;
+  height: 4rem;
+  border-color: #7c5cfc;
+  background:
+    radial-gradient(circle at 35% 28%, rgb(255 255 255 / 0.85), transparent 55%),
+    linear-gradient(180deg, #ede9fe, #c4b5fd 60%, #a78bfa);
+  transform: scale(1.05);
+  box-shadow:
+    0 0 0 5px rgb(124 92 252 / 0.3),
+    0 6px 0 rgb(60 40 110 / 0.35),
+    0 10px 18px rgb(0 0 0 / 0.3);
 }
 
 .nodeLocked {
-  opacity: 0.55;
   cursor: not-allowed;
-  background: linear-gradient(180deg, #e5e7eb, #d1d5db);
-  border-color: #9ca3af;
+  color: #4b5563;
+  background:
+    radial-gradient(circle at 35% 28%, rgb(255 255 255 / 0.5), transparent 55%),
+    linear-gradient(180deg, #e9eaec, #c8ccd2 60%, #b2b7be);
+  border-color: #7c828b;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.5) inset,
+    0 -2px 4px rgb(40 45 55 / 0.3) inset,
+    0 4px 0 rgb(40 45 55 / 0.3),
+    0 8px 14px rgb(0 0 0 / 0.25);
 }
 
 .nodeMilestone {
   border-color: #d4a017;
   box-shadow:
-    0 0 0 3px rgb(212 160 23 / 0.3),
-    0 4px 0 rgb(0 0 0 / 0.12);
+    0 0 0 4px rgb(212 160 23 / 0.3),
+    0 5px 0 rgb(80 55 20 / 0.35),
+    0 9px 16px rgb(0 0 0 / 0.28);
 }
 
+/* Zone gate: the big carved slab that closes a zone (100, 200 … 500). */
 .nodeGate {
   width: 4.5rem;
   height: 4.5rem;
+  font-size: var(--text-lg);
   border-width: 4px;
   border-color: #b8860b;
-  background: linear-gradient(180deg, #fff8dc, #e6c766);
+  background:
+    radial-gradient(circle at 35% 25%, rgb(255 255 255 / 0.85), transparent 55%),
+    linear-gradient(180deg, #fff8dc, #e8c86a 60%, #cfa93f);
   box-shadow:
-    0 0 0 4px rgb(184 134 11 / 0.35),
-    0 6px 0 rgb(0 0 0 / 0.15),
-    0 10px 20px rgb(0 0 0 / 0.2);
-}
-
-.gateLabel {
-  margin-top: 0.2rem;
-  font-size: 0.65rem;
-  font-weight: 800;
-  color: #2a1f12;
-  background: rgb(255 255 255 / 0.75);
-  border-radius: var(--radius-full);
-  padding: 0.1rem 0.5rem;
-  z-index: 2;
-}
-
-.nodeInner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  line-height: 1.05;
-  font-size: 0.7rem;
+    0 0 0 5px rgb(184 134 11 / 0.35),
+    0 6px 0 rgb(90 60 10 / 0.4),
+    0 12px 22px rgb(0 0 0 / 0.3);
 }
 
 .avatar {
-  font-size: 1.65rem;
+  position: absolute;
+  bottom: 100%;
+  margin-bottom: 0.35rem;
+  font-size: 1.5rem;
   line-height: 1;
+  padding: 0.2rem;
+  border-radius: var(--radius-full);
+  background: rgb(255 255 255 / 0.92);
+  border: 3px solid #7c5cfc;
+  box-shadow: 0 4px 8px rgb(0 0 0 / 0.3);
+}
+
+.gateLabel {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #3b2a12;
+  background: rgb(255 255 255 / 0.85);
+  border-radius: var(--radius-full);
+  padding: 0.15rem 0.55rem;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgb(0 0 0 / 0.25);
+  pointer-events: none;
+}
+
+.gateLabelLeft {
+  right: 3.4rem;
+}
+
+.gateLabelRight {
+  left: 3.4rem;
+}
+
+.avatar {
+  z-index: 3;
 }
 
 .hint {

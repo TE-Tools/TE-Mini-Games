@@ -27,30 +27,36 @@ export function AuthPage() {
   const [info, setInfo] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
-  const [usernameStatus, setUsernameStatus] = useState<string | null>(null)
+  /** Result of the last availability lookup, tied to the name it was made for. */
+  const [checkedName, setCheckedName] = useState<{ name: string; status: string } | null>(null)
 
   useEffect(() => {
     void getCurrentUser().then((u) => setUserEmail(u?.email ?? null))
   }, [])
 
+  // Local validation is derived during render – only the lookup needs state.
+  const localUsernameStatus =
+    mode !== 'up' || username.trim().length < 3 ? null : validateUsername(username)
+  const usernameStatus =
+    localUsernameStatus ?? (checkedName?.name === username ? checkedName.status : null)
+
   useEffect(() => {
-    if (mode !== 'up' || username.trim().length < 3) {
-      setUsernameStatus(null)
-      return
-    }
-    const err = validateUsername(username)
-    if (err) {
-      setUsernameStatus(err)
-      return
-    }
+    if (localUsernameStatus !== null || mode !== 'up' || username.trim().length < 3) return
+    let cancelled = false
     const t = window.setTimeout(() => {
       void isUsernameAvailable(username).then(({ available, error: e }) => {
-        if (e) setUsernameStatus(e)
-        else setUsernameStatus(available ? '✓ Verfügbar' : 'Bereits vergeben')
+        if (cancelled) return
+        setCheckedName({
+          name: username,
+          status: e ?? (available ? '✓ Verfügbar' : 'Bereits vergeben'),
+        })
       })
     }, 400)
-    return () => window.clearTimeout(t)
-  }, [username, mode])
+    return () => {
+      cancelled = true
+      window.clearTimeout(t)
+    }
+  }, [username, mode, localUsernameStatus])
 
   if (!configured) {
     return (

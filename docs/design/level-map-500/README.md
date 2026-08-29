@@ -62,10 +62,15 @@ Die Karte ist **kein statisches Bild**, sondern die bestehende Komponente
 `src/components/level-map/LevelMap.tsx`, die zonenabhängig eingefärbt und dekoriert wird.
 Das Referenzbild gibt Stimmung, Wegführung und Reihenfolge vor, nicht die Assets.
 
-**Anzeige-Regel:** Es wird weiterhin ein Ausschnitt um das aktuelle Level gezeigt
-(scrollbarer Pfad), nicht alle 500 Knoten auf einmal – aus Performance- und
-Übersichtsgründen. Die Zonenfarbe richtet sich nach dem aktuell sichtbaren Levelbereich,
-mit weichem Verlauf an der Grenze.
+**Anzeige-Regel:** Es wird ein Ausschnitt von 12 Leveln um das aktuelle Level gezeigt
+(scrollbarer Weg), nicht alle 500 Knoten auf einmal – aus Performance- und
+Übersichtsgründen. Die Karte scrollt beim Öffnen auf die Position des Spielers.
+Die Zonenfarbe richtet sich nach dem Level, auf dem der Spieler steht.
+
+**Weg:** Die Levelplatten sind durch **einen** durchgehenden Steinweg verbunden
+(SVG-Kurve durch alle Punkte, Kante + Belag + Plattenfugen als drei Linien mit
+`vector-effect: non-scaling-stroke`). Die Punkte schwingen per Sinus um die Mitte –
+daher die S-Form wie auf der Referenz.
 
 ### Betroffene Stellen (umgesetzt)
 
@@ -77,8 +82,8 @@ mit weichem Verlauf an der Grenze.
 | `src/games/what-is-missing/level.ts` | Clamp 500, Kurve je Zone, neu `choiceCountForLevel` |
 | `src/games/what-is-missing/score.ts` | Clamp 500 |
 | `src/games/*/definition.ts` | `maxLevel: MAX_LEVEL` |
-| `src/components/level-map/LevelMap.tsx` | Zone aus Levelnummer, Zonen-Palette als CSS-Variablen, Zonentor-Knoten, Deko am Pfad, scrollt auf das aktuelle Level |
-| `src/components/level-map/LevelMap.module.css` | Farben über `--zone-*`, Zonen-Klassen, `.nodeGate`, `.decor` |
+| `src/components/level-map/LevelMap.tsx` | **ein durchgehender, geschwungener Steinweg** als SVG-Kurve (Catmull-Rom), Levelplatten liegen darauf; Zone aus Levelnummer, Zonen-Palette als CSS-Variablen, Zonentor-Knoten mit Wegweiser, Deko am Wegesrand, scrollt auf das aktuelle Level |
+| `src/components/level-map/LevelMap.module.css` | Wegschichten (`.roadEdge` / `.roadSurface` / `.roadSeams`), Farben über `--zone-*`, Zonen-Klassen, `.nodeGate`, `.decor`, Avatar als Wegpunkt-Pin |
 | `src/pages/play/PerfectSecondPage.tsx` | `MAX_GAME_LEVEL` aus der Spieldefinition statt hartem `100`, `maxLevel` an die Karte |
 | `src/pages/play/WhatIsMissingPage.tsx` | `maxLevel` an die Karte |
 | `tests/zones.test.ts`, `tests/milestones.test.ts` | **neu** |
