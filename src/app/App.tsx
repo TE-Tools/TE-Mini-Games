@@ -4,6 +4,7 @@ import { HomePage } from '@/pages/HomePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { PerfectSecondPage } from '@/pages/play/PerfectSecondPage'
 import { WhatIsMissingPage } from '@/pages/play/WhatIsMissingPage'
+import { FamilyPage } from '@/pages/family/FamilyPage'
 import { registerAllGames } from '@/games/register'
 
 export function App() {
@@ -17,6 +18,7 @@ export function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/play/perfect-second" element={<PerfectSecondPage />} />
         <Route path="/play/what-is-missing" element={<WhatIsMissingPage />} />
+        <Route path="/family" element={<FamilyPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>

@@ -6,7 +6,7 @@
 import Dexie, { type EntityTable } from 'dexie'
 
 export interface LocalProfile {
-  id: string // 'guest' or supabase user id
+  id: string
   displayName: string
   avatar: string | null
   totalXp: number
@@ -18,7 +18,7 @@ export interface LocalProfile {
 }
 
 export interface LocalGameProgress {
-  id: string // `${userId}:${gameId}`
+  id: string
   userId: string
   gameId: string
   currentLevel: number
@@ -28,7 +28,7 @@ export interface LocalGameProgress {
 }
 
 export interface LocalGameResult {
-  id: string // uuid
+  id: string
   userId: string
   gameId: string
   level: number
@@ -38,11 +38,11 @@ export interface LocalGameResult {
   isPersonalRecord: boolean
   stars: number
   createdAt: string
-  synced: number // 0 | 1 – IndexedDB index friendly
+  synced: number
 }
 
 export interface LocalPersonalRecord {
-  id: string // `${userId}:${gameId}:${level}`
+  id: string
   userId: string
   gameId: string
   level: number
@@ -53,21 +53,41 @@ export interface LocalPersonalRecord {
 }
 
 export interface LocalAchievement {
-  id: string // `${userId}:${achievementId}`
+  id: string
   userId: string
   achievementId: string
   unlockedAt: string
   synced: number
 }
 
-/** Outbox for offline → online sync */
 export interface SyncOutboxItem {
-  id: string // uuid
+  id: string
   type: 'game_result' | 'progress' | 'profile' | 'achievement' | 'personal_record'
   payload: Record<string, unknown>
   createdAt: string
   attempts: number
   lastError: string | null
+}
+
+export interface LocalFamilySession {
+  id: string
+  gameId: string
+  level: number
+  playerNames: string[]
+  currentPlayerIndex: number
+  status: 'setup' | 'playing' | 'finished'
+  createdAt: string
+  updatedAt: string
+}
+
+export interface LocalFamilyResult {
+  id: string
+  sessionId: string
+  playerName: string
+  playerIndex: number
+  score: number
+  resultData: Record<string, unknown>
+  createdAt: string
 }
 
 export class MiniChallengeDB extends Dexie {
@@ -77,6 +97,8 @@ export class MiniChallengeDB extends Dexie {
   personalRecords!: EntityTable<LocalPersonalRecord, 'id'>
   achievements!: EntityTable<LocalAchievement, 'id'>
   syncOutbox!: EntityTable<SyncOutboxItem, 'id'>
+  familySessions!: EntityTable<LocalFamilySession, 'id'>
+  familyResults!: EntityTable<LocalFamilyResult, 'id'>
 
   constructor() {
     super('mini-challenge')
@@ -87,6 +109,16 @@ export class MiniChallengeDB extends Dexie {
       personalRecords: 'id, userId, gameId, level',
       achievements: 'id, userId, achievementId, synced',
       syncOutbox: 'id, type, createdAt',
+    })
+    this.version(2).stores({
+      profiles: 'id, updatedAt',
+      gameProgress: 'id, userId, gameId, updatedAt',
+      gameResults: 'id, userId, gameId, createdAt, synced',
+      personalRecords: 'id, userId, gameId, level',
+      achievements: 'id, userId, achievementId, synced',
+      syncOutbox: 'id, type, createdAt',
+      familySessions: 'id, status, createdAt',
+      familyResults: 'id, sessionId, playerIndex',
     })
   }
 }
