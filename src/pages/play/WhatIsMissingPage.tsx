@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   createWhatIsMissingLevel,
   calculateWhatIsMissingScore,
+  whatIsMissingGame,
   type WhatIsMissingLevel,
   type WhatIsMissingScoreResult,
 } from '@/games/what-is-missing'
@@ -19,6 +20,8 @@ import { LevelMap } from '@/components/level-map/LevelMap'
 import styles from './WhatIsMissingPage.module.css'
 
 type Phase = 'map' | 'ready' | 'memorize' | 'choose' | 'result'
+
+const MAX_GAME_LEVEL = whatIsMissingGame.maxLevel
 
 export function WhatIsMissingPage() {
   const navigate = useNavigate()
@@ -169,6 +172,7 @@ export function WhatIsMissingPage() {
             currentLevel={level}
             highestLevel={highest}
             avatarId={avatarId}
+            maxLevel={MAX_GAME_LEVEL}
             onSelectLevel={selectLevel}
             gameLabel="Was fehlt?"
           />

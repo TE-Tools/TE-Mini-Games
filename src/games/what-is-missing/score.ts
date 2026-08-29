@@ -9,6 +9,8 @@
  *   wrong: 0
  */
 
+import { MAX_LEVEL } from '@/progression/zones'
+
 export interface WhatIsMissingScoreInput {
   correct: boolean
   level: number
@@ -24,7 +26,7 @@ export interface WhatIsMissingScoreResult {
 export function calculateWhatIsMissingScore(
   input: WhatIsMissingScoreInput,
 ): WhatIsMissingScoreResult {
-  const level = Math.max(1, Math.min(100, Math.floor(input.level)))
+  const level = Math.max(1, Math.min(MAX_LEVEL, Math.floor(input.level)))
   if (!input.correct) {
     return { score: 0, stars: 0, xp: 0, correct: false }
   }

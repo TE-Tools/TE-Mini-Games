@@ -1,4 +1,5 @@
 import type { GameDefinition } from '@/games/types'
+import { MAX_LEVEL } from '@/progression/zones'
 import { createWhatIsMissingLevel } from './level'
 import { calculateWhatIsMissingScore } from './score'
 
@@ -8,7 +9,7 @@ export const whatIsMissingGame: GameDefinition = {
   description:
     'Merke dir die Objekte. Danach fehlt eines – welches war es?',
   icon: '👁️',
-  maxLevel: 100,
+  maxLevel: MAX_LEVEL,
   createLevel: (level, seed) => {
     const cfg = createWhatIsMissingLevel(level, seed == null ? undefined : String(seed))
     return {

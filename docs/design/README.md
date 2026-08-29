@@ -1,11 +1,10 @@
 # TE-Mini Games – Design-Spezifikationen
 
-Verbindliche Gestaltungs- und Umsetzungsvorgaben. **Spezifikation ≠ Implementierung** –
-Code entsteht erst nach expliziter Freigabe.
+Verbindliche Gestaltungs- und Umsetzungsvorgaben.
 
 | Thema | Status | Ordner |
 |-------|--------|--------|
-| **Levelkarte 1–500 („Zeitreise“)** | Spezifikation, nicht implementiert | [level-map-500/](./level-map-500/) |
+| **Levelkarte 1–500 („Zeitreise“)** | umgesetzt | [level-map-500/](./level-map-500/) |
 
 ## Levelkarte 1–500 (Kurz)
 

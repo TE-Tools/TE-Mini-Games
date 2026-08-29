@@ -3,6 +3,7 @@ export {
   createWhatIsMissingLevel,
   objectCountForLevel,
   displayTimeForLevel,
+  choiceCountForLevel,
 } from './level'
 export type { WhatIsMissingLevel } from './level'
 export { calculateWhatIsMissingScore } from './score'

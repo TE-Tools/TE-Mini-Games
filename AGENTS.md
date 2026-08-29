@@ -27,4 +27,6 @@ corresponding feature; do not invent a competing design.
   100 levels each (jungle → volcanic → rock desert → ice age → glacier peak),
   one winding vertical path, level 500 as the final ice palace.
   Machine-readable zone data: `docs/design/level-map-500/zones.json`.
-  Status: specification only, **not implemented** – implement only when asked.
+  Implemented: zones live in `src/progression/zones.ts`, difficulty curves ramp
+  per zone, the level map is themed per zone. Keep `zones.json` and
+  `src/progression/zones.ts` in sync when zones change.

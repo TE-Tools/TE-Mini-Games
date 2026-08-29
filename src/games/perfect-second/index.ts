@@ -1,5 +1,5 @@
 export { perfectSecondGame } from './definition'
-export { createPerfectSecondLevel, createLevelFromSeed } from './level'
+export { createPerfectSecondLevel, createLevelFromSeed, isHitWithinTolerance } from './level'
 export type { PerfectSecondLevel } from './level'
 export { calculateScore, calculateDeviation, starsFromScore } from './score'
 export type { ScoreInput, ScoreResult } from './score'

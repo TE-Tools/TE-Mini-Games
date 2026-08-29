@@ -14,13 +14,19 @@
       "levelFrom": 1,
       "levelTo": 100,
       "descriptionDe": "Dichter, saftig grüner Dschungel mit Palmen, Farnen und Erdpfad.",
-      "creatures": ["Triceratops", "Stegosaurus", "kleine Raptoren", "Pteranodon"],
+      "creatures": [
+        "Triceratops",
+        "Stegosaurus",
+        "kleine Raptoren",
+        "Pteranodon"
+      ],
       "palette": {
         "ground": "#4d8a32",
         "groundLight": "#7ec850",
         "accent": "#2f7d32",
         "path": "#cbb27a",
-        "sky": "#47b6d6"
+        "sky": "#47b6d6",
+        "blob": "#4fa8c8"
       },
       "milestoneLevel": 100,
       "gateNameDe": "Tor zum Vulkanland"
@@ -33,13 +39,17 @@
       "levelFrom": 101,
       "levelTo": 200,
       "descriptionDe": "Trockene, felsige Vulkanlandschaft, rauchige Luft, kleine aktive Vulkane im Hintergrund.",
-      "creatures": ["Pachycephalosaurus", "Carnotaurus"],
+      "creatures": [
+        "Pachycephalosaurus",
+        "Carnotaurus"
+      ],
       "palette": {
         "ground": "#8a4b2a",
         "groundLight": "#c4703a",
         "accent": "#e2542a",
         "path": "#b9a07e",
-        "sky": "#6b5b52"
+        "sky": "#6b5b52",
+        "blob": "#e2542a"
       },
       "milestoneLevel": 200,
       "gateNameDe": "Tor zur Felswüste"
@@ -52,13 +62,18 @@
       "levelFrom": 201,
       "levelTo": 300,
       "descriptionDe": "Karge Felswüste und Canyons, der Weg ist in tiefen Fels geschlagen.",
-      "creatures": ["Allosaurus", "Ankylosaurus", "Spinosaurus"],
+      "creatures": [
+        "Allosaurus",
+        "Ankylosaurus",
+        "Spinosaurus"
+      ],
       "palette": {
         "ground": "#c98b52",
         "groundLight": "#e0b077",
         "accent": "#7a4b28",
         "path": "#d9c39a",
-        "sky": "#8fc7dd"
+        "sky": "#8fc7dd",
+        "blob": "#d9c39a"
       },
       "milestoneLevel": 300,
       "gateNameDe": "Tor zur Eiszeit"
@@ -71,13 +86,18 @@
       "levelFrom": 301,
       "levelTo": 400,
       "descriptionDe": "Schnee, Gletscher und gefrorene Wasserfälle; harter Übergang von Fels zu Eis.",
-      "creatures": ["Wollhaarmammut", "Säbelzahnkatze", "Wollnashorn"],
+      "creatures": [
+        "Wollhaarmammut",
+        "Säbelzahnkatze",
+        "Wollnashorn"
+      ],
       "palette": {
         "ground": "#8fc3de",
         "groundLight": "#cfe9f5",
         "accent": "#5a93b8",
         "path": "#e6eef2",
-        "sky": "#79c4e0"
+        "sky": "#79c4e0",
+        "blob": "#eaf6fb"
       },
       "milestoneLevel": 400,
       "gateNameDe": "Tor zum Gletschergipfel"
@@ -90,13 +110,17 @@
       "levelFrom": 401,
       "levelTo": 500,
       "descriptionDe": "Höchster, vollständig vergletscherter Gipfel bei extremem Frost; endet am uralten, aus Eis geschlagenen Bauwerk auf Level 500.",
-      "creatures": ["Wollnashorn", "Eisvogelsaurier (Deko)"],
+      "creatures": [
+        "Wollnashorn",
+        "Eisvogelsaurier (Deko)"
+      ],
       "palette": {
         "ground": "#a9ddf2",
         "groundLight": "#dff3fb",
         "accent": "#7fd4ff",
         "path": "#f2fbff",
-        "sky": "#63b9dd"
+        "sky": "#63b9dd",
+        "blob": "#ffffff"
       },
       "milestoneLevel": 500,
       "gateNameDe": "Eispalast (Finale)"

@@ -1,7 +1,7 @@
 # Levelkarte 1–500 („Zeitreise“) – Design-Spezifikation
 
-**Status:** Spezifikation / Vorgabe. **Noch nicht implementiert.**
-**Aufgenommen:** 2026-08-29
+**Status:** Spezifikation **umgesetzt** (Level 1–500 live in beiden Spielen).
+**Aufgenommen:** 2026-08-29 · **Umgesetzt:** 2026-08-29
 **Referenzbild:** [`reference/level-map-reference.png`](./reference/level-map-reference.png)
 (→ Lizenzhinweis: [`reference/NOTICE.md`](./reference/NOTICE.md))
 **Originalvorlage (englisch):** [`ORIGINAL_PROMPT_EN.md`](./ORIGINAL_PROMPT_EN.md)
@@ -67,43 +67,76 @@ Das Referenzbild gibt Stimmung, Wegführung und Reihenfolge vor, nicht die Asset
 Übersichtsgründen. Die Zonenfarbe richtet sich nach dem aktuell sichtbaren Levelbereich,
 mit weichem Verlauf an der Grenze.
 
-### Betroffene Stellen (Ist-Zustand → Soll)
+### Betroffene Stellen (umgesetzt)
 
-| Datei | Ist | Soll |
-|-------|-----|------|
-| `src/games/types.ts` | `maxLevel: number` | unverändert |
-| `src/games/perfect-second/definition.ts` | `maxLevel: 100` | `500` |
-| `src/games/what-is-missing/definition.ts` | `maxLevel: 100` | `500` |
-| `src/games/perfect-second/level.ts` | Clamp auf 100, Kurve über `t = (L-1)/99` | Clamp 500, Schwierigkeitskurve auf 500 Level strecken |
-| `src/games/what-is-missing/level.ts` | Clamp auf 100 | Clamp 500, Kurve strecken |
-| `src/games/milestones.ts` | `[10, 20, 50, 100]` | Raster bis 500 inkl. Zonentore 100/200/300/400/500 |
-| `src/components/level-map/LevelMap.tsx` | fester grüner Hintergrund, `maxLevel = 100` | Zone aus Levelnummer ableiten, Palette/Deko je Zone |
-| `src/components/level-map/LevelMap.module.css` | eine Landschaft | Zonen-Klassen (`zone_jungle` … `zone_glacier`) |
-| `src/pages/play/PerfectSecondPage.tsx` | `Math.min(100, …)` (Zeilen ~288, ~300, ~325) | `maxLevel` der Spieldefinition statt hartem 100 |
+| Datei | Umsetzung |
+|-------|-----------|
+| `src/progression/zones.ts` | **neu** – `ZONES`, `zoneForLevel`, `levelInZone`, `zoneProgress`, `isZoneGate`, `isFinalLevel`, `MAX_LEVEL = 500` |
+| `src/games/milestones.ts` | Raster bis 500: Zehner / Halbzone / Zonentor, Bonus wächst mit der Zone |
+| `src/games/perfect-second/level.ts` | Clamp 500, Kurve **je Zone**, `zoneId` im Level-Config |
+| `src/games/what-is-missing/level.ts` | Clamp 500, Kurve je Zone, neu `choiceCountForLevel` |
+| `src/games/what-is-missing/score.ts` | Clamp 500 |
+| `src/games/*/definition.ts` | `maxLevel: MAX_LEVEL` |
+| `src/components/level-map/LevelMap.tsx` | Zone aus Levelnummer, Zonen-Palette als CSS-Variablen, Zonentor-Knoten, Deko am Pfad, scrollt auf das aktuelle Level |
+| `src/components/level-map/LevelMap.module.css` | Farben über `--zone-*`, Zonen-Klassen, `.nodeGate`, `.decor` |
+| `src/pages/play/PerfectSecondPage.tsx` | `MAX_GAME_LEVEL` aus der Spieldefinition statt hartem `100`, `maxLevel` an die Karte |
+| `src/pages/play/WhatIsMissingPage.tsx` | `maxLevel` an die Karte |
+| `tests/zones.test.ts`, `tests/milestones.test.ts` | **neu** |
+| `tests/perfect-second.test.ts`, `tests/what-is-missing.test.ts` | Zonen-Tests ergänzt |
+| `e2e/level-map.spec.ts` | **neu** – Karte zeigt in jeder Zone die richtige Zone, Pfad endet bei 500 |
 
-**Vorgeschlagenes neues Modul:** `src/progression/zones.ts` mit
-`ZONES`-Konstante (aus `zones.json` übernommen), `zoneForLevel(level)` und
-`isZoneGate(level)`. Damit bleiben Spielmodule unabhängig (siehe AGENTS.md, Regel 1).
+### Schwierigkeit je Zone
 
-### Offene Punkte / Entscheidungen
+Jede Zone startet leichter als die vorige endete und steigt dafür höher –
+statt eine einzige Kurve über 500 Level zu strecken.
 
-1. **Schwierigkeitskurve:** 500 Level dürfen nicht linear härter werden. Vorschlag:
-   Kurve pro Zone neu ansetzen (Zone-interner Anstieg + moderater Sockel pro Zone),
-   statt eine einzige Kurve über 500 Level zu strecken.
-2. **Assets:** Zonen-Illustration als CSS/SVG (offline-first, klein) oder als
-   lizenzierte Bild-Assets? Aktuell ist die Karte rein CSS – das sollte so bleiben,
-   solange kein lizenziertes Artwork vorliegt.
-3. **Fortschritts-Migration:** bestehende Spielstände (Level ≤ 100) bleiben gültig,
-   es ist keine Datenmigration nötig; nur die Obergrenze steigt.
-4. **Referenzbild ist eine wasserzeichenbehaftete Stock-Vorschau** und darf nicht
-   ausgeliefert werden (siehe `reference/NOTICE.md`).
+**Die perfekte Sekunde** (Zielzeit / Toleranz / nötige Treffer in Folge):
 
-## 6. Nächster Schritt
+| Zone | Level | Zielzeit | Toleranz | Treffer |
+|------|-------|----------|----------|---------|
+| Urwald | 1–100 | 2,8 s → 12 s | 0,35 s → 0,04 s | 1 → 3 |
+| Vulkanland | 101–200 | 3,5 s → 14 s | 0,12 s → 0,035 s | 3 → 4 |
+| Felswüste | 201–300 | 4 s → 16 s | 0,10 s → 0,03 s | 4 → 5 |
+| Eiszeit | 301–400 | 4,5 s → 18 s | 0,08 s → 0,025 s | 5 |
+| Gletschergipfel | 401–500 | 5 s → 20 s | 0,06 s → 0,02 s | 5 |
 
-Umsetzung erst nach expliziter Freigabe. Empfohlene Reihenfolge:
+**Was fehlt?** (Objekte / Anzeigedauer / Antwortmöglichkeiten):
 
-1. `src/progression/zones.ts` + Unit-Tests (`zoneForLevel`, Grenzen 100/101 usw.)
-2. `LevelMap` zonenfähig machen (Optik), noch mit `maxLevel = 100`
-3. `maxLevel` auf 500 anheben und Schwierigkeitskurven je Spiel anpassen
-4. Meilensteine/Zonentore + Belohnungen
-5. Lint, Typecheck, Unit-Tests, Build (AGENTS.md Regel 7)
+| Zone | Objekte | Anzeigedauer | Auswahl |
+|------|---------|--------------|---------|
+| Urwald | 5 → 40 | 5 s → 1,5 s | 8 |
+| Vulkanland | 10 → 42 | 4 s → 1,2 s | 9 |
+| Felswüste | 14 → 42 | 3,5 s → 1 s | 10 |
+| Eiszeit | 18 → 42 | 3 s → 0,9 s | 11 |
+| Gletschergipfel | 22 → 42 | 2,5 s → 0,8 s | 12 |
+
+Die Objektzahl ist durch den Katalog begrenzt (`OBJECT_CATALOG`, aktuell 42);
+mehr Schwierigkeit kommt in späteren Zonen über Zeit und Auswahl.
+
+### Meilensteine
+
+| Raster | Bonus-XP | Beispiel |
+|--------|----------|----------|
+| Zehner (÷10) | 250 × Zone | L10 → 250, L410 → 1 250 |
+| Halbzone (÷50) | 1 000 × Zone | L50 → 1 000, L450 → 5 000 |
+| Zonentor (÷100) | 2 000 × Zone | L100 → 2 000, L500 → 10 000 |
+
+### Bewusste Abweichungen vom bisherigen Verhalten
+
+1. **Zone 1 (Level 1–100) ist unverändert** – gleiche Zielzeiten, Toleranzen,
+   Objektzahlen und Anzeigedauern wie in der 100-Level-Version. Bestehende
+   Spielstände und Rekorde behalten ihre Bedeutung, eine Datenmigration ist nicht nötig.
+2. **Meilenstein Level 20** gibt jetzt 250 statt 500 XP (Zehner-Raster). Dafür geben
+   alle übrigen Zehner (30, 40, 60 …) neu 250 XP – in Summe deutlich mehr als vorher.
+3. **Assets:** die Karte bleibt reines CSS (offline-first, klein). Das Referenzbild
+   ist eine wasserzeichenbehaftete Stock-Vorschau und wird **nicht** ausgeliefert
+   (siehe `reference/NOTICE.md`).
+
+## 6. Offene Punkte
+
+- Zonenübergänge sind farblich umgesetzt, aber noch **ohne** die im Abschnitt 3
+  beschriebene Vermischung der letzten ~10 Level einer Zone und ohne
+  Übergangsanimation am Zonentor.
+- Der Eispalast auf Level 500 ist als Zonentor-Knoten dargestellt, hat aber noch
+  keine eigene Abschluss-Zeremonie/Belohnung über den Meilenstein-Bonus hinaus.
+- Achievements kennen die Zonen noch nicht (z. B. „Zone 3 abgeschlossen").

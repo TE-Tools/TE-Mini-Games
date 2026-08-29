@@ -1,4 +1,5 @@
 import type { GameDefinition } from '@/games/types'
+import { MAX_LEVEL } from '@/progression/zones'
 import { createPerfectSecondLevel } from './level'
 import { calculateScore } from './score'
 
@@ -8,7 +9,7 @@ export const perfectSecondGame: GameDefinition = {
   description:
     'Stoppe den Timer möglichst genau am Zielzeitpunkt. Je näher, desto mehr Punkte.',
   icon: '⏱️',
-  maxLevel: 100,
+  maxLevel: MAX_LEVEL,
   createLevel: (level, seed) => {
     const cfg = createPerfectSecondLevel(level)
     return {

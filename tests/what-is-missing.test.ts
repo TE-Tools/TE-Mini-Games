@@ -3,9 +3,11 @@ import {
   createWhatIsMissingLevel,
   objectCountForLevel,
   displayTimeForLevel,
+  choiceCountForLevel,
   calculateWhatIsMissingScore,
   createRng,
   hashSeed,
+  OBJECT_CATALOG,
 } from '@/games/what-is-missing'
 
 describe('What Is Missing level system', () => {
@@ -42,6 +44,56 @@ describe('What Is Missing level system', () => {
       expect(t).toBeLessThanOrEqual(prevTime)
       prevCount = c
       prevTime = t
+    }
+  })
+})
+
+describe('What Is Missing zones (level 1–500)', () => {
+  it('every zone ramps on its own and starts harder than the previous one', () => {
+    for (const from of [1, 101, 201, 301, 401]) {
+      expect(objectCountForLevel(from + 99)).toBeGreaterThan(objectCountForLevel(from))
+      expect(displayTimeForLevel(from + 99)).toBeLessThan(displayTimeForLevel(from))
+    }
+    expect(objectCountForLevel(101)).toBeGreaterThan(objectCountForLevel(1))
+    expect(objectCountForLevel(401)).toBeGreaterThan(objectCountForLevel(301))
+    expect(displayTimeForLevel(401)).toBeLessThan(displayTimeForLevel(301))
+  })
+
+  it('never asks for more objects than the catalog holds', () => {
+    for (let level = 1; level <= 500; level++) {
+      expect(objectCountForLevel(level)).toBeLessThanOrEqual(OBJECT_CATALOG.length)
+      expect(objectCountForLevel(level)).toBeGreaterThanOrEqual(5)
+    }
+  })
+
+  it('display time stays playable', () => {
+    for (let level = 1; level <= 500; level++) {
+      expect(displayTimeForLevel(level)).toBeGreaterThanOrEqual(0.8)
+      expect(displayTimeForLevel(level)).toBeLessThanOrEqual(5)
+    }
+  })
+
+  it('later zones offer more answer choices', () => {
+    expect(choiceCountForLevel(1)).toBe(8)
+    expect(choiceCountForLevel(150)).toBe(9)
+    expect(choiceCountForLevel(250)).toBe(10)
+    expect(choiceCountForLevel(350)).toBe(11)
+    expect(choiceCountForLevel(500)).toBe(12)
+  })
+
+  it('clamps level to 1–500', () => {
+    expect(createWhatIsMissingLevel(0, 'x').level).toBe(1)
+    expect(createWhatIsMissingLevel(900, 'x').level).toBe(500)
+  })
+
+  it('builds valid levels in every zone', () => {
+    for (const level of [1, 120, 220, 320, 500]) {
+      const L = createWhatIsMissingLevel(level, `zone-test-${level}`)
+      expect(L.shownObjects.length).toBe(objectCountForLevel(level))
+      expect(L.remainingObjects).toHaveLength(L.shownObjects.length - 1)
+      expect(L.shownObjects.some((o) => o.id === L.missingObject.id)).toBe(true)
+      expect(L.choiceObjects.some((o) => o.id === L.missingObject.id)).toBe(true)
+      expect(L.choiceObjects.length).toBeLessThanOrEqual(choiceCountForLevel(level))
     }
   })
 })

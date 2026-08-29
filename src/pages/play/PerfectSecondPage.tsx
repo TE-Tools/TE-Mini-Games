@@ -5,6 +5,7 @@ import {
   calculateScore,
   createTimer,
   formatTime,
+  perfectSecondGame,
   type PerfectSecondLevel,
   type ScoreResult,
 } from '@/games/perfect-second'
@@ -22,6 +23,8 @@ import { LevelMap } from '@/components/level-map/LevelMap'
 import styles from './PerfectSecondPage.module.css'
 
 type Phase = 'map' | 'ready' | 'running' | 'result'
+
+const MAX_GAME_LEVEL = perfectSecondGame.maxLevel
 
 export function PerfectSecondPage() {
   const navigate = useNavigate()
@@ -212,6 +215,7 @@ export function PerfectSecondPage() {
             currentLevel={level}
             highestLevel={highest}
             avatarId={avatarId}
+            maxLevel={MAX_GAME_LEVEL}
             onSelectLevel={selectLevel}
             gameLabel="Die perfekte Sekunde"
           />
@@ -285,7 +289,7 @@ export function PerfectSecondPage() {
                 type="button"
                 className={styles.primaryBtn}
                 onClick={() => {
-                  const next = Math.min(100, completedLevel + 1)
+                  const next = Math.min(MAX_GAME_LEVEL, completedLevel + 1)
                   setLevel(next)
                   setConfig(createPerfectSecondLevel(next))
                   setHitScores([])
@@ -297,7 +301,7 @@ export function PerfectSecondPage() {
                   setPhase('ready')
                 }}
               >
-                Weiter zu Level {Math.min(100, completedLevel + 1)}
+                Weiter zu Level {Math.min(MAX_GAME_LEVEL, completedLevel + 1)}
               </button>
             )}
             <button
@@ -322,7 +326,7 @@ export function PerfectSecondPage() {
               className={styles.secondaryBtn}
               onClick={() => {
                 if (completedLevel != null) {
-                  setLevel(Math.min(100, completedLevel + 1))
+                  setLevel(Math.min(MAX_GAME_LEVEL, completedLevel + 1))
                 }
                 setPhase('map')
                 setScoreResult(null)

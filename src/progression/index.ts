@@ -1,4 +1,18 @@
 export {
+  MAX_LEVEL,
+  LEVELS_PER_ZONE,
+  ZONES,
+  zoneForLevel,
+  zoneById,
+  levelInZone,
+  zoneProgress,
+  isZoneGate,
+  isFinalLevel,
+  clampMapLevel,
+} from './zones'
+export type { LevelZone, ZoneId, ZonePalette } from './zones'
+
+export {
   totalXpForLevel,
   levelFromTotalXp,
   xpProgressInLevel,
