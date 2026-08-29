@@ -35,3 +35,10 @@ export {
   markOutboxFailure,
   outboxCount,
 } from './outbox'
+
+export {
+  hasAchievement,
+  unlockAchievement,
+  getUnlockedAchievements,
+  unlockMany,
+} from './achievements'
