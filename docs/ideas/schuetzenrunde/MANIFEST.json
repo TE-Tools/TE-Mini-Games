@@ -1,0 +1,19 @@
+{
+  "project": "TE MiniGames – Schützenrunde",
+  "source_file": "Spielkonzept entwickeln.txt",
+  "source_preserved": true,
+  "extracted_code_blocks": 20,
+  "hard_constraints": [
+    "Keine externe KI",
+    "Regelbasierte Bots",
+    "8-16 Spieler",
+    "Serverautoritativ",
+    "Konfigurierbare Tag/Nacht/Vote-Timer",
+    "Schütze 1 Schuss normal, bis zu 3 im Event",
+    "Schützenkönig/-königin Event",
+    "Züge/Clans",
+    "Kostenlos/kein Pay-to-win"
+  ],
+  "repo_status": "idea_only",
+  "implementation_started": false
+}
