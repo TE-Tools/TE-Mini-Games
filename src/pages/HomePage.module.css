@@ -10,7 +10,7 @@
   gap: var(--space-6);
   background:
     radial-gradient(ellipse 80% 50% at 50% -20%, rgb(124 92 252 / 0.18), transparent),
-    radial-gradient(ellipse 60% 40% at 100% 50%, rgb(255 107 157 / 0.12), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 50%, rgb(212 160 23 / 0.18), transparent),
     radial-gradient(ellipse 50% 30% at 0% 80%, rgb(78 205 196 / 0.12), transparent);
 }
 
@@ -23,7 +23,7 @@
   font-size: clamp(1.75rem, 6vw, 2.25rem);
   font-weight: 800;
   letter-spacing: -0.02em;
-  background: linear-gradient(135deg, #7c5cfc 0%, #ff6b9d 50%, #4ecdc4 100%);
+  background: linear-gradient(135deg, #7c5cfc 0%, #d4a017 45%, #4ecdc4 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
