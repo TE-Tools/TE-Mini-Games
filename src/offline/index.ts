@@ -10,6 +10,8 @@ export type {
 
 export {
   getOrCreateGuestProfile,
+  setAvatar,
+  setDisplayName,
   getProfile,
   addXp,
   updateStreak,
@@ -28,33 +30,7 @@ export {
   getRecentResults,
 } from './results'
 
-export {
-  enqueueOutbox,
-  getPendingOutbox,
-  markOutboxSuccess,
-  markOutboxFailure,
-  outboxCount,
-} from './outbox'
-
-export {
-  hasAchievement,
-  unlockAchievement,
-  getUnlockedAchievements,
-  unlockMany,
-} from './achievements'
-
-export {
-  createFamilySession,
-  getFamilySession,
-  saveFamilyPlayerResult,
-  getFamilyResults,
-  rankFamilyResults,
-  getActiveFamilySessions,
-} from './family'
-export type { FamilyStanding } from './family'
-
-export {
-  getDailyAttempt,
-  hasCompletedDaily,
-  saveDailyAttempt,
-} from './daily'
+export { enqueueOutbox, listOutbox, removeOutboxItem } from './outbox'
+export { getUnlockedAchievements, unlockMany } from './achievements'
+export * from './family'
+export * from './daily'
