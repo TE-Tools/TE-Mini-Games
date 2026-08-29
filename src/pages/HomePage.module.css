@@ -19,7 +19,7 @@
   font-size: clamp(1.85rem, 6.5vw, 2.35rem);
   font-weight: 800;
   letter-spacing: -0.02em;
-  background: linear-gradient(135deg, #c4b5fd 0%, #e6c35c 48%, #5eead4 100%);
+  background: linear-gradient(135deg, #7c5cfc 0%, #d4a017 45%, #0d9488 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -46,9 +46,9 @@
   align-items: center;
   gap: var(--space-1);
   padding: var(--space-4) var(--space-2);
-  background: var(--color-bg-elevated);
+  background: linear-gradient(180deg, #fffef8 0%, #fff6dd 100%);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--btn-shadow);
   border: 1px solid var(--color-border);
 }
 
@@ -69,7 +69,7 @@
 .actions {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
   width: 100%;
 }
 
@@ -77,57 +77,58 @@
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  min-height: 5.25rem;
+  min-height: 5.5rem;
   padding: var(--space-4) var(--space-5);
   border-radius: var(--radius-2xl);
-  font-weight: 700;
+  font-weight: 800;
   font-size: var(--text-lg);
   color: var(--color-text);
-  box-shadow: var(--shadow-game);
+  box-shadow: var(--btn-shadow);
   border: 2px solid transparent;
-  transition:
-    transform var(--transition-fast),
-    box-shadow var(--transition-fast),
-    border-color var(--transition-fast);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
   text-decoration: none;
 }
 
 .gameButton:hover {
-  transform: translateY(-3px) scale(1.01);
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
+  box-shadow: var(--btn-shadow-hover);
 }
 
 .gameButton:active {
-  transform: translateY(0) scale(0.99);
+  transform: translateY(2px);
+  box-shadow: var(--btn-shadow-active);
 }
 
 .gameButton[data-game='perfect-second'] {
-  background: linear-gradient(145deg, var(--color-game-a-soft), var(--color-bg-elevated));
-  border-color: var(--color-game-a);
+  background: linear-gradient(180deg, #fff6c8 0%, #f0c84a 45%, #d4a017 100%);
+  border-color: #c4920f;
 }
 
 .gameButton[data-game='what-is-missing'] {
-  background: linear-gradient(145deg, var(--color-game-b-soft), var(--color-bg-elevated));
-  border-color: var(--color-game-b);
+  background: linear-gradient(180deg, #d5faf5 0%, #5eead4 45%, #0d9488 100%);
+  border-color: #0f766e;
+  color: #042f2e;
 }
 
 .gameIcon {
   font-size: 2.25rem;
   line-height: 1;
-  width: 3.25rem;
-  height: 3.25rem;
+  width: 3.4rem;
+  height: 3.4rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-surface);
+  background: linear-gradient(180deg, #ffffff, #fff8e8);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.9) inset, 0 4px 8px rgb(0 0 0 / 0.1);
   flex-shrink: 0;
+  border: 1px solid rgb(255 255 255 / 0.6);
 }
 
 .gameName {
   flex: 1;
   text-align: left;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.35);
 }
 
 .secondaryGrid {
@@ -143,30 +144,31 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
-  min-height: 4.75rem;
+  min-height: 5rem;
   padding: var(--space-3);
-  background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border);
+  background: linear-gradient(180deg, #ffffff 0%, #f3e8ff 50%, #e9d5ff 100%);
+  border: 2px solid #c4b5fd;
   border-radius: var(--radius-xl);
-  font-weight: 700;
+  font-weight: 800;
   font-size: var(--text-sm);
   color: var(--color-text);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--btn-shadow);
   text-decoration: none;
-  transition:
-    transform var(--transition-fast),
-    border-color var(--transition-fast),
-    background var(--transition-fast);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .secondaryButton:hover {
-  transform: translateY(-2px);
-  border-color: var(--color-primary);
-  background: var(--color-surface);
+  transform: translateY(-3px);
+  box-shadow: var(--btn-shadow-hover);
+}
+
+.secondaryButton:active {
+  transform: translateY(2px);
+  box-shadow: var(--btn-shadow-active);
 }
 
 .secondaryIcon {
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   line-height: 1;
 }
 
