@@ -1,9 +1,10 @@
 # Status: Schützenrunde
 
-- **Stand:** **v3 implementiert** – die lokale Runde ist fertig gebaut
-- **Implementierung:** `src/games/schuetzenrunde/`, Seite `/play/schuetzenrunde`
-- **Offen:** nur noch echtes Multiplayer (8–16 reale Spieler, serverautoritativ)
-  und Seasons – alles andere aus der Spezifikation ist umgesetzt
+- **Stand:** **v4 implementiert** – lokale Runde **und** echtes Multiplayer
+- **Implementierung:** `src/games/schuetzenrunde/` (Regeln offline),
+  `supabase/migrations/007_schuetzenrunde_multiplayer.sql` (Regeln online),
+  `src/services/schuetzenrundeOnline.ts`, Seite `/play/schuetzenrunde`
+- **Offen:** Seasons und Zugranglisten über die Cloud
 - **Quelle:** ZIP `TE_MiniGames_Schuetzenrunde_Entwicklungsgrundlage`
 - **Datum Aufnahme:** 2026-08-29
 
@@ -85,9 +86,31 @@ pro Partie ein Mitglied ins Gerede – Prüfungen schlagen dann fälschlich an).
 
 - Punkte, XP, Rangliste und Cloud-Sync laufen über die normale Spielregistrierung
 
+## v4 – Multiplayer
+
+Echte Mitspieler über Supabase, **serverautoritativ**: Die Regeln liegen als
+`security definer`-Funktionen in Postgres, nicht im Browser.
+
+- **Vorraum mit Code:** Runde eröffnen, Code weitergeben, beitreten. Freie
+  Plätze übernehmen beim Start die regelbasierten Mitspieler – ihr müsst also
+  nicht zu acht sein.
+- **Geheimhaltung:** Die Tabellen sind für Clients gesperrt. Gelesen wird nur
+  über `sr_get_state()`, und die gibt fremde Rollen erst nach dem Ausscheiden
+  oder am Ende der Runde heraus. Nachtaktionen sieht niemand außer dem Server.
+- **Uhr:** Die Phasenzeiten prüft Postgres mit `now()`. Jeder Client darf
+  `sr_tick()` anstoßen; entschieden wird in der Datenbank.
+- **Tagesgespräch:** echter Chat, in den auch die Bots ihre Verdächtigungen
+  schreiben.
+- **Aktualisierung:** Supabase Realtime auf `sr_state` und `sr_messages`, mit
+  Nachfassen alle drei Sekunden als Rückfallebene.
+- Ergebnisse laufen in dieselbe Ablage wie offline – XP, Punkte, Rangliste,
+  Zugpunkte.
+
+Getestet mit `supabase/tests/schuetzenrunde.test.sql`: 54 komplette Runden über
+alle Größen, dazu Geheimhaltung, Uhr und Beitritt.
+
 ## Nächster Schritt (erst wenn beauftragt)
 
-1. Realtime-Multiplayer (Supabase Realtime oder eigener Server), serverautoritative
-   Zeit – die Phasenzeiten liegen dafür schon im Match-State
-2. Lobby für reale Spieler, Bots nur zum Auffüllen
-3. Seasons und Zugranglisten über die Cloud statt nur lokal
+1. Seasons und Zugranglisten über die Cloud statt nur lokal
+2. Zuschauermodus und Wiederbeitritt nach Verbindungsabbruch komfortabler
+3. Weitere Ämter aus der Spezifikation

@@ -33,7 +33,12 @@ Reichen tut: **Project URL** + **anon public key**.
 `supabase/migrations/ALL_IN_ONE.sql`  
 einfügen → **Run**.
 
-(Enthält Schema, RLS, Username-Check.)
+(Enthält Schema, RLS, Username-Check, Level-500-Grenzen, Rangliste, Löschrechte
+und die Schützenrunde-Multiplayer-Funktionen.)
+
+Das Skript ist **mehrfach ausführbar** – nach einem Update einfach erneut
+komplett einfügen und laufen lassen. Erzeugt wird es aus den Einzelmigrationen
+mit `node scripts/build-all-in-one.mjs`.
 
 ## 3. Auth aktivieren
 
@@ -100,6 +105,7 @@ Offline als Gast geht weiterhin ohne Keys.
 | Site URL + Redirect URLs | Supabase → Authentication → URL Configuration | **du** |
 | `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` | Cloudflare Pages → Environment variables (Production **und** Preview) | **du** |
 | Redeploy nach dem Setzen der Variablen | Cloudflare → Deployments → Retry | **du** |
+| Realtime für `sr_state` und `sr_messages` | Supabase → Database → Replication | **du** (nur für Online-Runden) |
 
 ### Globale Rangliste
 
@@ -108,3 +114,49 @@ Spiel das beste Ergebnis, mit **Benutzername, Spiel, Punkte, Level** – mehr ni
 Keine User-ID, keine E-Mail, keine Profildaten. Spieler ohne Benutzernamen
 tauchen nicht auf. `src/services/leaderboard.ts` liest diese View; die rohen
 `game_results` bleiben durch RLS privat.
+
+
+## Schützenrunde online (Migration 007)
+
+Die Online-Runde läuft **serverautoritativ**: Rollen, Nachtaktionen und
+Abstimmungen werden in Postgres aufgelöst, nicht im Browser.
+
+**Wie das abgesichert ist**
+
+- Die Tabellen `sr_matches`, `sr_players`, `sr_actions`, `sr_votes`, `sr_notes`
+  und `sr_events` sind für Clients komplett gesperrt (`revoke all`). Kein
+  Spieler kann fremde Rollen oder die Nachtaktionen der anderen auslesen – auch
+  der Gastgeber nicht.
+- Gelesen wird ausschließlich über `sr_get_state()`. Die Funktion gibt fremde
+  Rollen erst heraus, wenn jemand ausgeschieden oder die Runde vorbei ist.
+- Geschrieben wird nur über die Funktionen `sr_night_action`, `sr_vote`,
+  `sr_ready` und `sr_say`; jede prüft, dass der Aufrufer wirklich auf diesem
+  Platz sitzt und noch lebt.
+- Die Phasenzeit prüft der Server mit `now()`. `sr_tick()` darf jeder anstoßen,
+  entschieden wird trotzdem in der Datenbank – ein manipulierter Client kann
+  die Uhr also weder anhalten noch vorspulen.
+- Direkt lesbar sind nur der Chat (`sr_messages`) und ein Zustandszähler
+  (`sr_state`), beide nur für Mitglieder der jeweiligen Runde. Genau diese
+  beiden verteilt Realtime.
+
+**Was du dafür einstellen musst**
+
+1. `supabase/migrations/ALL_IN_ONE.sql` erneut ausführen (enthält 007).
+2. Supabase → **Database → Replication** → Publication `supabase_realtime`:
+   `sr_state` und `sr_messages` anhaken.
+   Ohne diesen Schritt funktioniert alles trotzdem – die Seite fragt dann alle
+   drei Sekunden nach, statt sofort benachrichtigt zu werden.
+
+**Testen ohne Supabase**
+
+Die Spielregeln lassen sich gegen ein leeres Postgres prüfen:
+
+```bash
+psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/tests/00_harness.sql
+psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/migrations/ALL_IN_ONE.sql
+psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/tests/schuetzenrunde.test.sql
+```
+
+Der Test spielt Runden jeder Größe komplett durch und prüft Geheimhaltung,
+Uhr und Beitritt. **Nicht** gegen das echte Projekt laufen lassen – er legt
+Testnutzer und Runden an.

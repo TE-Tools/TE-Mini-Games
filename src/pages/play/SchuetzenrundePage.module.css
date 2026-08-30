@@ -367,3 +367,43 @@
   background: linear-gradient(180deg, #ffffff, #fff6dd);
   box-shadow: var(--btn-shadow);
 }
+
+/* ---- online round ---- */
+
+.codeBox {
+  margin: 0;
+  width: 100%;
+  text-align: center;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  padding: var(--space-2);
+  border-radius: var(--radius-lg);
+  border: 2px dashed var(--color-border);
+  background: rgb(255 255 255 / 0.6);
+}
+
+.codeBox strong {
+  font-size: var(--text-lg);
+  letter-spacing: 0.15em;
+}
+
+.errorLine {
+  margin: 0;
+  width: 100%;
+  text-align: center;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: #b3261e;
+}
+
+.chatRow {
+  width: 100%;
+  display: flex;
+  gap: var(--space-2);
+  align-items: stretch;
+}
+
+.chatRow .input {
+  flex: 1;
+  min-width: 0;
+}
