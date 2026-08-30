@@ -20,7 +20,10 @@ begin
   for i in 1..p_humans loop
     u := gen_random_uuid();
     insert into auth.users (id) values (u);
-    insert into public.profiles (id, username) values (u, 'p' || i || substr(u::text, 1, 4))
+    -- Benutzername aus der UUID, damit mehrere Testläufe in derselben Datenbank
+    -- nicht am Unique-Index hängen bleiben.
+    insert into public.profiles (id, username)
+    values (u, 'p' || substr(replace(u::text, '-', ''), 1, 16))
       on conflict (id) do update set username = excluded.username;
     ids := ids || u;
   end loop;
@@ -218,5 +221,115 @@ begin
   reset role;
   if not ok then raise exception 'sr_actions ist für Clients lesbar!'; end if;
   raise notice 'Zugriff: sr_actions bleibt für Clients gesperrt';
+end
+$$;
+
+-- Ohne Anmeldung geht gar nichts. (auth.uid() ist dann NULL – ein Vergleich
+-- mit `<>` ergibt NULL und würde nicht blockieren, deshalb der eigene Test.)
+do $$
+declare
+  a uuid := gen_random_uuid();
+  b uuid := gen_random_uuid();
+  v jsonb; v_match uuid; ok boolean;
+begin
+  insert into auth.users (id) values (a), (b);
+  perform set_config('sr.uid', a::text, false);
+  v := public.sr_create_match(8, false, 'jaeger', 'Anna');
+  v_match := (v ->> 'match_id')::uuid;
+
+  perform set_config('sr.uid', '', false);
+  foreach ok in array array[true] loop end loop;  -- Platzhalter, Schleife unten
+
+  ok := false;
+  begin perform public.sr_start_match(v_match);
+  exception when others then ok := true; end;
+  if not ok then raise exception 'Ohne Anmeldung konnte die Runde gestartet werden!'; end if;
+
+  ok := false;
+  begin perform public.sr_get_state(v_match);
+  exception when others then ok := true; end;
+  if not ok then raise exception 'Ohne Anmeldung war der Spielstand lesbar!'; end if;
+
+  ok := false;
+  begin perform public.sr_say(v_match, 'hallo');
+  exception when others then ok := true; end;
+  if not ok then raise exception 'Ohne Anmeldung konnte geschrieben werden!'; end if;
+
+  ok := false;
+  begin perform public.sr_leave_match(v_match);
+  exception when others then ok := true; end;
+  if not ok then raise exception 'Ohne Anmeldung konnte die Runde verlassen werden!'; end if;
+  raise notice 'Anmeldung: ohne Konto ist keine Aktion möglich';
+
+  -- Und ein angemeldeter Fremder ist nicht der Gastgeber.
+  perform set_config('sr.uid', b::text, false);
+  ok := false;
+  begin perform public.sr_start_match(v_match);
+  exception when others then ok := sqlerrm like 'Nur der Gastgeber%'; end;
+  if not ok then raise exception 'Ein Fremder konnte die Runde starten!'; end if;
+  raise notice 'Gastgeber: nur er startet die Runde';
+end
+$$;
+
+-- Supabase vergibt EXECUTE auf neue Funktionen per Default-Privileg auch an
+-- anon. Die Migration muss das wieder entziehen.
+do $$
+declare bad text;
+begin
+  select string_agg(p.proname, ', ' order by p.proname) into bad
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public' and p.proname like 'sr\_%'
+     and has_function_privilege('anon', p.oid, 'execute');
+  if bad is not null then raise exception 'anon darf ausführen: %', bad; end if;
+  raise notice 'Rechte: anon darf keine sr_-Funktion aufrufen';
+
+  -- authenticated darf genau die öffentliche Schnittstelle – und sonst nichts.
+  select string_agg(p.proname, ', ' order by p.proname) into bad
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public' and p.proname like 'sr\_%'
+     and has_function_privilege('authenticated', p.oid, 'execute')
+     and p.proname not in ('sr_create_match', 'sr_join_match', 'sr_leave_match',
+       'sr_start_match', 'sr_night_action', 'sr_ready', 'sr_vote', 'sr_say',
+       'sr_tick', 'sr_get_state', 'sr_my_matches', 'sr_is_member');
+  if bad is not null then raise exception 'authenticated darf zu viel: %', bad; end if;
+  raise notice 'Rechte: authenticated darf nur die öffentliche Schnittstelle';
+end
+$$;
+
+-- Der Chat muss für Mitglieder der Runde lesbar bleiben (Realtime hängt daran)
+-- und für alle anderen dicht sein. Läuft ausdrücklich unter der Rolle
+-- `authenticated`, damit auch die Rechte an sr_is_member mitgeprüft werden.
+do $$
+declare
+  a uuid := gen_random_uuid();
+  b uuid := gen_random_uuid();
+  v jsonb; v_match uuid; v_code text; n integer;
+begin
+  insert into auth.users (id) values (a), (b);
+  perform set_config('sr.uid', a::text, false);
+  v := public.sr_create_match(8, false, 'jaeger', 'Anna');
+  v_match := (v ->> 'match_id')::uuid;
+  v_code := v ->> 'code';
+  perform public.sr_start_match(v_match);
+  perform public.sr_say(v_match, 'Guten Abend zusammen');
+
+  set local role authenticated;
+
+  perform set_config('sr.uid', a::text, false);
+  select count(*) into n from public.sr_messages where match_id = v_match;
+  if n = 0 then raise exception 'Mitglied kann den eigenen Chat nicht lesen!'; end if;
+  select count(*) into n from public.sr_state where match_id = v_match;
+  if n = 0 then raise exception 'Mitglied kann den Spielstandzähler nicht lesen!'; end if;
+
+  perform set_config('sr.uid', b::text, false);
+  select count(*) into n from public.sr_messages where match_id = v_match;
+  if n > 0 then raise exception 'Ein Fremder liest den Chat mit!'; end if;
+  select count(*) into n from public.sr_state where match_id = v_match;
+  if n > 0 then raise exception 'Ein Fremder liest den Spielstandzähler!'; end if;
+
+  reset role;
+  raise notice 'Chat: Mitglieder lesen mit, Fremde nicht';
 end
 $$;

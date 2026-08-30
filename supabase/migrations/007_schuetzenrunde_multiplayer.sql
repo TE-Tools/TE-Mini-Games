@@ -890,6 +890,7 @@ security definer
 set search_path = public, pg_temp
 as $$
 begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
   delete from public.sr_players
    where match_id = p_match and user_id = auth.uid()
      and exists (select 1 from public.sr_matches where id = p_match and phase = 'lobby');
@@ -922,8 +923,12 @@ declare
   v_row record;
 begin
   select * into m from public.sr_matches where id = p_match;
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
   if m.id is null then raise exception 'Diese Runde gibt es nicht'; end if;
-  if m.host_id <> auth.uid() then raise exception 'Nur der Gastgeber startet die Runde'; end if;
+  -- `<>` ergaebe bei fehlender Anmeldung NULL und wuerde damit nicht greifen.
+  if m.host_id is distinct from auth.uid() then
+    raise exception 'Nur der Gastgeber startet die Runde';
+  end if;
   if m.phase <> 'lobby' then raise exception 'Die Runde läuft schon'; end if;
 
   select count(*) into v_taken from public.sr_players where match_id = p_match;
@@ -1003,6 +1008,7 @@ declare
   m public.sr_matches;
   v_seat integer;
 begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
   select * into m from public.sr_matches where id = p_match;
   if m.phase <> 'night' then raise exception 'Gerade ist keine Nacht'; end if;
 
@@ -1033,6 +1039,7 @@ as $$
 declare
   v_seat integer;
 begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
   select seat into v_seat from public.sr_players
    where match_id = p_match and user_id = auth.uid();
   if v_seat is null then raise exception 'Du spielst hier nicht mit'; end if;
@@ -1054,6 +1061,7 @@ declare
   m public.sr_matches;
   v_seat integer;
 begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
   select * into m from public.sr_matches where id = p_match;
   if m.phase not in ('day', 'vote') then raise exception 'Gerade wird nicht abgestimmt'; end if;
 
@@ -1083,6 +1091,7 @@ declare
   m public.sr_matches;
   p public.sr_players;
 begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
   select * into m from public.sr_matches where id = p_match;
   select * into p from public.sr_players where match_id = p_match and user_id = auth.uid();
   if p.seat is null then raise exception 'Du spielst hier nicht mit'; end if;
@@ -1132,6 +1141,7 @@ declare
   me public.sr_players;
   v_over boolean;
 begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
   select * into m from public.sr_matches where id = p_match;
   if m.id is null then raise exception 'Diese Runde gibt es nicht'; end if;
   select * into me from public.sr_players where match_id = p_match and user_id = auth.uid();
@@ -1200,17 +1210,24 @@ $$;
 
 /* =========================== Rechte =============================== */
 
-revoke all on function public.sr_create_match(integer, boolean, text, text) from public;
-revoke all on function public.sr_join_match(text, text) from public;
-revoke all on function public.sr_leave_match(uuid) from public;
-revoke all on function public.sr_start_match(uuid) from public;
-revoke all on function public.sr_night_action(uuid, integer, boolean, boolean) from public;
-revoke all on function public.sr_ready(uuid) from public;
-revoke all on function public.sr_vote(uuid, integer) from public;
-revoke all on function public.sr_say(uuid, text) from public;
-revoke all on function public.sr_tick(uuid) from public;
-revoke all on function public.sr_get_state(uuid) from public;
-revoke all on function public.sr_my_matches() from public;
+-- Supabase vergibt per Default-Privileg EXECUTE auf neue Funktionen an anon
+-- und authenticated. `revoke ... from public` nimmt diese ausdrücklichen
+-- Rollenrechte nicht mit weg – deshalb erst alles entziehen, dann gezielt nur
+-- die öffentliche Schnittstelle freigeben. Die internen Helfer laufen ohnehin
+-- nur innerhalb der `security definer`-Funktionen mit deren Rechten.
+do $$
+declare f record;
+begin
+  for f in
+    select p.oid::regprocedure as sig
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public' and p.proname like 'sr\_%'
+  loop
+    execute format('revoke all on function %s from public, anon, authenticated', f.sig);
+  end loop;
+end
+$$;
 
 grant execute on function public.sr_create_match(integer, boolean, text, text) to authenticated;
 grant execute on function public.sr_join_match(text, text) to authenticated;
@@ -1223,6 +1240,8 @@ grant execute on function public.sr_say(uuid, text) to authenticated;
 grant execute on function public.sr_tick(uuid) to authenticated;
 grant execute on function public.sr_get_state(uuid) to authenticated;
 grant execute on function public.sr_my_matches() to authenticated;
+-- Wird in den RLS-Policies von sr_messages und sr_state ausgewertet und muss
+-- deshalb für den fragenden Nutzer ausführbar bleiben.
 grant execute on function public.sr_is_member(uuid) to authenticated;
 
 /* ===================== Realtime (optional) ======================== */
