@@ -8,15 +8,19 @@
  * ended and climbs to a higher ceiling, so the levels keep getting harder
  * without the target times running away.
  *
- * - Target times never run longer than 20 s: piece 1 (level 1–20) 1,5 s → 5 s,
- *   piece 2 (21–40) 3 s → 10 s, piece 3 (41–60) 4,5 s → 15 s, from piece 4 on
- *   6 s → 20 s.
+ * - Target times are **drawn at random** inside the range of the map piece, not
+ *   ramped up level by level: level 1 may ask for 2 s and level 3 for 0,5 s.
+ *   The draw is seeded with the level number, so a level always shows the same
+ *   number – records stay comparable. The upper end of the range grows with the
+ *   map: 5 s in piece 1, 10 s in piece 2, 15 s in piece 3, 20 s from piece 4 on;
+ *   the lower end is always 0,5 s.
  * - How exact the target itself is grows with the map: the first pieces only ask
  *   for round half seconds, later ones for tenths, hundredths and finally full
  *   milliseconds – so beginners never have to hit "7,234 s".
- * - Tolerance shrinks inside a piece and from piece to piece, so the demanded
- *   precision relative to the target time rises the whole way. The first two
- *   pieces get an extra-wide tolerance on top, to make the start easy.
+ * - Tolerance shrinks inside a piece and from piece to piece. The first two
+ *   pieces get an extra-wide tolerance on top, to make the start easy, and the
+ *   tolerance is additionally capped at a share of the target time so a short
+ *   target like 0,5 s cannot be hit by accident.
  * - The last level of a piece – the one in front of the gate – has to be hit
  *   **twice in a row on the same time**. Deep in the map (level 241+) every
  *   level needs two hits and the gate levels three.
@@ -37,6 +41,10 @@ export interface PerfectSecondLevel {
 
 /** Longest target time on the whole map, in seconds. */
 export const MAX_TARGET_TIME = 20
+/** Shortest target time on the whole map, in seconds. */
+export const MIN_TARGET_TIME = 0.5
+/** The tolerance never exceeds this share of the target time. */
+const MAX_TOLERANCE_RATIO = 0.35
 /** From this level on, every level needs one extra hit. */
 const DOUBLE_HIT_FROM_LEVEL = 241
 
@@ -64,9 +72,14 @@ export function targetCeilingForSegment(segment: number): number {
   return Math.min(MAX_TARGET_TIME, 5 * Math.max(1, segment))
 }
 
-/** Where a map piece starts – 30 % of its ceiling, but never under 1.5 s. */
-function targetFloorForSegment(segment: number): number {
-  return Math.max(1.5, targetCeilingForSegment(segment) * 0.3)
+/**
+ * Deterministic 0…1 draw for a level – same level, same number, but the
+ * sequence across levels looks random (2 s, then 0,5 s, then 3,5 s …).
+ */
+function levelRandom(level: number): number {
+  let h = Math.imul(level ^ 0x9e3779b9, 0x85ebca6b)
+  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35)
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296
 }
 
 function toleranceRangeForSegment(segment: number): { from: number; to: number } {
@@ -75,18 +88,43 @@ function toleranceRangeForSegment(segment: number): { from: number; to: number }
   return { from, to: round3(from * 0.5) }
 }
 
+/** Draw the target, nudged if it would repeat the previous level's number. */
+function drawTarget(level: number, ceiling: number, step: number): number {
+  const draw = (l: number) => {
+    const raw = MIN_TARGET_TIME + levelRandom(l) * (ceiling - MIN_TARGET_TIME)
+    return Math.min(ceiling, Math.max(MIN_TARGET_TIME, roundStep(raw, step)))
+  }
+  const value = draw(level)
+  if (level <= 1) return value
+  const previous = draw(level - 1)
+  if (value !== previous) return value
+  const shifted = round3(value + step)
+  return shifted <= ceiling ? shifted : round3(Math.max(MIN_TARGET_TIME, value - step))
+}
+
 export function createPerfectSecondLevel(level: number): PerfectSecondLevel {
   const L = Math.max(1, Math.min(MAX_LEVEL, Math.floor(level)))
   const segment = segmentIndexForLevel(L)
   // 0 at the first level of the piece, 1 at the last one.
   const p = ((L - 1) % SEGMENT_SIZE) / (SEGMENT_SIZE - 1)
 
-  const floor = targetFloorForSegment(segment)
+  // Random target inside the range of this map piece, seeded with the level.
   const ceiling = targetCeilingForSegment(segment)
-  const targetTime = roundStep(floor + (ceiling - floor) * p, targetStepForSegment(segment))
+  const step = targetStepForSegment(segment)
+  const targetTime = drawTarget(L, ceiling, step)
 
   const tol = toleranceRangeForSegment(segment)
-  const tolerance = round3(tol.from * Math.pow(tol.to / tol.from, p))
+  // Shrinks along the piece, but never more than a share of the target time –
+  // otherwise a 0,5 s target would be impossible to miss.
+  const tolerance = round3(
+    Math.max(
+      0.02,
+      Math.min(
+        tol.from * Math.pow(tol.to / tol.from, p),
+        targetTime * MAX_TOLERANCE_RATIO,
+      ),
+    ),
+  )
 
   const baseHits = L >= DOUBLE_HIT_FROM_LEVEL ? 2 : 1
   const hitsRequired = baseHits + (isSegmentGate(L) ? 1 : 0)

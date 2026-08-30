@@ -121,7 +121,8 @@
 .choiceGrid {
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(4.75rem, 1fr));
+  /* Tiles shrink when a level shows a lot of objects (set from the page). */
+  grid-template-columns: repeat(auto-fill, minmax(var(--cell-min, 4.75rem), 1fr));
   gap: var(--space-2);
   width: 100%;
   padding: 0;
@@ -140,7 +141,7 @@
 }
 
 .emoji {
-  font-size: 1.85rem;
+  font-size: var(--cell-emoji, 1.85rem);
   line-height: 1;
 }
 

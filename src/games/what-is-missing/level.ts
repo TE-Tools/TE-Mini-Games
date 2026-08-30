@@ -28,12 +28,15 @@ interface ZoneCurve {
   choices: number
 }
 
+/** Never show more than this many objects at once – the grid has to stay usable. */
+const MAX_SHOWN_OBJECTS = 60
+
 const ZONE_CURVES: Record<ZoneId, ZoneCurve> = {
-  jungle: { objectsFrom: 5, objectsTo: 40, displayFrom: 5, displayTo: 1.5, choices: 8 },
-  volcanic: { objectsFrom: 10, objectsTo: 42, displayFrom: 4, displayTo: 1.2, choices: 9 },
-  canyon: { objectsFrom: 14, objectsTo: 42, displayFrom: 3.5, displayTo: 1, choices: 10 },
-  iceage: { objectsFrom: 18, objectsTo: 42, displayFrom: 3, displayTo: 0.9, choices: 11 },
-  glacier: { objectsFrom: 22, objectsTo: 42, displayFrom: 2.5, displayTo: 0.8, choices: 12 },
+  jungle: { objectsFrom: 6, objectsTo: 45, displayFrom: 5, displayTo: 1.5, choices: 8 },
+  volcanic: { objectsFrom: 14, objectsTo: 52, displayFrom: 4, displayTo: 1.2, choices: 9 },
+  canyon: { objectsFrom: 20, objectsTo: 56, displayFrom: 3.5, displayTo: 1, choices: 10 },
+  iceage: { objectsFrom: 26, objectsTo: 58, displayFrom: 3, displayTo: 0.9, choices: 11 },
+  glacier: { objectsFrom: 32, objectsTo: MAX_SHOWN_OBJECTS, displayFrom: 2.5, displayTo: 0.8, choices: 12 },
 }
 
 function curveForLevel(level: number): ZoneCurve {
@@ -59,7 +62,7 @@ export function objectCountForLevel(level: number): number {
   const L = clampLevel(level)
   const curve = curveForLevel(L)
   const count = Math.round(curve.objectsFrom + (curve.objectsTo - curve.objectsFrom) * zoneProgress(L))
-  return Math.min(count, OBJECT_CATALOG.length)
+  return Math.min(count, MAX_SHOWN_OBJECTS, OBJECT_CATALOG.length)
 }
 
 export function displayTimeForLevel(level: number): number {

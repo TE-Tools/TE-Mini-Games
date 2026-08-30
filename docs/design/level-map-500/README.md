@@ -107,23 +107,26 @@ daher die S-Form wie auf der Referenz.
 Jede Zone startet leichter als die vorige endete und steigt dafür höher –
 statt eine einzige Kurve über 500 Level zu strecken.
 
-**Die perfekte Sekunde** rampt **pro Kartenabschnitt (20 Level)**, nicht pro Zone:
+**Die perfekte Sekunde**: die Zielzeit wird **pro Level zufällig gezogen**, nicht
+Level für Level hochgezählt – Level 1 kann 2 s verlangen und Level 3 dann 0,5 s.
+Die Ziehung ist mit der Levelnummer gesalzen, ein Level zeigt also immer dieselbe
+Zahl (sonst wären Rekorde nicht vergleichbar).
 
-| Abschnitt | Level | Zielzeit | Toleranz |
-|-----------|-------|----------|----------|
-| 1 | 1–20 | 1,5 s → 5 s | 0,50 s → 0,25 s |
-| 2 | 21–40 | 3 s → 10 s | 0,44 s → 0,22 s |
-| 3 | 41–60 | 4,5 s → 15 s | 0,39 s → 0,19 s |
-| 4 | 61–80 | 6 s → 20 s | 0,34 s → 0,17 s |
-| 5 … 25 | 81–500 | 6 s → 20 s | weiter fallend bis 0,05 s → 0,025 s |
+| Abschnitt | Level | Zielzeit-Bereich | Toleranz (breiteste → engste) |
+|-----------|-------|------------------|-------------------------------|
+| 1 | 1–20 | 0,5 – 5 s | 0,80 s → 0,40 s |
+| 2 | 21–40 | 0,5 – 10 s | 0,57 s → 0,29 s |
+| 3 | 41–60 | 0,5 – 15 s | 0,39 s → 0,19 s |
+| 4 | 61–80 | 0,5 – 20 s | 0,34 s → 0,17 s |
+| 5 … 25 | 81–500 | 0,5 – 20 s | weiter fallend bis 0,05 s → 0,025 s |
 
-- **Zielzeiten sind runde Zahlen** (halbe Sekunden, nie mehr als 20 s) – keine
-  krummen Nachkommastellen.
-- Die Zeitobergrenze wächst 5 s → 10 s → 15 s → 20 s und bleibt dann bei 20 s;
-  ab da kommt die Schwierigkeit allein aus der Toleranz.
-- Jeder Abschnitt startet etwas leichter als der vorige endete, verlangt am Ende
-  aber **relativ** mehr Präzision (Toleranz ÷ Zielzeit sinkt von Abschnitt zu Abschnitt:
-  L20 5 % → L40 2,2 % → L100 0,75 % → L400 0,125 %).
+- Die **Obergrenze** wächst 5 s → 10 s → 15 s → 20 s und bleibt dann bei 20 s,
+  die Untergrenze ist immer 0,5 s. Die Schwierigkeit steckt in der Toleranz.
+- **Genauigkeit der Zahl** wächst mit der Karte: Abschnitt 1–2 nur halbe Sekunden,
+  3–5 Zehntel, 6–10 Hundertstel, ab 11 volle Millisekunden.
+- Zwei aufeinanderfolgende Level zeigen nie dieselbe Zahl.
+- Die Toleranz ist zusätzlich auf **35 % der Zielzeit** gedeckelt – sonst wäre ein
+  0,5-s-Ziel mit ±0,8 s nicht zu verfehlen.
 
 **Treffer in Folge:**
 
@@ -136,11 +139,14 @@ statt eine einzige Kurve über 500 Level zu strecken.
 
 | Zone | Objekte | Anzeigedauer |
 |------|---------|--------------|
-| Urwald | 5 → 40 | 5 s → 1,5 s |
-| Vulkanland | 10 → 42 | 4 s → 1,2 s |
-| Felswüste | 14 → 42 | 3,5 s → 1 s |
-| Eiszeit | 18 → 42 | 3 s → 0,9 s |
-| Gletschergipfel | 22 → 42 | 2,5 s → 0,8 s |
+| Urwald | 6 → 45 | 5 s → 1,5 s |
+| Vulkanland | 14 → 52 | 4 s → 1,2 s |
+| Felswüste | 20 → 56 | 3,5 s → 1 s |
+| Eiszeit | 26 → 58 | 3 s → 0,9 s |
+| Gletschergipfel | 32 → 60 | 2,5 s → 0,8 s |
+
+Mehr als **60 Objekte** werden nie gezeigt (Katalog: 78). Ab 25 Objekten werden
+die Kacheln kleiner, ab 41 nochmal – sonst passt das Raster nicht mehr aufs Handy.
 
 Zusätzlich **pro Kartenabschnitt (20 Level)**:
 

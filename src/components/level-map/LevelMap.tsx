@@ -323,10 +323,10 @@ export function LevelMap({
                   aria-label={
                     isLocked
                       ? `Level ${L} gesperrt`
-                      : isZoneGateLevel
-                        ? `Level ${L}, ${levelZone.gateName}`
-                        : isCurrent
-                          ? `Level ${L}, aktuell`
+                      : isCurrent
+                        ? `Level ${L}, aktuell`
+                        : isZoneGateLevel
+                          ? `Level ${L}, ${levelZone.gateName}`
                           : `Level ${L} spielen`
                   }
                 >

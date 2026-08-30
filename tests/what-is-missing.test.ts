@@ -12,14 +12,21 @@ import {
 } from '@/games/what-is-missing'
 
 describe('What Is Missing level system', () => {
-  it('level 1 has ~5 objects and ~5s', () => {
-    expect(objectCountForLevel(1)).toBe(5)
+  it('level 1 has 6 objects and ~5s', () => {
+    expect(objectCountForLevel(1)).toBe(6)
     expect(displayTimeForLevel(1)).toBe(5)
   })
 
-  it('level 100 has 40 objects and 1.5s', () => {
-    expect(objectCountForLevel(100)).toBe(40)
+  it('level 100 has 45 objects and 1.5s', () => {
+    expect(objectCountForLevel(100)).toBe(45)
     expect(displayTimeForLevel(100)).toBe(1.5)
+  })
+
+  it('the hardest levels show a lot more, but never more than 60', () => {
+    expect(objectCountForLevel(500)).toBe(60)
+    for (let level = 1; level <= 500; level++) {
+      expect(objectCountForLevel(level)).toBeLessThanOrEqual(60)
+    }
   })
 
   it('level 10 is between 1 and 30', () => {
@@ -167,7 +174,7 @@ describe('Seed reproducibility', () => {
 describe('What Is Missing level content', () => {
   it('creates valid level 1', () => {
     const L = createWhatIsMissingLevel(1)
-    expect(L.shownObjects).toHaveLength(5)
+    expect(L.shownObjects).toHaveLength(6)
     expect(L.missingObject).toBeDefined()
     expect(L.shownObjects.some((o) => o.id === L.missingObject.id)).toBe(true)
     expect(L.choiceObjects.some((o) => o.id === L.missingObject.id)).toBe(true)

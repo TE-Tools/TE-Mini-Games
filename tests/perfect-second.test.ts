@@ -10,15 +10,18 @@ describe('Perfect Second level system', () => {
   it('level 1 is easy: short target, wide tolerance, 1 hit', () => {
     const L = createPerfectSecondLevel(1)
     expect(L.level).toBe(1)
-    expect(L.targetTime).toBe(1.5)
-    expect(L.tolerance).toBe(0.8)
+    expect(L.targetTime).toBeGreaterThanOrEqual(0.5)
+    expect(L.targetTime).toBeLessThanOrEqual(5)
+    // Wide enough to be forgiving, but never a free hit for a short target.
+    expect(L.tolerance).toBeGreaterThan(0.15)
+    expect(L.tolerance).toBeLessThanOrEqual(L.targetTime * 0.35 + 1e-9)
     expect(L.hitsRequired).toBe(1)
   })
 
-  it('target times stay between 1,5 s and 20 s with at most 3 decimals', () => {
+  it('target times stay between 0,5 s and 20 s with at most 3 decimals', () => {
     for (let level = 1; level <= 500; level++) {
       const t = createPerfectSecondLevel(level).targetTime
-      expect(t).toBeGreaterThanOrEqual(1.5)
+      expect(t).toBeGreaterThanOrEqual(0.5)
       expect(t).toBeLessThanOrEqual(20)
       expect(Math.round(t * 1000)).toBeCloseTo(t * 1000, 6)
     }
@@ -45,34 +48,60 @@ describe('Perfect Second level system', () => {
   })
 
   it('the first two pieces have an extra wide tolerance', () => {
-    expect(createPerfectSecondLevel(1).tolerance).toBeGreaterThan(0.7)
-    expect(createPerfectSecondLevel(20).tolerance).toBeGreaterThanOrEqual(0.4)
-    expect(createPerfectSecondLevel(21).tolerance).toBeGreaterThan(0.5)
+    const widest = (from: number) => {
+      let max = 0
+      for (let level = from; level < from + 20; level++) {
+        max = Math.max(max, createPerfectSecondLevel(level).tolerance)
+      }
+      return max
+    }
+    expect(widest(1)).toBeGreaterThan(0.6)
+    expect(widest(21)).toBeGreaterThan(0.5)
     // From piece 3 on the bonus is gone again.
-    expect(createPerfectSecondLevel(41).tolerance).toBeLessThan(
-      createPerfectSecondLevel(21).tolerance,
-    )
+    expect(widest(41)).toBeLessThan(widest(21))
   })
 
-  it('levels 1–20 stay between 0 and 5 seconds', () => {
+  it('levels 1–20 stay between 0,5 and 5 seconds', () => {
     for (let level = 1; level <= 20; level++) {
       const t = createPerfectSecondLevel(level).targetTime
-      expect(t).toBeGreaterThan(0)
+      expect(t).toBeGreaterThanOrEqual(0.5)
       expect(t).toBeLessThanOrEqual(5)
     }
-    expect(createPerfectSecondLevel(20).targetTime).toBe(5)
   })
 
-  it('levels 21–40 stay between 0 and 10 seconds and go higher than piece 1', () => {
+  it('levels 21–40 stay between 0,5 and 10 seconds', () => {
     for (let level = 21; level <= 40; level++) {
       const t = createPerfectSecondLevel(level).targetTime
-      expect(t).toBeGreaterThan(0)
+      expect(t).toBeGreaterThanOrEqual(0.5)
       expect(t).toBeLessThanOrEqual(10)
     }
-    expect(createPerfectSecondLevel(40).targetTime).toBe(10)
-    expect(createPerfectSecondLevel(40).targetTime).toBeGreaterThan(
-      createPerfectSecondLevel(20).targetTime,
-    )
+  })
+
+  it('target times jump around instead of climbing level by level', () => {
+    const first20 = Array.from({ length: 20 }, (_, i) => createPerfectSecondLevel(i + 1).targetTime)
+    // Not sorted – a later level can ask for a shorter time than an earlier one.
+    const sorted = [...first20].sort((a, b) => a - b)
+    expect(first20).not.toEqual(sorted)
+    // Several different numbers, and never twice the same in a row.
+    expect(new Set(first20).size).toBeGreaterThanOrEqual(5)
+    for (let i = 1; i < first20.length; i++) {
+      expect(first20[i]).not.toBe(first20[i - 1])
+    }
+  })
+
+  it('the same level always shows the same number', () => {
+    for (const level of [1, 7, 28, 140, 377]) {
+      expect(createPerfectSecondLevel(level).targetTime).toBe(
+        createPerfectSecondLevel(level).targetTime,
+      )
+    }
+  })
+
+  it('the tolerance never makes a short target a free hit', () => {
+    for (let level = 1; level <= 500; level++) {
+      const L = createPerfectSecondLevel(level)
+      expect(L.tolerance).toBeLessThanOrEqual(L.targetTime * 0.35 + 1e-9)
+    }
   })
 
   it('the level in front of a gate has to be hit twice on the same time', () => {
@@ -96,32 +125,22 @@ describe('Perfect Second level system', () => {
     expect(createPerfectSecondLevel(600).level).toBe(500)
   })
 
-  it('tolerance shrinks inside every piece of 20 levels', () => {
-    for (const from of [1, 21, 41, 101, 481]) {
-      let prev = Number.POSITIVE_INFINITY
+  it('the widest tolerance of a piece shrinks from piece to piece', () => {
+    const widest = (from: number) => {
+      let max = 0
       for (let level = from; level < from + 20; level++) {
-        const tol = createPerfectSecondLevel(level).tolerance
-        expect(tol).toBeLessThanOrEqual(prev + 1e-9)
-        prev = tol
+        max = Math.max(max, createPerfectSecondLevel(level).tolerance)
       }
+      return max
     }
-  })
-
-  it('demanded precision keeps rising from piece to piece', () => {
-    const precision = (level: number) => {
-      const L = createPerfectSecondLevel(level)
-      return L.tolerance / L.targetTime
-    }
-    // End of each piece: the tolerance relative to the target time gets tighter…
     let prev = Number.POSITIVE_INFINITY
-    for (const end of [20, 40, 60, 80, 100, 200, 300, 400]) {
-      const p = precision(end)
-      expect(p).toBeLessThan(prev)
-      prev = p
+    for (const from of [1, 21, 41, 61, 81, 181, 281]) {
+      const w = widest(from)
+      expect(w).toBeLessThan(prev)
+      prev = w
     }
-    // …and never gets easier again in the last pieces, where the tolerance sits
-    // at the floor of what is humanly hittable.
-    expect(precision(500)).toBeLessThanOrEqual(prev)
+    // The last pieces sit at the floor of what is humanly hittable.
+    expect(widest(481)).toBeLessThanOrEqual(prev)
   })
 
   it('level 500 is the tightest tolerance of the map', () => {

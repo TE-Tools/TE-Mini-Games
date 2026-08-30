@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type CSSProperties } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   createWhatIsMissingLevel,
@@ -21,6 +21,13 @@ import { LevelMap } from '@/components/level-map/LevelMap'
 import styles from './WhatIsMissingPage.module.css'
 
 type Phase = 'map' | 'ready' | 'memorize' | 'choose' | 'result'
+
+/** Tile size for the object grid – the more objects, the smaller they get. */
+function gridStyle(count: number): CSSProperties {
+  if (count > 40) return { '--cell-min': '2.9rem', '--cell-emoji': '1.25rem' } as CSSProperties
+  if (count > 24) return { '--cell-min': '3.5rem', '--cell-emoji': '1.5rem' } as CSSProperties
+  return {} as CSSProperties
+}
 
 const MAX_GAME_LEVEL = whatIsMissingGame.maxLevel
 
@@ -210,7 +217,7 @@ export function WhatIsMissingPage() {
           <p className={styles.timer} aria-live="polite">
             {countdown.toFixed(1)} s
           </p>
-          <ul className={styles.grid} role="list">
+          <ul className={styles.grid} role="list" style={gridStyle(config.shownObjects.length)}>
             {config.shownObjects.map((obj) => (
               <li key={obj.id} className={styles.cell}>
                 <span className={styles.emoji} aria-hidden="true">
@@ -226,7 +233,12 @@ export function WhatIsMissingPage() {
       {phase === 'choose' && (
         <section className={styles.choose} aria-label="Auswahl">
           <p className={styles.hint}>Schau genau hin – eines fehlt:</p>
-          <ul className={styles.grid} role="list" aria-label="Noch sichtbare Objekte">
+          <ul
+            className={styles.grid}
+            role="list"
+            aria-label="Noch sichtbare Objekte"
+            style={gridStyle(config.remainingObjects.length)}
+          >
             {config.remainingObjects.map((obj) => (
               <li key={obj.id} className={styles.cell}>
                 <span className={styles.emoji} aria-hidden="true">
