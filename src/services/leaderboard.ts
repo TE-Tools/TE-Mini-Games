@@ -16,6 +16,12 @@ export interface LeaderboardEntry {
   source: 'local' | 'remote'
   /** When the entry was achieved – the list shows personal bests, not the last round. */
   achievedAt?: string
+  /**
+   * XP, das dieses Ergebnis gebracht hat. Nur lokal bekannt (game_results),
+   * die öffentliche leaderboard_top-View speichert keine XP – bei
+   * `source: 'remote'` bleibt das Feld deshalb leer.
+   */
+  xp?: number
 }
 
 export interface PersonalBestRow {
@@ -71,6 +77,7 @@ export async function getLocalRecentHighScores(
     gameId: r.gameId,
     isYou: true,
     source: 'local' as const,
+    xp: r.xp,
   }))
 }
 

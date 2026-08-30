@@ -11,8 +11,20 @@ import {
 import { isSupabaseConfigured } from '@/database/supabase'
 import { getMyUsername } from '@/auth/authService'
 import { syncFullNow } from '@/services/remoteSync'
+import { getRecentResults } from '@/offline'
+import type { LocalGameResult } from '@/offline/db'
 import type { GameId } from '@/games/types'
 import styles from './LeaderboardPage.module.css'
+
+/** Kurzes Datum/Zeit-Format für "Letzte Ergebnisse" – reicht zum Wiedererkennen "war das gerade eben?". */
+function formatPlayedAt(iso: string): string {
+  return new Date(iso).toLocaleString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
 
 type Tab = 'mine' | 'global-ps' | 'global-wim' | 'global-sr'
 
@@ -27,6 +39,7 @@ export function LeaderboardPage() {
   const [tab, setTab] = useState<Tab>('mine')
   const [personalBests, setPersonalBests] = useState<PersonalBestRow[]>([])
   const [recent, setRecent] = useState<LeaderboardEntry[]>([])
+  const [recentPlays, setRecentPlays] = useState<LocalGameResult[]>([])
   const [remote, setRemote] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [myName, setMyName] = useState<string | null>(null)
@@ -44,13 +57,15 @@ export function LeaderboardPage() {
       setLoading(true)
       try {
         if (tab === 'mine') {
-          const [bests, high] = await Promise.all([
+          const [bests, high, plays] = await Promise.all([
             getLocalPersonalBests(),
             getLocalRecentHighScores(15),
+            getRecentResults(undefined, undefined, 10),
           ])
           if (!cancelled) {
             setPersonalBests(bests)
             setRecent(high)
+            setRecentPlays(plays)
           }
         } else {
           const top = await getRemoteTopScores(TAB_GAME[tab], 20)
@@ -160,6 +175,10 @@ export function LeaderboardPage() {
           )}
 
           <h2 className={styles.sectionTitle}>Beste Runden</h2>
+          <p className={styles.hint}>
+            Sortiert nach Punkten – eine neue Runde taucht hier nur auf, wenn sie mehr Punkte
+            bringt als eine der {recent.length} besten hier.
+          </p>
           {recent.length === 0 ? (
             <p className={styles.empty}>Noch keine Ergebnisse.</p>
           ) : (
@@ -170,10 +189,39 @@ export function LeaderboardPage() {
                   <span className={styles.rowMain}>
                     {gameLabel(e.gameId)} · L{e.level}
                   </span>
-                  <span className={styles.rowScore}>{e.score}</span>
+                  <span className={styles.rowRight}>
+                    <span className={styles.rowScore}>{e.score} Pkt.</span>
+                    {typeof e.xp === 'number' && (
+                      <span className={styles.rowXp}>+{e.xp} XP</span>
+                    )}
+                  </span>
                 </li>
               ))}
             </ol>
+          )}
+
+          <h2 className={styles.sectionTitle}>Letzte Ergebnisse</h2>
+          <p className={styles.hint}>
+            Zeitlich sortiert, egal wie viele Punkte – so siehst du, ob eine gerade gespielte
+            Runde angekommen ist.
+          </p>
+          {recentPlays.length === 0 ? (
+            <p className={styles.empty}>Noch keine Ergebnisse.</p>
+          ) : (
+            <ul className={styles.list}>
+              {recentPlays.map((r) => (
+                <li key={r.id} className={`${styles.row} ${styles.rowNoRank}`}>
+                  <span className={styles.rowMain}>
+                    {gameLabel(r.gameId)} · L{r.level}
+                    <span className={styles.sub}> · {formatPlayedAt(r.createdAt)}</span>
+                  </span>
+                  <span className={styles.rowRight}>
+                    <span className={styles.rowScore}>{r.score} Pkt.</span>
+                    <span className={styles.rowXp}>+{r.xp} XP</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
           )}
         </section>
       )}
