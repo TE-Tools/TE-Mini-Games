@@ -19,6 +19,8 @@ import {
   createWhatIsMissingLevel,
   calculateWhatIsMissingScore,
 } from '@/games/what-is-missing'
+import { processAfterResult } from '@/progression'
+import { trySyncNow } from '@/services/remoteSync'
 import styles from './DailyPage.module.css'
 
 type Phase =
@@ -85,6 +87,10 @@ export function DailyPage() {
       if (!config) return
       const saved = await saveDailyAttempt(config, finalScore, resultData)
       setScore(saved.score)
+      // Bisher ohne Streak-/Abzeichen-Hook – die Daily Challenge sollte
+      // genauso zählen wie eine normale Runde im jeweiligen Spiel.
+      await processAfterResult({ gameId: config.gameId, level: config.level })
+      void trySyncNow()
       setPhase('done')
     },
     [config],

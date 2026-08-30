@@ -20,6 +20,8 @@ import {
   createWhatIsMissingLevel,
   calculateWhatIsMissingScore,
 } from '@/games/what-is-missing'
+import { processAfterResult } from '@/progression'
+import { trySyncNow } from '@/services/remoteSync'
 import styles from './FamilyPage.module.css'
 
 type Phase =
@@ -102,6 +104,11 @@ export function FamilyPage() {
       if (updated.status === 'finished') {
         const results = await getFamilyResults(session.id)
         setStandings(rankFamilyResults(results))
+        // Familienrunden zählten bisher nicht zu Streak/Abzeichen – das Gerät
+        // gilt als der eine "Spieler" vor Ort (wie überall sonst in diesem
+        // Offline-Modus, siehe GUEST_USER_ID).
+        await processAfterResult({ gameId: 'family', level: 1 })
+        void trySyncNow()
         setPhase('finished')
       } else {
         setPhase('player-done')
