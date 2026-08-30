@@ -233,7 +233,7 @@
 
 .rankRow {
   display: grid;
-  grid-template-columns: 2.5rem 1fr auto;
+  grid-template-columns: 2rem minmax(0, 1fr) minmax(7rem, auto);
   align-items: center;
   padding: var(--space-3);
   background: var(--color-bg-elevated);
@@ -257,9 +257,28 @@
 }
 
 .rankScore {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
+  font-size: var(--text-xs);
   color: var(--color-text-muted);
+  text-align: right;
+  line-height: 1.3;
+  max-width: 11rem;
+}
+
+.rankPts {
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+.rankTime {
+  font-size: 0.7rem;
+  font-weight: 600;
+  opacity: 0.9;
 }
 
 .homeLink {
