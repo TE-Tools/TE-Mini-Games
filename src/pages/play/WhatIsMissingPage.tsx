@@ -42,6 +42,7 @@ export function WhatIsMissingPage() {
   const [countdown, setCountdown] = useState(0)
   const [scoreResult, setScoreResult] = useState<WhatIsMissingScoreResult | null>(null)
   const [pickedId, setPickedId] = useState<string | null>(null)
+  const [completedLevel, setCompletedLevel] = useState<number | null>(null)
   const [milestoneXp, setMilestoneXp] = useState(0)
   const [loading, setLoading] = useState(true)
 
@@ -88,6 +89,7 @@ export function WhatIsMissingPage() {
     setPhase('ready')
     setScoreResult(null)
     setPickedId(null)
+    setCompletedLevel(null)
     setMilestoneXp(0)
   }, [])
 
@@ -95,6 +97,7 @@ export function WhatIsMissingPage() {
     if (!config) return
     setScoreResult(null)
     setPickedId(null)
+    setCompletedLevel(null)
     setPhase('memorize')
     setCountdown(config.displayTimeSeconds)
   }, [config])
@@ -116,6 +119,8 @@ export function WhatIsMissingPage() {
       const correct = objectId === config.missingObject.id
       const result = calculateWhatIsMissingScore({ correct, level: config.level })
       setScoreResult(result)
+      // Remember which level was just played – `level` moves on to the next one.
+      setCompletedLevel(correct ? config.level : null)
 
       // Milestone bonus is a first-clear reward – replaying a level must not farm it.
       const firstClear = config.level >= highest
@@ -161,13 +166,28 @@ export function WhatIsMissingPage() {
   )
 
   const playAgain = useCallback(() => {
-    const next = createWhatIsMissingLevel(level)
-    setConfig(next)
+    const L = completedLevel ?? level
+    setLevel(L)
+    setConfig(createWhatIsMissingLevel(L))
     setPhase('ready')
     setScoreResult(null)
     setPickedId(null)
+    setCompletedLevel(null)
     setMilestoneXp(0)
-  }, [level])
+  }, [completedLevel, level])
+
+  /** Straight on to the next level – same button as in „Perfekte Sekunde“. */
+  const goToNextLevel = useCallback(() => {
+    if (completedLevel == null) return
+    const next = Math.min(MAX_GAME_LEVEL, completedLevel + 1)
+    setLevel(next)
+    setConfig(createWhatIsMissingLevel(next))
+    setPhase('ready')
+    setScoreResult(null)
+    setPickedId(null)
+    setCompletedLevel(null)
+    setMilestoneXp(0)
+  }, [completedLevel])
 
   if (loading || !config) {
     return (
@@ -310,10 +330,30 @@ export function WhatIsMissingPage() {
             </>
           )}
           <div className={styles.resultActions}>
-            <button type="button" className={styles.primaryBtn} onClick={playAgain}>
+            {completedLevel != null && (
+              <button type="button" className={styles.primaryBtn} onClick={goToNextLevel}>
+                Weiter zu Level {Math.min(MAX_GAME_LEVEL, completedLevel + 1)}
+              </button>
+            )}
+            <button
+              type="button"
+              className={completedLevel != null ? styles.secondaryBtn : styles.primaryBtn}
+              onClick={playAgain}
+            >
               Noch einmal
             </button>
-            <button type="button" className={styles.secondaryBtn} onClick={() => setPhase('map')}>
+            <button
+              type="button"
+              className={styles.secondaryBtn}
+              onClick={() => {
+                if (completedLevel != null) {
+                  setLevel(Math.min(MAX_GAME_LEVEL, completedLevel + 1))
+                }
+                setPhase('map')
+                setScoreResult(null)
+                setCompletedLevel(null)
+              }}
+            >
               Zur Karte
             </button>
           </div>
