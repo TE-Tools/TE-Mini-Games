@@ -5,6 +5,7 @@ import { saveGameResult } from '@/offline/results'
 import {
   getLocalPersonalBests,
   getLocalRecentHighScores,
+  getLocalTotalsByGame,
   gameLabel,
 } from '@/services/leaderboard'
 import { getOrCreateGuestProfile } from '@/offline/profile'
@@ -68,6 +69,21 @@ describe('Leaderboard local', () => {
     })
     const top = await getLocalRecentHighScores(10)
     expect(top[0]?.xp).toBe(19)
+  })
+
+  it('sums score and xp per game across every round, not just the best (Thomas: "alle Punkte insgesamt ... für das jeweilige Spiel")', async () => {
+    await saveGameResult({ gameId: 'perfect-second', level: 1, score: 900, xp: 120, resultData: {} })
+    await saveGameResult({ gameId: 'perfect-second', level: 47, score: 100, xp: 19, resultData: {} })
+    await saveGameResult({ gameId: 'what-is-missing', level: 1, score: 1000, xp: 50, resultData: {} })
+
+    const totals = await getLocalTotalsByGame()
+    const ps = totals.find((t) => t.gameId === 'perfect-second')
+    const wim = totals.find((t) => t.gameId === 'what-is-missing')
+
+    expect(ps?.totalScore).toBe(900 + 100)
+    expect(ps?.totalXp).toBe(120 + 19)
+    expect(ps?.playCount).toBe(2)
+    expect(wim?.totalScore).toBe(1000)
   })
 
   it('gameLabel maps ids', () => {

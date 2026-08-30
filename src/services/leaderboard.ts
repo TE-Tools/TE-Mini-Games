@@ -61,6 +61,39 @@ export async function getLocalTopByGame(
   return [...map.entries()].map(([gameId, v]) => ({ gameId, ...v }))
 }
 
+export interface GameTotals {
+  gameId: string
+  /** Summe der Punkte aus jeder einzelnen Runde – nicht nur der beste Wert. */
+  totalScore: number
+  totalXp: number
+  playCount: number
+}
+
+/**
+ * Aufsummierte Punkte je Spiel, über alle jemals gespeicherten Runden
+ * hinweg (30.08.2026, Thomas' Wunsch: "alle Punkte insgesamt ... für das
+ * jeweilige Spiel", nicht nur die besten oder die letzten paar Runden).
+ */
+export async function getLocalTotalsByGame(
+  userId: string = GUEST_USER_ID,
+): Promise<GameTotals[]> {
+  const results = await db.gameResults.where('userId').equals(userId).toArray()
+  const map = new Map<string, GameTotals>()
+  for (const r of results) {
+    const entry = map.get(r.gameId) ?? {
+      gameId: r.gameId,
+      totalScore: 0,
+      totalXp: 0,
+      playCount: 0,
+    }
+    entry.totalScore += r.score
+    entry.totalXp += r.xp
+    entry.playCount += 1
+    map.set(r.gameId, entry)
+  }
+  return [...map.values()].sort((a, b) => b.totalScore - a.totalScore)
+}
+
 export async function getLocalRecentHighScores(
   limit = 20,
   userId: string = GUEST_USER_ID,
