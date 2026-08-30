@@ -54,7 +54,8 @@ einfügen → **Run**.
 **Settings → API:**
 
 - Project URL → `VITE_SUPABASE_URL`  
-- `anon` `public` key → `VITE_SUPABASE_ANON_KEY`  
+- Öffentlicher Key → `VITE_SUPABASE_ANON_KEY`  
+  (neues Format `sb_publishable_…` oder der alte `anon` `public` JWT – beides funktioniert)  
 
 Niemals den **service_role** Key in die Frontend-App oder ins Git legen.
 
@@ -69,6 +70,17 @@ Niemals den **service_role** Key in die Frontend-App oder ins Git legen.
 | `VITE_SUPABASE_ANON_KEY` | `eyJ...` (anon key) |
 
 Danach **Redeploy** (Deployments → Retry deployment), damit Vite die Vars einbaut.
+
+### E-Mail-Bestätigung
+
+Standardmäßig ist **Confirm email** an: neue Konten müssen erst den Link aus der
+Mail anklicken, bevor die erste Anmeldung geht. Zwei Dinge dazu:
+
+- Der eingebaute Supabase-Mailversand ist stark limitiert (wenige Mails pro
+  Stunde) und landet oft im Spam. Für echten Betrieb eigenen SMTP hinterlegen:
+  Authentication → Emails → SMTP Settings.
+- Zum schnellen Testen kann man die Bestätigung abschalten:
+  Authentication → Providers → Email → **Confirm email** aus.
 
 ## 6. Prüfen
 
