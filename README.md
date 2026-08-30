@@ -8,8 +8,9 @@ Progressive Web App with short skill, memory, reaction and logic games.
 
 - **Die perfekte Sekunde** – stop the timer as close as possible to a target time
 - **Was fehlt?** – memorize objects; one is missing afterwards
-- **Schützenrunde** – social deduction against rule-based bots (v3, 8–16 players, offices,
-  phase timers, Züge, Schützenfest event – local round)
+- **Schützenrunde** – social deduction, 8–16 players: local round against rule-based bots
+  or online with friends (server-authoritative rules in Postgres, see
+  `supabase/migrations/007_schuetzenrunde_multiplayer.sql`)
 - Level map 1–500 across five biomes (jungle → volcanic → rock desert → ice age → glacier peak)
 - Installable as an app (PWA) – "App installieren" on the home screen
 - Offline-first (IndexedDB)

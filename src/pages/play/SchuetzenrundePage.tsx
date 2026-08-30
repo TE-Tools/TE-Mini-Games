@@ -22,6 +22,7 @@ import {
   factionOf,
   type MatchState,
 } from '@/games/schuetzenrunde'
+import { SchuetzenrundeOnline } from './SchuetzenrundeOnline'
 import { saveGameResult, addXp, getOrCreateGuestProfile, getRecentResults } from '@/offline'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
@@ -65,6 +66,7 @@ export function SchuetzenrundePage() {
   const [spreadRumour, setSpreadRumour] = useState(false)
   const [saved, setSaved] = useState(false)
   const [zugBoard, setZugBoard] = useState<ZugScore[]>([])
+  const [online, setOnline] = useState(false)
 
   // ---- phase clock (spec: Nacht 45 s, Tag 90 s, Abstimmung 30 s, Ergebnis 8 s)
   const [deadline, setDeadline] = useState<number | null>(null)
@@ -215,6 +217,28 @@ export function SchuetzenrundePage() {
     return () => window.clearInterval(id)
   }, [deadline])
 
+  /* -------------------------------- online ------------------------------- */
+
+  if (online) {
+    return (
+      <main className={styles.page}>
+        <header className={styles.header}>
+          <button
+            type="button"
+            className={styles.back}
+            onClick={() => navigate('/')}
+            aria-label="Zurück"
+          >
+            ←
+          </button>
+          <h1 className={styles.title}>Schützenrunde</h1>
+          <span className={styles.roundBadge}>online</span>
+        </header>
+        <SchuetzenrundeOnline onBack={() => setOnline(false)} />
+      </main>
+    )
+  }
+
   /* -------------------------------- lobby -------------------------------- */
 
   if (!match || !me || !myRole) {
@@ -290,6 +314,9 @@ export function SchuetzenrundePage() {
 
         <button type="button" className={styles.primaryBtn} onClick={() => void start()}>
           Runde starten
+        </button>
+        <button type="button" className={styles.secondaryBtn} onClick={() => setOnline(true)}>
+          🌐 Online mit Freunden spielen
         </button>
 
         {zugBoard.length > 0 && (

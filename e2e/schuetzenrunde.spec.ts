@@ -62,6 +62,18 @@ test.describe('Schützenrunde', () => {
     await expect(page.getByText(/Zugpunkte/)).toBeVisible()
   })
 
+  test('offers the online mode and explains when it is unavailable', async ({ page }) => {
+    await page.goto('/play/schuetzenrunde')
+    const onlineButton = page.getByRole('button', { name: /Online mit Freunden/ })
+    await expect(onlineButton).toBeVisible()
+    await onlineButton.click()
+    // Ohne Konto-Server (kein VITE_SUPABASE_* im Test) muss die Seite das sagen,
+    // statt einen toten Knopf zu zeigen.
+    await expect(page.getByText(/Konto-Server|Anmelden/)).toBeVisible()
+    await page.getByRole('button', { name: /gegen Bots/ }).click()
+    await expect(page.getByRole('button', { name: 'Runde starten' })).toBeVisible()
+  })
+
   test('shows the lobby options', async ({ page }) => {
     await page.goto('/play/schuetzenrunde')
     await expect(page.getByText('Wie viele Mitglieder?')).toBeVisible()
