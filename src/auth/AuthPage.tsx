@@ -16,7 +16,7 @@ import {
   onPasswordRecovery,
   takeAuthErrorFromUrl,
 } from '@/auth/authService'
-import { trySyncNow } from '@/services/remoteSync'
+import { trySyncNow, syncFullNow } from '@/services/remoteSync'
 import { outboxCount } from '@/offline/outbox'
 import styles from './AuthPage.module.css'
 
@@ -36,6 +36,7 @@ export function AuthPage() {
   const [myUsername, setMyUsername] = useState<string | null>(null)
   const [pending, setPending] = useState(0)
   const [syncing, setSyncing] = useState(false)
+  const [syncInfo, setSyncInfo] = useState<string | null>(null)
   const [recovery, setRecovery] = useState(
     () => typeof window !== 'undefined' && window.location.hash.includes('type=recovery'),
   )
@@ -113,14 +114,22 @@ export function AuthPage() {
           disabled={syncing}
           onClick={() => {
             setSyncing(true)
-            void trySyncNow()
-              .then(() => outboxCount())
-              .then(setPending)
+            setSyncInfo(null)
+            void syncFullNow()
+              .then(async (pull) => {
+                setPending(await outboxCount())
+                setSyncInfo(
+                  pull.games > 0
+                    ? `Fortschritt geladen – bis Level ${pull.restoredLevel}.`
+                    : 'Alles auf dem neuesten Stand.',
+                )
+              })
               .finally(() => setSyncing(false))
           }}
         >
           {syncing ? 'Synchronisiere…' : 'Jetzt synchronisieren'}
         </button>
+        {syncInfo && <p className={styles.hint}>{syncInfo}</p>}
         <button
           type="button"
           className={styles.switch}

@@ -10,7 +10,7 @@ import {
 } from '@/services/leaderboard'
 import { isSupabaseConfigured } from '@/database/supabase'
 import { getMyUsername } from '@/auth/authService'
-import { trySyncNow } from '@/services/remoteSync'
+import { syncFullNow } from '@/services/remoteSync'
 import type { GameId } from '@/games/types'
 import styles from './LeaderboardPage.module.css'
 
@@ -69,7 +69,7 @@ export function LeaderboardPage() {
   const refresh = async () => {
     setSyncing(true)
     try {
-      await trySyncNow()
+      await syncFullNow()
       setMyName(await getMyUsername())
     } finally {
       setSyncing(false)
@@ -192,6 +192,12 @@ export function LeaderboardPage() {
               {myEntry.level})
             </p>
           )}
+          {isSupabaseConfigured && (
+            <p className={styles.hint}>
+              Gezeigt wird das <strong>beste</strong> Ergebnis pro Spieler – die Liste bewegt
+              sich erst, wenn jemand seinen eigenen Rekord schlägt.
+            </p>
+          )}
           {isSupabaseConfigured && !myEntry && remote.length > 0 && (
             <p className={styles.hint}>
               {myName
@@ -217,7 +223,13 @@ export function LeaderboardPage() {
                   <span className={styles.rowMain}>
                     {e.displayName}
                     {e.displayName === myName ? ' (du)' : ''}
-                    <span className={styles.sub}> L{e.level}</span>
+                    <span className={styles.sub}>
+                      {' '}
+                      L{e.level}
+                      {e.achievedAt
+                        ? ` · ${new Date(e.achievedAt).toLocaleDateString('de-DE')}`
+                        : ''}
+                    </span>
                   </span>
                   <span className={styles.rowScore}>{e.score}</span>
                 </li>

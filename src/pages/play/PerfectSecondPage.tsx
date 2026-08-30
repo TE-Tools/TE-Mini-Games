@@ -19,6 +19,7 @@ import {
 } from '@/offline'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
+import { DATA_PULLED_EVENT } from '@/services/remotePull'
 import { milestoneBonusXp } from '@/games/milestones'
 import { LevelMap } from '@/components/level-map/LevelMap'
 import styles from './PerfectSecondPage.module.css'
@@ -68,6 +69,19 @@ export function PerfectSecondPage() {
     return () => {
       cancelled = true
     }
+  }, [])
+
+  // A sync can bring a higher level down from the account – take it over.
+  useEffect(() => {
+    const onPulled = () => {
+      void getOrCreateGameProgress('perfect-second').then((progress) => {
+        setHighest(Math.max(progress.highestLevel, progress.currentLevel))
+        setLevel(progress.currentLevel)
+        setConfig(createPerfectSecondLevel(progress.currentLevel))
+      })
+    }
+    window.addEventListener(DATA_PULLED_EVENT, onPulled)
+    return () => window.removeEventListener(DATA_PULLED_EVENT, onPulled)
   }, [])
 
   const selectLevel = useCallback((L: number) => {

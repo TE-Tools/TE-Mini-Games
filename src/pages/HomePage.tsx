@@ -4,6 +4,7 @@ import styles from './HomePage.module.css'
 import { getOrCreateGuestProfile, type LocalProfile } from '@/offline'
 import { xpProgressInLevel } from '@/progression'
 import { InstallButton } from '@/components/install/InstallButton'
+import { DATA_PULLED_EVENT } from '@/services/remotePull'
 
 export function HomePage() {
   const [profile, setProfile] = useState<LocalProfile | null>(null)
@@ -37,6 +38,15 @@ export function HomePage() {
     return () => {
       cancelled = true
     }
+  }, [])
+
+  // XP and level can change when a sync pulls the account state down.
+  useEffect(() => {
+    const onPulled = () => {
+      void getOrCreateGuestProfile().then(setProfile)
+    }
+    window.addEventListener(DATA_PULLED_EVENT, onPulled)
+    return () => window.removeEventListener(DATA_PULLED_EVENT, onPulled)
   }, [])
 
   const playerLevel = profile?.playerLevel ?? 1

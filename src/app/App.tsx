@@ -12,17 +12,19 @@ import { AchievementsPage } from '@/pages/achievements/AchievementsPage'
 import { AuthPage } from '@/auth/AuthPage'
 import { ProfilePage } from '@/pages/profile/ProfilePage'
 import { registerAllGames } from '@/games/register'
-import { initRemoteSync, trySyncNow } from '@/services/remoteSync'
+import { initRemoteSync, syncFullNow } from '@/services/remoteSync'
 import { onAuthStateChange } from '@/auth/authService'
 
 export function App() {
   useEffect(() => {
     registerAllGames()
     initRemoteSync()
+    // Signing in (or starting the app while signed in) also pulls the account
+    // state down, so a second device continues where the last one stopped.
     const unsub = onAuthStateChange(() => {
-      void trySyncNow()
+      void syncFullNow()
     })
-    void trySyncNow()
+    void syncFullNow()
     return unsub
   }, [])
 

@@ -14,6 +14,8 @@ export interface LeaderboardEntry {
   gameId: string
   isYou?: boolean
   source: 'local' | 'remote'
+  /** When the entry was achieved – the list shows personal bests, not the last round. */
+  achievedAt?: string
 }
 
 export interface PersonalBestRow {
@@ -83,7 +85,7 @@ export async function getRemoteTopScores(
     // RLS keeps every player's raw rows private.
     const { data, error } = await supabase
       .from('leaderboard_top')
-      .select('username, score, level')
+      .select('username, score, level, created_at')
       .eq('game_id', gameId)
       .order('score', { ascending: false })
       .order('level', { ascending: false })
@@ -98,6 +100,7 @@ export async function getRemoteTopScores(
       level: row.level as number,
       gameId,
       source: 'remote' as const,
+      achievedAt: (row.created_at as string | null) ?? undefined,
     }))
   } catch {
     return []

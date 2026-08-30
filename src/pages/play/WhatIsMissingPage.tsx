@@ -16,6 +16,7 @@ import {
 } from '@/offline'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
+import { DATA_PULLED_EVENT } from '@/services/remotePull'
 import { milestoneBonusXp } from '@/games/milestones'
 import { LevelMap } from '@/components/level-map/LevelMap'
 import styles from './WhatIsMissingPage.module.css'
@@ -66,6 +67,19 @@ export function WhatIsMissingPage() {
     return () => {
       cancelled = true
     }
+  }, [])
+
+  // A sync can bring a higher level down from the account – take it over.
+  useEffect(() => {
+    const onPulled = () => {
+      void getOrCreateGameProgress('what-is-missing').then((progress) => {
+        setHighest(progress.highestLevel)
+        setLevel(progress.currentLevel)
+        setConfig(createWhatIsMissingLevel(progress.currentLevel))
+      })
+    }
+    window.addEventListener(DATA_PULLED_EVENT, onPulled)
+    return () => window.removeEventListener(DATA_PULLED_EVENT, onPulled)
   }, [])
 
   const selectLevel = useCallback((L: number) => {

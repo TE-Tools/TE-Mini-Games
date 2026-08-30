@@ -7,6 +7,7 @@ import { supabase, isSupabaseConfigured } from '@/database/supabase'
 import { registerSyncAdapter, processSyncQueue } from '@/services/sync'
 import { getCurrentUser } from '@/auth/authService'
 import { MAX_LEVEL } from '@/progression/zones'
+import { pullRemoteState, type PullResult } from '@/services/remotePull'
 
 /** Upper bound for the XP of a single result – mirrors the RLS check. */
 const MAX_RESULT_XP = 20000
@@ -176,7 +177,21 @@ export function initRemoteSync(): void {
   registerSyncAdapter(pushOutboxItem)
 }
 
+/** Push what is queued. Used after every game – cheap and one-way. */
 export async function trySyncNow(): Promise<void> {
   if (!isSupabaseConfigured) return
   await processSyncQueue()
+}
+
+/**
+ * Push, then pull the account state back down. Used on sign-in, on app start
+ * and behind the sync buttons – that is what makes a second device pick up the
+ * progress instead of starting over.
+ */
+export async function syncFullNow(): Promise<PullResult> {
+  if (!isSupabaseConfigured) {
+    return { pulled: false, games: 0, records: 0, achievements: 0, restoredLevel: 0 }
+  }
+  await processSyncQueue()
+  return pullRemoteState()
 }
