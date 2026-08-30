@@ -4,6 +4,7 @@ import { HomePage } from '@/pages/HomePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { PerfectSecondPage } from '@/pages/play/PerfectSecondPage'
 import { WhatIsMissingPage } from '@/pages/play/WhatIsMissingPage'
+import { SchuetzenrundePage } from '@/pages/play/SchuetzenrundePage'
 import { FamilyPage } from '@/pages/family/FamilyPage'
 import { DailyPage } from '@/pages/daily/DailyPage'
 import { LeaderboardPage } from '@/pages/leaderboard/LeaderboardPage'
@@ -31,6 +32,7 @@ export function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/play/perfect-second" element={<PerfectSecondPage />} />
         <Route path="/play/what-is-missing" element={<WhatIsMissingPage />} />
+        <Route path="/play/schuetzenrunde" element={<SchuetzenrundePage />} />
         <Route path="/family" element={<FamilyPage />} />
         <Route path="/daily" element={<DailyPage />} />
         <Route path="/leaderboard" element={<LeaderboardPage />} />

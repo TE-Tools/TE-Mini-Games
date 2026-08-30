@@ -10,8 +10,13 @@ import {
   validateUsername,
   validatePassword,
   isUsernameAvailable,
+  sendPasswordReset,
+  updatePassword,
+  getMyUsername,
+  onPasswordRecovery,
 } from '@/auth/authService'
 import { trySyncNow } from '@/services/remoteSync'
+import { outboxCount } from '@/offline/outbox'
 import styles from './AuthPage.module.css'
 
 export function AuthPage() {
@@ -27,12 +32,23 @@ export function AuthPage() {
   const [info, setInfo] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [myUsername, setMyUsername] = useState<string | null>(null)
+  const [pending, setPending] = useState(0)
+  const [syncing, setSyncing] = useState(false)
+  const [recovery, setRecovery] = useState(
+    () => typeof window !== 'undefined' && window.location.hash.includes('type=recovery'),
+  )
+  const [newPassword, setNewPassword] = useState('')
   /** Result of the last availability lookup, tied to the name it was made for. */
   const [checkedName, setCheckedName] = useState<{ name: string; status: string } | null>(null)
 
   useEffect(() => {
     void getCurrentUser().then((u) => setUserEmail(u?.email ?? null))
+    void getMyUsername().then(setMyUsername)
+    void outboxCount().then(setPending)
   }, [])
+
+  useEffect(() => onPasswordRecovery(() => setRecovery(true)), [])
 
   // Local validation is derived during render – only the lookup needs state.
   const localUsernameStatus =
@@ -77,17 +93,86 @@ export function AuthPage() {
     )
   }
 
-  if (userEmail) {
+  if (userEmail && !recovery) {
     return (
       <main className={styles.page}>
         <h1 className={styles.title}>Angemeldet</h1>
-        <p className={styles.hint}>{userEmail}</p>
+        <p className={styles.hint}>
+          {myUsername ? `@${myUsername} · ` : ''}
+          {userEmail}
+        </p>
+        <p className={styles.muted}>
+          {pending > 0
+            ? `${pending} Ergebnis${pending === 1 ? '' : 'se'} warten auf den Upload.`
+            : 'Alles synchronisiert.'}
+        </p>
         <button
           type="button"
           className={styles.primaryBtn}
+          disabled={syncing}
+          onClick={() => {
+            setSyncing(true)
+            void trySyncNow()
+              .then(() => outboxCount())
+              .then(setPending)
+              .finally(() => setSyncing(false))
+          }}
+        >
+          {syncing ? 'Synchronisiere…' : 'Jetzt synchronisieren'}
+        </button>
+        <button
+          type="button"
+          className={styles.switch}
           onClick={() => void signOut().then(() => setUserEmail(null))}
         >
           Abmelden
+        </button>
+        <Link to="/" className={styles.link}>
+          Zur Startseite
+        </Link>
+      </main>
+    )
+  }
+
+  if (recovery) {
+    return (
+      <main className={styles.page}>
+        <h1 className={styles.title}>Neues Passwort</h1>
+        <p className={styles.hint}>Wähle ein neues Passwort für dein Konto.</p>
+        <label className={styles.label}>
+          Neues Passwort *
+          <input
+            className={styles.input}
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            autoComplete="new-password"
+            minLength={8}
+            required
+          />
+        </label>
+        {error && <p className={styles.error}>{error}</p>}
+        {info && <p className={styles.hint}>{info}</p>}
+        <button
+          type="button"
+          className={styles.primaryBtn}
+          disabled={busy || newPassword.length < 8}
+          onClick={() => {
+            setBusy(true)
+            setError(null)
+            void updatePassword(newPassword)
+              .then((r) => {
+                if (r.error) setError(r.error)
+                else {
+                  setInfo('Passwort geändert. Du bist angemeldet.')
+                  setRecovery(false)
+                  setNewPassword('')
+                }
+              })
+              .finally(() => setBusy(false))
+          }}
+        >
+          {busy ? '…' : 'Passwort speichern'}
         </button>
         <Link to="/" className={styles.link}>
           Zur Startseite
@@ -235,6 +320,27 @@ export function AuthPage() {
       <button type="button" className={styles.googleBtn} disabled={busy} onClick={() => void google()}>
         Mit Google anmelden
       </button>
+
+      {mode === 'in' && (
+        <button
+          type="button"
+          className={styles.switch}
+          disabled={busy || !email}
+          onClick={() => {
+            setBusy(true)
+            setError(null)
+            setInfo(null)
+            void sendPasswordReset(email)
+              .then((r) => {
+                if (r.error) setError(r.error)
+                else setInfo('Wenn die E-Mail existiert, ist der Link unterwegs.')
+              })
+              .finally(() => setBusy(false))
+          }}
+        >
+          Passwort vergessen?
+        </button>
+      )}
 
       <button
         type="button"

@@ -6,13 +6,17 @@
 import { supabase, isSupabaseConfigured } from '@/database/supabase'
 import { registerSyncAdapter, processSyncQueue } from '@/services/sync'
 import { getCurrentUser } from '@/auth/authService'
+import { MAX_LEVEL } from '@/progression/zones'
+
+/** Upper bound for the XP of a single result – mirrors the RLS check. */
+const MAX_RESULT_XP = 20000
 
 function isPlausibleScore(score: unknown): score is number {
   return typeof score === 'number' && score >= 0 && score <= 1000
 }
 
 function isPlausibleLevel(level: unknown): level is number {
-  return typeof level === 'number' && level >= 1 && level <= 100
+  return typeof level === 'number' && level >= 1 && level <= MAX_LEVEL
 }
 
 async function pushOutboxItem(item: {
@@ -43,7 +47,7 @@ async function pushOutboxItem(item: {
           game_id: p.gameId,
           level: p.level,
           score: p.score,
-          xp: typeof p.xp === 'number' ? Math.min(200, Math.max(0, p.xp)) : 0,
+          xp: typeof p.xp === 'number' ? Math.min(MAX_RESULT_XP, Math.max(0, p.xp)) : 0,
           result_data: (p.resultData as Record<string, unknown>) ?? {},
           created_at: typeof p.createdAt === 'string' ? p.createdAt : new Date().toISOString(),
         },

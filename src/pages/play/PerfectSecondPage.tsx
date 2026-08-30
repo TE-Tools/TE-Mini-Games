@@ -5,7 +5,6 @@ import {
   calculateScore,
   createTimer,
   formatTime,
-  formatTargetTime,
   perfectSecondGame,
   type PerfectSecondLevel,
   type ScoreResult,
@@ -36,6 +35,8 @@ export function PerfectSecondPage() {
   const [phase, setPhase] = useState<Phase>('map')
   const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null)
   const [hitScores, setHitScores] = useState<ScoreResult[]>([])
+  /** Measured seconds of every stop in this level – shown on the result screen. */
+  const [hitTimes, setHitTimes] = useState<number[]>([])
   const [hitsDone, setHitsDone] = useState(0)
   const [isRecord, setIsRecord] = useState(false)
   const [milestoneXp, setMilestoneXp] = useState(0)
@@ -74,6 +75,7 @@ export function PerfectSecondPage() {
     setPhase('ready')
     setScoreResult(null)
     setHitScores([])
+    setHitTimes([])
     setHitsDone(0)
     setMilestoneXp(0)
     setCompletedLevel(null)
@@ -101,6 +103,7 @@ export function PerfectSecondPage() {
     if (!result.withinTolerance) {
       setScoreResult(result)
       setHitScores([])
+      setHitTimes([actual])
       setHitsDone(0)
       setIsRecord(false)
       setCompletedLevel(null)
@@ -130,7 +133,9 @@ export function PerfectSecondPage() {
     }
 
     const nextHits = [...hitScores, result]
+    const nextTimes = [...hitTimes, actual]
     setHitScores(nextHits)
+    setHitTimes(nextTimes)
     setHitsDone(nextHits.length)
 
     if (nextHits.length < config.hitsRequired) {
@@ -185,7 +190,7 @@ export function PerfectSecondPage() {
     })
 
     setPhase('result')
-  }, [phase, config, hitScores])
+  }, [phase, config, hitScores, hitTimes])
 
   if (loading) {
     return (
@@ -232,9 +237,9 @@ export function PerfectSecondPage() {
       {phase === 'ready' && (
         <section className={styles.ready}>
           <p className={styles.targetLabel}>Zielzeit</p>
-          <p className={styles.targetValue}>{formatTargetTime(config.targetTime)} s</p>
+          <p className={styles.targetValue}>{formatTime(config.targetTime)} s</p>
           <p className={styles.tolerance}>
-            ±{formatTargetTime(config.tolerance)} s · Treffer {hitsDone}/{config.hitsRequired}
+            ±{formatTime(config.tolerance)} s · Treffer {hitsDone}/{config.hitsRequired}
           </p>
           {config.hitsRequired > 1 && (
             <p className={styles.hint}>
@@ -242,7 +247,12 @@ export function PerfectSecondPage() {
             </p>
           )}
           {hitsDone > 0 && (
-            <p className={styles.record}>✓ Treffer {hitsDone} geschafft – weiter so!</p>
+            <>
+              <p className={styles.record}>✓ Treffer {hitsDone} geschafft – weiter so!</p>
+              <p className={styles.tolerance}>
+                Bisher: {hitTimes.map((t) => `${formatTime(t)} s`).join(' · ')}
+              </p>
+            </>
           )}
           <button type="button" className={styles.primaryBtn} onClick={startTimer}>
             {hitsDone > 0 ? 'Nächster Treffer' : 'Start'}
@@ -256,7 +266,7 @@ export function PerfectSecondPage() {
       {phase === 'running' && (
         <section className={styles.running}>
           <p className={styles.runningHint}>Jetzt!</p>
-          <p className={styles.targetDuring}>Ziel: {formatTargetTime(config.targetTime)} s</p>
+          <p className={styles.targetDuring}>Ziel: {formatTime(config.targetTime)} s</p>
           <button type="button" className={styles.stopBtn} onClick={() => void stopTimer()}>
             STOP
           </button>
@@ -272,8 +282,17 @@ export function PerfectSecondPage() {
             <p className={styles.muted}>Daneben – versuch’s nochmal</p>
           )}
           <p className={styles.resultTime}>
-            Abweichung {formatTime(scoreResult.absoluteDeviation)}
+            Deine Zeit: <strong>{formatTime(hitTimes.at(-1) ?? 0)} s</strong>
+            {' · '}Ziel {formatTime(config.targetTime)} s
           </p>
+          <p className={styles.tolerance}>
+            Abweichung {formatTime(scoreResult.absoluteDeviation)} s
+          </p>
+          {hitTimes.length > 1 && (
+            <p className={styles.tolerance}>
+              Alle Treffer: {hitTimes.map((t) => `${formatTime(t)} s`).join(' · ')}
+            </p>
+          )}
           <p className={styles.stars}>{'⭐'.repeat(scoreResult.stars) || '—'}</p>
           <p className={styles.scoreLine}>
             <strong>{scoreResult.score}</strong> Punkte · <strong>+{scoreResult.xp}</strong> XP
@@ -294,6 +313,7 @@ export function PerfectSecondPage() {
                   setLevel(next)
                   setConfig(createPerfectSecondLevel(next))
                   setHitScores([])
+                  setHitTimes([])
                   setHitsDone(0)
                   setCompletedLevel(null)
                   setHadPerfectHit(false)
@@ -313,6 +333,7 @@ export function PerfectSecondPage() {
                 setLevel(L)
                 setConfig(createPerfectSecondLevel(L))
                 setHitScores([])
+                setHitTimes([])
                 setHitsDone(0)
                 setPhase('ready')
                 setScoreResult(null)

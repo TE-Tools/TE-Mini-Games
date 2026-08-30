@@ -132,18 +132,24 @@ statt eine einzige Kurve über 500 Level zu strecken.
   hintereinander.
 - Ab Level 241: jedes Level 2 Treffer, Tor-Level 3.
 
-**Was fehlt?** (Objekte / Anzeigedauer / Antwortmöglichkeiten):
+**Was fehlt?** (Objekte / Anzeigedauer je Zone):
 
-| Zone | Objekte | Anzeigedauer | Auswahl |
-|------|---------|--------------|---------|
-| Urwald | 5 → 40 | 5 s → 1,5 s | 8 |
-| Vulkanland | 10 → 42 | 4 s → 1,2 s | 9 |
-| Felswüste | 14 → 42 | 3,5 s → 1 s | 10 |
-| Eiszeit | 18 → 42 | 3 s → 0,9 s | 11 |
-| Gletschergipfel | 22 → 42 | 2,5 s → 0,8 s | 12 |
+| Zone | Objekte | Anzeigedauer |
+|------|---------|--------------|
+| Urwald | 5 → 40 | 5 s → 1,5 s |
+| Vulkanland | 10 → 42 | 4 s → 1,2 s |
+| Felswüste | 14 → 42 | 3,5 s → 1 s |
+| Eiszeit | 18 → 42 | 3 s → 0,9 s |
+| Gletschergipfel | 22 → 42 | 2,5 s → 0,8 s |
 
-Die Objektzahl ist durch den Katalog begrenzt (`OBJECT_CATALOG`, aktuell 42);
-mehr Schwierigkeit kommt in späteren Zonen über Zeit und Auswahl.
+Zusätzlich **pro Kartenabschnitt (20 Level)**:
+
+- **Auswahl unten wächst**: 5 Bilder in Abschnitt 1, dann +1 je Abschnitt bis 16.
+- **Ähnliche Bilder ab Abschnitt 3**: Objekte haben Familien (roter/grüner Apfel,
+  Herz in vier Farben, Stuhl/Sofa, Kreise und Quadrate in mehreren Farben …).
+  Ab Abschnitt 3 kommen gezielt 1–6 solcher Paare ins Bild, und die Auswahl
+  enthält immer die Doppelgänger des verschwundenen Objekts – „da war ein Herz"
+  reicht dann nicht mehr, es zählt die Farbe.
 
 ### Meilensteine
 

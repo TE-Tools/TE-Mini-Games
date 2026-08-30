@@ -11,17 +11,47 @@ describe('Perfect Second level system', () => {
     const L = createPerfectSecondLevel(1)
     expect(L.level).toBe(1)
     expect(L.targetTime).toBe(1.5)
-    expect(L.tolerance).toBe(0.5)
+    expect(L.tolerance).toBe(0.8)
     expect(L.hitsRequired).toBe(1)
   })
 
-  it('target times are round half seconds', () => {
+  it('target times stay between 1,5 s and 20 s with at most 3 decimals', () => {
     for (let level = 1; level <= 500; level++) {
       const t = createPerfectSecondLevel(level).targetTime
-      expect(Math.round(t * 2)).toBeCloseTo(t * 2, 10)
       expect(t).toBeGreaterThanOrEqual(1.5)
       expect(t).toBeLessThanOrEqual(20)
+      expect(Math.round(t * 1000)).toBeCloseTo(t * 1000, 6)
     }
+  })
+
+  it('early levels only ask for round half seconds, later ones for decimals', () => {
+    for (let level = 1; level <= 40; level++) {
+      const t = createPerfectSecondLevel(level).targetTime
+      expect(Math.round(t * 2)).toBeCloseTo(t * 2, 10)
+    }
+    // Pieces 3–5 work in tenths, 6–10 in hundredths, from 11 on in milliseconds.
+    const decimals = (t: number) => (String(t).split('.')[1] ?? '').length
+    const maxDecimals = (from: number) => {
+      let max = 0
+      for (let level = from; level < from + 20; level++) {
+        max = Math.max(max, decimals(createPerfectSecondLevel(level).targetTime))
+      }
+      return max
+    }
+    expect(maxDecimals(1)).toBeLessThanOrEqual(1)
+    expect(maxDecimals(41)).toBe(1)
+    expect(maxDecimals(101)).toBe(2)
+    expect(maxDecimals(201)).toBe(3)
+  })
+
+  it('the first two pieces have an extra wide tolerance', () => {
+    expect(createPerfectSecondLevel(1).tolerance).toBeGreaterThan(0.7)
+    expect(createPerfectSecondLevel(20).tolerance).toBeGreaterThanOrEqual(0.4)
+    expect(createPerfectSecondLevel(21).tolerance).toBeGreaterThan(0.5)
+    // From piece 3 on the bonus is gone again.
+    expect(createPerfectSecondLevel(41).tolerance).toBeLessThan(
+      createPerfectSecondLevel(21).tolerance,
+    )
   })
 
   it('levels 1–20 stay between 0 and 5 seconds', () => {

@@ -1,0 +1,243 @@
+.page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-4);
+  max-width: 28rem;
+  margin: 0 auto;
+  width: 100%;
+  gap: var(--space-4);
+}
+
+.header {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  align-items: center;
+  width: 100%;
+  gap: var(--space-2);
+}
+
+.back {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xl);
+  color: var(--color-text-muted);
+  background: linear-gradient(180deg, #ffffff, #fff6dd);
+  border: 2px solid var(--color-border);
+  box-shadow: var(--btn-shadow);
+}
+
+.title {
+  font-size: var(--text-lg);
+  font-weight: 800;
+  text-align: center;
+}
+
+.roundBadge {
+  font-weight: 800;
+  font-size: var(--text-sm);
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-full);
+  background: linear-gradient(180deg, #fffbe8, #f3dd9a);
+  border: 2px solid #d4a017;
+}
+
+.lead,
+.hint,
+.muted {
+  text-align: center;
+  margin: 0;
+}
+
+.lead {
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+.hint {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.muted {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.label {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-weight: 700;
+  font-size: var(--text-sm);
+}
+
+.input {
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--color-border);
+  font-size: var(--text-base);
+}
+
+.roleCard {
+  width: 100%;
+  padding: var(--space-3);
+  border-radius: var(--radius-xl);
+  border: 3px solid #2f7d32;
+  background: linear-gradient(180deg, #f2fbef, #d9f0d6);
+  text-align: center;
+}
+
+.roleCard[data-faction='saboteure'] {
+  border-color: #b3261e;
+  background: linear-gradient(180deg, #fdeceb, #f7cfcc);
+}
+
+.roleName {
+  margin: 0;
+  font-weight: 800;
+  font-size: var(--text-base);
+}
+
+.roleText {
+  margin: 0.25rem 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.dead {
+  margin: 0.35rem 0 0;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: #b3261e;
+}
+
+.notes {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.note {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.players {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-2);
+}
+
+.player {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--color-border);
+  background: linear-gradient(180deg, #ffffff, #fff6dd);
+  box-shadow: var(--btn-shadow);
+  text-align: left;
+}
+
+.player:disabled {
+  opacity: 0.85;
+  box-shadow: none;
+}
+
+.playerOut {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.playerMe {
+  border-color: #7c5cfc;
+}
+
+.playerSelected {
+  border-color: #d4a017;
+  box-shadow: 0 0 0 3px rgb(212 160 23 / 0.35);
+}
+
+.playerName {
+  font-weight: 800;
+  font-size: var(--text-sm);
+}
+
+.playerState {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.phaseTitle {
+  margin: 0;
+  font-weight: 800;
+  font-size: var(--text-lg);
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.primaryBtn {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-xl);
+  font-size: var(--text-base);
+  font-weight: 800;
+  color: #2a1f12;
+  background: linear-gradient(180deg, #ffe9a3, #e8c14f);
+  border: 3px solid #b8860b;
+  box-shadow: var(--btn-shadow);
+}
+
+.primaryBtn:disabled {
+  opacity: 0.55;
+}
+
+.log {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  background: rgb(0 0 0 / 0.04);
+}
+
+.logEntry {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.homeLink {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-decoration: underline;
+}

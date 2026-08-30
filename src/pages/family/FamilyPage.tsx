@@ -11,7 +11,7 @@ import {
 import type { LocalFamilySession } from '@/offline/db'
 import type { GameId } from '@/games/types'
 import {
-  createPerfectSecondLevel,
+  createFamilyLevel,
   calculateScore,
   createTimer,
   formatTime,
@@ -39,11 +39,14 @@ export function FamilyPage() {
   const [session, setSession] = useState<LocalFamilySession | null>(null)
   const [standings, setStandings] = useState<FamilyStanding[]>([])
   const [lastScore, setLastScore] = useState<number | null>(null)
+  /** Measured seconds of the player who just went – shown on the hand-off screen. */
+  const [lastTime, setLastTime] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const [psPhase, setPsPhase] = useState<'ready' | 'running'>('ready')
   const timerRef = useRef<ReturnType<typeof createTimer> | null>(null)
-  const psConfig = createPerfectSecondLevel(1)
+  // One random target per session – same number for every player, new one next round.
+  const [psConfig, setPsConfig] = useState(() => createFamilyLevel())
 
   const [wimConfig, setWimConfig] = useState(() =>
     createWhatIsMissingLevel(1, 'family-default'),
@@ -63,6 +66,7 @@ export function FamilyPage() {
     try {
       const s = await createFamilySession(gameId, names, 1)
       setSession(s)
+      setPsConfig(createFamilyLevel())
       if (gameId === 'what-is-missing') {
         setWimConfig(createWhatIsMissingLevel(1, `family-${s.id}`))
       }
@@ -121,6 +125,7 @@ export function FamilyPage() {
       tolerance: psConfig.tolerance,
       level: 1,
     })
+    setLastTime(elapsed)
     await finishPlayer(result.score, {
       actualTime: elapsed,
       deviation: result.absoluteDeviation,
@@ -285,6 +290,9 @@ export function FamilyPage() {
           <p className={styles.bigName}>{currentName}</p>
           <p className={styles.score}>
             {lastScore !== null ? `${lastScore} Punkte` : '—'}
+            {session?.gameId === 'perfect-second' && lastTime !== null
+              ? ` · ${formatTime(lastTime)} s (Ziel ${formatTime(psConfig.targetTime, 2)} s)`
+              : ''}
           </p>
           <p className={styles.hint}>Gerät an den nächsten Spieler weitergeben.</p>
           <button type="button" className={styles.primaryBtn} onClick={nextPlayer}>

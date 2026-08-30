@@ -79,26 +79,26 @@ export async function getRemoteTopScores(
   if (!isSupabaseConfigured || !supabase) return []
 
   try {
+    // Reads the public view (username + score + level only), not game_results –
+    // RLS keeps every player's raw rows private.
     const { data, error } = await supabase
-      .from('game_results')
-      .select('score, level, user_id, created_at, profiles(display_name)')
+      .from('leaderboard_top')
+      .select('username, score, level')
       .eq('game_id', gameId)
       .order('score', { ascending: false })
+      .order('level', { ascending: false })
       .limit(limit)
 
     if (error || !data) return []
 
-    return data.map((row, i) => {
-      const profiles = row.profiles as { display_name?: string } | null
-      return {
-        rank: i + 1,
-        displayName: profiles?.display_name ?? 'Spieler',
-        score: row.score as number,
-        level: row.level as number,
-        gameId,
-        source: 'remote' as const,
-      }
-    })
+    return data.map((row, i) => ({
+      rank: i + 1,
+      displayName: (row.username as string | null) ?? 'Spieler',
+      score: row.score as number,
+      level: row.level as number,
+      gameId,
+      source: 'remote' as const,
+    }))
   } catch {
     return []
   }

@@ -110,6 +110,12 @@
   color: #042f2e;
 }
 
+.gameButton[data-game='schuetzenrunde'] {
+  background: linear-gradient(180deg, #e8f0dc 0%, #9fbf6a 45%, #5c7a2e 100%);
+  border-color: #4a6323;
+  color: #1f2a10;
+}
+
 .gameIcon {
   font-size: 2.25rem;
   line-height: 1;

@@ -1,10 +1,10 @@
 # TE-Mini Games – Ideen / Backlog
 
-Neue Mini-Game-Ideen werden hier abgelegt. **Noch nicht implementiert**, bis explizit beauftragt.
+Neue Mini-Game-Ideen werden hier abgelegt. Implementiert wird erst, wenn explizit beauftragt.
 
 | Idee | Status | Ordner |
 |------|--------|--------|
-| **Schützenrunde** | Idee / Spezifikation | [schuetzenrunde/](./schuetzenrunde/) |
+| **Schützenrunde** | **v1 implementiert** (lokal vs. Bots), Multiplayer offen | [schuetzenrunde/](./schuetzenrunde/) |
 
 ## Schützenrunde (Kurz)
 

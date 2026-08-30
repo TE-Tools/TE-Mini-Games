@@ -4,6 +4,7 @@ import {
   objectCountForLevel,
   displayTimeForLevel,
   choiceCountForLevel,
+  similarPairsForLevel,
   calculateWhatIsMissingScore,
   createRng,
   hashSeed,
@@ -73,12 +74,46 @@ describe('What Is Missing zones (level 1–500)', () => {
     }
   })
 
-  it('later zones offer more answer choices', () => {
-    expect(choiceCountForLevel(1)).toBe(8)
-    expect(choiceCountForLevel(150)).toBe(9)
-    expect(choiceCountForLevel(250)).toBe(10)
-    expect(choiceCountForLevel(350)).toBe(11)
-    expect(choiceCountForLevel(500)).toBe(12)
+  it('every map piece offers more answer choices, up to 16', () => {
+    expect(choiceCountForLevel(1)).toBe(5)
+    expect(choiceCountForLevel(21)).toBe(6)
+    expect(choiceCountForLevel(41)).toBe(7)
+    expect(choiceCountForLevel(150)).toBe(12)
+    expect(choiceCountForLevel(241)).toBe(16)
+    expect(choiceCountForLevel(500)).toBe(16)
+    let prev = 0
+    for (let level = 1; level <= 500; level++) {
+      const c = choiceCountForLevel(level)
+      expect(c).toBeGreaterThanOrEqual(prev)
+      expect(c).toBeLessThanOrEqual(16)
+      prev = c
+    }
+  })
+
+  it('later levels mix in look-alikes, the first two pieces do not', () => {
+    expect(similarPairsForLevel(1)).toBe(0)
+    expect(similarPairsForLevel(40)).toBe(0)
+    expect(similarPairsForLevel(41)).toBe(1)
+    expect(similarPairsForLevel(500)).toBe(6)
+
+    // From piece 3 on the shown objects really contain a look-alike pair.
+    const L = createWhatIsMissingLevel(60, 'lookalike-seed')
+    const families = L.shownObjects
+      .map((o) => o.family)
+      .filter((f): f is string => Boolean(f))
+    const duplicated = families.filter((f, i) => families.indexOf(f) !== i)
+    expect(duplicated.length).toBeGreaterThan(0)
+  })
+
+  it('the choices contain the look-alikes of the missing object', () => {
+    for (const seed of ['a', 'b', 'c', 'd']) {
+      const L = createWhatIsMissingLevel(120, seed)
+      if (!L.missingObject.family) continue
+      const partners = L.remainingObjects.filter((o) => o.family === L.missingObject.family)
+      for (const p of partners.slice(0, 2)) {
+        expect(L.choiceObjects.some((o) => o.id === p.id)).toBe(true)
+      }
+    }
   })
 
   it('clamps level to 1–500', () => {

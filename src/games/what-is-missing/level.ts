@@ -9,9 +9,14 @@
  * Object counts are capped by the catalog size.
  */
 
-import { MAX_LEVEL, zoneForLevel, zoneProgress } from '@/progression/zones'
+import {
+  MAX_LEVEL,
+  segmentIndexForLevel,
+  zoneForLevel,
+  zoneProgress,
+} from '@/progression/zones'
 import type { ZoneId } from '@/progression/zones'
-import { OBJECT_CATALOG, type GameObject } from './objects'
+import { OBJECT_CATALOG, objectFamilies, type GameObject } from './objects'
 import { createRng, pickN, shuffle } from './seed'
 
 interface ZoneCurve {
@@ -64,9 +69,48 @@ export function displayTimeForLevel(level: number): number {
   return Math.round(t * 10) / 10
 }
 
-/** How many options the player picks from (never more than the shown objects). */
+/**
+ * How many options the player picks from – grows with every map piece from 5 up
+ * to 16 (never more than the shown objects).
+ */
 export function choiceCountForLevel(level: number): number {
-  return curveForLevel(clampLevel(level)).choices
+  return Math.min(16, 4 + segmentIndexForLevel(clampLevel(level)))
+}
+
+/**
+ * How many look-alike pairs (red/green apple, chair/couch …) are forced into the
+ * shown objects. The first two pieces stay clean, then it grows every second
+ * piece up to six pairs.
+ */
+export function similarPairsForLevel(level: number): number {
+  const segment = segmentIndexForLevel(clampLevel(level))
+  if (segment <= 2) return 0
+  return Math.min(6, Math.floor((segment - 1) / 2))
+}
+
+/**
+ * Pick the objects that are shown: first `pairs` look-alike pairs, then fill up
+ * with anything else. Deterministic for a given RNG.
+ */
+function pickShownObjects(count: number, pairs: number, rng: () => number): GameObject[] {
+  const chosen: GameObject[] = []
+  const used = new Set<string>()
+
+  if (pairs > 0) {
+    const families = shuffle([...objectFamilies().values()], rng)
+    for (const members of families) {
+      if (chosen.length + 2 > count || used.size / 2 >= pairs) break
+      const [a, b] = shuffle([...members], rng)
+      if (!a || !b) continue
+      chosen.push(a, b)
+      used.add(a.id)
+      used.add(b.id)
+    }
+  }
+
+  const rest = OBJECT_CATALOG.filter((o) => !used.has(o.id))
+  const fill = pickN(rest, Math.max(0, count - chosen.length), rng)
+  return shuffle([...chosen, ...fill], rng)
 }
 
 function clampLevel(level: number): number {
@@ -87,7 +131,7 @@ export function createWhatIsMissingLevel(level: number, seed?: string): WhatIsMi
   const count = objectCountForLevel(L)
   const displayTimeSeconds = displayTimeForLevel(L)
 
-  const selected = pickN(OBJECT_CATALOG, count, rng)
+  const selected = pickShownObjects(count, similarPairsForLevel(L), rng)
   if (selected.length < 2) {
     throw new Error('Need at least 2 objects for What Is Missing')
   }
@@ -97,9 +141,14 @@ export function createWhatIsMissingLevel(level: number, seed?: string): WhatIsMi
   const shownObjects = selected
   const remainingObjects = selected.filter((o) => o.id !== missingObject.id)
 
-  const distractors = remainingObjects
+  // Look-alikes of the removed object come first, so the choice really is
+  // "which chair was it" and not "was there a chair at all".
+  const lookAlikes = remainingObjects.filter(
+    (o) => missingObject.family != null && o.family === missingObject.family,
+  )
+  const others = remainingObjects.filter((o) => !lookAlikes.includes(o))
   const maxChoices = Math.min(Math.max(4, choiceCountForLevel(L)), selected.length)
-  let choicePool = shuffle([missingObject, ...distractors], rng).slice(0, maxChoices)
+  let choicePool = [missingObject, ...lookAlikes, ...shuffle(others, rng)].slice(0, maxChoices)
   if (!choicePool.some((o) => o.id === missingObject.id)) {
     choicePool = [missingObject, ...choicePool.slice(0, maxChoices - 1)]
   }

@@ -1,7 +1,9 @@
 # Status: Schützenrunde
 
-- **Stand:** nur Idee / Spezifikation im Repo
-- **Implementierung:** noch **nicht** gestartet (explizit zurückgestellt)
+- **Stand:** **v1 implementiert** (lokale Runde gegen regelbasierte Bots)
+- **Implementierung:** `src/games/schuetzenrunde/`, Seite `/play/schuetzenrunde`
+- **Offen:** echtes Multiplayer (8–16 reale Spieler, serverautoritativ), Züge/Clans,
+  Events (Schützenkönig, Vogelschießen), Seasons – siehe Spezifikation
 - **Quelle:** ZIP `TE_MiniGames_Schuetzenrunde_Entwicklungsgrundlage`
 - **Datum Aufnahme:** 2026-08-29
 
@@ -26,9 +28,18 @@ Multiplayer-Social-Deduction mit Schützen-/Vereinsthema für TE MiniGames:
 
 Vollständiger ZIP-Inhalt liegt auch im Projekt unter `docs/ideas/schuetzenrunde/` (lokal/Artifacts).
 
+## v1 – was drin ist
+
+- 8 Teilnehmer: du + 7 regelbasierte Bots (keine externe KI, offline)
+- 2 Saboteure gegen die Bruderschaft
+- Rollen: Brudermeister (Doppelstimme), Schießmeister (prüft nachts eine Person),
+  Schütze (ein freier Schuss pro Partie), Hornist, Saboteur, Intrigant
+- Ablauf: Nacht → Tag → Abstimmung → Ergebnis → nächste Nacht
+- Siegbedingungen, Verlauf/Log, Punkte und XP über die normale Spielregistrierung
+
 ## Nächster Schritt (erst wenn beauftragt)
 
-1. Bestehende TE-Mini-Games-Architektur analysieren
-2. Game-Modul-Plan unter `src/games/`
-3. Multiplayer/Realtime separat konzipieren
-4. **Kein** Code für Schützenrunde ohne expliziten Auftrag
+1. Realtime-Multiplayer (Supabase Realtime oder eigener Server), serverautoritative Zeit
+2. Lobby für 8–16 reale Spieler, Bots nur zum Auffüllen
+3. Züge/Clans, Events (Schützenfest, Vogelschießen), Seasons
+4. Weitere Rollen aus der Spezifikation

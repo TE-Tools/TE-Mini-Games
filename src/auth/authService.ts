@@ -111,9 +111,46 @@ export async function signInWithGoogle(): Promise<{ error: string | null }> {
   return { error: error?.message ?? null }
 }
 
+/** Send the "forgot password" mail. The link comes back to /auth. */
+export async function sendPasswordReset(email: string): Promise<{ error: string | null }> {
+  if (!supabase) return { error: 'Supabase nicht konfiguriert' }
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+    redirectTo: `${window.location.origin}/auth`,
+  })
+  return { error: error?.message ?? null }
+}
+
+/** Set a new password – used after following the reset link. */
+export async function updatePassword(password: string): Promise<{ error: string | null }> {
+  if (!supabase) return { error: 'Supabase nicht konfiguriert' }
+  const passErr = validatePassword(password)
+  if (passErr) return { error: passErr }
+  const { error } = await supabase.auth.updateUser({ password })
+  return { error: error?.message ?? null }
+}
+
+/** Username of the signed-in player, or null. */
+export async function getMyUsername(): Promise<string | null> {
+  if (!supabase) return null
+  const { data: userData } = await supabase.auth.getUser()
+  const id = userData.user?.id
+  if (!id) return null
+  const { data } = await supabase.from('profiles').select('username').eq('id', id).maybeSingle()
+  return (data?.username as string | null) ?? null
+}
+
 export async function signOut(): Promise<void> {
   if (!supabase) return
   await supabase.auth.signOut()
+}
+
+/** Fires when the user arrives through a password-reset link. */
+export function onPasswordRecovery(callback: () => void): () => void {
+  if (!supabase) return () => undefined
+  const { data } = supabase.auth.onAuthStateChange((event) => {
+    if (event === 'PASSWORD_RECOVERY') callback()
+  })
+  return () => data.subscription.unsubscribe()
 }
 
 export function onAuthStateChange(

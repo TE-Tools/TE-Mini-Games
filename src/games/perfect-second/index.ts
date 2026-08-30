@@ -1,6 +1,11 @@
 export { perfectSecondGame } from './definition'
-export { createPerfectSecondLevel, createLevelFromSeed, isHitWithinTolerance } from './level'
+export {
+  createPerfectSecondLevel,
+  createLevelFromSeed,
+  createFamilyLevel,
+  isHitWithinTolerance,
+} from './level'
 export type { PerfectSecondLevel } from './level'
 export { calculateScore, calculateDeviation, starsFromScore } from './score'
 export type { ScoreInput, ScoreResult } from './score'
-export { createTimer, formatTime, formatTargetTime, formatDeviation } from './timing'
+export { createTimer, formatTime, formatDeviation } from './timing'
