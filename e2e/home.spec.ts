@@ -12,8 +12,10 @@ test.describe('Home page', () => {
 
   test('shows player stats placeholders', async ({ page }) => {
     await page.goto('/')
-    await expect(page.getByText('Level')).toBeVisible()
-    await expect(page.getByText('XP')).toBeVisible()
-    await expect(page.getByText('Streak')).toBeVisible()
+    // Exact matches: the XP hint below the stats also contains "XP" and
+    // "Spieler-Level", which made this test fail depending on load timing.
+    await expect(page.getByText('Level', { exact: true })).toBeVisible()
+    await expect(page.getByText('XP', { exact: true })).toBeVisible()
+    await expect(page.getByText('Streak', { exact: true })).toBeVisible()
   })
 })

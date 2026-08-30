@@ -3,8 +3,9 @@ import { MATCH_SIZE } from './engine'
 
 /**
  * Schützenrunde – registered like every other game so the platform (results,
- * XP, leaderboard) works without special cases. v1 is one local match, so the
- * game has a single "level".
+ * XP, leaderboard) works without special cases. A round is one local match, so
+ * the game has a single "level"; the difficulty comes from the round size and
+ * the Schützenfest event instead.
  */
 export const schuetzenrundeGame: GameDefinition = {
   id: 'schuetzenrunde',
