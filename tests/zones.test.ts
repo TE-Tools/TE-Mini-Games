@@ -10,6 +10,13 @@ import {
   isZoneGate,
   isFinalLevel,
   clampMapLevel,
+  SEGMENT_SIZE,
+  SEGMENT_COUNT,
+  SEGMENTS_PER_ZONE,
+  isSegmentGate,
+  segmentByIndex,
+  segmentForLevel,
+  segmentIndexForLevel,
   type ZoneId,
 } from '@/progression/zones'
 
@@ -85,5 +92,53 @@ describe('Level zones', () => {
   it('zoneById finds zones and returns undefined for unknown ids', () => {
     expect(zoneById('glacier')?.levelFrom).toBe(401)
     expect(zoneById('atlantis' as ZoneId)).toBeUndefined()
+  })
+})
+
+describe('Map segments (20 levels per piece)', () => {
+  it('splits the map into 25 pieces of 20 levels', () => {
+    expect(SEGMENT_SIZE).toBe(20)
+    expect(SEGMENT_COUNT).toBe(25)
+    expect(SEGMENTS_PER_ZONE).toBe(5)
+    expect(segmentByIndex(1)).toMatchObject({ from: 1, to: 20 })
+    expect(segmentByIndex(25)).toMatchObject({ from: 481, to: 500 })
+  })
+
+  it('pieces are gap-free and never straddle a zone border', () => {
+    for (let i = 1; i <= SEGMENT_COUNT; i++) {
+      const seg = segmentByIndex(i)
+      expect(seg.to - seg.from + 1).toBe(SEGMENT_SIZE)
+      if (i > 1) expect(seg.from).toBe(segmentByIndex(i - 1).to + 1)
+      expect(zoneForLevel(seg.from).id).toBe(zoneForLevel(seg.to).id)
+    }
+  })
+
+  it('maps levels to their piece, including the borders', () => {
+    expect(segmentIndexForLevel(1)).toBe(1)
+    expect(segmentIndexForLevel(20)).toBe(1)
+    expect(segmentIndexForLevel(21)).toBe(2)
+    expect(segmentIndexForLevel(100)).toBe(5)
+    expect(segmentIndexForLevel(101)).toBe(6)
+    expect(segmentIndexForLevel(500)).toBe(25)
+    expect(segmentForLevel(37)).toMatchObject({ index: 2, from: 21, to: 40 })
+  })
+
+  it('a gate closes every twentieth level', () => {
+    const gates = Array.from({ length: MAX_LEVEL }, (_, i) => i + 1).filter(isSegmentGate)
+    expect(gates).toHaveLength(25)
+    expect(gates.slice(0, 3)).toEqual([20, 40, 60])
+    expect(gates.at(-1)).toBe(500)
+    expect(isSegmentGate(19)).toBe(false)
+  })
+
+  it('gates on a zone border carry the zone name, the others a piece name', () => {
+    expect(segmentByIndex(5)).toMatchObject({ isZoneGate: true, gateName: 'Tor zum Vulkanland' })
+    expect(segmentByIndex(25)).toMatchObject({ isZoneGate: true, gateName: 'Eispalast' })
+    expect(segmentByIndex(1)).toMatchObject({ isZoneGate: false, gateName: 'Tor zu Abschnitt 2' })
+  })
+
+  it('clamps out-of-range piece numbers', () => {
+    expect(segmentByIndex(0).index).toBe(1)
+    expect(segmentByIndex(99).index).toBe(SEGMENT_COUNT)
   })
 })

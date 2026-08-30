@@ -1,10 +1,12 @@
-import { useEffect, useRef, type CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { getAvatar } from '@/profile/avatars'
 import { isMilestoneLevel, milestoneKind } from '@/games/milestones'
 import {
   MAX_LEVEL,
   LEVELS_PER_ZONE,
   levelInZone,
+  segmentByIndex,
+  segmentIndexForLevel,
   zoneForLevel,
   type LevelZone,
 } from '@/progression/zones'
@@ -19,14 +21,20 @@ export interface LevelMapProps {
   gameLabel: string
 }
 
-/** How many levels the map shows around the player. */
-const WINDOW_SIZE = 12
 /** Vertical distance between two level nodes, in px. */
 const ROW_HEIGHT = 112
+/** Space above the top level for the gate, in px. */
+const GATE_SPACE = 150
+/** Space below the bottom level for the way back, in px. */
+const BACK_SPACE = 110
+/** Padding when there is no gate on that end, in px. */
+const EDGE_SPACE = 28
 /** Horizontal swing of the path, in % of the map width. */
 const SWING = 24
 /** Radians the path advances per level – gives the winding "S" shape. */
 const SWING_STEP = 0.85
+/** How long the gate doors take to swing open, in ms. */
+const GATE_OPEN_MS = 1100
 
 interface PathPoint {
   level: number
@@ -36,16 +44,20 @@ interface PathPoint {
   y: number
 }
 
+function swingX(level: number, firstLevel: number): number {
+  return 50 + SWING * Math.sin((level - firstLevel) * SWING_STEP)
+}
+
 /**
- * Points of the winding path, ascending by level. Level 1 sits at the bottom,
- * the highest level at the top – the player walks the path upwards.
+ * Points of the winding path, ascending by level. The first level of the piece
+ * sits at the bottom, the last one at the top – the player walks upwards.
  */
-function pathPoints(levels: number[]): PathPoint[] {
+function pathPoints(levels: number[], topPad: number): PathPoint[] {
   const last = levels.length - 1
   return levels.map((level, i) => ({
     level,
-    x: 50 + SWING * Math.sin((level - levels[0]!) * SWING_STEP),
-    y: (last - i) * ROW_HEIGHT + ROW_HEIGHT / 2,
+    x: swingX(level, levels[0]!),
+    y: topPad + (last - i) * ROW_HEIGHT + ROW_HEIGHT / 2,
   }))
 }
 
@@ -53,7 +65,7 @@ function pathPoints(levels: number[]): PathPoint[] {
  * Smooth curve through all points (Catmull-Rom converted to cubic béziers),
  * so the road bends instead of kinking at every node.
  */
-function smoothPath(points: PathPoint[]): string {
+function smoothPath(points: { x: number; y: number }[]): string {
   if (points.length < 2) return ''
   const p = points
   let d = `M ${p[0]!.x} ${p[0]!.y}`
@@ -82,11 +94,20 @@ function zoneStyle(zone: LevelZone): CSSProperties {
   } as CSSProperties
 }
 
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  )
+}
+
 /**
  * Zone map of the 1–500 "Zeitreise" path (docs/design/level-map-500/).
  *
- * One continuous winding stone road runs bottom→top with the level slabs
- * sitting on it; the landscape is themed by the zone of each level.
+ * The map is walked in pieces of 20 levels on one continuous winding stone
+ * road. Each piece ends at a gate: once its last level is cleared the gate can
+ * be tapped, swings open, and the next piece of the map loads above.
  */
 export function LevelMap({
   currentLevel,
@@ -98,11 +119,38 @@ export function LevelMap({
 }: LevelMapProps) {
   const avatar = getAvatar(avatarId)
   const unlocked = Math.max(1, Math.min(maxLevel, Math.max(highestLevel, currentLevel)))
-  const start = Math.max(1, Math.min(unlocked - 2, maxLevel - WINDOW_SIZE + 1))
-  const end = Math.min(maxLevel, start + WINDOW_SIZE - 1)
-  const levels = Array.from({ length: end - start + 1 }, (_, i) => start + i)
-  const points = pathPoints(levels)
-  const canvasHeight = levels.length * ROW_HEIGHT
+  const lastSegment = segmentIndexForLevel(maxLevel)
+
+  // Which piece of the map is on screen. The player's piece is the default;
+  // walking through a gate overrides it until the player level changes again.
+  const [view, setView] = useState<{ base: number; index: number } | null>(null)
+  const [opening, setOpening] = useState(false)
+  const timerRef = useRef<number | null>(null)
+  useEffect(() => () => window.clearTimeout(timerRef.current ?? undefined), [])
+
+  const segmentIndex =
+    view && view.base === currentLevel
+      ? view.index
+      : Math.min(lastSegment, segmentIndexForLevel(currentLevel))
+  const segment = segmentByIndex(segmentIndex)
+  const to = Math.min(segment.to, maxLevel)
+  const levels = Array.from({ length: to - segment.from + 1 }, (_, i) => segment.from + i)
+
+  const hasGate = to < maxLevel
+  const hasWayBack = segment.from > 1
+  const gateOpen = unlocked > to
+  const topPad = hasGate ? GATE_SPACE : EDGE_SPACE
+  const bottomPad = hasWayBack ? BACK_SPACE : EDGE_SPACE
+  const points = pathPoints(levels, topPad)
+  const canvasHeight = topPad + levels.length * ROW_HEIGHT + bottomPad
+
+  // Let the road run into the gate above and out of the way back below.
+  const roadPoints = [
+    ...(hasWayBack ? [{ x: points[0]!.x, y: canvasHeight - bottomPad / 2 }] : []),
+    ...points,
+    ...(hasGate ? [{ x: points.at(-1)!.x, y: topPad / 2 }] : []),
+  ]
+  const road = smoothPath(roadPoints)
 
   const zone = zoneForLevel(currentLevel)
   const positionInZone = levelInZone(currentLevel)
@@ -110,13 +158,33 @@ export function LevelMap({
   const landRef = useRef<HTMLDivElement>(null)
   const currentRef = useRef<HTMLDivElement>(null)
 
-  // The road is taller than the map – keep the player's slab in view.
+  // The piece is taller than the map – show the player, or the road's start.
   useEffect(() => {
     const land = landRef.current
+    if (!land) return
     const node = currentRef.current
-    if (!land || !node) return
-    land.scrollTop = Math.max(0, node.offsetTop - land.clientHeight / 2)
-  }, [currentLevel, unlocked])
+    land.scrollTop = node
+      ? Math.max(0, node.offsetTop - land.clientHeight / 2)
+      : land.scrollHeight
+  }, [currentLevel, unlocked, segmentIndex])
+
+  const walkTo = useCallback(
+    (index: number) => setView({ base: currentLevel, index }),
+    [currentLevel],
+  )
+
+  const openGate = useCallback(() => {
+    if (!gateOpen || opening) return
+    if (prefersReducedMotion()) {
+      walkTo(segmentIndex + 1)
+      return
+    }
+    setOpening(true)
+    timerRef.current = window.setTimeout(() => {
+      setOpening(false)
+      walkTo(segmentIndex + 1)
+    }, GATE_OPEN_MS)
+  }, [gateOpen, opening, segmentIndex, walkTo])
 
   return (
     <section className={styles.map} aria-label={`Levelkarte ${gameLabel}`}>
@@ -135,10 +203,14 @@ export function LevelMap({
 
       <div
         ref={landRef}
-        className={[styles.land, styles[`zone_${zone.id}`]].join(' ')}
-        style={zoneStyle(zone)}
+        className={[styles.land, styles[`zone_${segment.zone.id}`]].join(' ')}
+        style={zoneStyle(segment.zone)}
       >
-        <div className={styles.canvas} style={{ height: `${canvasHeight}px` }}>
+        <div
+          key={segmentIndex}
+          className={styles.canvas}
+          style={{ height: `${canvasHeight}px` }}
+        >
           <svg
             className={styles.road}
             viewBox={`0 0 100 ${canvasHeight}`}
@@ -146,26 +218,74 @@ export function LevelMap({
             aria-hidden="true"
           >
             {/* Road edge, road surface and slab seams – one continuous path. */}
-            <path className={styles.roadEdge} d={smoothPath(points)} />
-            <path className={styles.roadSurface} d={smoothPath(points)} />
-            <path className={styles.roadSeams} d={smoothPath(points)} />
+            <path className={styles.roadEdge} d={road} />
+            <path className={styles.roadSurface} d={road} />
+            <path className={styles.roadSeams} d={road} />
           </svg>
+
+          {hasGate && (
+            <div
+              className={styles.gateStop}
+              style={{ left: `${points.at(-1)!.x}%`, top: `${topPad / 2}px` }}
+            >
+              <button
+                type="button"
+                className={[
+                  styles.gate,
+                  gateOpen ? styles.gateReady : styles.gateLocked,
+                  opening ? styles.gateOpening : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                disabled={!gateOpen}
+                onClick={openGate}
+                aria-label={
+                  gateOpen
+                    ? `${segment.gateName} öffnen`
+                    : `${segment.gateName} – erst nach Level ${to}`
+                }
+              >
+                <span className={styles.gateWing} aria-hidden="true" />
+                <span className={styles.gateWingRight} aria-hidden="true" />
+                <span className={styles.gateGlyph} aria-hidden="true">
+                  {gateOpen ? (segment.isZoneGate ? '🏛️' : '🚪') : '🔒'}
+                </span>
+              </button>
+              <span className={styles.gateCaption}>{segment.gateName}</span>
+            </div>
+          )}
+
+          {hasWayBack && (
+            <div
+              className={styles.gateStop}
+              style={{ left: `${points[0]!.x}%`, top: `${canvasHeight - bottomPad / 2}px` }}
+            >
+              <button
+                type="button"
+                className={[styles.gate, styles.gateBack].join(' ')}
+                onClick={() => walkTo(segmentIndex - 1)}
+                aria-label={`Zurück zu Abschnitt ${segmentIndex - 1}`}
+              >
+                <span className={styles.gateGlyph} aria-hidden="true">
+                  ↓
+                </span>
+              </button>
+              <span className={styles.gateCaption}>Abschnitt {segmentIndex - 1}</span>
+            </div>
+          )}
 
           {points.map((point, index) => {
             const L = point.level
             const isLocked = L > unlocked
             const isCurrent = L === currentLevel
-            const isGate = milestoneKind(L) === 'gate'
+            const isZoneGateLevel = milestoneKind(L) === 'gate'
             const isMilestone = isMilestoneLevel(L)
             const isDone = L < unlocked
             const levelZone = zoneForLevel(L)
             // Scenery sits on the far side of the road so it never covers a slab.
-            // Zone gates carry their name there instead.
             const side = point.x > 50 ? 'left' : 'right'
             const decor =
-              !isGate && index % 2 === 0
-                ? levelZone.creatures[index % levelZone.creatures.length]
-                : null
+              index % 2 === 0 ? levelZone.creatures[index % levelZone.creatures.length] : null
 
             return (
               <div
@@ -176,9 +296,10 @@ export function LevelMap({
               >
                 {decor && (
                   <span
-                    className={[styles.decor, side === 'left' ? styles.decorLeft : styles.decorRight].join(
-                      ' ',
-                    )}
+                    className={[
+                      styles.decor,
+                      side === 'left' ? styles.decorLeft : styles.decorRight,
+                    ].join(' ')}
                     aria-hidden="true"
                   >
                     {decor}
@@ -192,7 +313,7 @@ export function LevelMap({
                     isDone && !isCurrent ? styles.nodeDone : '',
                     isLocked ? styles.nodeLocked : '',
                     isMilestone ? styles.nodeMilestone : '',
-                    isGate ? styles.nodeGate : '',
+                    isZoneGateLevel ? styles.nodeGate : '',
                   ]
                     .filter(Boolean)
                     .join(' ')}
@@ -202,7 +323,7 @@ export function LevelMap({
                   aria-label={
                     isLocked
                       ? `Level ${L} gesperrt`
-                      : isGate
+                      : isZoneGateLevel
                         ? `Level ${L}, ${levelZone.gateName}`
                         : isCurrent
                           ? `Level ${L}, aktuell`
@@ -215,39 +336,32 @@ export function LevelMap({
                       {avatar.emoji}
                     </span>
                   )}
-                  {!isCurrent && isGate && (
+                  {!isCurrent && isZoneGateLevel && (
                     <span className={styles.nodeIcon} aria-hidden="true">
                       {L === MAX_LEVEL ? '🧊' : '🏛️'}
                     </span>
                   )}
-                  {!isCurrent && !isGate && isMilestone && (
+                  {!isCurrent && !isZoneGateLevel && isMilestone && (
                     <span className={styles.nodeIcon} aria-hidden="true">
                       ⭐
                     </span>
                   )}
-                  {!isCurrent && !isGate && !isMilestone && isLocked && (
+                  {!isCurrent && !isZoneGateLevel && !isMilestone && isLocked && (
                     <span className={styles.nodeIcon} aria-hidden="true">
                       🔒
                     </span>
                   )}
                 </button>
-                {isGate && (
-                  <span
-                    className={[
-                      styles.gateLabel,
-                      side === 'left' ? styles.gateLabelLeft : styles.gateLabelRight,
-                    ].join(' ')}
-                  >
-                    {levelZone.gateName}
-                  </span>
-                )}
               </div>
             )
           })}
         </div>
       </div>
 
-      <p className={styles.hint}>Tippe ein Level oder „Weiter spielen“ unten.</p>
+      <p className={styles.hint}>
+        Abschnitt {segmentIndex} · Level {segment.from}–{to}
+        {hasGate ? (gateOpen ? ' · Tor oben ist offen' : ` · Tor öffnet nach Level ${to}`) : ''}
+      </p>
     </section>
   )
 }

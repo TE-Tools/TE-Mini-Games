@@ -183,3 +183,55 @@ export function isZoneGate(level: number): boolean {
 export function isFinalLevel(level: number): boolean {
   return clampMapLevel(level) === MAX_LEVEL
 }
+
+/* ------------------------------------------------------------------ *
+ * Map segments – the map is walked in pieces of 20 levels.
+ * Each piece ends at a gate; opening the gate loads the next piece.
+ * ------------------------------------------------------------------ */
+
+/** Levels shown on one map piece. */
+export const SEGMENT_SIZE = 20
+/** Map pieces per zone (100 / 20). */
+export const SEGMENTS_PER_ZONE = LEVELS_PER_ZONE / SEGMENT_SIZE
+/** Map pieces in total (500 / 20). */
+export const SEGMENT_COUNT = MAX_LEVEL / SEGMENT_SIZE
+
+export interface MapSegment {
+  /** 1-based piece number (1 = levels 1–20 … 25 = levels 481–500) */
+  index: number
+  from: number
+  to: number
+  zone: LevelZone
+  /** Name of the gate that closes this piece. */
+  gateName: string
+  /** True when the gate is also a zone border (levels 100, 200 … 500). */
+  isZoneGate: boolean
+}
+
+/** True for a level that ends a map piece (20, 40, 60 … 500). */
+export function isSegmentGate(level: number): boolean {
+  return clampMapLevel(level) % SEGMENT_SIZE === 0
+}
+
+export function segmentIndexForLevel(level: number): number {
+  return Math.ceil(clampMapLevel(level) / SEGMENT_SIZE)
+}
+
+export function segmentByIndex(index: number): MapSegment {
+  const i = Math.max(1, Math.min(SEGMENT_COUNT, Math.floor(index)))
+  const to = i * SEGMENT_SIZE
+  const zone = zoneForLevel(to)
+  const zoneBorder = to % LEVELS_PER_ZONE === 0
+  return {
+    index: i,
+    from: to - SEGMENT_SIZE + 1,
+    to,
+    zone,
+    gateName: zoneBorder ? zone.gateName : `Tor zu Abschnitt ${i + 1}`,
+    isZoneGate: zoneBorder,
+  }
+}
+
+export function segmentForLevel(level: number): MapSegment {
+  return segmentByIndex(segmentIndexForLevel(level))
+}

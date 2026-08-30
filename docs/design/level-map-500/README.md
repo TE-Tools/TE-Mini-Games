@@ -48,13 +48,24 @@ Farbwerte je Zone stehen in [`zones.json`](./zones.json) (`palette`).
 - Der Himmel/Hintergrund wandert von tropisch-türkis über rauchgrau und wüstenwarm
   zu kaltem Eisblau.
 
-## 4. Meilensteine und Zonentore
+## 4. Kartenabschnitte und Tore
 
-- Jedes Zonenende (**100 / 200 / 300 / 400 / 500**) ist ein **Zonentor**: größerer,
-  verzierter Knoten mit Bonus-XP und einer kurzen Übergangsanimation in die neue Zone.
-- Zusätzlich bleiben kleinere Meilensteine im 10er/50er-Raster (siehe
-  `src/games/milestones.ts`), die bei 500 Leveln entsprechend fortgeschrieben werden müssen.
-- Level 500 ist das Finale (Eispalast) mit eigener Abschlussbelohnung.
+Die Karte wird **in Abschnitten von 20 Leveln** gelaufen – 25 Abschnitte insgesamt,
+5 pro Zone. Ein Abschnitt endet immer an einem **Tor**:
+
+- Solange das letzte Level des Abschnitts (20, 40, 60 … ) nicht geschafft ist, ist das
+  Tor **verschlossen** (Schloss-Symbol, nicht klickbar).
+- Ist es geschafft, pulsiert das Tor golden und lässt sich **antippen**: die beiden
+  Torflügel schwingen langsam auf (~1,1 s), danach **lädt der nächste Kartenabschnitt
+  von oben nach** (Einblend-/Slide-Animation).
+- Unten in jedem Abschnitt führt ein kleiner Bogen **zurück** zum vorherigen Abschnitt.
+- Tore auf einer Zonengrenze (100 / 200 / 300 / 400) tragen den Zonennamen
+  („Tor zum Vulkanland“), alle anderen „Tor zu Abschnitt N“.
+- Abschnitt 25 endet auf Level 500 – dort gibt es **kein** Tor mehr, sondern das Finale.
+- `prefers-reduced-motion` überspringt die Animation und wechselt direkt.
+
+Meilensteine (Bonus-XP) laufen davon unabhängig im 10er/50er/100er-Raster weiter,
+siehe `src/games/milestones.ts` und Abschnitt „Meilensteine“ unten.
 
 ## 5. Umsetzung in der App
 
@@ -62,10 +73,11 @@ Die Karte ist **kein statisches Bild**, sondern die bestehende Komponente
 `src/components/level-map/LevelMap.tsx`, die zonenabhängig eingefärbt und dekoriert wird.
 Das Referenzbild gibt Stimmung, Wegführung und Reihenfolge vor, nicht die Assets.
 
-**Anzeige-Regel:** Es wird ein Ausschnitt von 12 Leveln um das aktuelle Level gezeigt
-(scrollbarer Weg), nicht alle 500 Knoten auf einmal – aus Performance- und
-Übersichtsgründen. Die Karte scrollt beim Öffnen auf die Position des Spielers.
-Die Zonenfarbe richtet sich nach dem Level, auf dem der Spieler steht.
+**Anzeige-Regel:** Es wird genau **ein Abschnitt von 20 Leveln** gezeigt, nicht alle
+500 Knoten auf einmal – aus Performance- und Übersichtsgründen. Die Karte scrollt beim
+Öffnen auf die Position des Spielers; nach dem Durchschreiten eines Tores auf den
+Anfang des neuen Abschnitts. Angezeigt wird standardmäßig der Abschnitt des aktuellen
+Levels; über die Tore kann man vor- und zurückblättern.
 
 **Weg:** Die Levelplatten sind durch **einen** durchgehenden Steinweg verbunden
 (SVG-Kurve durch alle Punkte, Kante + Belag + Plattenfugen als drei Linien mit
@@ -76,14 +88,14 @@ daher die S-Form wie auf der Referenz.
 
 | Datei | Umsetzung |
 |-------|-----------|
-| `src/progression/zones.ts` | **neu** – `ZONES`, `zoneForLevel`, `levelInZone`, `zoneProgress`, `isZoneGate`, `isFinalLevel`, `MAX_LEVEL = 500` |
+| `src/progression/zones.ts` | **neu** – `ZONES`, `zoneForLevel`, `levelInZone`, `zoneProgress`, `isZoneGate`, `isFinalLevel`, `MAX_LEVEL = 500` sowie die Abschnitte: `SEGMENT_SIZE = 20`, `segmentByIndex`, `segmentForLevel`, `segmentIndexForLevel`, `isSegmentGate` |
 | `src/games/milestones.ts` | Raster bis 500: Zehner / Halbzone / Zonentor, Bonus wächst mit der Zone |
 | `src/games/perfect-second/level.ts` | Clamp 500, Kurve **je Zone**, `zoneId` im Level-Config |
 | `src/games/what-is-missing/level.ts` | Clamp 500, Kurve je Zone, neu `choiceCountForLevel` |
 | `src/games/what-is-missing/score.ts` | Clamp 500 |
 | `src/games/*/definition.ts` | `maxLevel: MAX_LEVEL` |
-| `src/components/level-map/LevelMap.tsx` | **ein durchgehender, geschwungener Steinweg** als SVG-Kurve (Catmull-Rom), Levelplatten liegen darauf; Zone aus Levelnummer, Zonen-Palette als CSS-Variablen, Zonentor-Knoten mit Wegweiser, Deko am Wegesrand, scrollt auf das aktuelle Level |
-| `src/components/level-map/LevelMap.module.css` | Wegschichten (`.roadEdge` / `.roadSurface` / `.roadSeams`), Farben über `--zone-*`, Zonen-Klassen, `.nodeGate`, `.decor`, Avatar als Wegpunkt-Pin |
+| `src/components/level-map/LevelMap.tsx` | **ein durchgehender, geschwungener Steinweg** als SVG-Kurve (Catmull-Rom), Levelplatten liegen darauf; ein Abschnitt à 20 Level, oben das Tor (öffnen → nächster Abschnitt), unten der Weg zurück; Zonen-Palette als CSS-Variablen, Deko am Wegesrand, scrollt auf das aktuelle Level |
+| `src/components/level-map/LevelMap.module.css` | Wegschichten (`.roadEdge` / `.roadSurface` / `.roadSeams`), Farben über `--zone-*`, Zonen-Klassen, `.nodeGate`, `.decor`, Avatar als Wegpunkt-Pin, Torbogen mit aufschwingenden Flügeln (`.gate*`), Einblenden des neuen Abschnitts |
 | `src/pages/play/PerfectSecondPage.tsx` | `MAX_GAME_LEVEL` aus der Spieldefinition statt hartem `100`, `maxLevel` an die Karte |
 | `src/pages/play/WhatIsMissingPage.tsx` | `maxLevel` an die Karte |
 | `tests/zones.test.ts`, `tests/milestones.test.ts` | **neu** |
@@ -139,9 +151,9 @@ mehr Schwierigkeit kommt in späteren Zonen über Zeit und Auswahl.
 
 ## 6. Offene Punkte
 
-- Zonenübergänge sind farblich umgesetzt, aber noch **ohne** die im Abschnitt 3
-  beschriebene Vermischung der letzten ~10 Level einer Zone und ohne
-  Übergangsanimation am Zonentor.
+- Zonenübergänge sind farblich umgesetzt und haben mit dem Tor eine Übergangs-
+  animation, aber noch **ohne** die in Abschnitt 3 beschriebene Vermischung der
+  letzten ~10 Level einer Zone.
 - Der Eispalast auf Level 500 ist als Zonentor-Knoten dargestellt, hat aber noch
   keine eigene Abschluss-Zeremonie/Belohnung über den Meilenstein-Bonus hinaus.
 - Achievements kennen die Zonen noch nicht (z. B. „Zone 3 abgeschlossen").

@@ -82,6 +82,25 @@
 .canvas {
   position: relative;
   width: 100%;
+  animation: segmentEnter 420ms ease-out;
+}
+
+/* A new piece of the map slides in from above when a gate opens. */
+@keyframes segmentEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas {
+    animation: none;
+  }
 }
 
 /* Painterly speckle so the ground does not look like flat CSS. */
@@ -280,31 +299,156 @@
   box-shadow: 0 4px 8px rgb(0 0 0 / 0.3);
 }
 
-.gateLabel {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 0.65rem;
-  font-weight: 800;
-  color: #3b2a12;
-  background: rgb(255 255 255 / 0.85);
-  border-radius: var(--radius-full);
-  padding: 0.15rem 0.55rem;
-  white-space: nowrap;
-  box-shadow: 0 2px 4px rgb(0 0 0 / 0.25);
-  pointer-events: none;
-}
-
-.gateLabelLeft {
-  right: 3.4rem;
-}
-
-.gateLabelRight {
-  left: 3.4rem;
-}
-
 .avatar {
   z-index: 3;
+}
+
+/* ---- Gate: closes a 20-level piece of the map ---- */
+
+.gateStop {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  z-index: 4;
+}
+
+.gate {
+  position: relative;
+  width: 6.5rem;
+  height: 5rem;
+  border-radius: 3.25rem 3.25rem 0.5rem 0.5rem;
+  border: 4px solid #7a5a12;
+  overflow: hidden;
+  padding: 0;
+  background:
+    radial-gradient(circle at 50% 120%, rgb(0 0 0 / 0.45), transparent 60%),
+    linear-gradient(180deg, #e8dcc0, #c9b184 55%, #a8916a);
+  box-shadow:
+    0 3px 0 rgb(255 255 255 / 0.5) inset,
+    0 8px 0 rgb(70 48 12 / 0.4),
+    0 14px 24px rgb(0 0 0 / 0.35);
+  perspective: 500px;
+}
+
+/* The two door wings that swing open. */
+.gateWing,
+.gateWingRight {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  background:
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.12) 0 2px, transparent 2px 14px),
+    linear-gradient(180deg, #9a6b34, #744d22);
+  border: 2px solid #5e3d1a;
+  transition: transform 1.1s cubic-bezier(0.4, 0, 0.2, 1);
+  backface-visibility: hidden;
+}
+
+.gateWing {
+  left: 0;
+  border-radius: 3rem 0 0 0.3rem;
+  transform-origin: left center;
+}
+
+.gateWingRight {
+  right: 0;
+  border-radius: 0 3rem 0.3rem 0;
+  transform-origin: right center;
+}
+
+.gateOpening .gateWing {
+  transform: rotateY(-108deg);
+}
+
+.gateOpening .gateWingRight {
+  transform: rotateY(108deg);
+}
+
+.gateGlyph {
+  position: relative;
+  z-index: 2;
+  display: block;
+  font-size: 1.7rem;
+  line-height: 1;
+  padding-top: 1.2rem;
+  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.5));
+}
+
+.gateOpening .gateGlyph {
+  opacity: 0;
+  transition: opacity 400ms ease-out;
+}
+
+/* Cleared piece: the gate invites a tap. */
+.gateReady {
+  border-color: #d4a017;
+  box-shadow:
+    0 0 0 4px rgb(212 160 23 / 0.35),
+    0 8px 0 rgb(70 48 12 / 0.4),
+    0 14px 24px rgb(0 0 0 / 0.35);
+  animation: gatePulse 2.2s ease-in-out infinite;
+}
+
+@keyframes gatePulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 4px rgb(212 160 23 / 0.35),
+      0 8px 0 rgb(70 48 12 / 0.4),
+      0 14px 24px rgb(0 0 0 / 0.35);
+  }
+  50% {
+    box-shadow:
+      0 0 0 9px rgb(212 160 23 / 0.22),
+      0 8px 0 rgb(70 48 12 / 0.4),
+      0 14px 24px rgb(0 0 0 / 0.35);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gateReady {
+    animation: none;
+  }
+
+  .gateWing,
+  .gateWingRight {
+    transition: none;
+  }
+}
+
+.gateLocked {
+  cursor: not-allowed;
+  filter: grayscale(0.5) brightness(0.85);
+}
+
+/* Small arch that leads back to the previous piece. */
+.gateBack {
+  width: 3.25rem;
+  height: 2.5rem;
+  border-radius: 1.6rem 1.6rem 0.3rem 0.3rem;
+  box-shadow:
+    0 4px 0 rgb(70 48 12 / 0.35),
+    0 8px 14px rgb(0 0 0 / 0.3);
+}
+
+.gateBack .gateGlyph {
+  font-size: 1.1rem;
+  padding-top: 0.35rem;
+}
+
+.gateCaption {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #3b2a12;
+  background: rgb(255 255 255 / 0.88);
+  border-radius: var(--radius-full);
+  padding: 0.15rem 0.6rem;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgb(0 0 0 / 0.25);
 }
 
 .hint {
