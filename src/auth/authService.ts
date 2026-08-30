@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '@/database/supabase'
+import { clearPlayMode, setPlayMode } from '@/auth/sessionMode'
 import type { User, Session } from '@supabase/supabase-js'
 
 export type AuthState = {
@@ -81,8 +82,6 @@ export async function signUpWithEmail(
     email: email.trim(),
     password,
     options: {
-      // Without this the confirmation mail uses Supabase's Site URL, which
-      // defaults to localhost:3000.
       emailRedirectTo: `${window.location.origin}/auth`,
       data: {
         display_name: displayName?.trim() || username.trim(),
@@ -114,7 +113,6 @@ export async function signInWithGoogle(): Promise<{ error: string | null }> {
   return { error: error?.message ?? null }
 }
 
-/** Send the "forgot password" mail. The link comes back to /auth. */
 export async function sendPasswordReset(email: string): Promise<{ error: string | null }> {
   if (!supabase) return { error: 'Supabase nicht konfiguriert' }
   const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
@@ -123,7 +121,6 @@ export async function sendPasswordReset(email: string): Promise<{ error: string 
   return { error: error?.message ?? null }
 }
 
-/** Set a new password – used after following the reset link. */
 export async function updatePassword(password: string): Promise<{ error: string | null }> {
   if (!supabase) return { error: 'Supabase nicht konfiguriert' }
   const passErr = validatePassword(password)
@@ -132,7 +129,6 @@ export async function updatePassword(password: string): Promise<{ error: string 
   return { error: error?.message ?? null }
 }
 
-/** Username of the signed-in player, or null. */
 export async function getMyUsername(): Promise<string | null> {
   if (!supabase) return null
   const { data: userData } = await supabase.auth.getUser()
@@ -143,16 +139,21 @@ export async function getMyUsername(): Promise<string | null> {
 }
 
 export async function signOut(): Promise<void> {
+  clearPlayMode()
   if (!supabase) return
   await supabase.auth.signOut()
 }
 
-/** Fires when the user arrives through a password-reset link. */
-/**
- * Supabase reports failed mail links as a URL hash
- * (#error=...&error_description=...). Read and clear it so the page can show
- * what went wrong instead of looking broken.
- */
+/** Mark session as account after successful login/signup. */
+export function markAccountSession(): void {
+  setPlayMode('account')
+}
+
+/** Enter pure guest mode – no cloud load. */
+export function enterGuestMode(): void {
+  setPlayMode('guest')
+}
+
 export function takeAuthErrorFromUrl(): string | null {
   if (typeof window === 'undefined') return null
   const hash = window.location.hash.replace(/^#/, '')
