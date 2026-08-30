@@ -3,28 +3,18 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   getLocalPersonalBests,
   getLocalRecentHighScores,
+  getLocalTotalsByGame,
   getRemoteTopScores,
   gameLabel,
+  type GameTotals,
   type LeaderboardEntry,
   type PersonalBestRow,
 } from '@/services/leaderboard'
 import { isSupabaseConfigured } from '@/database/supabase'
 import { getMyUsername } from '@/auth/authService'
 import { syncFullNow } from '@/services/remoteSync'
-import { getRecentResults } from '@/offline'
-import type { LocalGameResult } from '@/offline/db'
 import type { GameId } from '@/games/types'
 import styles from './LeaderboardPage.module.css'
-
-/** Kurzes Datum/Zeit-Format für "Letzte Ergebnisse" – reicht zum Wiedererkennen "war das gerade eben?". */
-function formatPlayedAt(iso: string): string {
-  return new Date(iso).toLocaleString('de-DE', {
-    day: '2-digit',
-    month: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
 
 type Tab = 'mine' | 'global-ps' | 'global-wim' | 'global-sr'
 
@@ -39,7 +29,7 @@ export function LeaderboardPage() {
   const [tab, setTab] = useState<Tab>('mine')
   const [personalBests, setPersonalBests] = useState<PersonalBestRow[]>([])
   const [recent, setRecent] = useState<LeaderboardEntry[]>([])
-  const [recentPlays, setRecentPlays] = useState<LocalGameResult[]>([])
+  const [totals, setTotals] = useState<GameTotals[]>([])
   const [remote, setRemote] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [myName, setMyName] = useState<string | null>(null)
@@ -57,15 +47,15 @@ export function LeaderboardPage() {
       setLoading(true)
       try {
         if (tab === 'mine') {
-          const [bests, high, plays] = await Promise.all([
+          const [bests, high, gameTotals] = await Promise.all([
             getLocalPersonalBests(),
             getLocalRecentHighScores(15),
-            getRecentResults(undefined, undefined, 10),
+            getLocalTotalsByGame(),
           ])
           if (!cancelled) {
             setPersonalBests(bests)
             setRecent(high)
-            setRecentPlays(plays)
+            setTotals(gameTotals)
           }
         } else {
           const top = await getRemoteTopScores(TAB_GAME[tab], 20)
@@ -200,24 +190,24 @@ export function LeaderboardPage() {
             </ol>
           )}
 
-          <h2 className={styles.sectionTitle}>Letzte Ergebnisse</h2>
+          <h2 className={styles.sectionTitle}>Gesamtpunkte je Spiel</h2>
           <p className={styles.hint}>
-            Zeitlich sortiert, egal wie viele Punkte – so siehst du, ob eine gerade gespielte
-            Runde angekommen ist.
+            Aufsummiert über alle jemals gespielten Runden dieses Spiels – wächst bei jeder
+            Runde, unabhängig davon, ob sie ein neuer Rekord war.
           </p>
-          {recentPlays.length === 0 ? (
+          {totals.length === 0 ? (
             <p className={styles.empty}>Noch keine Ergebnisse.</p>
           ) : (
             <ul className={styles.list}>
-              {recentPlays.map((r) => (
-                <li key={r.id} className={`${styles.row} ${styles.rowNoRank}`}>
+              {totals.map((t) => (
+                <li key={t.gameId} className={`${styles.row} ${styles.rowNoRank}`}>
                   <span className={styles.rowMain}>
-                    {gameLabel(r.gameId)} · L{r.level}
-                    <span className={styles.sub}> · {formatPlayedAt(r.createdAt)}</span>
+                    {gameLabel(t.gameId)}
+                    <span className={styles.sub}> · {t.playCount} Runden</span>
                   </span>
                   <span className={styles.rowRight}>
-                    <span className={styles.rowScore}>{r.score} Pkt.</span>
-                    <span className={styles.rowXp}>+{r.xp} XP</span>
+                    <span className={styles.rowScore}>{t.totalScore.toLocaleString('de-DE')} Pkt.</span>
+                    <span className={styles.rowXp}>{t.totalXp.toLocaleString('de-DE')} XP</span>
                   </span>
                 </li>
               ))}
