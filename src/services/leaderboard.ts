@@ -9,19 +9,19 @@ import { isSupabaseConfigured, supabase } from '@/database/supabase'
 export interface LeaderboardEntry {
   rank: number
   displayName: string
+  /** Bei `source: 'local'` Punkte einer einzelnen Runde, bei `'remote'` die Summe aller Runden. */
   score: number
+  /** Nur bei `source: 'local'` sinnvoll (eine Runde = ein Level). Bei `'remote'` 0, siehe `playCount`. */
   level: number
   gameId: string
   isYou?: boolean
   source: 'local' | 'remote'
   /** When the entry was achieved – the list shows personal bests, not the last round. */
   achievedAt?: string
-  /**
-   * XP, das dieses Ergebnis gebracht hat. Nur lokal bekannt (game_results),
-   * die öffentliche leaderboard_top-View speichert keine XP – bei
-   * `source: 'remote'` bleibt das Feld deshalb leer.
-   */
+  /** XP – bei `source: 'local'` einer Runde, bei `'remote'` die Summe aller Runden. */
   xp?: number
+  /** Nur bei `source: 'remote'` gefüllt: Anzahl der Runden, aus denen `score`/`xp` aufsummiert sind. */
+  playCount?: number
 }
 
 export interface PersonalBestRow {
@@ -114,21 +114,27 @@ export async function getLocalRecentHighScores(
   }))
 }
 
-export async function getRemoteTopScores(
+/**
+ * Globale Rangliste nach Gesamt-XP je Spieler (30.08.2026, Thomas: "es soll
+ * einfach alle gesammelten XP zusammen gerechnet werden"). Liest die
+ * `leaderboard_xp_total`-View (siehe supabase/migrations/008_*.sql) --
+ * summiert wirklich jede gespeicherte Runde, statt nur die beste zu
+ * behalten wie die ältere `leaderboard_top`-View.
+ */
+export async function getRemoteXpTotals(
   gameId: GameId,
   limit = 10,
 ): Promise<LeaderboardEntry[]> {
   if (!isSupabaseConfigured || !supabase) return []
 
   try {
-    // Reads the public view (username + score + level only), not game_results –
-    // RLS keeps every player's raw rows private.
+    // Liest die öffentliche View (Username + aggregierte Zahlen), nicht
+    // game_results direkt – RLS hält jede einzelne Runde privat.
     const { data, error } = await supabase
-      .from('leaderboard_top')
-      .select('username, score, level, created_at')
+      .from('leaderboard_xp_total')
+      .select('username, total_xp, total_score, play_count, last_played_at')
       .eq('game_id', gameId)
-      .order('score', { ascending: false })
-      .order('level', { ascending: false })
+      .order('total_xp', { ascending: false })
       .limit(limit)
 
     if (error || !data) return []
@@ -136,11 +142,13 @@ export async function getRemoteTopScores(
     return data.map((row, i) => ({
       rank: i + 1,
       displayName: (row.username as string | null) ?? 'Spieler',
-      score: row.score as number,
-      level: row.level as number,
+      score: row.total_score as number,
+      xp: row.total_xp as number,
+      playCount: row.play_count as number,
+      level: 0,
       gameId,
       source: 'remote' as const,
-      achievedAt: (row.created_at as string | null) ?? undefined,
+      achievedAt: (row.last_played_at as string | null) ?? undefined,
     }))
   } catch {
     return []

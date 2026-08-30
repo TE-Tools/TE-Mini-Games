@@ -4,7 +4,7 @@ import {
   getLocalPersonalBests,
   getLocalRecentHighScores,
   getLocalTotalsByGame,
-  getRemoteTopScores,
+  getRemoteXpTotals,
   gameLabel,
   type GameTotals,
   type LeaderboardEntry,
@@ -58,7 +58,7 @@ export function LeaderboardPage() {
             setTotals(gameTotals)
           }
         } else {
-          const top = await getRemoteTopScores(TAB_GAME[tab], 20)
+          const top = await getRemoteXpTotals(TAB_GAME[tab], 20)
           if (!cancelled) setRemote(top)
         }
       } finally {
@@ -226,14 +226,14 @@ export function LeaderboardPage() {
           )}
           {isSupabaseConfigured && myEntry && (
             <p className={styles.myPlace}>
-              Dein Platz: <strong>#{myEntry.rank}</strong> mit {myEntry.score} Punkten (L
-              {myEntry.level})
+              Dein Platz: <strong>#{myEntry.rank}</strong> mit {myEntry.xp?.toLocaleString('de-DE')}{' '}
+              XP aus {myEntry.playCount} Runden
             </p>
           )}
           {isSupabaseConfigured && (
             <p className={styles.hint}>
-              Gezeigt wird das <strong>beste</strong> Ergebnis pro Spieler – die Liste bewegt
-              sich erst, wenn jemand seinen eigenen Rekord schlägt.
+              Gezeigt wird die <strong>Summe aller XP</strong> aus jeder gespielten Runde – jede
+              neue Runde zählt sofort mit dazu, unabhängig davon, ob sie ein Rekord war.
             </p>
           )}
           {isSupabaseConfigured && !myEntry && remote.length > 0 && (
@@ -263,13 +263,16 @@ export function LeaderboardPage() {
                     {e.displayName === myName ? ' (du)' : ''}
                     <span className={styles.sub}>
                       {' '}
-                      L{e.level}
+                      {e.playCount} {e.playCount === 1 ? 'Runde' : 'Runden'}
                       {e.achievedAt
-                        ? ` · ${new Date(e.achievedAt).toLocaleDateString('de-DE')}`
+                        ? ` · zuletzt ${new Date(e.achievedAt).toLocaleDateString('de-DE')}`
                         : ''}
                     </span>
                   </span>
-                  <span className={styles.rowScore}>{e.score}</span>
+                  <span className={styles.rowRight}>
+                    <span className={styles.rowScore}>{e.xp?.toLocaleString('de-DE')} XP</span>
+                    <span className={styles.rowXp}>{e.score.toLocaleString('de-DE')} Pkt.</span>
+                  </span>
                 </li>
               ))}
             </ol>
