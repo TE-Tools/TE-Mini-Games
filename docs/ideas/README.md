@@ -4,7 +4,7 @@ Neue Mini-Game-Ideen werden hier abgelegt. Implementiert wird erst, wenn explizi
 
 | Idee | Status | Ordner |
 |------|--------|--------|
-| **Schützenrunde** | **v2 implementiert** (lokal vs. Bots, 8–16 Spieler, Diskussion), Multiplayer offen | [schuetzenrunde/](./schuetzenrunde/) |
+| **Schützenrunde** | **v3 implementiert** (lokal vs. Bots, 8–16 Spieler, Ämter, Timer, Züge, Schützenfest), echtes Multiplayer offen | [schuetzenrunde/](./schuetzenrunde/) |
 
 ## Schützenrunde (Kurz)
 

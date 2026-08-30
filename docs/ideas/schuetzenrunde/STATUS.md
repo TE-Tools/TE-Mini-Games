@@ -1,9 +1,9 @@
 # Status: Schützenrunde
 
-- **Stand:** **v1 implementiert** (lokale Runde gegen regelbasierte Bots)
+- **Stand:** **v3 implementiert** – die lokale Runde ist fertig gebaut
 - **Implementierung:** `src/games/schuetzenrunde/`, Seite `/play/schuetzenrunde`
-- **Offen:** echtes Multiplayer (8–16 reale Spieler, serverautoritativ), Züge/Clans,
-  Events (Schützenkönig, Vogelschießen), Seasons – siehe Spezifikation
+- **Offen:** nur noch echtes Multiplayer (8–16 reale Spieler, serverautoritativ)
+  und Seasons – alles andere aus der Spezifikation ist umgesetzt
 - **Quelle:** ZIP `TE_MiniGames_Schuetzenrunde_Entwicklungsgrundlage`
 - **Datum Aufnahme:** 2026-08-29
 
@@ -28,25 +28,66 @@ Multiplayer-Social-Deduction mit Schützen-/Vereinsthema für TE MiniGames:
 
 Vollständiger ZIP-Inhalt liegt auch im Projekt unter `docs/ideas/schuetzenrunde/` (lokal/Artifacts).
 
-## v2 – was drin ist
+## v3 – was drin ist
+
+**Runde**
 
 - **8 bis 16 Teilnehmer** wählbar: du + regelbasierte Bots (keine externe KI, offline)
 - 2 Saboteure, ab 12 Mitgliedern 3
-- Rollen: Brudermeister (Doppelstimme), Schießmeister (prüft nachts eine Person),
-  Schütze (ein freier Schuss pro Partie), Hornist, Saboteur, Intrigant
-- Ablauf: Nacht → **Diskussion** → Abstimmung → Ergebnis → nächste Nacht
+- Ablauf wie in der Spezifikation: **Nacht → Tag (Diskussion) → Abstimmung →
+  Ergebnis → nächste Nacht**
+- **Timer je Phase**, abschaltbar: Nacht 45 s, Tag 90 s, Abstimmung 30 s,
+  Ergebnis 8 s (`DEFAULT_TIMERS`), pro Lobby in Grenzen verstellbar
+  (`clampTimers`, `TIMER_LIMITS`). Läuft die Zeit ab, passiert genau das, was
+  der Knopf auch tun würde.
+
+**Rollen** – je größer die Runde, desto mehr Ämter
+
+| Amt | ab Runde | Wirkung |
+|-----|----------|---------|
+| Schießmeister | 8 | prüft nachts eine Person |
+| Schütze | 8 | ein freier Schuss (drei beim Schützenfest) |
+| Brudermeister | 8 | Doppelstimme |
+| Zeugwart | 10 | schützt nachts eine Person, nie zweimal dieselbe hintereinander |
+| Schriftführer | 12 | erfährt nachts über zwei Mitglieder, ob eines davon Saboteur ist |
+| Oberst | 14 | übersteht den ersten Anschlag |
+| Stellv. Brudermeister | 16 | erbt die Doppelstimme, wenn der Brudermeister raus ist |
+| Hornist / Kassierer / Musikbeauftragter | – | einfache Mitglieder |
+
+Saboteure: **Saboteur**, **Intrigant**, ab 10 der **Falschspieler** (wird beim
+Prüfen als Bruderschaft angezeigt), ab 14 der **Gerüchtemacher** (bringt einmal
+pro Partie ein Mitglied ins Gerede – Prüfungen schlagen dann fälschlich an).
+
+**Diskussion und Abstimmung**
+
 - Am Tag reden bis zu vier Mitspieler: Verdächtigungen folgen dem
   Verdachtszähler, Saboteure lenken auf Unschuldige, wer selbst unter Druck
-  steht verteidigt sich. Jede Verdächtigung verschiebt den Verdacht – die
-  Abstimmung folgt also dem Gerede.
+  steht verteidigt sich. Jede Verdächtigung verschiebt den Verdacht.
 - Nach der Abstimmung sieht man, **wer für wen gestimmt hat**
-- Siegbedingungen, Verlauf/Log, Punkte und XP über die normale Spielregistrierung
+
+**Züge**
+
+- Vier Züge (Jäger-, Grenadier-, Fahnen-, Hornistenzug), drei davon in kleinen
+  Runden. Du wählst deinen Zug in der Lobby, die anderen werden verteilt.
+- Zugpunkte pro Partie: Sieg 3, Überleben 1, Königswürde 2. Die **Zug-Bilanz**
+  auf dem Startbildschirm summiert die gespeicherten Ergebnisse – ohne
+  zusätzliche Tabelle.
+
+**Schützenfest / Vogelschießen (Event)**
+
+- Der Schütze hat **drei Schuss**
+- Am Ende wird gekrönt: Wer die meisten Stimmen gegen echte Saboteure abgegeben
+  hat, trägt die **Königswürde** (+100 Punkte, +40 XP)
+- Die vollen 1000 Punkte gibt es nur so: gewinnen (800) + überleben (100) +
+  Königswürde (100)
+
+**Plattform**
+
+- Punkte, XP, Rangliste und Cloud-Sync laufen über die normale Spielregistrierung
 
 ## Nächster Schritt (erst wenn beauftragt)
 
-1. Realtime-Multiplayer (Supabase Realtime oder eigener Server), serverautoritative Zeit
+1. Realtime-Multiplayer (Supabase Realtime oder eigener Server), serverautoritative
+   Zeit – die Phasenzeiten liegen dafür schon im Match-State
 2. Lobby für reale Spieler, Bots nur zum Auffüllen
-3. Timer je Phase (Nacht 45 s, Tag 90 s, Abstimmung 30 s) – laut Spezifikation
-   serverautoritativ, deshalb erst mit dem Multiplayer sinnvoll
-3. Züge/Clans, Events (Schützenfest, Vogelschießen), Seasons
-4. Weitere Rollen aus der Spezifikation
+3. Seasons und Zugranglisten über die Cloud statt nur lokal

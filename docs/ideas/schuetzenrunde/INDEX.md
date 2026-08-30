@@ -1,6 +1,6 @@
 # Schützenrunde – Dateiindex
 
-Idee aufgenommen, **nicht implementiert**.
+Idee aufgenommen und als lokale Runde **umgesetzt** (v3) – siehe `STATUS.md`.
 
 Siehe `STATUS.md` und `START_HERE.md`.
 

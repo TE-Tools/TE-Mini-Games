@@ -293,3 +293,77 @@
   font-size: var(--text-sm);
   line-height: 1.35;
 }
+
+/* ---- phase clock ---- */
+
+.clock,
+.clockHot {
+  margin: 0;
+  font-weight: 800;
+  font-size: var(--text-base);
+  padding: 0.15rem 0.75rem;
+  border-radius: var(--radius-full);
+  background: linear-gradient(180deg, #fffbe8, #f3dd9a);
+  border: 2px solid #d4a017;
+}
+
+.clockHot {
+  background: linear-gradient(180deg, #fdeceb, #f7cfcc);
+  border-color: #b3261e;
+  color: #b3261e;
+}
+
+/* ---- Zug balance on the lobby screen ---- */
+
+.board {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--color-border);
+  background: linear-gradient(180deg, #ffffff, #fff6dd);
+}
+
+.boardTitle {
+  margin: 0 0 0.25rem;
+  font-weight: 800;
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+.boardRow {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+/* ---- end of match ---- */
+
+.crown {
+  margin: 0;
+  font-weight: 800;
+  font-size: var(--text-base);
+  text-align: center;
+  color: #8a6100;
+}
+
+.scoreLine {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-base);
+}
+
+.secondaryBtn {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-xl);
+  font-size: var(--text-base);
+  font-weight: 800;
+  border: 2px solid var(--color-border);
+  background: linear-gradient(180deg, #ffffff, #fff6dd);
+  box-shadow: var(--btn-shadow);
+}
