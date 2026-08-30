@@ -167,8 +167,8 @@ export function FamilyPage() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <button type="button" className={styles.back} onClick={() => navigate('/')} aria-label="Zurück">
-          ←
+        <button type="button" className={styles.back} onClick={() => navigate('/')} aria-label="Zur\u00fcck">
+          \u2190
         </button>
         <h1 className={styles.title}>Familie</h1>
         <span className={styles.badge}>Lokal</span>
@@ -177,7 +177,7 @@ export function FamilyPage() {
       {phase === 'setup' && (
         <section className={styles.setup}>
           <p className={styles.hint}>
-            Namen eintragen (ein Name pro Zeile). Das Gerät wird weitergegeben – kein Konto nötig.
+            Namen eintragen (ein Name pro Zeile). Das Ger\u00e4t wird weitergegeben – kein Konto n\u00f6tig.
           </p>
           <label className={styles.label}>
             Spieler
@@ -220,7 +220,7 @@ export function FamilyPage() {
       {phase === 'handoff' && session && (
         <section className={styles.handoff}>
           <p className={styles.bigName}>{currentName}</p>
-          <p className={styles.hint}>Du bist dran. Gerät übernehmen und starten.</p>
+          <p className={styles.hint}>Du bist dran. Ger\u00e4t \u00fcbernehmen und starten.</p>
           <p className={styles.muted}>
             Spieler {session.currentPlayerIndex + 1} von {session.playerNames.length}
           </p>
@@ -236,7 +236,7 @@ export function FamilyPage() {
           {psPhase === 'ready' && (
             <>
               <p className={styles.target}>Ziel: {formatTime(psConfig.targetTime, 2)} s</p>
-              <p className={styles.muted}>±{formatTime(psConfig.tolerance, 2)} s</p>
+              <p className={styles.muted}>\u00b1{formatTime(psConfig.tolerance, 2)} s</p>
               <button type="button" className={styles.primaryBtn} onClick={psStart}>
                 Start
               </button>
@@ -244,7 +244,7 @@ export function FamilyPage() {
           )}
           {psPhase === 'running' && (
             <>
-              <p className={styles.running}>Timer läuft…</p>
+              <p className={styles.running}>Timer l\u00e4uft\u2026</p>
               <button type="button" className={styles.stopBtn} onClick={() => void psStop()}>
                 STOP
               </button>
@@ -289,27 +289,33 @@ export function FamilyPage() {
         <section className={styles.handoff}>
           <p className={styles.bigName}>{currentName}</p>
           <p className={styles.score}>
-            {lastScore !== null ? `${lastScore} Punkte` : '—'}
+            {lastScore !== null ? `${lastScore} Punkte` : '\u2014'}
             {session?.gameId === 'perfect-second' && lastTime !== null
-              ? ` · ${formatTime(lastTime)} s (Ziel ${formatTime(psConfig.targetTime, 2)} s)`
+              ? ` \u00b7 ${formatTime(lastTime)} s (Ziel ${formatTime(psConfig.targetTime, 2)} s)`
               : ''}
           </p>
-          <p className={styles.hint}>Gerät an den nächsten Spieler weitergeben.</p>
+          <p className={styles.hint}>Ger\u00e4t an den n\u00e4chsten Spieler weitergeben.</p>
           <button type="button" className={styles.primaryBtn} onClick={nextPlayer}>
-            Nächster Spieler
+            N\u00e4chster Spieler
           </button>
         </section>
       )}
 
       {phase === 'finished' && (
         <section className={styles.finished}>
-          <p className={styles.trophy}>🏆 SIEGER</p>
+          <p className={styles.trophy}>\ud83c\udfc6 SIEGER</p>
           <ol className={styles.ranking}>
             {standings.map((s) => (
               <li key={`${s.playerIndex}-${s.playerName}`} className={styles.rankRow}>
                 <span className={styles.rank}>{s.rank}.</span>
                 <span className={styles.rankName}>{s.playerName}</span>
-                <span className={styles.rankScore}>{s.score}</span>
+                <span className={styles.rankScore}>
+                  {s.score} Pkt
+                  {s.actualTime !== null ? ` \u00b7 ${formatTime(s.actualTime)} s` : ''}
+                  {s.actualTime !== null && s.targetTime !== null
+                    ? ` (Ziel ${formatTime(s.targetTime, 2)} s)`
+                    : ''}
+                </span>
               </li>
             ))}
           </ol>
