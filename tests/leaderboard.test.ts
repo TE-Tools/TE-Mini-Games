@@ -61,5 +61,6 @@ describe('Leaderboard local', () => {
   it('gameLabel maps ids', () => {
     expect(gameLabel('perfect-second')).toContain('Sekunde')
     expect(gameLabel('what-is-missing')).toContain('fehlt')
+    expect(gameLabel('schuetzenrunde')).toBe('Schützenrunde')
   })
 })
