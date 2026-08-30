@@ -111,3 +111,37 @@
 .danger:disabled {
   opacity: 0.6;
 }
+
+.googleBtn {
+  min-height: var(--touch-min);
+  width: 100%;
+  padding: var(--space-3);
+  background: linear-gradient(180deg, #ffffff, #f3f4f6);
+  color: var(--color-text);
+  border-radius: var(--radius-2xl);
+  font-weight: 700;
+  font-size: var(--text-base);
+  box-shadow: var(--btn-shadow);
+  border: 2px solid var(--color-border);
+}
+
+.guestBtn {
+  min-height: var(--touch-min);
+  width: 100%;
+  padding: var(--space-3);
+  background: linear-gradient(180deg, #fef9c3, #fde68a);
+  color: #713f12;
+  border-radius: var(--radius-2xl);
+  font-weight: 800;
+  font-size: var(--text-lg);
+  box-shadow: var(--btn-shadow);
+  border: 2px solid #e6c35c;
+}
+
+.hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
