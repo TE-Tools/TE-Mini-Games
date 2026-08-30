@@ -8,9 +8,13 @@
  * Bots are plain rules – suspicion counters and simple heuristics. No AI.
  */
 
-import { factionOf, roleDeck, roleOf, type Faction, type RoleId } from './roles'
+import { factionOf, roleDeck, roleOf, saboteurCount, type Faction, type RoleId } from './roles'
 
+/** Default size of a round. */
 export const MATCH_SIZE = 8
+/** Smallest and largest round the spec asks for. */
+export const MIN_MATCH_SIZE = 8
+export const MAX_MATCH_SIZE = 16
 
 export type Phase = 'night' | 'day' | 'vote' | 'result' | 'over'
 
@@ -20,6 +24,17 @@ export interface Player {
   isHuman: boolean
   role: RoleId
   alive: boolean
+}
+
+export interface Statement {
+  round: number
+  speaker: string
+  text: string
+}
+
+export interface VoteRecord {
+  voter: string
+  target: string
 }
 
 export interface MatchState {
@@ -38,6 +53,10 @@ export interface MatchState {
   winner: Faction | null
   /** Who was eliminated in the last resolution, for the UI. */
   lastEliminated: number[]
+  /** What the others said during the current day. */
+  statements: Statement[]
+  /** Who voted for whom in the last vote. */
+  lastVotes: VoteRecord[]
 }
 
 const BOT_NAMES = [
@@ -53,6 +72,10 @@ const BOT_NAMES = [
   'Elfriede',
   'Bernd',
   'Rosi',
+  'Ludwig',
+  'Käthe',
+  'Franz',
+  'Irmgard',
 ]
 
 /* ---------------- deterministic RNG (kept local on purpose) ---------------- */
@@ -121,9 +144,14 @@ export function checkWinner(state: MatchState): Faction | null {
 
 /* ------------------------------ match setup ------------------------------ */
 
-export function createMatch(playerName: string, seed = `sr-${Date.now()}`): MatchState {
+export function createMatch(
+  playerName: string,
+  seed = `sr-${Date.now()}`,
+  size: number = MATCH_SIZE,
+): MatchState {
+  const players_ = Math.max(MIN_MATCH_SIZE, Math.min(MAX_MATCH_SIZE, Math.floor(size)))
   const rng = createRng(seed)
-  const roles = shuffle(roleDeck(MATCH_SIZE), rng)
+  const roles = shuffle(roleDeck(players_), rng)
   const botNames = shuffle(BOT_NAMES, rng)
 
   const players: Player[] = roles.map((role, i) => ({
@@ -142,13 +170,92 @@ export function createMatch(playerName: string, seed = `sr-${Date.now()}`): Matc
     round: 1,
     phase: 'night',
     players,
-    log: ['Die Bruderschaft trifft sich. Zwei Saboteure sind unter euch.'],
+    log: [
+      `Die Bruderschaft trifft sich – ${players_} Mitglieder, ${
+        saboteurCount(players_) === 3 ? 'drei Saboteure' : 'zwei Saboteure'
+      } unter euch.`,
+    ],
     notes: [],
     suspicion,
     shotAvailable: true,
     winner: null,
     lastEliminated: [],
+    statements: [],
+    lastVotes: [],
   }
+}
+
+/* ------------------------------ discussion -------------------------------- */
+
+/**
+ * What the bots say during the day. Plain rules, no AI: members of the
+ * Bruderschaft push the person they suspect most, saboteurs push an innocent,
+ * and whoever is under fire defends themselves. Every accusation nudges the
+ * suspicion, so the vote afterwards follows the talk.
+ */
+function buildStatements(state: MatchState, rng: () => number): Statement[] {
+  const alive = alivePlayers(state).filter((p) => !p.isHuman)
+  const speakers = shuffle(alive, rng).slice(0, Math.min(4, alive.length))
+  const statements: Statement[] = []
+  // Hand out the phrasings round-robin so nobody parrots the same sentence.
+  const accusations = shuffle(
+    [
+      (name: string) => `Ich traue ${name} nicht.`,
+      (name: string) => `${name} hat sich gestern merkwürdig verhalten.`,
+      (name: string) => `Schaut euch ${name} an – zu ruhig für meinen Geschmack.`,
+      (name: string) => `Für mich sieht ${name} nach Sabotage aus.`,
+      (name: string) => `Ich habe ${name} heute Nacht draußen gehört.`,
+      (name: string) => `${name} redet viel und sagt nichts.`,
+    ],
+    rng,
+  )
+  const defences = shuffle(
+    [
+      'Ich war die ganze Nacht am Schießstand, ehrlich.',
+      'Ihr rennt in die falsche Richtung – ich gehöre zur Bruderschaft.',
+      'Wenn ihr mich rauswerft, habt ihr morgen den Salat.',
+      'Ich bin seit dreißig Jahren im Zug, das könnt ihr nachlesen.',
+    ],
+    rng,
+  )
+  let accusationIndex = 0
+  let defenceIndex = 0
+
+  for (const speaker of speakers) {
+    const others = alivePlayers(state).filter((p) => p.id !== speaker.id)
+    if (others.length === 0) continue
+
+    const underFire = (state.suspicion[speaker.id] ?? 0) >= 3
+    if (underFire && rng() < 0.7) {
+      statements.push({
+        round: state.round,
+        speaker: speaker.name,
+        text: defences[defenceIndex++ % defences.length]!,
+      })
+      continue
+    }
+
+    const candidates =
+      factionOf(speaker.role) === 'saboteure'
+        ? others.filter((p) => factionOf(p.role) === 'bruderschaft')
+        : others
+    const ranked = shuffle(candidates, rng).sort(
+      (a, b) => (state.suspicion[b.id] ?? 0) - (state.suspicion[a.id] ?? 0),
+    )
+    // Usually the prime suspect, sometimes the runner-up – otherwise the whole
+    // village parrots one name.
+    const target = ranked.length > 1 && rng() < 0.35 ? ranked[1]! : ranked[0]
+    if (!target) continue
+
+    statements.push({
+      round: state.round,
+      speaker: speaker.name,
+      text: accusations[accusationIndex++ % accusations.length]!(target.name),
+    })
+    state.suspicion[target.id] = (state.suspicion[target.id] ?? 0) + 1
+  }
+
+  return statements
 }
 
 /* -------------------------------- night ---------------------------------- */
@@ -265,7 +372,12 @@ export function resolveNight(state: MatchState, action: NightAction = {}): Match
 
   next.phase = 'day'
   next.winner = checkWinner(next)
-  if (next.winner) next.phase = 'over'
+  if (next.winner) {
+    next.phase = 'over'
+    return next
+  }
+
+  next.statements = buildStatements(next, createRng(`${next.seed}-talk-${next.round}`))
   return next
 }
 
@@ -296,8 +408,11 @@ export function resolveVote(state: MatchState, humanTargetId: number | null): Ma
 
   const alive = alivePlayers(next)
   const tally: Record<number, number> = {}
+  const votes: VoteRecord[] = []
   const addVote = (voter: Player, targetId: number) => {
     tally[targetId] = (tally[targetId] ?? 0) + voteWeight(voter)
+    const target = playerById(next, targetId)
+    if (target) votes.push({ voter: voter.name, target: target.name })
   }
 
   for (const voter of alive) {
@@ -351,6 +466,8 @@ export function resolveVote(state: MatchState, humanTargetId: number | null): Ma
     }
   }
 
+  next.lastVotes = votes
+  next.statements = []
   next.phase = 'result'
   next.winner = checkWinner(next)
   if (next.winner) next.phase = 'over'

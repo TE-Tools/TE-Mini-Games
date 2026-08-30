@@ -79,9 +79,20 @@ export function factionOf(id: RoleId): Faction {
   return ROLES[id].faction
 }
 
-/** Role deck for a round of `size` players: always 2 saboteurs. */
+/** Saboteurs in a round: 2 up to 11 players, 3 from 12 on. */
+export function saboteurCount(size: number): number {
+  return size >= 12 ? 3 : 2
+}
+
+/**
+ * Role deck for a round of `size` players: the saboteurs, the three special
+ * roles of the Bruderschaft, then plain Hornisten.
+ */
 export function roleDeck(size: number): RoleId[] {
-  const deck: RoleId[] = ['saboteur', 'intrigant', 'schiessmeister', 'schuetze', 'brudermeister']
-  while (deck.length < size) deck.push('hornist')
-  return deck.slice(0, size)
+  const players = Math.max(4, Math.floor(size))
+  const deck: RoleId[] = ['saboteur', 'intrigant']
+  if (saboteurCount(players) > 2) deck.push('saboteur')
+  deck.push('schiessmeister', 'schuetze', 'brudermeister')
+  while (deck.length < players) deck.push('hornist')
+  return deck.slice(0, players)
 }

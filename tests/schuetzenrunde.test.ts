@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   MATCH_SIZE,
+  MAX_MATCH_SIZE,
+  saboteurCount,
   createMatch,
   resolveNight,
   resolveVote,
@@ -41,6 +43,58 @@ describe('Schützenrunde – setup', () => {
     expect(a.players.map((p) => p.role)).toEqual(b.players.map((p) => p.role))
     const c = createMatch('Du', 'other')
     expect(a.players.map((p) => p.role)).not.toEqual(c.players.map((p) => p.role))
+  })
+})
+
+describe('Schützenrunde – round sizes', () => {
+  it('scales the deck from 8 to 16 players', () => {
+    for (const size of [8, 10, 11, 12, 14, 16]) {
+      const deck = roleDeck(size)
+      expect(deck).toHaveLength(size)
+      expect(deck.filter((r) => factionOf(r) === 'saboteure')).toHaveLength(saboteurCount(size))
+      expect(deck).toContain('schiessmeister')
+      expect(deck).toContain('schuetze')
+      expect(deck).toContain('brudermeister')
+    }
+    expect(saboteurCount(8)).toBe(2)
+    expect(saboteurCount(11)).toBe(2)
+    expect(saboteurCount(12)).toBe(3)
+  })
+
+  it('creates a match with the requested size and clamps the rest', () => {
+    expect(createMatch('Du', 'size-a', 12).players).toHaveLength(12)
+    expect(createMatch('Du', 'size-b', 16).players).toHaveLength(MAX_MATCH_SIZE)
+    expect(createMatch('Du', 'size-c', 99).players).toHaveLength(MAX_MATCH_SIZE)
+    expect(createMatch('Du', 'size-d', 2).players).toHaveLength(MATCH_SIZE)
+    // Every player has a distinct name.
+    const names = createMatch('Du', 'size-e', 16).players.map((p) => p.name)
+    expect(new Set(names).size).toBe(16)
+  })
+})
+
+describe('Schützenrunde – discussion and votes', () => {
+  it('the bots talk during the day and never the human', () => {
+    const after = resolveNight(createMatch('Du', 'talk-seed'))
+    if (after.phase === 'over') return
+    expect(after.statements.length).toBeGreaterThan(0)
+    expect(after.statements.length).toBeLessThanOrEqual(4)
+    for (const st of after.statements) {
+      expect(st.round).toBe(after.round)
+      expect(st.speaker).not.toBe('Du')
+      expect(st.text.length).toBeGreaterThan(5)
+    }
+  })
+
+  it('records who voted for whom', () => {
+    const day = resolveNight(createMatch('Du', 'votes-seed'))
+    const target = alivePlayers(day).find((p) => !p.isHuman)!
+    const after = resolveVote(day, target.id)
+    expect(after.lastVotes.length).toBeGreaterThan(0)
+    for (const v of after.lastVotes) {
+      expect(v.voter).not.toBe(v.target)
+    }
+    // The talk of the finished day is cleared again.
+    expect(after.statements).toHaveLength(0)
   })
 })
 

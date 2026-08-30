@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import styles from './HomePage.module.css'
 import { getOrCreateGuestProfile, type LocalProfile } from '@/offline'
 import { xpProgressInLevel } from '@/progression'
+import { InstallButton } from '@/components/install/InstallButton'
 
 export function HomePage() {
   const [profile, setProfile] = useState<LocalProfile | null>(null)
@@ -75,6 +76,8 @@ export function HomePage() {
           bis Spieler-Level {xpProgress.level + 1}
         </p>
       )}
+
+      <InstallButton />
 
       <nav className={styles.actions} aria-label="Spiele und Funktionen">
         <Link to="/play/perfect-second" className={styles.gameButton} data-game="perfect-second">

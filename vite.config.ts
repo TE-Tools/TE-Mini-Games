@@ -23,24 +23,32 @@ export default defineConfig({
         scope: '/',
         lang: 'de',
         categories: ['games', 'entertainment'],
+        // PNG first: Chrome only offers "install" when the manifest carries a
+        // raster icon of 192 and 512 px.
         icons: [
           {
-            src: '/icons/icon-192.svg',
+            src: '/icons/icon-192.png',
             sizes: '192x192',
-            type: 'image/svg+xml',
+            type: 'image/png',
             purpose: 'any',
           },
           {
-            src: '/icons/icon-512.svg',
+            src: '/icons/icon-512.png',
             sizes: '512x512',
-            type: 'image/svg+xml',
+            type: 'image/png',
             purpose: 'any',
           },
           {
-            src: '/icons/icon-512.svg',
+            src: '/icons/icon-maskable-512.png',
             sizes: '512x512',
-            type: 'image/svg+xml',
+            type: 'image/png',
             purpose: 'maskable',
+          },
+          {
+            src: '/icons/icon-512.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
+            purpose: 'any',
           },
         ],
       },

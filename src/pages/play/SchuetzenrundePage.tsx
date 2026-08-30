@@ -1,6 +1,9 @@
 import { useCallback, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
+  MATCH_SIZE,
+  MIN_MATCH_SIZE,
+  MAX_MATCH_SIZE,
   createMatch,
   resolveNight,
   resolveVote,
@@ -19,6 +22,7 @@ import styles from './SchuetzenrundePage.module.css'
 export function SchuetzenrundePage() {
   const navigate = useNavigate()
   const [name, setName] = useState('Du')
+  const [size, setSize] = useState(MATCH_SIZE)
   const [match, setMatch] = useState<MatchState | null>(null)
   const [selected, setSelected] = useState<number | null>(null)
   const [useShot, setUseShot] = useState(false)
@@ -29,11 +33,11 @@ export function SchuetzenrundePage() {
 
   const start = useCallback(async () => {
     const profile = await getOrCreateGuestProfile()
-    setMatch(createMatch(name || profile.displayName || 'Du'))
+    setMatch(createMatch(name || profile.displayName || 'Du', `sr-${Date.now()}`, size))
     setSelected(null)
     setUseShot(false)
     setSaved(false)
-  }, [name])
+  }, [name, size])
 
   const finish = useCallback(async (state: MatchState) => {
     const outcome = matchOutcome(state)
@@ -111,6 +115,23 @@ export function SchuetzenrundePage() {
             maxLength={20}
           />
         </label>
+        <fieldset className={styles.sizes}>
+          <legend className={styles.sizesLegend}>Wie viele Mitglieder?</legend>
+          {[8, 10, 12, 16].map((option) => (
+            <button
+              key={option}
+              type="button"
+              className={option === size ? styles.sizeActive : styles.size}
+              onClick={() => setSize(option)}
+            >
+              {option}
+            </button>
+          ))}
+        </fieldset>
+        <p className={styles.muted}>
+          {size >= 12 ? 'Drei Saboteure' : 'Zwei Saboteure'} · {MIN_MATCH_SIZE}–{MAX_MATCH_SIZE}{' '}
+          Mitglieder möglich
+        </p>
         <button type="button" className={styles.primaryBtn} onClick={() => void start()}>
           Runde starten
         </button>
@@ -234,7 +255,16 @@ export function SchuetzenrundePage() {
 
       {match.phase === 'day' && (
         <section className={styles.actions}>
-          <p className={styles.phaseTitle}>Tag {match.round} · Abstimmung</p>
+          <p className={styles.phaseTitle}>Tag {match.round} · Diskussion</p>
+          {match.statements.length > 0 && (
+            <ul className={styles.talk}>
+              {match.statements.map((st) => (
+                <li key={`${st.round}-${st.speaker}-${st.text}`} className={styles.talkLine}>
+                  <strong>{st.speaker}:</strong> „{st.text}“
+                </li>
+              ))}
+            </ul>
+          )}
           <p className={styles.hint}>
             {me.alive
               ? 'Wähle eine Person zum Ausschluss – oder stimme nicht ab.'
@@ -249,6 +279,15 @@ export function SchuetzenrundePage() {
       {match.phase === 'result' && (
         <section className={styles.actions}>
           <p className={styles.phaseTitle}>Ergebnis</p>
+          {match.lastVotes.length > 0 && (
+            <ul className={styles.talk}>
+              {match.lastVotes.map((v) => (
+                <li key={`${v.voter}-${v.target}`} className={styles.talkLine}>
+                  {v.voter} → <strong>{v.target}</strong>
+                </li>
+              ))}
+            </ul>
+          )}
           <button type="button" className={styles.primaryBtn} onClick={doNext}>
             Nächste Nacht
           </button>

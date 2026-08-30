@@ -1,4 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" fill="none">
-  <rect width="192" height="192" rx="40" fill="#6366f1"/>
-  <text x="96" y="120" text-anchor="middle" font-size="96" fill="white" font-family="system-ui,sans-serif" font-weight="700">M</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff3c4"/>
+      <stop offset="0.45" stop-color="#f0c84a"/>
+      <stop offset="1" stop-color="#c4920f"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#2a1f12"/>
+  <rect x="24" y="24" width="464" height="464" rx="92" fill="url(#g)"/>
+  <text x="256" y="322" text-anchor="middle" font-size="216" fill="#2a1f12"
+        font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-weight="800">TE</text>
 </svg>

@@ -28,18 +28,25 @@ Multiplayer-Social-Deduction mit Schützen-/Vereinsthema für TE MiniGames:
 
 Vollständiger ZIP-Inhalt liegt auch im Projekt unter `docs/ideas/schuetzenrunde/` (lokal/Artifacts).
 
-## v1 – was drin ist
+## v2 – was drin ist
 
-- 8 Teilnehmer: du + 7 regelbasierte Bots (keine externe KI, offline)
-- 2 Saboteure gegen die Bruderschaft
+- **8 bis 16 Teilnehmer** wählbar: du + regelbasierte Bots (keine externe KI, offline)
+- 2 Saboteure, ab 12 Mitgliedern 3
 - Rollen: Brudermeister (Doppelstimme), Schießmeister (prüft nachts eine Person),
   Schütze (ein freier Schuss pro Partie), Hornist, Saboteur, Intrigant
-- Ablauf: Nacht → Tag → Abstimmung → Ergebnis → nächste Nacht
+- Ablauf: Nacht → **Diskussion** → Abstimmung → Ergebnis → nächste Nacht
+- Am Tag reden bis zu vier Mitspieler: Verdächtigungen folgen dem
+  Verdachtszähler, Saboteure lenken auf Unschuldige, wer selbst unter Druck
+  steht verteidigt sich. Jede Verdächtigung verschiebt den Verdacht – die
+  Abstimmung folgt also dem Gerede.
+- Nach der Abstimmung sieht man, **wer für wen gestimmt hat**
 - Siegbedingungen, Verlauf/Log, Punkte und XP über die normale Spielregistrierung
 
 ## Nächster Schritt (erst wenn beauftragt)
 
 1. Realtime-Multiplayer (Supabase Realtime oder eigener Server), serverautoritative Zeit
-2. Lobby für 8–16 reale Spieler, Bots nur zum Auffüllen
+2. Lobby für reale Spieler, Bots nur zum Auffüllen
+3. Timer je Phase (Nacht 45 s, Tag 90 s, Abstimmung 30 s) – laut Spezifikation
+   serverautoritativ, deshalb erst mit dem Multiplayer sinnvoll
 3. Züge/Clans, Events (Schützenfest, Vogelschießen), Seasons
 4. Weitere Rollen aus der Spezifikation

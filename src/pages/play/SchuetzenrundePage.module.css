@@ -241,3 +241,55 @@
   font-weight: 700;
   text-decoration: underline;
 }
+
+.sizes {
+  display: flex;
+  gap: var(--space-2);
+  border: none;
+  padding: 0;
+  margin: 0;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.sizesLegend {
+  width: 100%;
+  text-align: center;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  margin-bottom: var(--space-2);
+}
+
+.size,
+.sizeActive {
+  min-width: 3rem;
+  padding: var(--space-2);
+  border-radius: var(--radius-lg);
+  font-weight: 800;
+  border: 2px solid var(--color-border);
+  background: linear-gradient(180deg, #ffffff, #fff6dd);
+  box-shadow: var(--btn-shadow);
+}
+
+.sizeActive {
+  border-color: #d4a017;
+  box-shadow: 0 0 0 3px rgb(212 160 23 / 0.35);
+}
+
+.talk {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-3);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border-radius: var(--radius-lg);
+  background: rgb(0 0 0 / 0.04);
+}
+
+.talkLine {
+  font-size: var(--text-sm);
+  line-height: 1.35;
+}
