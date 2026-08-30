@@ -138,6 +138,15 @@ Abstimmungen werden in Postgres aufgelöst, nicht im Browser.
 - Direkt lesbar sind nur der Chat (`sr_messages`) und ein Zustandszähler
   (`sr_state`), beide nur für Mitglieder der jeweiligen Runde. Genau diese
   beiden verteilt Realtime.
+- Aufrufen darf die Funktionen nur `authenticated`. **Achtung, Supabase-Falle:**
+  Neue Funktionen in `public` bekommen per Default-Privileg automatisch
+  `execute` für `anon` **und** `authenticated`; ein `revoke ... from public`
+  nimmt diese Rollenrechte *nicht* mit weg. Die Migration entzieht deshalb
+  erst allen `sr_*`-Funktionen sämtliche Rechte und gibt danach gezielt nur
+  die elf Funktionen der öffentlichen Schnittstelle für `authenticated` frei.
+- Jede Funktion weist zusätzlich Aufrufer ohne Anmeldung ab. Wichtig, weil
+  `auth.uid()` dann `NULL` ist und ein Vergleich wie `host_id <> auth.uid()`
+  zu `NULL` auswertet – also gerade *nicht* blockieren würde.
 
 **Was du dafür einstellen musst**
 
