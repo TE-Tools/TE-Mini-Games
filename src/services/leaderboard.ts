@@ -110,5 +110,6 @@ export async function getRemoteTopScores(
 export function gameLabel(gameId: string): string {
   if (gameId === 'perfect-second') return 'Die perfekte Sekunde'
   if (gameId === 'what-is-missing') return 'Was fehlt?'
+  if (gameId === 'schuetzenrunde') return 'Schützenrunde'
   return gameId
 }
