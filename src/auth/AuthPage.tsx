@@ -18,6 +18,8 @@ import {
 } from '@/auth/authService'
 import { trySyncNow, syncFullNow } from '@/services/remoteSync'
 import { outboxCount } from '@/offline/outbox'
+import { resetLocalProgress } from '@/offline/reset'
+import { resetRemoteProgress } from '@/services/remoteReset'
 import styles from './AuthPage.module.css'
 
 export function AuthPage() {
@@ -37,6 +39,8 @@ export function AuthPage() {
   const [pending, setPending] = useState(0)
   const [syncing, setSyncing] = useState(false)
   const [syncInfo, setSyncInfo] = useState<string | null>(null)
+  const [confirmReset, setConfirmReset] = useState(false)
+  const [resetting, setResetting] = useState(false)
   const [recovery, setRecovery] = useState(
     () => typeof window !== 'undefined' && window.location.hash.includes('type=recovery'),
   )
@@ -137,6 +141,47 @@ export function AuthPage() {
         >
           Abmelden
         </button>
+
+        <hr className={styles.divider} />
+
+        {!confirmReset ? (
+          <button type="button" className={styles.danger} onClick={() => setConfirmReset(true)}>
+            Fortschritt zurücksetzen
+          </button>
+        ) : (
+          <>
+            <p className={styles.error}>
+              Löscht Level, Punkte, Rekorde, XP und Abzeichen – auf diesem Gerät und im Konto.
+              Das lässt sich nicht rückgängig machen.
+            </p>
+            <button
+              type="button"
+              className={styles.danger}
+              disabled={resetting}
+              onClick={() => {
+                setResetting(true)
+                setError(null)
+                setSyncInfo(null)
+                void resetRemoteProgress()
+                  .then(async (remote) => {
+                    await resetLocalProgress()
+                    setPending(await outboxCount())
+                    if (remote.ok) setSyncInfo('Alles zurückgesetzt. Du startest wieder bei Level 1.')
+                    else setError(`Lokal zurückgesetzt, im Konto nicht: ${remote.error}`)
+                  })
+                  .finally(() => {
+                    setResetting(false)
+                    setConfirmReset(false)
+                  })
+              }}
+            >
+              {resetting ? 'Setze zurück…' : 'Ja, alles löschen'}
+            </button>
+            <button type="button" className={styles.switch} onClick={() => setConfirmReset(false)}>
+              Abbrechen
+            </button>
+          </>
+        )}
         <Link to="/" className={styles.link}>
           Zur Startseite
         </Link>

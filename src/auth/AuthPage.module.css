@@ -89,3 +89,25 @@
   font-size: var(--text-sm);
   font-weight: 600;
 }
+
+.divider {
+  width: 100%;
+  border: none;
+  border-top: 2px solid var(--color-border);
+  margin: var(--space-2) 0;
+}
+
+.danger {
+  width: 100%;
+  padding: var(--space-3);
+  border-radius: var(--radius-xl);
+  font-weight: 800;
+  color: #7f1d1d;
+  background: linear-gradient(180deg, #fff5f5, #fecaca);
+  border: 2px solid #b3261e;
+  box-shadow: var(--btn-shadow);
+}
+
+.danger:disabled {
+  opacity: 0.6;
+}
