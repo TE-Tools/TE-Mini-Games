@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import styles from './HomePage.module.css'
 import { getOrCreateGuestProfile, type LocalProfile } from '@/offline'
+import { xpProgressInLevel } from '@/progression'
 
 export function HomePage() {
   const [profile, setProfile] = useState<LocalProfile | null>(null)
@@ -40,6 +41,7 @@ export function HomePage() {
   const playerLevel = profile?.playerLevel ?? 1
   const totalXp = profile?.totalXp ?? 0
   const streakDays = profile?.streakDays ?? 0
+  const xpProgress = xpProgressInLevel(totalXp)
 
   return (
     <main className={styles.page}>
@@ -66,6 +68,13 @@ export function HomePage() {
           </span>
         </div>
       </section>
+
+      {!loading && (
+        <p className={styles.xpHint}>
+          Noch <strong>{(xpProgress.needed - xpProgress.current).toLocaleString('de-DE')}</strong> XP
+          bis Spieler-Level {xpProgress.level + 1}
+        </p>
+      )}
 
       <nav className={styles.actions} aria-label="Spiele und Funktionen">
         <Link to="/play/perfect-second" className={styles.gameButton} data-game="perfect-second">

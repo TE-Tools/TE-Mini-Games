@@ -15,6 +15,7 @@ import {
   getOrCreateGuestProfile,
 } from '@/offline'
 import { processAfterResult } from '@/progression'
+import { trySyncNow } from '@/services/remoteSync'
 import { milestoneBonusXp } from '@/games/milestones'
 import { LevelMap } from '@/components/level-map/LevelMap'
 import styles from './WhatIsMissingPage.module.css'
@@ -95,7 +96,9 @@ export function WhatIsMissingPage() {
       const result = calculateWhatIsMissingScore({ correct, level: config.level })
       setScoreResult(result)
 
-      const bonus = correct ? milestoneBonusXp(config.level) : 0
+      // Milestone bonus is a first-clear reward – replaying a level must not farm it.
+      const firstClear = config.level >= highest
+      const bonus = correct && firstClear ? milestoneBonusXp(config.level) : 0
       setMilestoneXp(bonus)
       const xpTotal = result.xp + bonus
 
@@ -128,10 +131,12 @@ export function WhatIsMissingPage() {
         level: config.level,
         isPersonalRecord: correct,
       })
+      // Upload right away – no manual sync on the account page needed.
+      void trySyncNow()
 
       setPhase('result')
     },
-    [phase, config],
+    [phase, config, highest],
   )
 
   const playAgain = useCallback(() => {

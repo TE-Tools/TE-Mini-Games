@@ -18,6 +18,7 @@ import {
   getOrCreateGuestProfile,
 } from '@/offline'
 import { processAfterResult } from '@/progression'
+import { trySyncNow } from '@/services/remoteSync'
 import { milestoneBonusXp } from '@/games/milestones'
 import { LevelMap } from '@/components/level-map/LevelMap'
 import styles from './PerfectSecondPage.module.css'
@@ -129,6 +130,7 @@ export function PerfectSecondPage() {
         level: config.level,
         deviation: result.absoluteDeviation,
       })
+      void trySyncNow()
       return
     }
 
@@ -145,7 +147,9 @@ export function PerfectSecondPage() {
 
     const avgScore = Math.floor(nextHits.reduce((s, h) => s + h.score, 0) / nextHits.length)
     const totalXp = nextHits.reduce((s, h) => s + h.xp, 0)
-    const bonus = milestoneBonusXp(config.level)
+    // Milestone bonus is a first-clear reward – replaying a level must not farm it.
+    const firstClear = config.level >= highest
+    const bonus = firstClear ? milestoneBonusXp(config.level) : 0
     const finalScore = Math.min(1000, avgScore)
     const stars = Math.min(...nextHits.map((h) => h.stars))
 
@@ -188,9 +192,11 @@ export function PerfectSecondPage() {
       deviation: result.absoluteDeviation,
       isPersonalRecord: record,
     })
+    // Upload right away – no manual sync on the account page needed.
+    void trySyncNow()
 
     setPhase('result')
-  }, [phase, config, hitScores, hitTimes])
+  }, [phase, config, hitScores, hitTimes, highest])
 
   if (loading) {
     return (

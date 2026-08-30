@@ -183,3 +183,11 @@
     grid-template-columns: 1fr;
   }
 }
+
+.xpHint {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}

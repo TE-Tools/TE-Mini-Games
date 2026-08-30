@@ -13,6 +13,7 @@ import {
 } from '@/games/schuetzenrunde'
 import { saveGameResult, addXp, getOrCreateGuestProfile } from '@/offline'
 import { processAfterResult } from '@/progression'
+import { trySyncNow } from '@/services/remoteSync'
 import styles from './SchuetzenrundePage.module.css'
 
 export function SchuetzenrundePage() {
@@ -57,6 +58,8 @@ export function SchuetzenrundePage() {
       level: 1,
       isPersonalRecord: outcome.won,
     })
+    // Upload right away – no manual sync on the account page needed.
+    void trySyncNow()
     setSaved(true)
   }, [])
 

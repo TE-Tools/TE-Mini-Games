@@ -9,10 +9,18 @@ import {
   type PersonalBestRow,
 } from '@/services/leaderboard'
 import { isSupabaseConfigured } from '@/database/supabase'
+import { getMyUsername } from '@/auth/authService'
+import { trySyncNow } from '@/services/remoteSync'
 import type { GameId } from '@/games/types'
 import styles from './LeaderboardPage.module.css'
 
-type Tab = 'mine' | 'global-ps' | 'global-wim'
+type Tab = 'mine' | 'global-ps' | 'global-wim' | 'global-sr'
+
+const TAB_GAME: Record<Exclude<Tab, 'mine'>, GameId> = {
+  'global-ps': 'perfect-second',
+  'global-wim': 'what-is-missing',
+  'global-sr': 'schuetzenrunde',
+}
 
 export function LeaderboardPage() {
   const navigate = useNavigate()
@@ -21,6 +29,14 @@ export function LeaderboardPage() {
   const [recent, setRecent] = useState<LeaderboardEntry[]>([])
   const [remote, setRemote] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const [myName, setMyName] = useState<string | null>(null)
+  const [syncing, setSyncing] = useState(false)
+  /** Bumped by the refresh button so the effect below runs again. */
+  const [reloadKey, setReloadKey] = useState(0)
+
+  useEffect(() => {
+    void getMyUsername().then(setMyName)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -37,9 +53,7 @@ export function LeaderboardPage() {
             setRecent(high)
           }
         } else {
-          const gameId: GameId =
-            tab === 'global-ps' ? 'perfect-second' : 'what-is-missing'
-          const top = await getRemoteTopScores(gameId, 20)
+          const top = await getRemoteTopScores(TAB_GAME[tab], 20)
           if (!cancelled) setRemote(top)
         }
       } finally {
@@ -49,7 +63,21 @@ export function LeaderboardPage() {
     return () => {
       cancelled = true
     }
-  }, [tab])
+  }, [tab, reloadKey])
+
+  /** Upload what is still queued, then re-read the list. */
+  const refresh = async () => {
+    setSyncing(true)
+    try {
+      await trySyncNow()
+      setMyName(await getMyUsername())
+    } finally {
+      setSyncing(false)
+      setReloadKey((k) => k + 1)
+    }
+  }
+
+  const myEntry = remote.find((e) => myName != null && e.displayName === myName)
 
   return (
     <main className={styles.page}>
@@ -89,7 +117,27 @@ export function LeaderboardPage() {
         >
           Global 👁️
         </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'global-sr'}
+          className={tab === 'global-sr' ? styles.tabActive : styles.tab}
+          onClick={() => setTab('global-sr')}
+        >
+          Global 🎯
+        </button>
       </div>
+
+      {isSupabaseConfigured && (
+        <button
+          type="button"
+          className={styles.refresh}
+          disabled={syncing}
+          onClick={() => void refresh()}
+        >
+          {syncing ? 'Synchronisiere…' : '↻ Aktualisieren'}
+        </button>
+      )}
 
       {loading && <p className={styles.muted}>Laden…</p>}
 
@@ -138,18 +186,37 @@ export function LeaderboardPage() {
               Bis dahin siehst du hier deine lokalen Werte unter „Meine Rekorde“.
             </p>
           )}
+          {isSupabaseConfigured && myEntry && (
+            <p className={styles.myPlace}>
+              Dein Platz: <strong>#{myEntry.rank}</strong> mit {myEntry.score} Punkten (L
+              {myEntry.level})
+            </p>
+          )}
+          {isSupabaseConfigured && !myEntry && remote.length > 0 && (
+            <p className={styles.hint}>
+              {myName
+                ? 'Von dir ist hier noch kein Ergebnis – spiel eine Runde, sie wird automatisch hochgeladen.'
+                : 'Melde dich an, damit deine Ergebnisse hier auftauchen.'}
+            </p>
+          )}
           {isSupabaseConfigured && remote.length === 0 && (
             <p className={styles.empty}>
-              Noch keine globalen Einträge oder RLS blockiert den Lesezugriff.
+              Noch keine Einträge für dieses Spiel. Nach einer Runde landen sie automatisch hier.
             </p>
           )}
           {remote.length > 0 && (
             <ol className={styles.list}>
               {remote.map((e) => (
-                <li key={`${e.rank}-${e.displayName}-${e.score}`} className={styles.row}>
+                <li
+                  key={`${e.rank}-${e.displayName}-${e.score}`}
+                  className={[styles.row, e.displayName === myName ? styles.rowMe : '']
+                    .filter(Boolean)
+                    .join(' ')}
+                >
                   <span className={styles.rank}>{e.rank}.</span>
                   <span className={styles.rowMain}>
                     {e.displayName}
+                    {e.displayName === myName ? ' (du)' : ''}
                     <span className={styles.sub}> L{e.level}</span>
                   </span>
                   <span className={styles.rowScore}>{e.score}</span>

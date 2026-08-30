@@ -145,3 +145,29 @@
   color: var(--color-text-muted);
   text-decoration: underline;
 }
+
+.refresh {
+  align-self: center;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  border: 2px solid var(--color-border);
+  background: linear-gradient(180deg, #ffffff, #fff6dd);
+  box-shadow: var(--btn-shadow);
+}
+
+.refresh:disabled {
+  opacity: 0.6;
+}
+
+.myPlace {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.rowMe {
+  border: 2px solid #7c5cfc;
+}
