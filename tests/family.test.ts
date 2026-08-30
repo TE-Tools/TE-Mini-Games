@@ -70,4 +70,20 @@ describe('Family mode', () => {
     expect(standings[0]?.playerName).toBe('High')
     expect(standings[1]?.playerName).toBe('Low')
   })
+
+  it('includes measured seconds in standings when present', () => {
+    const standings = rankFamilyResults([
+      {
+        id: '1',
+        sessionId: 's',
+        playerName: 'Anna',
+        playerIndex: 0,
+        score: 800,
+        resultData: { actualTime: 1.02, targetTime: 1 },
+        createdAt: '',
+      },
+    ])
+    expect(standings[0]?.actualTime).toBe(1.02)
+    expect(standings[0]?.targetTime).toBe(1)
+  })
 })

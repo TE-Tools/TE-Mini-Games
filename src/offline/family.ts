@@ -93,16 +93,32 @@ export interface FamilyStanding {
   playerIndex: number
   score: number
   rank: number
+  /** Measured stop time in seconds (perfect-second), if recorded. */
+  actualTime: number | null
+  /** Target time in seconds (perfect-second), if recorded. */
+  targetTime: number | null
 }
 
 export function rankFamilyResults(results: LocalFamilyResult[]): FamilyStanding[] {
   const sorted = [...results].sort((a, b) => b.score - a.score)
-  return sorted.map((r, i) => ({
-    playerName: r.playerName,
-    playerIndex: r.playerIndex,
-    score: r.score,
-    rank: i + 1,
-  }))
+  return sorted.map((r, i) => {
+    const actual =
+      typeof r.resultData['actualTime'] === 'number'
+        ? (r.resultData['actualTime'] as number)
+        : null
+    const target =
+      typeof r.resultData['targetTime'] === 'number'
+        ? (r.resultData['targetTime'] as number)
+        : null
+    return {
+      playerName: r.playerName,
+      playerIndex: r.playerIndex,
+      score: r.score,
+      rank: i + 1,
+      actualTime: actual,
+      targetTime: target,
+    }
+  })
 }
 
 export async function getActiveFamilySessions(): Promise<LocalFamilySession[]> {
