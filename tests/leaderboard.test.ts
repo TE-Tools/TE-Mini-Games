@@ -58,6 +58,18 @@ describe('Leaderboard local', () => {
     expect(top[0]?.rank).toBe(1)
   })
 
+  it('carries the xp of each result along (Thomas: "dann bitte die XP als Rangliste")', async () => {
+    await saveGameResult({
+      gameId: 'perfect-second',
+      level: 47,
+      score: 100,
+      xp: 19,
+      resultData: {},
+    })
+    const top = await getLocalRecentHighScores(10)
+    expect(top[0]?.xp).toBe(19)
+  })
+
   it('gameLabel maps ids', () => {
     expect(gameLabel('perfect-second')).toContain('Sekunde')
     expect(gameLabel('what-is-missing')).toContain('fehlt')

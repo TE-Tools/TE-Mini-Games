@@ -132,6 +132,26 @@
   color: var(--color-game-a);
 }
 
+/* Punkte + XP übereinander in der rechten Spalte einer Ergebniszeile. */
+.rowRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.rowXp {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: var(--text-sm);
+  color: var(--color-primary);
+}
+
+/* "Letzte Ergebnisse" ist zeitlich, nicht platziert – keine Rang-Spalte. */
+.rowNoRank {
+  grid-template-columns: 1fr auto;
+}
+
 .empty,
 .hint,
 .muted {
