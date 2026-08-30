@@ -6,6 +6,7 @@ import {
   getLocalPersonalBests,
   getLocalRecentHighScores,
   getLocalTotalsByGame,
+  getRemoteXpTotals,
   gameLabel,
 } from '@/services/leaderboard'
 import { getOrCreateGuestProfile } from '@/offline/profile'
@@ -84,6 +85,11 @@ describe('Leaderboard local', () => {
     expect(ps?.totalXp).toBe(120 + 19)
     expect(ps?.playCount).toBe(2)
     expect(wim?.totalScore).toBe(1000)
+  })
+
+  it('getRemoteXpTotals stays empty without a configured Supabase project (no network call)', async () => {
+    const top = await getRemoteXpTotals('perfect-second')
+    expect(top).toEqual([])
   })
 
   it('gameLabel maps ids', () => {
