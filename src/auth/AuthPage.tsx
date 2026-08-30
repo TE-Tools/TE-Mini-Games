@@ -15,6 +15,8 @@ import {
   getMyUsername,
   onPasswordRecovery,
   takeAuthErrorFromUrl,
+  markAccountSession,
+  enterGuestMode,
 } from '@/auth/authService'
 import { trySyncNow, syncFullNow } from '@/services/remoteSync'
 import { outboxCount } from '@/offline/outbox'
@@ -22,7 +24,12 @@ import { resetLocalProgress } from '@/offline/reset'
 import { resetRemoteProgress } from '@/services/remoteReset'
 import styles from './AuthPage.module.css'
 
-export function AuthPage() {
+type Props = {
+  /** Mandatory entry screen – no skip into the app without login or guest. */
+  gate?: boolean
+}
+
+export function AuthPage({ gate = false }: Props) {
   const navigate = useNavigate()
   const configured = getAuthConfigured()
   const [mode, setMode] = useState<'in' | 'up'>('in')
@@ -45,8 +52,17 @@ export function AuthPage() {
     () => typeof window !== 'undefined' && window.location.hash.includes('type=recovery'),
   )
   const [newPassword, setNewPassword] = useState('')
-  /** Result of the last availability lookup, tied to the name it was made for. */
   const [checkedName, setCheckedName] = useState<{ name: string; status: string } | null>(null)
+
+  const enterApp = () => {
+    navigate('/', { replace: true })
+    window.setTimeout(() => window.location.assign('/'), 40)
+  }
+
+  const continueAsGuest = () => {
+    enterGuestMode()
+    enterApp()
+  }
 
   useEffect(() => {
     void getCurrentUser().then((u) => setUserEmail(u?.email ?? null))
@@ -56,7 +72,6 @@ export function AuthPage() {
 
   useEffect(() => onPasswordRecovery(() => setRecovery(true)), [])
 
-  // Local validation is derived during render – only the lookup needs state.
   const localUsernameStatus =
     mode !== 'up' || username.trim().length < 3 ? null : validateUsername(username)
   const usernameStatus =
@@ -64,13 +79,14 @@ export function AuthPage() {
 
   useEffect(() => {
     if (localUsernameStatus !== null || mode !== 'up' || username.trim().length < 3) return
+    if (!configured) return
     let cancelled = false
     const t = window.setTimeout(() => {
       void isUsernameAvailable(username).then(({ available, error: e }) => {
         if (cancelled) return
         setCheckedName({
           name: username,
-          status: e ?? (available ? '✓ Verfügbar' : 'Bereits vergeben'),
+          status: e ?? (available ? '\u2713 Verf\u00fcgbar' : 'Bereits vergeben'),
         })
       })
     }, 400)
@@ -78,7 +94,24 @@ export function AuthPage() {
       cancelled = true
       window.clearTimeout(t)
     }
-  }, [username, mode, localUsernameStatus])
+  }, [username, mode, localUsernameStatus, configured])
+
+  if (!configured && gate) {
+    return (
+      <main className={styles.page}>
+        <h1 className={styles.title}>TE-Mini Games</h1>
+        <p className={styles.hint}>
+          Online-Login ist noch nicht konfiguriert. Du kannst als Gast spielen – ohne Cloud-Laden.
+        </p>
+        <button type="button" className={styles.guestBtn} onClick={continueAsGuest}>
+          Als Gast spielen
+        </button>
+        <p className={styles.muted}>
+          F\u00fcr Konto-Login: Supabase-Keys in Cloudflare setzen (siehe docs/supabase-setup.md).
+        </p>
+      </main>
+    )
+  }
 
   if (!configured) {
     return (
@@ -87,24 +120,28 @@ export function AuthPage() {
         <p className={styles.hint}>
           Online-Login ist noch nicht aktiv. Du kannst offline als Gast spielen.
         </p>
+        <button type="button" className={styles.guestBtn} onClick={continueAsGuest}>
+          Als Gast spielen
+        </button>
         <p className={styles.muted}>
-          Zum Aktivieren: Supabase-Projekt anlegen, Migrationen ausführen und in Cloudflare Pages
-          die Variablen <code>VITE_SUPABASE_URL</code> und <code>VITE_SUPABASE_ANON_KEY</code>{' '}
-          setzen. Details: <code>docs/supabase-setup.md</code>.
+          Zum Aktivieren: Supabase-Projekt anlegen und in Cloudflare Pages{' '}
+          <code>VITE_SUPABASE_URL</code> und <code>VITE_SUPABASE_ANON_KEY</code> setzen.
         </p>
-        <Link to="/" className={styles.link}>
-          Zur Startseite
-        </Link>
+        {!gate && (
+          <Link to="/" className={styles.link}>
+            Zur Startseite
+          </Link>
+        )}
       </main>
     )
   }
 
-  if (userEmail && !recovery) {
+  if (userEmail && !recovery && !gate) {
     return (
       <main className={styles.page}>
         <h1 className={styles.title}>Angemeldet</h1>
         <p className={styles.hint}>
-          {myUsername ? `@${myUsername} · ` : ''}
+          {myUsername ? `@${myUsername} \u00b7 ` : ''}
           {userEmail}
         </p>
         <p className={styles.muted}>
@@ -131,13 +168,18 @@ export function AuthPage() {
               .finally(() => setSyncing(false))
           }}
         >
-          {syncing ? 'Synchronisiere…' : 'Jetzt synchronisieren'}
+          {syncing ? 'Synchronisiere\u2026' : 'Jetzt synchronisieren'}
         </button>
         {syncInfo && <p className={styles.hint}>{syncInfo}</p>}
         <button
           type="button"
           className={styles.switch}
-          onClick={() => void signOut().then(() => setUserEmail(null))}
+          onClick={() =>
+            void signOut().then(() => {
+              setUserEmail(null)
+              window.location.assign('/')
+            })
+          }
         >
           Abmelden
         </button>
@@ -146,13 +188,13 @@ export function AuthPage() {
 
         {!confirmReset ? (
           <button type="button" className={styles.danger} onClick={() => setConfirmReset(true)}>
-            Fortschritt zurücksetzen
+            Fortschritt zur\u00fccksetzen
           </button>
         ) : (
           <>
             <p className={styles.error}>
-              Löscht Level, Punkte, Rekorde, XP und Abzeichen – auf diesem Gerät und im Konto.
-              Das lässt sich nicht rückgängig machen.
+              L\u00f6scht Level, Punkte, Rekorde, XP und Abzeichen – auf diesem Ger\u00e4t und im Konto. Das
+              l\u00e4sst sich nicht r\u00fcckg\u00e4ngig machen.
             </p>
             <button
               type="button"
@@ -166,8 +208,9 @@ export function AuthPage() {
                   .then(async (remote) => {
                     await resetLocalProgress()
                     setPending(await outboxCount())
-                    if (remote.ok) setSyncInfo('Alles zurückgesetzt. Du startest wieder bei Level 1.')
-                    else setError(`Lokal zurückgesetzt, im Konto nicht: ${remote.error}`)
+                    if (remote.ok)
+                      setSyncInfo('Alles zur\u00fcckgesetzt. Du startest wieder bei Level 1.')
+                    else setError(`Lokal zur\u00fcckgesetzt, im Konto nicht: ${remote.error}`)
                   })
                   .finally(() => {
                     setResetting(false)
@@ -175,7 +218,7 @@ export function AuthPage() {
                   })
               }}
             >
-              {resetting ? 'Setze zurück…' : 'Ja, alles löschen'}
+              {resetting ? 'Setze zur\u00fcck\u2026' : 'Ja, alles l\u00f6schen'}
             </button>
             <button type="button" className={styles.switch} onClick={() => setConfirmReset(false)}>
               Abbrechen
@@ -193,7 +236,7 @@ export function AuthPage() {
     return (
       <main className={styles.page}>
         <h1 className={styles.title}>Neues Passwort</h1>
-        <p className={styles.hint}>Wähle ein neues Passwort für dein Konto.</p>
+        <p className={styles.hint}>W\u00e4hle ein neues Passwort f\u00fcr dein Konto.</p>
         <label className={styles.label}>
           Neues Passwort *
           <input
@@ -219,19 +262,18 @@ export function AuthPage() {
               .then((r) => {
                 if (r.error) setError(r.error)
                 else {
-                  setInfo('Passwort geändert. Du bist angemeldet.')
+                  markAccountSession()
+                  setInfo('Passwort ge\u00e4ndert. Du bist angemeldet.')
                   setRecovery(false)
                   setNewPassword('')
+                  enterApp()
                 }
               })
               .finally(() => setBusy(false))
           }}
         >
-          {busy ? '…' : 'Passwort speichern'}
+          {busy ? '\u2026' : 'Passwort speichern'}
         </button>
-        <Link to="/" className={styles.link}>
-          Zur Startseite
-        </Link>
       </main>
     )
   }
@@ -251,8 +293,9 @@ export function AuthPage() {
           setError(result.error)
           return
         }
+        markAccountSession()
         await trySyncNow()
-        navigate('/')
+        enterApp()
         return
       }
 
@@ -271,8 +314,10 @@ export function AuthPage() {
         setError(result.error)
         return
       }
-      setInfo('Konto erstellt. Prüfe ggf. deine E-Mail zur Bestätigung, dann anmelden.')
-      setMode('in')
+      markAccountSession()
+      setInfo('Konto erstellt. Pr\u00fcfe ggf. deine E-Mail zur Best\u00e4tigung.')
+      await trySyncNow()
+      enterApp()
     } finally {
       setBusy(false)
     }
@@ -282,6 +327,7 @@ export function AuthPage() {
     setError(null)
     setBusy(true)
     try {
+      markAccountSession()
       const result = await signInWithGoogle()
       if (result.error) setError(result.error)
     } finally {
@@ -291,9 +337,13 @@ export function AuthPage() {
 
   return (
     <main className={styles.page}>
-      <h1 className={styles.title}>{mode === 'in' ? 'Anmelden' : 'Konto erstellen'}</h1>
+      <h1 className={styles.title}>
+        {gate ? 'TE-Mini Games' : mode === 'in' ? 'Anmelden' : 'Konto erstellen'}
+      </h1>
       <p className={styles.hint}>
-        Mit Konto speicherst du Fortschritt online. Spielen geht auch ohne (Gast).
+        {gate
+          ? 'Melde dich an, damit dein Fortschritt geladen wird – oder spiele als Gast ohne Cloud.'
+          : 'Mit Konto speicherst du Fortschritt online.'}
       </p>
 
       {mode === 'up' && (
@@ -369,7 +419,7 @@ export function AuthPage() {
         disabled={busy || !email || !password || (mode === 'up' && !username)}
         onClick={() => void submit()}
       >
-        {busy ? '…' : mode === 'in' ? 'Anmelden' : 'Registrieren'}
+        {busy ? '\u2026' : mode === 'in' ? 'Anmelden' : 'Registrieren'}
       </button>
 
       <button type="button" className={styles.googleBtn} disabled={busy} onClick={() => void google()}>
@@ -409,9 +459,20 @@ export function AuthPage() {
         {mode === 'in' ? 'Noch kein Konto? Registrieren' : 'Schon Konto? Anmelden'}
       </button>
 
-      <Link to="/" className={styles.link}>
-        Zur Startseite
-      </Link>
+      <hr className={styles.divider} />
+
+      <button type="button" className={styles.guestBtn} onClick={continueAsGuest}>
+        Als Gast spielen
+      </button>
+      <p className={styles.muted}>
+        Gast: nichts vom Konto wird geladen – nur lokal auf diesem Ger\u00e4t, ohne Cloud-Sync.
+      </p>
+
+      {!gate && (
+        <Link to="/" className={styles.link}>
+          Zur Startseite
+        </Link>
+      )}
     </main>
   )
 }
