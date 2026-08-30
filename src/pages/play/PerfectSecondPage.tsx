@@ -5,6 +5,7 @@ import {
   calculateScore,
   createTimer,
   formatTime,
+  formatTargetTime,
   perfectSecondGame,
   type PerfectSecondLevel,
   type ScoreResult,
@@ -231,9 +232,9 @@ export function PerfectSecondPage() {
       {phase === 'ready' && (
         <section className={styles.ready}>
           <p className={styles.targetLabel}>Zielzeit</p>
-          <p className={styles.targetValue}>{formatTime(config.targetTime)}</p>
+          <p className={styles.targetValue}>{formatTargetTime(config.targetTime)} s</p>
           <p className={styles.tolerance}>
-            ±{formatTime(config.tolerance)} · Treffer {hitsDone}/{config.hitsRequired}
+            ±{formatTargetTime(config.tolerance)} s · Treffer {hitsDone}/{config.hitsRequired}
           </p>
           {config.hitsRequired > 1 && (
             <p className={styles.hint}>
@@ -255,7 +256,7 @@ export function PerfectSecondPage() {
       {phase === 'running' && (
         <section className={styles.running}>
           <p className={styles.runningHint}>Jetzt!</p>
-          <p className={styles.targetDuring}>Ziel: {formatTime(config.targetTime)}</p>
+          <p className={styles.targetDuring}>Ziel: {formatTargetTime(config.targetTime)} s</p>
           <button type="button" className={styles.stopBtn} onClick={() => void stopTimer()}>
             STOP
           </button>

@@ -10,35 +10,55 @@ describe('Perfect Second level system', () => {
   it('level 1 is easy: short target, wide tolerance, 1 hit', () => {
     const L = createPerfectSecondLevel(1)
     expect(L.level).toBe(1)
-    expect(L.targetTime).toBeGreaterThanOrEqual(2.5)
-    expect(L.targetTime).toBeLessThanOrEqual(3.5)
-    expect(L.tolerance).toBeGreaterThanOrEqual(0.3)
+    expect(L.targetTime).toBe(1.5)
+    expect(L.tolerance).toBe(0.5)
     expect(L.hitsRequired).toBe(1)
   })
 
-  it('level 10 has tighter tolerance (~0.25s band)', () => {
-    const L = createPerfectSecondLevel(10)
-    expect(L.tolerance).toBeLessThan(createPerfectSecondLevel(1).tolerance)
-    expect(L.tolerance).toBeGreaterThan(0.15)
-    expect(L.tolerance).toBeLessThan(0.32)
-    expect(L.hitsRequired).toBe(1)
+  it('target times are round half seconds', () => {
+    for (let level = 1; level <= 500; level++) {
+      const t = createPerfectSecondLevel(level).targetTime
+      expect(Math.round(t * 2)).toBeCloseTo(t * 2, 10)
+      expect(t).toBeGreaterThanOrEqual(1.5)
+      expect(t).toBeLessThanOrEqual(20)
+    }
   })
 
-  it('level 20 requires 2 consecutive hits', () => {
-    const L = createPerfectSecondLevel(20)
-    expect(L.hitsRequired).toBe(2)
-    expect(L.maxDeviationRatio).toBeLessThanOrEqual(0.2)
+  it('levels 1–20 stay between 0 and 5 seconds', () => {
+    for (let level = 1; level <= 20; level++) {
+      const t = createPerfectSecondLevel(level).targetTime
+      expect(t).toBeGreaterThan(0)
+      expect(t).toBeLessThanOrEqual(5)
+    }
+    expect(createPerfectSecondLevel(20).targetTime).toBe(5)
   })
 
-  it('level 50 requires 3 consecutive hits', () => {
-    const L = createPerfectSecondLevel(50)
-    expect(L.hitsRequired).toBe(3)
+  it('levels 21–40 stay between 0 and 10 seconds and go higher than piece 1', () => {
+    for (let level = 21; level <= 40; level++) {
+      const t = createPerfectSecondLevel(level).targetTime
+      expect(t).toBeGreaterThan(0)
+      expect(t).toBeLessThanOrEqual(10)
+    }
+    expect(createPerfectSecondLevel(40).targetTime).toBe(10)
+    expect(createPerfectSecondLevel(40).targetTime).toBeGreaterThan(
+      createPerfectSecondLevel(20).targetTime,
+    )
   })
 
-  it('level 100 is hardest', () => {
-    const L = createPerfectSecondLevel(100)
-    expect(L.tolerance).toBeLessThan(0.08)
-    expect(L.hitsRequired).toBe(3)
+  it('the level in front of a gate has to be hit twice on the same time', () => {
+    for (const gate of [20, 40, 60, 100, 200]) {
+      expect(createPerfectSecondLevel(gate).hitsRequired).toBe(2)
+      expect(createPerfectSecondLevel(gate - 1).hitsRequired).toBe(1)
+      expect(createPerfectSecondLevel(gate + 1).hitsRequired).toBe(1)
+    }
+  })
+
+  it('deep in the map every level needs two hits, gates three', () => {
+    expect(createPerfectSecondLevel(240).hitsRequired).toBe(2)
+    expect(createPerfectSecondLevel(241).hitsRequired).toBe(2)
+    expect(createPerfectSecondLevel(255).hitsRequired).toBe(2)
+    expect(createPerfectSecondLevel(260).hitsRequired).toBe(3)
+    expect(createPerfectSecondLevel(500).hitsRequired).toBe(3)
   })
 
   it('clamps level to 1–500', () => {
@@ -46,70 +66,48 @@ describe('Perfect Second level system', () => {
     expect(createPerfectSecondLevel(600).level).toBe(500)
   })
 
-  it('tolerance decreases over levels', () => {
-    let prevTol = 99
-    for (let level = 1; level <= 100; level++) {
-      const L = createPerfectSecondLevel(level)
-      expect(L.tolerance).toBeLessThanOrEqual(prevTol + 1e-9)
-      prevTol = L.tolerance
-    }
-  })
-})
-
-describe('Perfect Second zones (level 1–500)', () => {
-  it('level belongs to the expected zone', () => {
-    expect(createPerfectSecondLevel(1).zoneId).toBe('jungle')
-    expect(createPerfectSecondLevel(100).zoneId).toBe('jungle')
-    expect(createPerfectSecondLevel(101).zoneId).toBe('volcanic')
-    expect(createPerfectSecondLevel(250).zoneId).toBe('canyon')
-    expect(createPerfectSecondLevel(400).zoneId).toBe('iceage')
-    expect(createPerfectSecondLevel(500).zoneId).toBe('glacier')
-  })
-
-  it('each zone starts easier than it ends and ramps within itself', () => {
-    for (const from of [1, 101, 201, 301, 401]) {
-      const first = createPerfectSecondLevel(from)
-      const last = createPerfectSecondLevel(from + 99)
-      expect(last.tolerance).toBeLessThan(first.tolerance)
-      expect(last.targetTime).toBeGreaterThan(first.targetTime)
-
-      let prevTol = Number.POSITIVE_INFINITY
-      for (let level = from; level <= from + 99; level++) {
-        const L = createPerfectSecondLevel(level)
-        expect(L.tolerance).toBeLessThanOrEqual(prevTol + 1e-9)
-        prevTol = L.tolerance
+  it('tolerance shrinks inside every piece of 20 levels', () => {
+    for (const from of [1, 21, 41, 101, 481]) {
+      let prev = Number.POSITIVE_INFINITY
+      for (let level = from; level < from + 20; level++) {
+        const tol = createPerfectSecondLevel(level).tolerance
+        expect(tol).toBeLessThanOrEqual(prev + 1e-9)
+        prev = tol
       }
     }
   })
 
-  it('later zones require more consecutive hits', () => {
-    expect(createPerfectSecondLevel(101).hitsRequired).toBe(3)
-    expect(createPerfectSecondLevel(150).hitsRequired).toBe(4)
-    expect(createPerfectSecondLevel(201).hitsRequired).toBe(4)
-    expect(createPerfectSecondLevel(250).hitsRequired).toBe(5)
-    expect(createPerfectSecondLevel(301).hitsRequired).toBe(5)
-    expect(createPerfectSecondLevel(500).hitsRequired).toBe(5)
+  it('demanded precision keeps rising from piece to piece', () => {
+    const precision = (level: number) => {
+      const L = createPerfectSecondLevel(level)
+      return L.tolerance / L.targetTime
+    }
+    // End of each piece: the tolerance relative to the target time gets tighter…
+    let prev = Number.POSITIVE_INFINITY
+    for (const end of [20, 40, 60, 80, 100, 200, 300, 400]) {
+      const p = precision(end)
+      expect(p).toBeLessThan(prev)
+      prev = p
+    }
+    // …and never gets easier again in the last pieces, where the tolerance sits
+    // at the floor of what is humanly hittable.
+    expect(precision(500)).toBeLessThanOrEqual(prev)
   })
 
   it('level 500 is the tightest tolerance of the map', () => {
     const final = createPerfectSecondLevel(500)
-    expect(final.tolerance).toBeLessThanOrEqual(0.02)
+    expect(final.tolerance).toBeLessThanOrEqual(0.025)
     for (let level = 1; level < 500; level++) {
       expect(createPerfectSecondLevel(level).tolerance).toBeGreaterThanOrEqual(final.tolerance)
     }
   })
 
-  it('target time never exceeds 20s', () => {
-    for (let level = 1; level <= 500; level++) {
-      expect(createPerfectSecondLevel(level).targetTime).toBeLessThanOrEqual(20)
-    }
-  })
-
-  it('zone 1 (level 1–100) is unchanged: 2.8s → 12s, 0.35s → 0.04s', () => {
-    expect(createPerfectSecondLevel(1).targetTime).toBe(2.8)
-    expect(createPerfectSecondLevel(100).targetTime).toBe(12)
-    expect(createPerfectSecondLevel(1).tolerance).toBe(0.35)
-    expect(createPerfectSecondLevel(100).tolerance).toBe(0.04)
+  it('keeps the zone of the level for the map', () => {
+    expect(createPerfectSecondLevel(1).zoneId).toBe('jungle')
+    expect(createPerfectSecondLevel(101).zoneId).toBe('volcanic')
+    expect(createPerfectSecondLevel(250).zoneId).toBe('canyon')
+    expect(createPerfectSecondLevel(400).zoneId).toBe('iceage')
+    expect(createPerfectSecondLevel(500).zoneId).toBe('glacier')
   })
 })
 

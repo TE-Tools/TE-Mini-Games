@@ -90,7 +90,7 @@ daher die S-Form wie auf der Referenz.
 |-------|-----------|
 | `src/progression/zones.ts` | **neu** – `ZONES`, `zoneForLevel`, `levelInZone`, `zoneProgress`, `isZoneGate`, `isFinalLevel`, `MAX_LEVEL = 500` sowie die Abschnitte: `SEGMENT_SIZE = 20`, `segmentByIndex`, `segmentForLevel`, `segmentIndexForLevel`, `isSegmentGate` |
 | `src/games/milestones.ts` | Raster bis 500: Zehner / Halbzone / Zonentor, Bonus wächst mit der Zone |
-| `src/games/perfect-second/level.ts` | Clamp 500, Kurve **je Zone**, `zoneId` im Level-Config |
+| `src/games/perfect-second/level.ts` | Clamp 500, Kurve **je Kartenabschnitt (20 Level)**, runde Zielzeiten in Halbsekunden, 2 Treffer auf dem Level vor dem Tor, `zoneId` im Level-Config |
 | `src/games/what-is-missing/level.ts` | Clamp 500, Kurve je Zone, neu `choiceCountForLevel` |
 | `src/games/what-is-missing/score.ts` | Clamp 500 |
 | `src/games/*/definition.ts` | `maxLevel: MAX_LEVEL` |
@@ -107,15 +107,30 @@ daher die S-Form wie auf der Referenz.
 Jede Zone startet leichter als die vorige endete und steigt dafür höher –
 statt eine einzige Kurve über 500 Level zu strecken.
 
-**Die perfekte Sekunde** (Zielzeit / Toleranz / nötige Treffer in Folge):
+**Die perfekte Sekunde** rampt **pro Kartenabschnitt (20 Level)**, nicht pro Zone:
 
-| Zone | Level | Zielzeit | Toleranz | Treffer |
-|------|-------|----------|----------|---------|
-| Urwald | 1–100 | 2,8 s → 12 s | 0,35 s → 0,04 s | 1 → 3 |
-| Vulkanland | 101–200 | 3,5 s → 14 s | 0,12 s → 0,035 s | 3 → 4 |
-| Felswüste | 201–300 | 4 s → 16 s | 0,10 s → 0,03 s | 4 → 5 |
-| Eiszeit | 301–400 | 4,5 s → 18 s | 0,08 s → 0,025 s | 5 |
-| Gletschergipfel | 401–500 | 5 s → 20 s | 0,06 s → 0,02 s | 5 |
+| Abschnitt | Level | Zielzeit | Toleranz |
+|-----------|-------|----------|----------|
+| 1 | 1–20 | 1,5 s → 5 s | 0,50 s → 0,25 s |
+| 2 | 21–40 | 3 s → 10 s | 0,44 s → 0,22 s |
+| 3 | 41–60 | 4,5 s → 15 s | 0,39 s → 0,19 s |
+| 4 | 61–80 | 6 s → 20 s | 0,34 s → 0,17 s |
+| 5 … 25 | 81–500 | 6 s → 20 s | weiter fallend bis 0,05 s → 0,025 s |
+
+- **Zielzeiten sind runde Zahlen** (halbe Sekunden, nie mehr als 20 s) – keine
+  krummen Nachkommastellen.
+- Die Zeitobergrenze wächst 5 s → 10 s → 15 s → 20 s und bleibt dann bei 20 s;
+  ab da kommt die Schwierigkeit allein aus der Toleranz.
+- Jeder Abschnitt startet etwas leichter als der vorige endete, verlangt am Ende
+  aber **relativ** mehr Präzision (Toleranz ÷ Zielzeit sinkt von Abschnitt zu Abschnitt:
+  L20 5 % → L40 2,2 % → L100 0,75 % → L400 0,125 %).
+
+**Treffer in Folge:**
+
+- Normale Level: **1 Treffer**.
+- **Das Level vor dem Tor** (jedes 20.: 20, 40, 60 …): **2 Treffer auf dieselbe Zahl**
+  hintereinander.
+- Ab Level 241: jedes Level 2 Treffer, Tor-Level 3.
 
 **Was fehlt?** (Objekte / Anzeigedauer / Antwortmöglichkeiten):
 

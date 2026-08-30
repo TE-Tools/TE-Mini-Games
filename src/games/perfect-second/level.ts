@@ -1,18 +1,25 @@
 /**
- * Perfect Second – difficulty curve across the 1–500 zone map.
+ * Perfect Second – difficulty curve along the 1–500 map.
  *
  * Design spec: docs/design/level-map-500/README.md
  *
- * Every zone ramps on its own: it starts easier than the end of the previous
- * zone but climbs to a higher peak (longer target times, tighter tolerance,
- * more consecutive hits). Zone 1 (level 1–100) is unchanged from the original
- * 100-level curve, so existing progress keeps its meaning.
+ * The curve follows the map: one ramp per **map piece of 20 levels**
+ * (`SEGMENT_SIZE`). Every piece starts a little easier than the previous one
+ * ended and climbs to a higher ceiling, so the levels keep getting harder
+ * without the target times running away.
  *
- * Zone 1: target ~2.8s → 12s, tolerance 0.35s → 0.04s, 1–3 hits.
+ * - Target times are round numbers (half-second steps), never longer than 20 s:
+ *   piece 1 (level 1–20) 1,5 s → 5 s, piece 2 (21–40) 3 s → 10 s,
+ *   piece 3 (41–60) 4,5 s → 15 s, from piece 4 on 6 s → 20 s.
+ * - Tolerance shrinks inside a piece and from piece to piece, so the demanded
+ *   precision relative to the target time rises the whole way.
+ * - The last level of a piece – the one in front of the gate – has to be hit
+ *   **twice in a row on the same time**. Deep in the map (level 241+) every
+ *   level needs two hits and the gate levels three.
  */
 
-import { MAX_LEVEL, zoneForLevel, levelInZone, zoneProgress } from '@/progression/zones'
-import type { ZoneId } from '@/progression/zones'
+import { MAX_LEVEL, SEGMENT_SIZE, isSegmentGate, segmentIndexForLevel } from '@/progression/zones'
+import { zoneForLevel, type ZoneId } from '@/progression/zones'
 
 export interface PerfectSecondLevel {
   level: number
@@ -24,98 +31,57 @@ export interface PerfectSecondLevel {
   zoneId: ZoneId
 }
 
-interface ZoneCurve {
-  targetFrom: number
-  targetTo: number
-  toleranceFrom: number
-  toleranceTo: number
-  /** Consecutive hits required at the start of the zone */
-  hits: number
-  /** From this position inside the zone (1–100) one more hit is required */
-  hitsStepAt?: number
-  maxDeviationRatio: number
+/** Longest target time on the whole map, in seconds. */
+export const MAX_TARGET_TIME = 20
+/** Target times are rounded to this step so the numbers stay readable. */
+const TARGET_STEP = 0.5
+/** From this level on, every level needs one extra hit. */
+const DOUBLE_HIT_FROM_LEVEL = 241
+
+/** Ceiling of the target time for a map piece: 5 s, 10 s, 15 s, then 20 s. */
+export function targetCeilingForSegment(segment: number): number {
+  return Math.min(MAX_TARGET_TIME, 5 * Math.max(1, segment))
 }
 
-const TARGET_EXPONENT = 1.15
+/** Where a map piece starts – 30 % of its ceiling, but never under 1.5 s. */
+function targetFloorForSegment(segment: number): number {
+  return Math.max(1.5, roundStep(targetCeilingForSegment(segment) * 0.3))
+}
 
-const ZONE_CURVES: Record<ZoneId, ZoneCurve> = {
-  jungle: {
-    targetFrom: 2.8,
-    targetTo: 12,
-    toleranceFrom: 0.35,
-    toleranceTo: 0.04,
-    hits: 1,
-    maxDeviationRatio: 0.3,
-  },
-  volcanic: {
-    targetFrom: 3.5,
-    targetTo: 14,
-    toleranceFrom: 0.12,
-    toleranceTo: 0.035,
-    hits: 3,
-    hitsStepAt: 50,
-    maxDeviationRatio: 0.15,
-  },
-  canyon: {
-    targetFrom: 4,
-    targetTo: 16,
-    toleranceFrom: 0.1,
-    toleranceTo: 0.03,
-    hits: 4,
-    hitsStepAt: 50,
-    maxDeviationRatio: 0.12,
-  },
-  iceage: {
-    targetFrom: 4.5,
-    targetTo: 18,
-    toleranceFrom: 0.08,
-    toleranceTo: 0.025,
-    hits: 5,
-    maxDeviationRatio: 0.1,
-  },
-  glacier: {
-    targetFrom: 5,
-    targetTo: 20,
-    toleranceFrom: 0.06,
-    toleranceTo: 0.02,
-    hits: 5,
-    maxDeviationRatio: 0.08,
-  },
+function toleranceRangeForSegment(segment: number): { from: number; to: number } {
+  const from = Math.max(0.05, round3(0.5 * Math.pow(0.88, Math.max(0, segment - 1))))
+  return { from, to: round3(from * 0.5) }
 }
 
 export function createPerfectSecondLevel(level: number): PerfectSecondLevel {
   const L = Math.max(1, Math.min(MAX_LEVEL, Math.floor(level)))
-  const zone = zoneForLevel(L)
-  const curve = ZONE_CURVES[zone.id]
-  const p = zoneProgress(L)
+  const segment = segmentIndexForLevel(L)
+  // 0 at the first level of the piece, 1 at the last one.
+  const p = ((L - 1) % SEGMENT_SIZE) / (SEGMENT_SIZE - 1)
 
-  const targetTime = round3(
-    curve.targetFrom + (curve.targetTo - curve.targetFrom) * Math.pow(p, TARGET_EXPONENT),
-  )
-  const tolerance = round3(
-    curve.toleranceFrom * Math.pow(curve.toleranceTo / curve.toleranceFrom, p),
-  )
+  const floor = targetFloorForSegment(segment)
+  const ceiling = targetCeilingForSegment(segment)
+  const targetTime = roundStep(floor + (ceiling - floor) * p)
 
-  const { hitsRequired, maxDeviationRatio } =
-    zone.id === 'jungle' ? jungleHits(L) : zoneHits(curve, levelInZone(L))
+  const tol = toleranceRangeForSegment(segment)
+  const tolerance = round3(tol.from * Math.pow(tol.to / tol.from, p))
 
-  return { level: L, targetTime, tolerance, hitsRequired, maxDeviationRatio, zoneId: zone.id }
+  const baseHits = L >= DOUBLE_HIT_FROM_LEVEL ? 2 : 1
+  const hitsRequired = baseHits + (isSegmentGate(L) ? 1 : 0)
+  const maxDeviationRatio = round3(Math.max(0.08, 0.3 * Math.pow(0.94, segment - 1)))
+
+  return {
+    level: L,
+    targetTime,
+    tolerance,
+    hitsRequired,
+    maxDeviationRatio,
+    zoneId: zoneForLevel(L).id,
+  }
 }
 
-/** Zone 1 keeps the original hand-tuned steps of the 100-level version. */
-function jungleHits(level: number): { hitsRequired: number; maxDeviationRatio: number } {
-  if (level >= 50) return { hitsRequired: 3, maxDeviationRatio: level >= 80 ? 0.1 : 0.15 }
-  if (level >= 20) return { hitsRequired: 2, maxDeviationRatio: level >= 35 ? 0.15 : 0.2 }
-  if (level >= 10) return { hitsRequired: 1, maxDeviationRatio: 0.25 }
-  return { hitsRequired: 1, maxDeviationRatio: 0.3 }
-}
-
-function zoneHits(
-  curve: ZoneCurve,
-  positionInZone: number,
-): { hitsRequired: number; maxDeviationRatio: number } {
-  const step = curve.hitsStepAt != null && positionInZone >= curve.hitsStepAt ? 1 : 0
-  return { hitsRequired: curve.hits + step, maxDeviationRatio: curve.maxDeviationRatio }
+function roundStep(n: number): number {
+  return Math.round(n / TARGET_STEP) * TARGET_STEP
 }
 
 function round3(n: number): number {

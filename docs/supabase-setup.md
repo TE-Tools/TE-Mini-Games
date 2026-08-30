@@ -3,6 +3,11 @@
 Der **App-Code** (Auth, Sync, Offline-First) ist fertig.  
 Damit Login live läuft, brauchst du **einmal** dein Supabase-Projekt + Keys in Cloudflare.
 
+> **Wenn du das Schema schon vor dem 30.08.2026 eingespielt hast:**
+> bitte `supabase/migrations/004_level_500.sql` nachziehen (SQL Editor → Run).
+> Ohne das lehnt die Datenbank alle Ergebnisse über Level 100 ab und der
+> Profil-Upsert beim Registrieren scheitert an RLS.
+
 ## Was von hier aus möglich ist
 
 | Schritt | Wer |
@@ -70,8 +75,35 @@ Danach **Redeploy** (Deployments → Retry deployment), damit Vite die Vars einb
 1. https://te-mini-games.pages.dev/auth  
 2. „Konto erstellen“ mit Benutzername + E-Mail + Passwort  
 3. Falls E-Mail-Confirm an ist: Inbox bestätigen, dann anmelden  
+4. Eine Runde spielen, neu laden → Level/XP müssen erhalten bleiben  
 
 Offline als Gast geht weiterhin ohne Keys.
+
+## Checkliste: was noch offen ist
+
+| Punkt | Wo | Status |
+|-------|----|--------|
+| Schema, RLS, Username-Check, Level-500-Limits | `supabase/migrations/ALL_IN_ONE.sql` | im Repo, **muss von dir ausgeführt werden** |
+| Auth-Provider Email (+ optional Google) | Supabase → Authentication → Providers | **du** |
+| Site URL + Redirect URLs | Supabase → Authentication → URL Configuration | **du** |
+| `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` | Cloudflare Pages → Environment variables (Production **und** Preview) | **du** |
+| Redeploy nach dem Setzen der Variablen | Cloudflare → Deployments → Retry | **du** |
+
+### Bekannte Einschränkung: globale Rangliste
+
+`getRemoteTopScores()` liest `game_results` aller Spieler, die RLS erlaubt aber
+nur **eigene** Zeilen (`game_results_select_own`). Die Online-Rangliste zeigt
+deshalb bisher nur die eigenen Ergebnisse. Zwei Wege, beides eine bewusste
+Entscheidung über Sichtbarkeit fremder Daten:
+
+1. **View** `public.leaderboard_top` (nur `display_name`, `game_id`, `score`,
+   `level`) mit `grant select … to authenticated` – Namen und Punkte werden
+   für angemeldete Spieler sichtbar, E-Mails bleiben privat. Dafür muss
+   `src/services/leaderboard.ts` auf die View umgestellt werden.
+2. Rangliste bleibt rein lokal/persönlich – dann sollte die Online-Sektion
+   in der UI entfallen.
+
+Sag Bescheid, welchen Weg du willst; beides ist ein kleiner Umbau.
 
 ## Konfliktregeln (Sync)
 

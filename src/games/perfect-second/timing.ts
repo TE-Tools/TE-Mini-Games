@@ -36,6 +36,15 @@ export function formatTime(seconds: number, decimals = 3): string {
   return seconds.toFixed(decimals)
 }
 
+/**
+ * Target times and tolerances are round numbers – show them without the
+ * millisecond zeros ("5", "1,5"), unlike measured times where every digit counts.
+ */
+export function formatTargetTime(seconds: number): string {
+  if (!Number.isFinite(seconds)) return '—'
+  return String(Math.round(seconds * 1000) / 1000)
+}
+
 export function formatDeviation(seconds: number, decimals = 3): string {
   if (!Number.isFinite(seconds)) return '—'
   const sign = seconds > 0 ? '+' : seconds < 0 ? '' : ''

@@ -3,4 +3,4 @@ export { createPerfectSecondLevel, createLevelFromSeed, isHitWithinTolerance } f
 export type { PerfectSecondLevel } from './level'
 export { calculateScore, calculateDeviation, starsFromScore } from './score'
 export type { ScoreInput, ScoreResult } from './score'
-export { createTimer, formatTime, formatDeviation } from './timing'
+export { createTimer, formatTime, formatTargetTime, formatDeviation } from './timing'
