@@ -39,13 +39,13 @@ export function FamilyPage() {
   const [session, setSession] = useState<LocalFamilySession | null>(null)
   const [standings, setStandings] = useState<FamilyStanding[]>([])
   const [lastScore, setLastScore] = useState<number | null>(null)
-  /** Measured seconds of the player who just went – shown on the hand-off screen. */
+  /** Measured seconds of the player who just went - shown on the hand-off screen. */
   const [lastTime, setLastTime] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const [psPhase, setPsPhase] = useState<'ready' | 'running'>('ready')
   const timerRef = useRef<ReturnType<typeof createTimer> | null>(null)
-  // One random target per session – same number for every player, new one next round.
+  // One random target per session - same number for every player, new one next round.
   const [psConfig, setPsConfig] = useState(() => createFamilyLevel())
 
   const [wimConfig, setWimConfig] = useState(() =>
@@ -167,8 +167,8 @@ export function FamilyPage() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <button type="button" className={styles.back} onClick={() => navigate('/')} aria-label="Zur\u00fcck">
-          \u2190
+        <button type="button" className={styles.back} onClick={() => navigate('/')} aria-label={'Zur\u00fcck'}>
+          {'\u2190'}
         </button>
         <h1 className={styles.title}>Familie</h1>
         <span className={styles.badge}>Lokal</span>
@@ -177,7 +177,7 @@ export function FamilyPage() {
       {phase === 'setup' && (
         <section className={styles.setup}>
           <p className={styles.hint}>
-            Namen eintragen (ein Name pro Zeile). Das Ger\u00e4t wird weitergegeben – kein Konto n\u00f6tig.
+            {'Namen eintragen (ein Name pro Zeile). Das Ger\u00e4t wird weitergegeben \u2013 kein Konto n\u00f6tig.'}
           </p>
           <label className={styles.label}>
             Spieler
@@ -220,7 +220,7 @@ export function FamilyPage() {
       {phase === 'handoff' && session && (
         <section className={styles.handoff}>
           <p className={styles.bigName}>{currentName}</p>
-          <p className={styles.hint}>Du bist dran. Ger\u00e4t \u00fcbernehmen und starten.</p>
+          <p className={styles.hint}>{'Du bist dran. Ger\u00e4t \u00fcbernehmen und starten.'}</p>
           <p className={styles.muted}>
             Spieler {session.currentPlayerIndex + 1} von {session.playerNames.length}
           </p>
@@ -236,7 +236,7 @@ export function FamilyPage() {
           {psPhase === 'ready' && (
             <>
               <p className={styles.target}>Ziel: {formatTime(psConfig.targetTime, 2)} s</p>
-              <p className={styles.muted}>\u00b1{formatTime(psConfig.tolerance, 2)} s</p>
+              <p className={styles.muted}>{('\u00b1' + formatTime(psConfig.tolerance, 2) + ' s')}</p>
               <button type="button" className={styles.primaryBtn} onClick={psStart}>
                 Start
               </button>
@@ -244,7 +244,7 @@ export function FamilyPage() {
           )}
           {psPhase === 'running' && (
             <>
-              <p className={styles.running}>Timer l\u00e4uft\u2026</p>
+              <p className={styles.running}>{'Timer l\u00e4uft\u2026'}</p>
               <button type="button" className={styles.stopBtn} onClick={() => void psStop()}>
                 STOP
               </button>
@@ -294,27 +294,31 @@ export function FamilyPage() {
               ? ` \u00b7 ${formatTime(lastTime)} s (Ziel ${formatTime(psConfig.targetTime, 2)} s)`
               : ''}
           </p>
-          <p className={styles.hint}>Ger\u00e4t an den n\u00e4chsten Spieler weitergeben.</p>
+          <p className={styles.hint}>{'Ger\u00e4t an den n\u00e4chsten Spieler weitergeben.'}</p>
           <button type="button" className={styles.primaryBtn} onClick={nextPlayer}>
-            N\u00e4chster Spieler
+            {'N\u00e4chster Spieler'}
           </button>
         </section>
       )}
 
       {phase === 'finished' && (
         <section className={styles.finished}>
-          <p className={styles.trophy}>\ud83c\udfc6 SIEGER</p>
+          <p className={styles.trophy}>{'\ud83c\udfc6 SIEGER'}</p>
           <ol className={styles.ranking}>
             {standings.map((s) => (
               <li key={`${s.playerIndex}-${s.playerName}`} className={styles.rankRow}>
                 <span className={styles.rank}>{s.rank}.</span>
                 <span className={styles.rankName}>{s.playerName}</span>
                 <span className={styles.rankScore}>
-                  {s.score} Pkt
-                  {s.actualTime !== null ? ` \u00b7 ${formatTime(s.actualTime)} s` : ''}
-                  {s.actualTime !== null && s.targetTime !== null
-                    ? ` (Ziel ${formatTime(s.targetTime, 2)} s)`
-                    : ''}
+                  <span className={styles.rankPts}>{s.score} Pkt</span>
+                  {s.actualTime !== null && (
+                    <span className={styles.rankTime}>
+                      {formatTime(s.actualTime)} s
+                      {s.targetTime !== null
+                        ? ` \u00b7 Ziel ${formatTime(s.targetTime, 2)} s`
+                        : ''}
+                    </span>
+                  )}
                 </span>
               </li>
             ))}
