@@ -150,7 +150,7 @@ export function PerfectSecondPage() {
     const stars = Math.min(...nextHits.map((h) => h.stars))
 
     const prev = await getPersonalRecord('perfect-second', config.level)
-    const record = !prev || finalScore > prev.bestScore
+    const record = finalScore > 0 && (!prev || finalScore > prev.bestScore)
     setIsRecord(record)
     setMilestoneXp(bonus)
     setScoreResult({ ...result, score: finalScore, xp: totalXp + bonus, stars })

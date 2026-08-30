@@ -81,6 +81,9 @@ export async function signUpWithEmail(
     email: email.trim(),
     password,
     options: {
+      // Without this the confirmation mail uses Supabase's Site URL, which
+      // defaults to localhost:3000.
+      emailRedirectTo: `${window.location.origin}/auth`,
       data: {
         display_name: displayName?.trim() || username.trim(),
         username: username.trim().toLowerCase(),
@@ -145,6 +148,22 @@ export async function signOut(): Promise<void> {
 }
 
 /** Fires when the user arrives through a password-reset link. */
+/**
+ * Supabase reports failed mail links as a URL hash
+ * (#error=...&error_description=...). Read and clear it so the page can show
+ * what went wrong instead of looking broken.
+ */
+export function takeAuthErrorFromUrl(): string | null {
+  if (typeof window === 'undefined') return null
+  const hash = window.location.hash.replace(/^#/, '')
+  if (!hash.includes('error')) return null
+  const params = new URLSearchParams(hash)
+  const description = params.get('error_description') ?? params.get('error')
+  if (!description) return null
+  window.history.replaceState(null, '', window.location.pathname)
+  return decodeURIComponent(description.replace(/\+/g, ' '))
+}
+
 export function onPasswordRecovery(callback: () => void): () => void {
   if (!supabase) return () => undefined
   const { data } = supabase.auth.onAuthStateChange((event) => {

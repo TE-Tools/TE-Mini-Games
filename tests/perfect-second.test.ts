@@ -167,6 +167,49 @@ describe('Perfect Second score', () => {
     expect(r.withinTolerance).toBe(false)
   })
 
+  it('a hit inside the tolerance always scores and gives XP', () => {
+    const L = createPerfectSecondLevel(28)
+    // Just barely inside – used to score 0 while the UI said "Level geschafft!".
+    const edge = calculateScore({
+      targetTime: L.targetTime,
+      actualTime: L.targetTime + L.tolerance - 0.004,
+      tolerance: L.tolerance,
+      level: 28,
+    })
+    expect(edge.withinTolerance).toBe(true)
+    expect(edge.score).toBeGreaterThanOrEqual(100)
+    expect(edge.xp).toBeGreaterThan(0)
+    expect(edge.stars).toBeGreaterThanOrEqual(1)
+
+    // A miss still gives nothing.
+    const miss = calculateScore({
+      targetTime: L.targetTime,
+      actualTime: L.targetTime + L.tolerance + 0.01,
+      tolerance: L.tolerance,
+      level: 28,
+    })
+    expect(miss.withinTolerance).toBe(false)
+    expect(miss.score).toBe(0)
+    expect(miss.xp).toBe(0)
+  })
+
+  it('a better stop still scores higher than a worse one', () => {
+    const L = createPerfectSecondLevel(28)
+    const near = calculateScore({
+      targetTime: L.targetTime,
+      actualTime: L.targetTime + 0.05,
+      tolerance: L.tolerance,
+      level: 28,
+    })
+    const far = calculateScore({
+      targetTime: L.targetTime,
+      actualTime: L.targetTime + L.tolerance - 0.004,
+      tolerance: L.tolerance,
+      level: 28,
+    })
+    expect(near.score).toBeGreaterThan(far.score)
+  })
+
   it('starsFromScore thresholds', () => {
     expect(starsFromScore(1000)).toBe(5)
     expect(starsFromScore(900)).toBe(5)

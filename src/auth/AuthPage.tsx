@@ -14,6 +14,7 @@ import {
   updatePassword,
   getMyUsername,
   onPasswordRecovery,
+  takeAuthErrorFromUrl,
 } from '@/auth/authService'
 import { trySyncNow } from '@/services/remoteSync'
 import { outboxCount } from '@/offline/outbox'
@@ -28,7 +29,7 @@ export function AuthPage() {
   const [username, setUsername] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [honeypot, setHoneypot] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(() => takeAuthErrorFromUrl())
   const [info, setInfo] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)

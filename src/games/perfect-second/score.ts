@@ -21,6 +21,14 @@ export interface ScoreResult {
 
 export const PERFECT_HIT_THRESHOLD = 0.001
 
+/**
+ * A stop inside the tolerance always counts as a cleared level, so it must be
+ * worth something. Without this floor a hit at the very edge of the tolerance
+ * scored 0 points – the result screen said "Level geschafft!" while the level
+ * stayed locked and gave no XP.
+ */
+export const MIN_HIT_SCORE = 100
+
 export function calculateDeviation(targetTime: number, actualTime: number): number {
   return Math.abs(actualTime - targetTime)
 }
@@ -55,7 +63,7 @@ export function calculateScore(input: ScoreInput): ScoreResult {
   } else if (withinTolerance) {
     const ratio = 1 - absoluteDeviation / tolerance
     score = Math.floor(1000 * ratio * ratio)
-    score = Math.max(0, Math.min(1000, score))
+    score = Math.max(MIN_HIT_SCORE, Math.min(1000, score))
   }
 
   const stars = starsFromScore(score)
