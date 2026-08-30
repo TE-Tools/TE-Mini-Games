@@ -4,12 +4,20 @@
 
 import { applyPlayToStreak, dateKeyFromIso } from './streak'
 import { evaluateAchievements, type AchievementId } from './achievements'
-import { unlockMany } from '@/offline/achievements'
+import { unlockMany, getUnlockedAchievements } from '@/offline/achievements'
 import { getProfile, updateStreak, GUEST_USER_ID } from '@/offline'
 import {
   countPersonalRecordImprovements,
   getGamesPlayed,
   getHighestLevel,
+  countPerfectHits,
+  countFiveStarResults,
+  countSchuetzenrundeWins,
+  countSchuetzenrundeKingWins,
+  countSchuetzenrundeOnlineWins,
+  countTotalGamesPlayed,
+  countDailyAttempts,
+  countFinishedFamilySessions,
 } from './stats'
 
 export interface AfterResultInput {
@@ -37,10 +45,36 @@ export async function processAfterResult(
   })
   await updateStreak(userId, streakState.streakDays)
 
-  const [recordCount, gamesPlayed, wimHighest] = await Promise.all([
+  const now = new Date()
+
+  const [
+    recordCount,
+    gamesPlayed,
+    wimHighest,
+    psHighest,
+    perfectHitsTotal,
+    fiveStarCount,
+    schuetzenrundeWins,
+    schuetzenrundeKingWins,
+    schuetzenrundeOnlineWins,
+    totalGamesPlayed,
+    dailyAttemptsCount,
+    familySessionsFinished,
+    unlockedBefore,
+  ] = await Promise.all([
     countPersonalRecordImprovements(userId),
     getGamesPlayed(userId),
     getHighestLevel('what-is-missing', userId),
+    getHighestLevel('perfect-second', userId),
+    countPerfectHits(userId),
+    countFiveStarResults(userId),
+    countSchuetzenrundeWins(userId),
+    countSchuetzenrundeKingWins(userId),
+    countSchuetzenrundeOnlineWins(userId),
+    countTotalGamesPlayed(userId),
+    countDailyAttempts(),
+    countFinishedFamilySessions(),
+    getUnlockedAchievements(userId),
   ])
 
   const candidates = evaluateAchievements({
@@ -50,8 +84,21 @@ export async function processAfterResult(
     isPersonalRecord: input.isPersonalRecord,
     streakDays: streakState.streakDays,
     whatIsMissingHighestLevel: wimHighest,
+    perfectSecondHighestLevel: psHighest,
     personalRecordImprovements: recordCount,
     gamesPlayed,
+    perfectHitsTotal,
+    fiveStarCount,
+    schuetzenrundeWins,
+    schuetzenrundeKingWins,
+    schuetzenrundeOnlineWins,
+    playerLevel: profile?.playerLevel,
+    totalGamesPlayed,
+    dailyAttemptsCount,
+    familySessionsFinished,
+    playedAtHour: now.getHours(),
+    playedAtIsWeekend: now.getDay() === 0 || now.getDay() === 6,
+    unlockedCount: unlockedBefore.length,
   })
 
   const newlyUnlocked = await unlockMany(candidates, userId)

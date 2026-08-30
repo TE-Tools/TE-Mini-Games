@@ -40,9 +40,16 @@ describe('evaluateAchievements', () => {
     )
   })
 
-  it('unlocks allrounder when both games played', () => {
+  it('does not unlock allrounder with only two of three games played', () => {
     const ids = evaluateAchievements({
       gamesPlayed: new Set(['perfect-second', 'what-is-missing']),
+    })
+    expect(ids).not.toContain('allrounder')
+  })
+
+  it('unlocks allrounder when all three games played', () => {
+    const ids = evaluateAchievements({
+      gamesPlayed: new Set(['perfect-second', 'what-is-missing', 'schuetzenrunde']),
     })
     expect(ids).toContain('allrounder')
   })
@@ -76,7 +83,7 @@ describe('processAfterResult', () => {
     await getOrCreateGuestProfile()
   })
 
-  it('updates streak and can unlock allrounder after both games', async () => {
+  it('updates streak and can unlock allrounder after all three games', async () => {
     await saveGameResult({
       gameId: 'perfect-second',
       level: 1,
@@ -100,8 +107,22 @@ describe('processAfterResult', () => {
       resultData: { correct: true },
       isPersonalRecord: true,
     })
-    const out = await processAfterResult({
+    await processAfterResult({
       gameId: 'what-is-missing',
+      level: 1,
+      isPersonalRecord: true,
+    })
+
+    await saveGameResult({
+      gameId: 'schuetzenrunde',
+      level: 1,
+      score: 800,
+      xp: 200,
+      resultData: { won: true },
+      isPersonalRecord: true,
+    })
+    const out = await processAfterResult({
+      gameId: 'schuetzenrunde',
       level: 1,
       isPersonalRecord: true,
     })
