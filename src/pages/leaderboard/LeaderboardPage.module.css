@@ -191,3 +191,44 @@
 .rowMe {
   border: 2px solid #7c5cfc;
 }
+
+/* Hinweis, wenn Ergebnisse mangels Anmeldung liegen bleiben – der stille
+   Fehlschlag davor hat Thomas am 30./31.08.2026 stundenlang gekostet. */
+.warning {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: center;
+  text-align: center;
+  padding: var(--space-4);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  border: 2px solid var(--color-primary);
+}
+
+.warningTitle {
+  margin: 0;
+  font-weight: 800;
+  font-size: var(--text-base);
+}
+
+.warningText {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.warningBtn {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+  text-decoration: none;
+}
