@@ -155,6 +155,47 @@ export async function getRemoteXpTotals(
   }
 }
 
+export interface OverallEntry {
+  rank: number
+  username: string
+  totalXp: number
+  totalScore: number
+  playCount: number
+  gameCount: number
+  lastPlayedAt: string | null
+}
+
+/**
+ * Eine Rangliste über ALLE Spiele zusammen, nach aufaddierten XP (31.08.2026,
+ * Thomas: "ich möchte die Rangliste über alle spiele die addiert XP haben!").
+ * Liest die View `leaderboard_overall` (Migration 010).
+ */
+export async function getRemoteOverall(limit = 20): Promise<OverallEntry[]> {
+  if (!isSupabaseConfigured || !supabase) return []
+
+  try {
+    const { data, error } = await supabase
+      .from('leaderboard_overall')
+      .select('username, total_xp, total_score, play_count, game_count, last_played_at')
+      .order('total_xp', { ascending: false })
+      .limit(limit)
+
+    if (error || !data) return []
+
+    return data.map((row, i) => ({
+      rank: i + 1,
+      username: (row.username as string | null) ?? 'Spieler',
+      totalXp: (row.total_xp as number) ?? 0,
+      totalScore: (row.total_score as number) ?? 0,
+      playCount: (row.play_count as number) ?? 0,
+      gameCount: (row.game_count as number) ?? 0,
+      lastPlayedAt: (row.last_played_at as string | null) ?? null,
+    }))
+  } catch {
+    return []
+  }
+}
+
 export function gameLabel(gameId: string): string {
   if (gameId === 'perfect-second') return 'Die perfekte Sekunde'
   if (gameId === 'what-is-missing') return 'Was fehlt?'

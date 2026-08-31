@@ -5,20 +5,23 @@ import {
   getLocalRecentHighScores,
   getLocalTotalsByGame,
   getRemoteXpTotals,
+  getRemoteOverall,
   gameLabel,
   type GameTotals,
   type LeaderboardEntry,
+  type OverallEntry,
   type PersonalBestRow,
 } from '@/services/leaderboard'
 import { isSupabaseConfigured } from '@/database/supabase'
 import { getMyUsername } from '@/auth/authService'
 import { syncFullNow } from '@/services/remoteSync'
+import { getSyncPendingCount } from '@/services/sync'
 import type { GameId } from '@/games/types'
 import styles from './LeaderboardPage.module.css'
 
-type Tab = 'mine' | 'global-ps' | 'global-wim' | 'global-sr'
+type Tab = 'overall' | 'mine' | 'global-ps' | 'global-wim' | 'global-sr'
 
-const TAB_GAME: Record<Exclude<Tab, 'mine'>, GameId> = {
+const TAB_GAME: Record<Exclude<Tab, 'mine' | 'overall'>, GameId> = {
   'global-ps': 'perfect-second',
   'global-wim': 'what-is-missing',
   'global-sr': 'schuetzenrunde',
@@ -26,27 +29,43 @@ const TAB_GAME: Record<Exclude<Tab, 'mine'>, GameId> = {
 
 export function LeaderboardPage() {
   const navigate = useNavigate()
-  const [tab, setTab] = useState<Tab>('mine')
+  const [tab, setTab] = useState<Tab>('overall')
   const [personalBests, setPersonalBests] = useState<PersonalBestRow[]>([])
   const [recent, setRecent] = useState<LeaderboardEntry[]>([])
   const [totals, setTotals] = useState<GameTotals[]>([])
   const [remote, setRemote] = useState<LeaderboardEntry[]>([])
+  const [overall, setOverall] = useState<OverallEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [myName, setMyName] = useState<string | null>(null)
+  /** null = noch nicht geprüft. Sonst: ist gerade jemand angemeldet? */
+  const [signedIn, setSignedIn] = useState<boolean | null>(null)
+  /** Wie viele Ergebnisse liegen lokal und warten aufs Hochladen. */
+  const [pending, setPending] = useState(0)
   const [syncing, setSyncing] = useState(false)
   /** Bumped by the refresh button so the effect below runs again. */
   const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
-    void getMyUsername().then(setMyName)
-  }, [])
+    void getMyUsername().then((name) => {
+      setMyName(name)
+      setSignedIn(name != null)
+    })
+  }, [reloadKey])
+
+  // Wartende Ergebnisse zählen – ohne Anmeldung bleiben sie sonst unbemerkt liegen.
+  useEffect(() => {
+    void getSyncPendingCount().then(setPending)
+  }, [reloadKey, tab])
 
   useEffect(() => {
     let cancelled = false
     ;(async () => {
       setLoading(true)
       try {
-        if (tab === 'mine') {
+        if (tab === 'overall') {
+          const rows = await getRemoteOverall(20)
+          if (!cancelled) setOverall(rows)
+        } else if (tab === 'mine') {
           const [bests, high, gameTotals] = await Promise.all([
             getLocalPersonalBests(),
             getLocalRecentHighScores(15),
@@ -91,10 +110,21 @@ export function LeaderboardPage() {
           ←
         </button>
         <h1 className={styles.title}>Rangliste</h1>
-        <span className={styles.badge}>{isSupabaseConfigured ? 'Online' : 'Lokal'}</span>
+        <span className={styles.badge}>
+          {!isSupabaseConfigured ? 'Lokal' : signedIn === null ? '…' : signedIn ? 'Angemeldet' : 'Nicht angemeldet'}
+        </span>
       </header>
 
       <div className={styles.tabs} role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'overall'}
+          className={tab === 'overall' ? styles.tabActive : styles.tab}
+          onClick={() => setTab('overall')}
+        >
+          Alle Spiele
+        </button>
         <button
           type="button"
           role="tab"
@@ -133,6 +163,29 @@ export function LeaderboardPage() {
         </button>
       </div>
 
+      {isSupabaseConfigured && signedIn === false && (
+        <div className={styles.warning} role="status">
+          <p className={styles.warningTitle}>Du bist nicht angemeldet</p>
+          <p className={styles.warningText}>
+            Deine Runden werden auf diesem Gerät gespeichert, kommen aber erst in die Rangliste,
+            wenn du angemeldet bist.
+            {pending > 0
+              ? ` ${pending} ${pending === 1 ? 'Eintrag wartet' : 'Einträge warten'} aufs Hochladen – nach dem Anmelden gehen sie automatisch raus.`
+              : ''}
+          </p>
+          <Link to="/auth" className={styles.warningBtn}>
+            Jetzt anmelden
+          </Link>
+        </div>
+      )}
+
+      {isSupabaseConfigured && signedIn === true && pending > 0 && (
+        <p className={styles.hint}>
+          {pending} {pending === 1 ? 'Eintrag wartet' : 'Einträge warten'} aufs Hochladen – tippe
+          auf „Aktualisieren“.
+        </p>
+      )}
+
       {isSupabaseConfigured && (
         <button
           type="button"
@@ -145,6 +198,53 @@ export function LeaderboardPage() {
       )}
 
       {loading && <p className={styles.muted}>Laden…</p>}
+
+      {!loading && tab === 'overall' && (
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Gesamt-XP über alle Spiele</h2>
+          <p className={styles.hint}>
+            Alle XP aus jeder Runde aller Spiele zusammengerechnet. Jede gespielte Runde zählt
+            mit, egal ob Rekord oder nicht.
+          </p>
+          {!isSupabaseConfigured ? (
+            <p className={styles.hint}>
+              Die gemeinsame Rangliste braucht ein konfiguriertes Supabase-Projekt.
+            </p>
+          ) : overall.length === 0 ? (
+            <p className={styles.empty}>
+              Noch keine Einträge. Nach einer Runde mit Konto landen sie automatisch hier.
+            </p>
+          ) : (
+            <ol className={styles.list}>
+              {overall.map((e) => (
+                <li
+                  key={`${e.rank}-${e.username}`}
+                  className={[styles.row, e.username === myName ? styles.rowMe : '']
+                    .filter(Boolean)
+                    .join(' ')}
+                >
+                  <span className={styles.rank}>{e.rank}.</span>
+                  <span className={styles.rowMain}>
+                    {e.username}
+                    {e.username === myName ? ' (du)' : ''}
+                    <span className={styles.sub}>
+                      {' '}
+                      {e.playCount} {e.playCount === 1 ? 'Runde' : 'Runden'} · {e.gameCount}{' '}
+                      {e.gameCount === 1 ? 'Spiel' : 'Spiele'}
+                    </span>
+                  </span>
+                  <span className={styles.rowRight}>
+                    <span className={styles.rowScore}>{e.totalXp.toLocaleString('de-DE')} XP</span>
+                    <span className={styles.rowXp}>
+                      {e.totalScore.toLocaleString('de-DE')} Pkt.
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
+      )}
 
       {!loading && tab === 'mine' && (
         <section className={styles.section}>
@@ -216,7 +316,7 @@ export function LeaderboardPage() {
         </section>
       )}
 
-      {!loading && tab !== 'mine' && (
+      {!loading && tab !== 'mine' && tab !== 'overall' && (
         <section className={styles.section}>
           {!isSupabaseConfigured && (
             <p className={styles.hint}>

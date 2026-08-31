@@ -32,6 +32,19 @@ export async function markOutboxSuccess(id: string): Promise<void> {
   await db.syncOutbox.delete(id)
 }
 
+/**
+ * Endgültig aussortieren: der Server wird diesen Eintrag nie annehmen.
+ * Wichtig fürs Weiterkommen – getPendingOutbox() liefert die ältesten
+ * Einträge zuerst, ein liegenbleibender Dauerfehler würde sonst irgendwann
+ * alle neueren Ergebnisse aufhalten.
+ */
+export async function dropOutboxItem(id: string, reason: string): Promise<void> {
+  const item = await db.syncOutbox.get(id)
+  if (!item) return
+  console.warn(`[sync] Eintrag endgültig verworfen (${item.type}): ${reason}`)
+  await db.syncOutbox.delete(id)
+}
+
 export async function markOutboxFailure(id: string, error: string): Promise<void> {
   const item = await db.syncOutbox.get(id)
   if (!item) return
