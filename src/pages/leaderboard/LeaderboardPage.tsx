@@ -13,7 +13,7 @@ import {
   type PersonalBestRow,
 } from '@/services/leaderboard'
 import { isSupabaseConfigured } from '@/database/supabase'
-import { getMyUsername } from '@/auth/authService'
+import { getAuthStatus } from '@/auth/authService'
 import { syncFullNow } from '@/services/remoteSync'
 import { getSyncPendingCount } from '@/services/sync'
 import type { GameId } from '@/games/types'
@@ -46,9 +46,12 @@ export function LeaderboardPage() {
   const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
-    void getMyUsername().then((name) => {
-      setMyName(name)
-      setSignedIn(name != null)
+    // Angemeldet-sein und einen Benutzernamen zu haben ist zweierlei: wer sich
+    // über Google anmeldet, hat anfangs keinen – und taucht ohne ihn in keiner
+    // Rangliste auf, weil deren Views `where username is not null` filtern.
+    void getAuthStatus().then((status) => {
+      setSignedIn(status.signedIn)
+      setMyName(status.username)
     })
   }, [reloadKey])
 
@@ -94,7 +97,9 @@ export function LeaderboardPage() {
     setSyncing(true)
     try {
       await syncFullNow()
-      setMyName(await getMyUsername())
+      const status = await getAuthStatus()
+      setSignedIn(status.signedIn)
+      setMyName(status.username)
     } finally {
       setSyncing(false)
       setReloadKey((k) => k + 1)
@@ -111,7 +116,15 @@ export function LeaderboardPage() {
         </button>
         <h1 className={styles.title}>Rangliste</h1>
         <span className={styles.badge}>
-          {!isSupabaseConfigured ? 'Lokal' : signedIn === null ? '…' : signedIn ? 'Angemeldet' : 'Nicht angemeldet'}
+          {!isSupabaseConfigured
+            ? 'Lokal'
+            : signedIn === null
+              ? '…'
+              : !signedIn
+                ? 'Nicht angemeldet'
+                : myName === null
+                  ? 'Ohne Namen'
+                  : 'Angemeldet'}
         </span>
       </header>
 
@@ -179,7 +192,21 @@ export function LeaderboardPage() {
         </div>
       )}
 
-      {isSupabaseConfigured && signedIn === true && pending > 0 && (
+      {isSupabaseConfigured && signedIn === true && myName === null && (
+        <div className={styles.warning} role="status">
+          <p className={styles.warningTitle}>Dir fehlt ein Benutzername</p>
+          <p className={styles.warningText}>
+            Du bist angemeldet, aber in den Ranglisten steht der Benutzername – und über Google
+            wird keiner vergeben. Ohne ihn tauchst du hier nicht auf, auch wenn deine Runden
+            hochgeladen werden.
+          </p>
+          <Link to="/auth" className={styles.warningBtn}>
+            Benutzername festlegen
+          </Link>
+        </div>
+      )}
+
+      {isSupabaseConfigured && signedIn === true && myName !== null && pending > 0 && (
         <p className={styles.hint}>
           {pending} {pending === 1 ? 'Eintrag wartet' : 'Einträge warten'} aufs Hochladen – tippe
           auf „Aktualisieren“.
