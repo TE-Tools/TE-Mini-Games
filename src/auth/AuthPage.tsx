@@ -5,6 +5,7 @@ import {
   signInWithEmail,
   signUpWithEmail,
   signInWithGoogle,
+  setMyUsername,
   signOut,
   getCurrentUser,
   validateUsername,
@@ -42,7 +43,7 @@ export function AuthPage({ gate = false }: Props) {
   const [info, setInfo] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
-  const [myUsername, setMyUsername] = useState<string | null>(null)
+  const [myUsername, setMyUsernameState] = useState<string | null>(null)
   const [pending, setPending] = useState(0)
   const [syncing, setSyncing] = useState(false)
   const [syncInfo, setSyncInfo] = useState<string | null>(null)
@@ -53,6 +54,10 @@ export function AuthPage({ gate = false }: Props) {
   )
   const [newPassword, setNewPassword] = useState('')
   const [checkedName, setCheckedName] = useState<{ name: string; status: string } | null>(null)
+  /** Benutzername nachtragen (Google-Anmeldung liefert keinen mit). */
+  const [claimName, setClaimName] = useState('')
+  const [claiming, setClaiming] = useState(false)
+  const [claimError, setClaimError] = useState<string | null>(null)
 
   const enterApp = () => {
     navigate('/', { replace: true })
@@ -66,7 +71,7 @@ export function AuthPage({ gate = false }: Props) {
 
   useEffect(() => {
     void getCurrentUser().then((u) => setUserEmail(u?.email ?? null))
-    void getMyUsername().then(setMyUsername)
+    void getMyUsername().then(setMyUsernameState)
     void outboxCount().then(setPending)
   }, [])
 
@@ -144,6 +149,53 @@ export function AuthPage({ gate = false }: Props) {
           {myUsername ? `@${myUsername} \u00b7 ` : ''}
           {userEmail}
         </p>
+
+        {myUsername === null && (
+          <section className={styles.claimBox}>
+            <p className={styles.claimTitle}>Dir fehlt noch ein Benutzername</p>
+            <p className={styles.muted}>
+              In den Ranglisten steht dein Benutzername, nicht deine E-Mail. Ohne ihn tauchst du
+              dort nicht auf \u2013 auch wenn alles brav hochgeladen wird. Bei der Anmeldung \u00fcber
+              Google wird keiner vergeben, deshalb hier nachtragen.
+            </p>
+            <label className={styles.label}>
+              Benutzername
+              <input
+                className={styles.input}
+                value={claimName}
+                onChange={(e) => {
+                  setClaimName(e.target.value)
+                  setClaimError(null)
+                }}
+                placeholder="z. B. thomas"
+                autoComplete="username"
+                maxLength={20}
+              />
+            </label>
+            {claimError && <p className={styles.error}>{claimError}</p>}
+            <button
+              type="button"
+              className={styles.primaryBtn}
+              disabled={claiming || claimName.trim().length < 3}
+              onClick={() => {
+                setClaiming(true)
+                setClaimError(null)
+                void setMyUsername(claimName)
+                  .then(async ({ error: e }) => {
+                    if (e) {
+                      setClaimError(e)
+                      return
+                    }
+                    setMyUsernameState(await getMyUsername())
+                    setSyncInfo('Benutzername gespeichert \u2013 du bist ab jetzt in der Rangliste.')
+                  })
+                  .finally(() => setClaiming(false))
+              }}
+            >
+              {claiming ? 'Speichere\u2026' : 'Benutzername speichern'}
+            </button>
+          </section>
+        )}
         <p className={styles.muted}>
           {pending > 0
             ? `${pending} Ergebnis${pending === 1 ? '' : 'se'} warten auf den Upload.`

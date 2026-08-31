@@ -129,6 +129,70 @@ export async function updatePassword(password: string): Promise<{ error: string 
   return { error: error?.message ?? null }
 }
 
+export interface AuthStatus {
+  /** Ist gerade jemand angemeldet? Unabhängig davon, ob ein Benutzername gesetzt ist. */
+  signedIn: boolean
+  /** Der öffentliche Name in den Ranglisten. Bei Google-Anmeldung anfangs null. */
+  username: string | null
+  email: string | null
+}
+
+/**
+ * Anmeldestatus und Benutzername in einem Rutsch.
+ *
+ * Getrennt zu betrachten, weil beides auseinanderfallen kann: Wer sich über
+ * Google anmeldet, ist angemeldet, hat aber noch keinen Benutzernamen -- das
+ * Anlegen des Profils (handle_new_user) übernimmt nur, was in den
+ * Anmeldedaten steht, und Google liefert keinen. Genau diese Verwechslung
+ * hat der Rangliste am 31.08.2026 ein falsches "nicht angemeldet" beschert.
+ */
+export async function getAuthStatus(): Promise<AuthStatus> {
+  if (!supabase) return { signedIn: false, username: null, email: null }
+  const { data: userData } = await supabase.auth.getUser()
+  const user = userData.user
+  if (!user) return { signedIn: false, username: null, email: null }
+
+  const { data } = await supabase.from('profiles').select('username').eq('id', user.id).maybeSingle()
+  return {
+    signedIn: true,
+    username: (data?.username as string | null) ?? null,
+    email: user.email ?? null,
+  }
+}
+
+/**
+ * Benutzernamen nachtragen – nötig für alle, die sich über Google angemeldet
+ * haben. Ohne Benutzername taucht niemand in den Ranglisten auf, denn deren
+ * Views filtern bewusst `where username is not null`.
+ */
+export async function setMyUsername(username: string): Promise<{ error: string | null }> {
+  if (!supabase) return { error: 'Supabase nicht konfiguriert' }
+
+  const nameErr = validateUsername(username)
+  if (nameErr) return { error: nameErr }
+
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Du bist nicht angemeldet' }
+
+  const clean = username.trim().toLowerCase()
+  const { available, error: checkErr } = await isUsernameAvailable(clean)
+  if (checkErr) return { error: checkErr }
+  if (!available) return { error: 'Benutzername ist bereits vergeben' }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ username: clean, updated_at: new Date().toISOString() })
+    .eq('id', user.id)
+
+  if (error) {
+    // Der eindeutige Index auf lower(username) kann zwischen Prüfung und
+    // Speichern zuschlagen, wenn zwei Leute denselben Namen wählen.
+    if (error.code === '23505') return { error: 'Benutzername ist bereits vergeben' }
+    return { error: error.message }
+  }
+  return { error: null }
+}
+
 export async function getMyUsername(): Promise<string | null> {
   if (!supabase) return null
   const { data: userData } = await supabase.auth.getUser()
