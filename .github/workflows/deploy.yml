@@ -24,6 +24,27 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
+      # Vorab pruefen, ob die Zugangsdaten ueberhaupt hinterlegt sind.
+      # Ohne diesen Schritt scheitert erst wrangler ganz am Ende -- mit einer
+      # Meldung, die im Log untergeht. Genau das ist passiert: Der Deploy ist
+      # seit dem 30.08.2026 in JEDEM Lauf gescheitert (22 von 22), weil in
+      # diesem Repo CLOUDFLARE_API_TOKEN fehlt, und es ist vier Tage lang
+      # niemandem aufgefallen.
+      - name: Zugangsdaten vorhanden?
+        run: |
+          fehlt=""
+          [ -n "${{ secrets.CLOUDFLARE_API_TOKEN }}" ] || fehlt="$fehlt CLOUDFLARE_API_TOKEN"
+          [ -n "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ] || fehlt="$fehlt CLOUDFLARE_ACCOUNT_ID"
+          if [ -n "$fehlt" ]; then
+            echo "::error title=Deploy nicht moeglich::Diese Repo-Secrets fehlen:$fehlt"
+            echo ""
+            echo "Anlegen unter: Settings -> Secrets and variables -> Actions -> New repository secret."
+            echo "Dieselben Werte wie im Repo te-alltagstools-website; Secrets gelten immer nur"
+            echo "fuer EIN Repo, sie werden nicht mitvererbt."
+            exit 1
+          fi
+          echo "Beide Zugangsdaten sind hinterlegt."
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
