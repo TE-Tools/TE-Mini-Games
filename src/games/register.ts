@@ -5,6 +5,8 @@ import { schuetzenrundeGame } from './schuetzenrunde'
 import { findeDenImposterGame } from './finde-den-imposter'
 import { reihenfolgeGame } from './reihenfolge'
 import { kopfrechnenGame } from './kopfrechnen'
+import { werBinIchGame } from './wer-bin-ich'
+import { stadtLandFlussGame } from './stadt-land-fluss'
 
 /** Register all built-in games. Call once at app startup. */
 export function registerAllGames(): void {
@@ -14,4 +16,6 @@ export function registerAllGames(): void {
   registerGame(findeDenImposterGame)
   registerGame(reihenfolgeGame)
   registerGame(kopfrechnenGame)
+  registerGame(werBinIchGame)
+  registerGame(stadtLandFlussGame)
 }

@@ -1,0 +1,191 @@
+/* "Wer bin ich?" – am einen Gerät und online. */
+
+.page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-4);
+  max-width: 30rem;
+  margin: 0 auto;
+  width: 100%;
+  gap: var(--space-3);
+}
+
+.back {
+  align-self: flex-start;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.title {
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  text-align: center;
+}
+
+.subtitle {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.meta {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.card {
+  width: 100%;
+  background: var(--color-bg-elevated);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  box-shadow: var(--btn-shadow);
+}
+
+.cardTitle {
+  font-size: var(--text-base);
+  font-weight: 800;
+  text-align: center;
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-align: left;
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: var(--space-3);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+.textarea {
+  min-height: 7rem;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.btn,
+.btnSecondary {
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-xl);
+  font-weight: 800;
+  font-size: var(--text-base);
+  box-shadow: var(--btn-shadow);
+  border: 2px solid #1d4ed8;
+  background: linear-gradient(180deg, #60a5fa, #2563eb);
+  color: #fff;
+}
+
+.btnSecondary {
+  border-color: var(--color-border);
+  background: linear-gradient(180deg, #ffffff, #f3f4f6);
+  color: var(--color-text);
+}
+
+.btn:disabled,
+.btnSecondary:disabled {
+  opacity: 0.55;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  padding: var(--space-2) var(--space-3);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  text-align: left;
+}
+
+.pickBtn {
+  min-height: 40px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  font-weight: 700;
+  font-size: var(--text-sm);
+}
+
+/* Der Deckel beim Weiterreichen. */
+.cover {
+  text-align: center;
+  padding: 2rem 1rem;
+  align-items: center;
+}
+
+.coverName {
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+/* Das eigene Wort – solange verdeckt, ist es das Fragezeichen. */
+.meBox {
+  text-align: center;
+  align-items: center;
+}
+
+.unknownWord {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--color-primary);
+}
+
+.ok {
+  color: var(--color-success);
+}
+
+.bad {
+  color: var(--color-danger);
+}
+
+.error {
+  font-size: var(--text-sm);
+  color: var(--color-danger);
+  font-weight: 700;
+  text-align: center;
+}
+
+.hint {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 1.45;
+  text-align: center;
+  max-width: 22rem;
+}

@@ -226,3 +226,41 @@ psql "$PGURL" -f supabase/tests/imposter_modes_test.sql
 Jede Zeile der Ausgabe beginnt mit `OK` oder `FEHLER`; am Ende steht
 `ALLE PRUEFUNGEN BESTANDEN`. **Nicht** gegen das echte Projekt laufen lassen –
 der Test legt Testnutzer und Runden an und räumt die `fdi_`-Tabellen leer.
+
+
+## „Wer bin ich?" online (Migration 013)
+
+`supabase/migrations/013_wer_bin_ich.sql` im SQL-Editor ausführen. Die
+Migration setzt 011/011b voraus: Kategorien und Wörter kommen aus
+`fdi_categories` und `fdi_words`, damit es den Wortschatz nur einmal gibt.
+
+**Wie das abgesichert ist** – hier ist es genau umgekehrt zum Imposter: Jeder
+soll die Begriffe der *anderen* sehen, aber niemals seinen eigenen. Der
+gesamte Trick steckt in einer Zeile in `wbi_get_state()`, die dem Aufrufer
+sein eigenes Wort herausstreicht. Deshalb zieht auch hier der Server die
+Wörter, und die Tabellen sind für Clients gesperrt. Ausgewertet wird der Tipp
+ebenfalls serverseitig – der Browser kennt das eigene Wort gar nicht und
+könnte gar nicht vergleichen.
+
+Optional: Supabase → Database → Replication → `wbi_state` anhaken.
+
+
+## „Stadt-Land-Fluss" online (Migration 014)
+
+`supabase/migrations/014_stadt_land_fluss.sql` im SQL-Editor ausführen.
+
+**Wie das abgesichert ist:** Es gibt kein Geheimnis zu hüten, aber zwei
+Gründe für den Server. Erstens werden die Punkte dort vergeben – wer sich
+selbst zählt, zählt sich gern zu viel. Zweitens hält `slf_get_state()` die
+Antworten der anderen zurück, solange geschrieben wird; sonst schriebe man
+einfach ab. Die Uhr läuft ebenfalls auf dem Server (`slf_tick` prüft `now()`
+selbst), ein vorgestelltes Handy bringt also nichts.
+
+Optional: Supabase → Database → Replication → `slf_state` anhaken.
+
+```bash
+psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/migrations/013_wer_bin_ich.sql
+psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/migrations/014_stadt_land_fluss.sql
+psql "$PGURL" -f supabase/tests/wer_bin_ich_test.sql
+psql "$PGURL" -f supabase/tests/stadt_land_fluss_test.sql
+```

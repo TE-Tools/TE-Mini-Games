@@ -143,6 +143,20 @@ export function HomePage() {
           <span className={styles.tileName}>Kopfrechnen</span>
         </Link>
 
+        <Link to="/play/wer-bin-ich" className={styles.tile} data-game="wer-bin-ich">
+          <span className={styles.tileIcon} aria-hidden="true">
+            🤔
+          </span>
+          <span className={styles.tileName}>Wer bin ich?</span>
+        </Link>
+
+        <Link to="/play/stadt-land-fluss" className={styles.tile} data-game="stadt-land-fluss">
+          <span className={styles.tileIcon} aria-hidden="true">
+            ✏️
+          </span>
+          <span className={styles.tileName}>Stadt-Land-Fluss</span>
+        </Link>
+
         <Link to="/daily" className={styles.tile} data-tile="daily">
           <span className={styles.tileIcon} aria-hidden="true">
             📅
