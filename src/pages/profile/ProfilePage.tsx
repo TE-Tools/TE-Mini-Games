@@ -23,7 +23,7 @@ export function ProfilePage() {
         <button type="button" className={styles.back} onClick={() => navigate('/')} aria-label="Zurück">
           ←
         </button>
-        <h1 className={styles.title}>Avatar</h1>
+        <h1 className={styles.title}>Profil</h1>
         <span className={styles.badge}>15</span>
       </header>
 
@@ -57,6 +57,23 @@ export function ProfilePage() {
           )
         })}
       </ul>
+
+      {/* Von hier geht es weiter zum Konto. Vorher war der Avatar oben der
+          einzige Eingang dorthin; seit er ins Profil fuehrt, muss der Weg
+          hier stehen, sonst kaeme man an die Anmeldung gar nicht mehr heran
+          (02.09.2026). */}
+      <Link to="/auth" className={styles.accountBtn}>
+        <span className={styles.accountIcon} aria-hidden="true">
+          ⚙️
+        </span>
+        <span className={styles.accountText}>
+          <span className={styles.accountTitle}>Konto &amp; Anmeldung</span>
+          <span className={styles.accountHint}>
+            Benutzername, Anmeldung, Synchronisierung
+          </span>
+        </span>
+        <span aria-hidden="true">›</span>
+      </Link>
 
       <Link to="/" className={styles.homeLink}>
         Zur Startseite

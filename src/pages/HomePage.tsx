@@ -59,14 +59,17 @@ export function HomePage() {
   return (
     <main className={styles.page}>
       {/* Kopfzeile wie in Thomas' Entwurf: die Marke in der Mitte, der Avatar
-          rechts als Eingang zu den Konto-Einstellungen. Das leere Feld links
-          haelt die Marke optisch mittig. */}
+          rechts. Er fuehrt ins Profil-Menue -- dort wird das Gesicht
+          gewaehlt, und von dort geht es weiter zu den Konto-Einstellungen
+          (02.09.2026). Die Kachel "Avatar" ist dafuer entfallen: zwei Wege
+          zur selben Seite waeren nur Ballast. Das leere Feld links haelt die
+          Marke optisch mittig. */}
       <header className={styles.header}>
         <span aria-hidden="true" />
         <span className={styles.logo}>
           <LogoMark size={62} />
         </span>
-        <Link to="/auth" className={styles.avatarButton} aria-label="Konto-Einstellungen">
+        <Link to="/profile" className={styles.avatarButton} aria-label="Profil">
           <span className={styles.avatarFace} aria-hidden="true">
             {getAvatar(profile?.avatar).emoji}
           </span>
@@ -234,12 +237,6 @@ export function HomePage() {
           <span className={styles.tileName}>Abzeichen</span>
         </Link>
 
-        <Link to="/profile" className={styles.tile} data-tile="profile">
-          <span className={styles.tileIcon} aria-hidden="true">
-            🎭
-          </span>
-          <span className={styles.tileName}>Avatar</span>
-        </Link>
       </nav>
     </main>
   )

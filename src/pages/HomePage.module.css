@@ -268,11 +268,6 @@
   --kachel-rand: #fbbf24;
 }
 
-.tile[data-tile='profile'] {
-  --kachel-flaeche: linear-gradient(160deg, #3f3a63, #201c3c);
-  --kachel-rand: #a79ccb;
-}
-
 .tile[data-game='finde-den-imposter'] .tileName,
 .tile[data-game='reihenfolge'] .tileName,
 .tile[data-game='stadt-land-fluss'] .tileName,
