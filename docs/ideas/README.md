@@ -27,7 +27,8 @@ Details und Originalspezifikation: `schuetzenrunde/START_HERE.md` und `schuetzen
   die **letzte Chance**, das Wort zu erraten
 - **Ohne Punkte und ohne Rangliste** — wer gewonnen hat, sieht man am Tisch
 
-**Umgesetzt ist der Modus „Klassisch" (inkl. Doppel-Imposter), am einen Gerät
-und online.** Fünf weitere Modi sind angelegt, aber noch nicht spielbar;
-ebenso offen: Wortschatz auf 1000, eigene Kategorien. Details und
-vollständige Liste: `finde-den-imposter/STATUS.md`.
+**Alle sieben Modi sind spielbar** (Klassisch, Doppel-Imposter, Nur
+Kategorie, Leer, Tempo, Chaos, Duell), am einen Gerät und – bis auf Duell –
+auch online. Der Wortschatz umfasst 1000 Wörter in 20 Kategorien, dazu
+kommen eigene Kategorien mit Import/Export. Offen ist nur noch Duell online.
+Details: `finde-den-imposter/STATUS.md`.

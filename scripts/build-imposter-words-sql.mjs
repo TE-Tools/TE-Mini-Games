@@ -13,9 +13,13 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 
 const src = readFileSync('src/games/finde-den-imposter/data/words.ts', 'utf8')
+const body = src.match(/const BY_CATEGORY[^=]*=\s*\{([\s\S]*?)\n\}/)
+if (!body) throw new Error('BY_CATEGORY nicht gefunden – Format von words.ts geändert?')
 const rows = []
-for (const m of src.matchAll(/\{\s*word:\s*'([^']+)',\s*categoryId:\s*'([^']+)'\s*\}/g)) {
-  rows.push({ word: m[1], categoryId: m[2] })
+for (const block of body[1].matchAll(/^ {2}(\w+): \[([\s\S]*?)\n {2}\],/gm)) {
+  for (const w of block[2].matchAll(/'((?:[^'\\]|\\.)*)'/g)) {
+    rows.push({ word: w[1].replace(/\\'/g, "'"), categoryId: block[1] })
+  }
 }
 if (rows.length === 0) throw new Error('Keine Wörter gefunden – Format von words.ts geändert?')
 

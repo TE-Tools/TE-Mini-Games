@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CATEGORIES } from '@/games/finde-den-imposter'
+import { CATEGORIES, ONLINE_MODES, modeOf, chaosRuleLabel } from '@/games/finde-den-imposter'
 import { getCurrentUser } from '@/auth/authService'
 import {
   isImposterOnlineAvailable,
@@ -15,6 +15,7 @@ import {
   fetchOnlineState,
   fetchMyOnlineMatches,
   subscribeToOnlineMatch,
+  type OnlineMode,
   type OnlineState,
   type OpenMatch,
 } from '@/services/imposterOnline'
@@ -28,7 +29,7 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
   const [signedIn, setSignedIn] = useState(false)
 
   const [categoryId, setCategoryId] = useState(CATEGORIES[0]?.id ?? 'tiere')
-  const [mode, setMode] = useState<'classic' | 'double'>('classic')
+  const [mode, setMode] = useState<OnlineMode>('classic')
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
 
@@ -84,6 +85,38 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
       window.clearInterval(timer)
     }
   }, [matchId, laden])
+
+  // Tempo-Modus: Alle Handys rechnen aus derselben Serverzeit (`phase_at`)
+  // herunter, damit die Uhr überall gleich steht. Abgebrochen wird die Runde
+  // vom Gastgeber, sobald sie bei ihm abgelaufen ist.
+  const uhr = state?.match.phase === 'discussion' ? state.match : null
+  const laeuft = Boolean(uhr?.timer_seconds && uhr.phase_at)
+  const [jetzt, setJetzt] = useState(0)
+
+  useEffect(() => {
+    if (!laeuft) return
+    const t = window.setInterval(() => setJetzt(Date.now()), 250)
+    return () => window.clearInterval(t)
+  }, [laeuft])
+
+  const uhrEnde =
+    uhr?.timer_seconds && uhr.phase_at ? Date.parse(uhr.phase_at) + uhr.timer_seconds * 1000 : null
+  const uhrMatchId = uhr?.id ?? null
+  const binGastgeber = uhr?.is_host ?? false
+
+  useEffect(() => {
+    if (uhrEnde === null || !uhrMatchId || !binGastgeber) return
+    let gesendet = false
+    const t = window.setInterval(() => {
+      if (gesendet || Date.now() < uhrEnde) return
+      gesendet = true
+      window.clearInterval(t)
+      // Fehler sind hier egal: Wenn jemand schon weitergeschaltet hat, lehnt
+      // der Server ab, und der nächste Spielstand zeigt ohnehin die Anklage.
+      void toAccusePhase(uhrMatchId).catch(() => undefined)
+    }, 250)
+    return () => window.clearInterval(t)
+  }, [uhrEnde, uhrMatchId, binGastgeber])
 
   const run = useCallback(async (job: () => Promise<unknown>) => {
     setBusy(true)
@@ -168,12 +201,21 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
             <select
               className={styles.select}
               value={mode}
-              onChange={(e) => setMode(e.target.value as 'classic' | 'double')}
+              onChange={(e) => setMode(e.target.value as OnlineMode)}
             >
-              <option value="classic">Klassisch</option>
-              <option value="double">Doppel-Imposter</option>
+              {ONLINE_MODES.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.label}
+                  {m.minPlayers > 3 ? ` (ab ${m.minPlayers})` : ''}
+                </option>
+              ))}
             </select>
           </label>
+          <p className={styles.subtitle}>{modeOf(mode).description}</p>
+          <p className={styles.meta}>
+            Eigene Kategorien gibt es nur am einen Gerät – online zieht der Server das Wort,
+            und der kennt nur den eingebauten Wortschatz.
+          </p>
           <button
             type="button"
             className={styles.btn}
@@ -247,6 +289,11 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
   const m = state.match
   const me = state.me
   const starter = state.players.find((p) => p.seat === m.starter_seat)
+  const ablauf =
+    m.timer_seconds && m.phase_at ? Date.parse(m.phase_at) + m.timer_seconds * 1000 : null
+  const restSekunden =
+    ablauf === null || jetzt === 0 ? null : Math.max(0, Math.ceil((ablauf - jetzt) / 1000))
+  const chaosRegel = chaosRuleLabel(m.special_rule)
   // Das Ratefeld gehört zu genau einer Runde -- in der nächsten steht es
   // wieder leer da, ohne dass wir es eigens zurücksetzen müssten.
   const ratetext = guess.round === m.round ? guess.text : ''
@@ -262,14 +309,16 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
       {error && <p className={styles.error}>{error}</p>}
 
       <p className={styles.meta}>
-        Code <strong>{m.code}</strong> · {m.size} dabei · Runde {m.round} · {m.category_label}
+        Code <strong>{m.code}</strong> · {m.size} dabei · Runde {m.round}
+        {m.category_label ? ` · ${m.category_label}` : ''}
       </p>
+      {chaosRegel && <p className={styles.badge}>Chaos: {chaosRegel}</p>}
 
       {m.phase === 'lobby' && (
         <div className={styles.card}>
           <h2 className={styles.cardTitle}>Vorraum</h2>
           <p className={styles.subtitle}>
-            Gebt den Code weiter.{' '}
+            {modeOf(m.mode).label} · Gebt den Code weiter.{' '}
             {m.is_host ? 'Du startest, wenn alle da sind.' : 'Der Gastgeber startet.'}
           </p>
           <ul className={styles.hintList}>
@@ -284,10 +333,12 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
             <button
               type="button"
               className={styles.btn}
-              disabled={busy || m.size < 3}
+              disabled={busy || m.size < modeOf(m.mode).minPlayers}
               onClick={() => void run(() => startOnlineMatch(m.id))}
             >
-              {m.size < 3 ? 'Mindestens 3 Mitspielende' : 'Runde starten'}
+              {m.size < modeOf(m.mode).minPlayers
+                ? `Mindestens ${modeOf(m.mode).minPlayers} Mitspielende`
+                : 'Runde starten'}
             </button>
           )}
           <button type="button" className={styles.btnSecondary} onClick={verlassen}>
@@ -301,8 +352,23 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
           {me.is_imposter ? (
             <>
               <p className={styles.roleImposter}>IMPOSTER</p>
-              <p className={styles.subtitle}>Hilfswort</p>
-              <p className={styles.secretWord}>{me.helper_word}</p>
+              {m.imposter_sees === 'helper' && (
+                <>
+                  <p className={styles.subtitle}>Hilfswort</p>
+                  <p className={styles.secretWord}>{me.helper_word}</p>
+                </>
+              )}
+              {m.imposter_sees === 'category' && (
+                <>
+                  <p className={styles.subtitle}>Kategorie</p>
+                  <p className={styles.secretWord}>{m.category_label}</p>
+                </>
+              )}
+              {m.imposter_sees === 'nothing' && (
+                <p className={styles.playHint}>
+                  Du siehst nichts – kein Wort, keine Kategorie. Hör gut zu und bluff dich durch.
+                </p>
+              )}
             </>
           ) : (
             <>
@@ -322,8 +388,15 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
             {starter?.is_you ? ' (du)' : ''}
           </p>
           <p className={styles.playHint}>
-            Jetzt redet miteinander – klärt selbst, wie viele Runden ihr dreht.
+            {restSekunden === null
+              ? 'Jetzt redet miteinander – klärt selbst, wie viele Runden ihr dreht.'
+              : 'Jetzt redet miteinander – die Uhr läuft.'}
           </p>
+          {restSekunden !== null && (
+            <p className={styles.secretWord}>
+              {Math.floor(restSekunden / 60)}:{String(restSekunden % 60).padStart(2, '0')}
+            </p>
+          )}
           {m.is_host ? (
             <button
               type="button"
@@ -412,6 +485,9 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
             </h2>
             <p className={styles.subtitle}>Das geheime Wort war</p>
             <p className={styles.secretWord}>{m.secret_word}</p>
+            {!m.show_category && m.category_label && (
+              <p className={styles.meta}>Kategorie: {m.category_label}</p>
+            )}
           </div>
           <div className={styles.card}>
             <h2 className={styles.cardTitle}>Wer war wer</h2>

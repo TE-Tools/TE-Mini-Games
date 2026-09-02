@@ -22,14 +22,26 @@ export interface OnlinePlayer {
   last_chance_guess: string | null
 }
 
+export type OnlineMode = 'classic' | 'double' | 'blank' | 'categories_only' | 'speed' | 'chaos'
+
 export interface OnlineMatch {
   id: string
   code: string
   phase: 'lobby' | 'discussion' | 'accuse' | 'last_chance' | 'result'
   round: number
   category_id: string
-  category_label: string
-  mode: 'classic' | 'double'
+  /** Im Modus „Leer" bis zum Ergebnis null – dort bleibt die Kategorie geheim. */
+  category_label: string | null
+  show_category: boolean
+  mode: OnlineMode
+  /** Was die Imposter in dieser Runde sehen – der Server entscheidet das. */
+  imposter_sees: 'helper' | 'category' | 'nothing'
+  /** Tempo-Modus: Sekunden ab `phase_at`, sonst null. */
+  timer_seconds: number | null
+  /** Wann ausgeteilt wurde – damit auf allen Handys dieselbe Uhr läuft. */
+  phase_at: string | null
+  /** Chaos-Modus: Kennung der gezogenen Sonderregel. */
+  special_rule: string | null
   imposter_count: number
   /** Wer die Runde eröffnet – zufällig gezogen, sobald ausgeteilt ist. */
   starter_seat: number | null
@@ -82,7 +94,7 @@ async function rpc<T>(name: string, args: Record<string, unknown>): Promise<T> {
 
 export async function createOnlineMatch(opts: {
   categoryId: string
-  mode: 'classic' | 'double'
+  mode: OnlineMode
   name?: string
 }): Promise<{ match_id: string; code: string }> {
   const rows = await rpc<{ match_id: string; code: string }[]>('fdi_create_match', {

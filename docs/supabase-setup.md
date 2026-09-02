@@ -177,11 +177,16 @@ Damit „Finde den Imposter" auch mit eigenen Handys statt an einem Gerät
 gespielt werden kann, brauchst du **zwei** Dateien im SQL-Editor:
 
 1. `supabase/migrations/011_imposter_online.sql` – Tabellen und Spiellogik
-2. `supabase/migrations/011b_imposter_words.sql` – 20 Kategorien und 355
+2. `supabase/migrations/011b_imposter_words.sql` – 20 Kategorien und 1000
    Wörter (rein Daten, gefahrlos mehrfach ausführbar)
+3. `supabase/migrations/012_imposter_modes.sql` – die weiteren Modi (Leer,
+   Nur Kategorie, Tempo, Chaos)
 
-Beide sind **nicht** in `ALL_IN_ONE.sql` enthalten: die Datei ist schon jetzt
+Sie sind **nicht** in `ALL_IN_ONE.sql` enthalten: die Datei ist schon jetzt
 so lang, dass der SQL-Editor auf dem Handy daran hängenbleibt.
+
+Wenn du 011 und 011b schon einmal ausgeführt hast, reichen jetzt 011b (die
+neuen Wörter) und 012.
 
 **Wie das abgesichert ist**
 
@@ -194,6 +199,9 @@ Gleiches Muster wie bei der Schützenrunde: `fdi_matches`, `fdi_players`,
 - `fdi_get_state()` gibt jedem Aufrufer nur seine eigene Sicht: das geheime
   Wort ausschließlich an Nicht-Imposter, das Hilfswort ausschließlich an
   Imposter, und wer Imposter war, erst wenn die Runde im Ergebnis steht.
+- **Der Modus ändert daran nichts, er verschärft es nur:** Im Modus „Nur
+  Kategorie" gibt der Server gar kein Hilfswort heraus, im Modus „Leer"
+  zusätzlich auch den Namen der Kategorie nicht – erst im Ergebnis.
 - Direkt lesbar ist nur ein Zähler (`fdi_state.version`), und auch der nur
   für Mitglieder der jeweiligen Runde.
 
@@ -210,7 +218,9 @@ Gleiches Muster wie bei der Schützenrunde: `fdi_matches`, `fdi_players`,
 psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/tests/00_harness.sql
 psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/migrations/011_imposter_online.sql
 psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/migrations/011b_imposter_words.sql
+psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/migrations/012_imposter_modes.sql
 psql "$PGURL" -f supabase/tests/imposter_online_test.sql
+psql "$PGURL" -f supabase/tests/imposter_modes_test.sql
 ```
 
 Jede Zeile der Ausgabe beginnt mit `OK` oder `FEHLER`; am Ende steht
