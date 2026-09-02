@@ -6,6 +6,8 @@ import { PerfectSecondPage } from '@/pages/play/PerfectSecondPage'
 import { WhatIsMissingPage } from '@/pages/play/WhatIsMissingPage'
 import { SchuetzenrundePage } from '@/pages/play/SchuetzenrundePage'
 import { FindeDenImposterPage } from '@/pages/play/FindeDenImposterPage'
+import { ReihenfolgePage } from '@/pages/play/ReihenfolgePage'
+import { KopfrechnenPage } from '@/pages/play/KopfrechnenPage'
 import { FamilyPage } from '@/pages/family/FamilyPage'
 import { DailyPage } from '@/pages/daily/DailyPage'
 import { LeaderboardPage } from '@/pages/leaderboard/LeaderboardPage'
@@ -122,6 +124,8 @@ export function App() {
           <Route path="/play/what-is-missing" element={<WhatIsMissingPage />} />
           <Route path="/play/schuetzenrunde" element={<SchuetzenrundePage />} />
           <Route path="/play/finde-den-imposter" element={<FindeDenImposterPage />} />
+          <Route path="/play/reihenfolge" element={<ReihenfolgePage />} />
+          <Route path="/play/kopfrechnen" element={<KopfrechnenPage />} />
           <Route path="/family" element={<FamilyPage />} />
           <Route path="/daily" element={<DailyPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />

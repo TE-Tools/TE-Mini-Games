@@ -1,0 +1,68 @@
+/* Das Leuchtbrett – 4, 6 oder 9 Felder, je nach Level. */
+
+.board {
+  display: grid;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 22rem;
+  margin: 0 auto;
+}
+
+.cols2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.cols3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.pad {
+  aspect-ratio: 1;
+  border-radius: var(--radius-xl);
+  border: 3px solid rgb(0 0 0 / 0.18);
+  box-shadow: var(--btn-shadow);
+  background: var(--pad-color);
+  filter: saturate(0.55) brightness(0.82);
+  transition: filter 90ms ease, transform 90ms ease;
+}
+
+.padOn {
+  filter: saturate(1.35) brightness(1.25);
+  transform: scale(1.04);
+}
+
+.pad:disabled {
+  cursor: default;
+}
+
+.padTap:active {
+  filter: saturate(1.3) brightness(1.2);
+  transform: scale(0.97);
+}
+
+/* Wie weit die Folge schon nachgetippt ist. */
+.progress {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.dot,
+.dotDone {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  background: var(--color-bg-elevated);
+}
+
+.dotDone {
+  background: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.watchLabel {
+  font-size: var(--text-lg);
+  font-weight: 800;
+}

@@ -11,6 +11,10 @@ Progressive Web App with short skill, memory, reaction and logic games.
 - **Schützenrunde** – social deduction, 8–16 players: local round against rule-based bots
   or online with friends (server-authoritative rules in Postgres, see
   `supabase/migrations/007_schuetzenrunde_multiplayer.sql`)
+- **Finde den Imposter** – party game for 3–12, on one device or online; seven modes,
+  1000 German words, own categories with import/export
+- **Reihenfolge merken** – the pads flash, repeat them; the sequence grows with the level
+- **Kopfrechnen** – ten sums against the clock, difficulty across all 500 levels
 - Level map 1–500 across five biomes (jungle → volcanic → rock desert → ice age → glacier peak)
 - Installable as an app (PWA) – "App installieren" on the home screen
 - Offline-first (IndexedDB)

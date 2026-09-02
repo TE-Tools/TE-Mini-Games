@@ -19,12 +19,14 @@ import { getSyncPendingCount } from '@/services/sync'
 import type { GameId } from '@/games/types'
 import styles from './LeaderboardPage.module.css'
 
-type Tab = 'overall' | 'mine' | 'global-ps' | 'global-wim' | 'global-sr'
+type Tab = 'overall' | 'mine' | 'global-ps' | 'global-wim' | 'global-sr' | 'global-rf' | 'global-kr'
 
 const TAB_GAME: Record<Exclude<Tab, 'mine' | 'overall'>, GameId> = {
   'global-ps': 'perfect-second',
   'global-wim': 'what-is-missing',
   'global-sr': 'schuetzenrunde',
+  'global-rf': 'reihenfolge',
+  'global-kr': 'kopfrechnen',
 }
 
 export function LeaderboardPage() {
@@ -173,6 +175,24 @@ export function LeaderboardPage() {
           onClick={() => setTab('global-sr')}
         >
           Global 🎯
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'global-rf'}
+          className={tab === 'global-rf' ? styles.tabActive : styles.tab}
+          onClick={() => setTab('global-rf')}
+        >
+          Global 🧠
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'global-kr'}
+          className={tab === 'global-kr' ? styles.tabActive : styles.tab}
+          onClick={() => setTab('global-kr')}
+        >
+          Global 🔢
         </button>
       </div>
 

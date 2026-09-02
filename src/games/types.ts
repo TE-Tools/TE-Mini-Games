@@ -9,6 +9,8 @@ export type GameId =
   | 'what-is-missing'
   | 'schuetzenrunde'
   | 'finde-den-imposter'
+  | 'reihenfolge'
+  | 'kopfrechnen'
 
 export interface GameLevelConfig {
   level: number

@@ -129,6 +129,20 @@ export function HomePage() {
           <span className={styles.tileName}>Finde den Imposter</span>
         </Link>
 
+        <Link to="/play/reihenfolge" className={styles.tile} data-game="reihenfolge">
+          <span className={styles.tileIcon} aria-hidden="true">
+            🧠
+          </span>
+          <span className={styles.tileName}>Reihenfolge merken</span>
+        </Link>
+
+        <Link to="/play/kopfrechnen" className={styles.tile} data-game="kopfrechnen">
+          <span className={styles.tileIcon} aria-hidden="true">
+            🔢
+          </span>
+          <span className={styles.tileName}>Kopfrechnen</span>
+        </Link>
+
         <Link to="/daily" className={styles.tile} data-tile="daily">
           <span className={styles.tileIcon} aria-hidden="true">
             📅
