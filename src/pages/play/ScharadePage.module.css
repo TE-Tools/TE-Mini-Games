@@ -1,0 +1,27 @@
+/* Scharade – Farbe des Spiels und der große Begriff. */
+
+.farbe {
+  --party-farbe: linear-gradient(180deg, #db2777, #9d174d);
+  --party-rand: #f472b6;
+}
+
+.wordBox {
+  align-items: center;
+  text-align: center;
+  padding: var(--space-8) var(--space-4);
+  border-color: var(--party-rand);
+  box-shadow: 0 10px 24px rgb(0 0 0 / 0.45), 0 0 26px -6px var(--party-rand);
+}
+
+.word {
+  font-size: clamp(1.9rem, 9vw, 2.8rem);
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+/* „Richtig" darf grün sein, auch wenn das Spiel pink ist -- der Knopf wird
+   im Sekundentakt gedrückt und muss ohne Hinsehen zu treffen sein. */
+.hit {
+  --party-farbe: linear-gradient(180deg, #10b981, #047857);
+  --party-rand: #34d399;
+}

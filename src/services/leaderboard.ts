@@ -204,5 +204,8 @@ export function gameLabel(gameId: string): string {
   if (gameId === 'kopfrechnen') return 'Kopfrechnen'
   if (gameId === 'wer-bin-ich') return 'Wer bin ich?'
   if (gameId === 'stadt-land-fluss') return 'Stadt-Land-Fluss'
+  if (gameId === 'scharade') return 'Scharade'
+  if (gameId === 'wortbombe') return 'Wortbombe'
+  if (gameId === 'wer-wuerde-eher') return 'Wer würde eher?'
   return gameId
 }

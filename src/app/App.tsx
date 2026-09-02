@@ -10,6 +10,9 @@ import { ReihenfolgePage } from '@/pages/play/ReihenfolgePage'
 import { KopfrechnenPage } from '@/pages/play/KopfrechnenPage'
 import { WerBinIchPage } from '@/pages/play/WerBinIchPage'
 import { StadtLandFlussPage } from '@/pages/play/StadtLandFlussPage'
+import { ScharadePage } from '@/pages/play/ScharadePage'
+import { WortbombePage } from '@/pages/play/WortbombePage'
+import { WerWuerdeEherPage } from '@/pages/play/WerWuerdeEherPage'
 import { FamilyPage } from '@/pages/family/FamilyPage'
 import { DailyPage } from '@/pages/daily/DailyPage'
 import { LeaderboardPage } from '@/pages/leaderboard/LeaderboardPage'
@@ -130,6 +133,9 @@ export function App() {
           <Route path="/play/kopfrechnen" element={<KopfrechnenPage />} />
           <Route path="/play/wer-bin-ich" element={<WerBinIchPage />} />
           <Route path="/play/stadt-land-fluss" element={<StadtLandFlussPage />} />
+          <Route path="/play/scharade" element={<ScharadePage />} />
+          <Route path="/play/wortbombe" element={<WortbombePage />} />
+          <Route path="/play/wer-wuerde-eher" element={<WerWuerdeEherPage />} />
           <Route path="/family" element={<FamilyPage />} />
           <Route path="/daily" element={<DailyPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />

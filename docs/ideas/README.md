@@ -32,3 +32,27 @@ Kategorie, Leer, Tempo, Chaos, Duell), am einen Gerät und – bis auf Duell –
 auch online. Der Wortschatz umfasst 1000 Wörter in 20 Kategorien, dazu
 kommen eigene Kategorien mit Import/Export. Offen ist nur noch Duell online.
 Details: `finde-den-imposter/STATUS.md`.
+
+
+## Woher weitere Spielideen kommen (02.09.2026)
+
+Angeschaut haben wir die App **Splash – Party Spiele** (Cranberry Apps) im
+Play Store, weil sie dasselbe Feld bespielt. Ihre Modi im Vergleich:
+
+| Splash | Bei uns |
+|---|---|
+| Imposter | ✅ Finde den Imposter – 7 Modi, online, eigene Kategorien |
+| Werewolves | ✅ Schützenrunde – Rollen, Tag/Nacht, Bots, online |
+| Who Am I | ✅ Wer bin ich? – am Gerät und online |
+| Charades | ✅ Scharade |
+| Bomb Party | ✅ Wortbombe |
+| Who's Most Likely To / Would You Rather | ✅ Wer würde eher? (beide Sorten in einem Spiel) |
+| Truth or Dare | offen – der Aufwand steckt im Textschreiben, nicht im Code |
+| 100 Questions / How Well Do We Know Each Other | offen |
+| Taboom (Tabu) | offen – braucht fünf Tabuwörter je Begriff, echte Schreibarbeit |
+| Who's the Liar / Fake or Fact | **bewusst nicht** – zu nah am Imposter bzw. laufende Faktenpflege |
+| Bet Buddy, Chooser | **bewusst nicht** – kein eigenes Spiel |
+
+Was Splash gar nicht hat und wir schon: Levelkarte 1–500, XP, Streaks,
+Abzeichen und Ranglisten. Die Partyspiele sind bei uns bewusst ohne Wertung
+(siehe `finde-den-imposter/STATUS.md`), die Einzelspiele dafür mit.

@@ -13,6 +13,9 @@ export type GameId =
   | 'kopfrechnen'
   | 'wer-bin-ich'
   | 'stadt-land-fluss'
+  | 'scharade'
+  | 'wortbombe'
+  | 'wer-wuerde-eher'
 
 export interface GameLevelConfig {
   level: number

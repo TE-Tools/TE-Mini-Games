@@ -7,6 +7,9 @@ import { reihenfolgeGame } from './reihenfolge'
 import { kopfrechnenGame } from './kopfrechnen'
 import { werBinIchGame } from './wer-bin-ich'
 import { stadtLandFlussGame } from './stadt-land-fluss'
+import { scharadeGame } from './scharade'
+import { wortbombeGame } from './wortbombe'
+import { werWuerdeEherGame } from './wer-wuerde-eher'
 
 /** Register all built-in games. Call once at app startup. */
 export function registerAllGames(): void {
@@ -18,4 +21,7 @@ export function registerAllGames(): void {
   registerGame(kopfrechnenGame)
   registerGame(werBinIchGame)
   registerGame(stadtLandFlussGame)
+  registerGame(scharadeGame)
+  registerGame(wortbombeGame)
+  registerGame(werWuerdeEherGame)
 }
