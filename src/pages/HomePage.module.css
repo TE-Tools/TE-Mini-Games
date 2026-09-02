@@ -233,6 +233,21 @@
   --kachel-rand: #34d399;
 }
 
+.tile[data-game='scharade'] {
+  --kachel-flaeche: linear-gradient(160deg, #db2777, #6b0f3d);
+  --kachel-rand: #f472b6;
+}
+
+.tile[data-game='wortbombe'] {
+  --kachel-flaeche: linear-gradient(160deg, #b45309, #5c2708);
+  --kachel-rand: #fbbf24;
+}
+
+.tile[data-game='wer-wuerde-eher'] {
+  --kachel-flaeche: linear-gradient(160deg, #4f46e5, #241a70);
+  --kachel-rand: #a5b4fc;
+}
+
 .tile[data-tile='daily'] {
   --kachel-flaeche: linear-gradient(160deg, #4338ca, #1e1b4b);
   --kachel-rand: #818cf8;

@@ -1,0 +1,51 @@
+/* Wortbombe – Farbe des Spiels, die Silbe und der Knall. */
+
+.farbe {
+  --party-farbe: linear-gradient(180deg, #f59e0b, #b45309);
+  --party-rand: #fbbf24;
+}
+
+.silbeBox {
+  align-items: center;
+  text-align: center;
+  padding: var(--space-6) var(--space-4);
+  border-color: var(--party-rand);
+  box-shadow: 0 10px 24px rgb(0 0 0 / 0.45), 0 0 30px -6px var(--party-rand);
+}
+
+.silbe {
+  font-size: clamp(3rem, 18vw, 5rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  color: var(--color-gold-light);
+  text-shadow: 0 0 28px rgb(251 191 36 / 0.55);
+}
+
+.chipAktiv {
+  min-height: var(--touch-min);
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--party-rand);
+  background: var(--party-farbe);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: var(--text-sm);
+  box-shadow: var(--btn-shadow);
+}
+
+.boomBox {
+  align-items: center;
+  text-align: center;
+  border-color: var(--color-danger);
+  box-shadow: 0 10px 24px rgb(0 0 0 / 0.45), 0 0 30px -6px var(--color-danger);
+}
+
+.boom {
+  font-size: 4rem;
+  line-height: 1;
+}
+
+.raus {
+  opacity: 0.45;
+}

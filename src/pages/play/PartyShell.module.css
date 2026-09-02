@@ -1,0 +1,234 @@
+/*
+ * Gemeinsames Gerüst der Partyspiele im dunklen Indigo-Design.
+ * Die Farbe des jeweiligen Spiels kommt als --party-farbe und
+ * --party-rand von der Seite; alles andere ist hier einmal beschrieben,
+ * statt in jeder Spielseite noch einmal.
+ */
+
+.page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-4);
+  max-width: 30rem;
+  margin: 0 auto;
+  width: 100%;
+  gap: var(--space-3);
+}
+
+.back {
+  align-self: flex-start;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.title {
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  text-align: center;
+}
+
+.subtitle {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.meta {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.card {
+  width: 100%;
+  background: var(--grad-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  box-shadow: 0 10px 24px rgb(0 0 0 / 0.4);
+}
+
+.cardTitle {
+  font-size: var(--text-base);
+  font-weight: 800;
+  text-align: center;
+}
+
+.cover {
+  text-align: center;
+  align-items: center;
+  padding: var(--space-6) var(--space-4);
+  border-color: var(--party-rand, var(--color-border-strong));
+  box-shadow: 0 10px 24px rgb(0 0 0 / 0.45), 0 0 22px -6px var(--party-rand, transparent);
+}
+
+.coverName {
+  font-size: 1.7rem;
+  font-weight: 800;
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-align: left;
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+.textarea {
+  min-height: 6.5rem;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.btn,
+.btnSecondary {
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-xl);
+  font-weight: 800;
+  font-size: var(--text-base);
+  color: #ffffff;
+  border: 1px solid var(--party-rand, var(--color-primary));
+  background: var(--party-farbe, var(--grad-primary));
+  box-shadow: var(--btn-shadow), 0 0 18px -6px var(--party-rand, transparent);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.btnSecondary {
+  border-color: var(--color-border-strong);
+  background: var(--grad-surface);
+  color: var(--color-text);
+  box-shadow: var(--btn-shadow);
+}
+
+.btn:hover,
+.btnSecondary:hover {
+  transform: translateY(-2px);
+}
+
+.btn:active,
+.btnSecondary:active {
+  transform: translateY(2px);
+  box-shadow: var(--btn-shadow-active);
+}
+
+.btn:disabled,
+.btnSecondary:disabled {
+  opacity: 0.5;
+  transform: none;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  text-align: left;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-2);
+}
+
+.pickBtn {
+  min-height: var(--touch-min);
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-strong);
+  background: var(--grad-surface);
+  color: var(--color-text);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  box-shadow: var(--btn-shadow);
+}
+
+.pickBtn:active {
+  transform: translateY(2px);
+  box-shadow: var(--btn-shadow-active);
+}
+
+.timer {
+  font-size: 2.6rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.timerLow {
+  color: var(--color-danger);
+}
+
+.ok {
+  color: var(--color-success);
+}
+
+.bad {
+  color: var(--color-danger);
+}
+
+.error {
+  font-size: var(--text-sm);
+  color: var(--color-danger);
+  font-weight: 700;
+  text-align: center;
+}
+
+.hint {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 1.45;
+  text-align: center;
+  max-width: 22rem;
+  color: var(--color-text-muted);
+}
+
+.badge {
+  align-self: center;
+  font-size: var(--text-xs);
+  font-weight: 800;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--party-rand, var(--color-border-strong));
+  background: var(--color-surface);
+}

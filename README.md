@@ -19,6 +19,10 @@ Progressive Web App with short skill, memory, reaction and logic games.
   One device or online (`013_wer_bin_ich.sql`)
 - **Stadt-Land-Fluss** – one letter, a few columns, the clock runs. One device
   (taking turns) or online, everyone writing at once (`014_stadt_land_fluss.sql`)
+- **Scharade** – act out the term, the others guess, the clock runs
+- **Wortbombe** – one syllable, the phone travels; whoever holds the bomb loses a life
+- **Wer würde eher?** – vote in secret, reveal together: "who would most likely…"
+  and "would you rather…" 
 - Level map 1–500 across five biomes (jungle → volcanic → rock desert → ice age → glacier peak)
 - Installable as an app (PWA) – "App installieren" on the home screen
 - Offline-first (IndexedDB)

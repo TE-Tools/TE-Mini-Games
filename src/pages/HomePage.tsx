@@ -185,6 +185,27 @@ export function HomePage() {
           <span className={styles.tileName}>Stadt-Land-Fluss</span>
         </Link>
 
+        <Link to="/play/scharade" className={styles.tile} data-game="scharade">
+          <span className={styles.tileIcon} aria-hidden="true">
+            🎭
+          </span>
+          <span className={styles.tileName}>Scharade</span>
+        </Link>
+
+        <Link to="/play/wortbombe" className={styles.tile} data-game="wortbombe">
+          <span className={styles.tileIcon} aria-hidden="true">
+            💣
+          </span>
+          <span className={styles.tileName}>Wortbombe</span>
+        </Link>
+
+        <Link to="/play/wer-wuerde-eher" className={styles.tile} data-game="wer-wuerde-eher">
+          <span className={styles.tileIcon} aria-hidden="true">
+            🗳️
+          </span>
+          <span className={styles.tileName}>Wer würde eher?</span>
+        </Link>
+
         <Link to="/daily" className={styles.tile} data-tile="daily">
           <span className={styles.tileIcon} aria-hidden="true">
             📅
