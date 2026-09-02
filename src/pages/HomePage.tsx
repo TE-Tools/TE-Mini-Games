@@ -4,6 +4,7 @@ import styles from './HomePage.module.css'
 import { getOrCreateGuestProfile, type LocalProfile } from '@/offline'
 import { xpProgressInLevel } from '@/progression'
 import { InstallButton } from '@/components/install/InstallButton'
+import { getAvatar } from '@/profile/avatars'
 import { DATA_PULLED_EVENT } from '@/services/remotePull'
 
 export function HomePage() {
@@ -57,8 +58,18 @@ export function HomePage() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <h1 className={styles.title}>TE-Mini Games</h1>
-        <p className={styles.tagline}>Nur noch eine Runde. ✨</p>
+        <div className={styles.headerText}>
+          <h1 className={styles.title}>TE-Mini Games</h1>
+          <p className={styles.tagline}>Nur noch eine Runde. ✨</p>
+        </div>
+        {/* Avatar oben als Eingang zu den Konto-Einstellungen (02.09.2026,
+            Thomas' Wunsch). Die Kachel "Konto" weiter unten entfaellt dafuer --
+            zwei Wege zur selben Seite waeren nur Ballast. */}
+        <Link to="/auth" className={styles.avatarButton} aria-label="Konto-Einstellungen">
+          <span className={styles.avatarFace} aria-hidden="true">
+            {getAvatar(profile?.avatar).emoji}
+          </span>
+        </Link>
       </header>
 
       <section className={styles.stats} aria-label="Spielerfortschritt" aria-busy={loading}>
@@ -90,72 +101,68 @@ export function HomePage() {
       <InstallButton />
 
       <nav className={styles.actions} aria-label="Spiele und Funktionen">
-        <Link to="/play/perfect-second" className={styles.gameButton} data-game="perfect-second">
-          <span className={styles.gameIcon} aria-hidden="true">
+        <Link to="/play/perfect-second" className={styles.tile} data-game="perfect-second">
+          <span className={styles.tileIcon} aria-hidden="true">
             ⏱️
           </span>
-          <span className={styles.gameName}>Die perfekte Sekunde</span>
+          <span className={styles.tileName}>Die perfekte Sekunde</span>
         </Link>
 
-        <Link to="/play/what-is-missing" className={styles.gameButton} data-game="what-is-missing">
-          <span className={styles.gameIcon} aria-hidden="true">
+        <Link to="/play/what-is-missing" className={styles.tile} data-game="what-is-missing">
+          <span className={styles.tileIcon} aria-hidden="true">
             👀
           </span>
-          <span className={styles.gameName}>Was fehlt?</span>
+          <span className={styles.tileName}>Was fehlt?</span>
         </Link>
 
-        <Link to="/play/schuetzenrunde" className={styles.gameButton} data-game="schuetzenrunde">
-          <span className={styles.gameIcon} aria-hidden="true">
+        <Link to="/play/schuetzenrunde" className={styles.tile} data-game="schuetzenrunde">
+          <span className={styles.tileIcon} aria-hidden="true">
             🎯
           </span>
-          <span className={styles.gameName}>Schützenrunde</span>
+          <span className={styles.tileName}>Schützenrunde</span>
         </Link>
 
-        <Link to="/play/finde-den-imposter" className={styles.gameButton} data-game="finde-den-imposter">
-          <span className={styles.gameIcon} aria-hidden="true">
+        <Link to="/play/finde-den-imposter" className={styles.tile} data-game="finde-den-imposter">
+          <span className={styles.tileIcon} aria-hidden="true">
             😈
           </span>
-          <span className={styles.gameName}>Finde den Imposter</span>
+          <span className={styles.tileName}>Finde den Imposter</span>
         </Link>
 
-        <div className={styles.secondaryGrid}>
-          <Link to="/daily" className={styles.secondaryButton}>
-            <span className={styles.secondaryIcon} aria-hidden="true">
-              📅
-            </span>
-            Daily
-          </Link>
-          <Link to="/family" className={styles.secondaryButton}>
-            <span className={styles.secondaryIcon} aria-hidden="true">
-              👨‍👩‍👧
-            </span>
-            Familie
-          </Link>
-          <Link to="/leaderboard" className={styles.secondaryButton}>
-            <span className={styles.secondaryIcon} aria-hidden="true">
-              🏆
-            </span>
-            Rangliste
-          </Link>
-          <Link to="/achievements" className={styles.secondaryButton}>
-            <span className={styles.secondaryIcon} aria-hidden="true">
-              🏅
-            </span>
-            Abzeichen
-          </Link>
-          <Link to="/profile" className={styles.secondaryButton}>
-            <span className={styles.secondaryIcon} aria-hidden="true">
-              🎭
-            </span>
-            Avatar
-          </Link>
-          <Link to="/auth" className={styles.secondaryButton}>
-            <span className={styles.secondaryIcon} aria-hidden="true">
-              👤
-            </span>
-            Konto
-          </Link>
-        </div>
+        <Link to="/daily" className={styles.tile} data-tile="daily">
+          <span className={styles.tileIcon} aria-hidden="true">
+            📅
+          </span>
+          <span className={styles.tileName}>Daily</span>
+        </Link>
+
+        <Link to="/family" className={styles.tile} data-tile="family">
+          <span className={styles.tileIcon} aria-hidden="true">
+            👨‍👩‍👧
+          </span>
+          <span className={styles.tileName}>Familie</span>
+        </Link>
+
+        <Link to="/leaderboard" className={styles.tile} data-tile="leaderboard">
+          <span className={styles.tileIcon} aria-hidden="true">
+            🏆
+          </span>
+          <span className={styles.tileName}>Rangliste</span>
+        </Link>
+
+        <Link to="/achievements" className={styles.tile} data-tile="achievements">
+          <span className={styles.tileIcon} aria-hidden="true">
+            🏅
+          </span>
+          <span className={styles.tileName}>Abzeichen</span>
+        </Link>
+
+        <Link to="/profile" className={styles.tile} data-tile="profile">
+          <span className={styles.tileIcon} aria-hidden="true">
+            🎭
+          </span>
+          <span className={styles.tileName}>Avatar</span>
+        </Link>
       </nav>
     </main>
   )
