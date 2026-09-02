@@ -6,13 +6,54 @@
   padding: var(--space-6) var(--space-4) var(--space-10);
   max-width: 28rem;
   margin: 0 auto;
+  /* Auf Tablet/Desktop breiter, damit vier Kacheln nebeneinander Platz haben. */
   width: 100%;
   gap: var(--space-6);
 }
 
 .header {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
   padding-top: var(--space-4);
+  text-align: left;
+}
+
+.headerText {
+  min-width: 0;
+}
+
+/* Avatar oben = Eingang zu den Konto-Einstellungen. */
+.avatarButton {
+  flex-shrink: 0;
+  width: 3.5rem;
+  height: 3.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: linear-gradient(180deg, #ffffff, #f3e8ff);
+  border: 2px solid #c4b5fd;
+  box-shadow: var(--btn-shadow);
+  text-decoration: none;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.avatarButton:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--btn-shadow-hover);
+}
+
+.avatarButton:active {
+  transform: translateY(2px);
+  box-shadow: var(--btn-shadow-active);
+}
+
+.avatarFace {
+  font-size: 1.9rem;
+  line-height: 1;
 }
 
 .title {
@@ -66,61 +107,80 @@
   color: var(--color-gold-deep);
 }
 
+/* Ein einziges Raster für ALLE Menü-Einträge -- Spiele und Funktionen sehen
+   gleich aus und sind gleich groß (02.09.2026, Thomas' Wunsch). Zwei Kacheln
+   nebeneinander auf dem Handy, vier ab Tablet-Breite. */
 .actions {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
   width: 100%;
 }
 
-.gameButton {
+.tile {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: var(--space-4);
-  min-height: 5.5rem;
-  padding: var(--space-4) var(--space-5);
+  justify-content: center;
+  gap: var(--space-2);
+  /* Quadratisch, aber nie so hoch, dass zwei Reihen nicht mehr aufs Bild passen. */
+  aspect-ratio: 1 / 1;
+  min-height: 7rem;
+  max-height: 11rem;
+  padding: var(--space-3);
   border-radius: var(--radius-2xl);
   font-weight: 800;
-  font-size: var(--text-lg);
+  font-size: var(--text-sm);
   color: var(--color-text);
-  box-shadow: var(--btn-shadow);
-  border: 2px solid transparent;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  text-align: center;
   text-decoration: none;
+  box-shadow: var(--btn-shadow);
+  border: 2px solid #c4b5fd;
+  background: linear-gradient(180deg, #ffffff 0%, #f3e8ff 50%, #e9d5ff 100%);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-.gameButton:hover {
+.tile:hover {
   transform: translateY(-4px);
   box-shadow: var(--btn-shadow-hover);
 }
 
-.gameButton:active {
+.tile:active {
   transform: translateY(2px);
   box-shadow: var(--btn-shadow-active);
 }
 
-.gameButton[data-game='perfect-second'] {
+.tile[data-game='perfect-second'] {
   background: linear-gradient(180deg, #fff6c8 0%, #f0c84a 45%, #d4a017 100%);
   border-color: #c4920f;
 }
 
-.gameButton[data-game='what-is-missing'] {
+.tile[data-game='what-is-missing'] {
   background: linear-gradient(180deg, #d5faf5 0%, #5eead4 45%, #0d9488 100%);
   border-color: #0f766e;
   color: #042f2e;
 }
 
-.gameButton[data-game='schuetzenrunde'] {
+.tile[data-game='schuetzenrunde'] {
   background: linear-gradient(180deg, #e8f0dc 0%, #9fbf6a 45%, #5c7a2e 100%);
   border-color: #4a6323;
   color: #1f2a10;
 }
 
-.gameIcon {
-  font-size: 2.25rem;
+/* Eigene Farbe für den Imposter (02.09.2026): tiefes Rot-Violett, deutlich
+   abgesetzt von Gold, Türkis und Oliv -- und passend zum 😈. */
+.tile[data-game='finde-den-imposter'] {
+  background: linear-gradient(180deg, #ffd9e2 0%, #e0567f 45%, #9d1c46 100%);
+  border-color: #7d1236;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+}
+
+.tileIcon {
+  font-size: 2.1rem;
   line-height: 1;
-  width: 3.4rem;
-  height: 3.4rem;
+  width: 3.2rem;
+  height: 3.2rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -131,56 +191,33 @@
   border: 1px solid rgb(255 255 255 / 0.6);
 }
 
-.gameName {
-  flex: 1;
-  text-align: left;
+.tileName {
+  line-height: 1.2;
   text-shadow: 0 1px 0 rgb(255 255 255 / 0.35);
 }
 
-.secondaryGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-3);
-  width: 100%;
+.tile[data-game='finde-den-imposter'] .tileName {
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
 }
 
-.secondaryButton {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
-  min-height: 5rem;
-  padding: var(--space-3);
-  background: linear-gradient(180deg, #ffffff 0%, #f3e8ff 50%, #e9d5ff 100%);
-  border: 2px solid #c4b5fd;
-  border-radius: var(--radius-xl);
-  font-weight: 800;
-  font-size: var(--text-sm);
-  color: var(--color-text);
-  box-shadow: var(--btn-shadow);
-  text-decoration: none;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-}
+/* Ab Tablet: vier nebeneinander, dafür darf die Seite breiter werden. */
+@media (min-width: 40rem) {
+  .page {
+    max-width: 56rem;
+  }
 
-.secondaryButton:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--btn-shadow-hover);
-}
+  .actions {
+    grid-template-columns: repeat(4, 1fr);
+  }
 
-.secondaryButton:active {
-  transform: translateY(2px);
-  box-shadow: var(--btn-shadow-active);
-}
+  .tileIcon {
+    font-size: 2.4rem;
+    width: 3.6rem;
+    height: 3.6rem;
+  }
 
-.secondaryIcon {
-  font-size: 1.6rem;
-  line-height: 1;
-}
-
-@media (max-width: 360px) {
-  .secondaryGrid {
-    grid-template-columns: 1fr;
+  .tileName {
+    font-size: var(--text-base);
   }
 }
 
