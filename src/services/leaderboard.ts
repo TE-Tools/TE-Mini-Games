@@ -202,5 +202,7 @@ export function gameLabel(gameId: string): string {
   if (gameId === 'schuetzenrunde') return 'Schützenrunde'
   if (gameId === 'reihenfolge') return 'Reihenfolge merken'
   if (gameId === 'kopfrechnen') return 'Kopfrechnen'
+  if (gameId === 'wer-bin-ich') return 'Wer bin ich?'
+  if (gameId === 'stadt-land-fluss') return 'Stadt-Land-Fluss'
   return gameId
 }

@@ -192,6 +192,20 @@
   text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
 }
 
+.tile[data-game='wer-bin-ich'] {
+  background: linear-gradient(180deg, #e9d5ff 0%, #a855f7 45%, #6b21a8 100%);
+  border-color: #581c87;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+}
+
+.tile[data-game='stadt-land-fluss'] {
+  background: linear-gradient(180deg, #d1fae5 0%, #34d399 45%, #047857 100%);
+  border-color: #065f46;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+}
+
 .tileIcon {
   font-size: 2.1rem;
   line-height: 1;
@@ -214,6 +228,8 @@
 
 .tile[data-game='finde-den-imposter'] .tileName,
 .tile[data-game='reihenfolge'] .tileName,
+.tile[data-game='stadt-land-fluss'] .tileName,
+.tile[data-game='wer-bin-ich'] .tileName,
 .tile[data-game='kopfrechnen'] .tileName {
   text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
 }
@@ -240,6 +256,20 @@
 .tile[data-game='kopfrechnen'] {
   background: linear-gradient(180deg, #ffe8cc 0%, #fb923c 45%, #c2410c 100%);
   border-color: #9a3412;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+}
+
+.tile[data-game='wer-bin-ich'] {
+  background: linear-gradient(180deg, #e9d5ff 0%, #a855f7 45%, #6b21a8 100%);
+  border-color: #581c87;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+}
+
+.tile[data-game='stadt-land-fluss'] {
+  background: linear-gradient(180deg, #d1fae5 0%, #34d399 45%, #047857 100%);
+  border-color: #065f46;
   color: #ffffff;
   text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
 }

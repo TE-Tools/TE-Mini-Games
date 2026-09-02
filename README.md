@@ -15,6 +15,10 @@ Progressive Web App with short skill, memory, reaction and logic games.
   1000 German words, own categories with import/export
 - **Reihenfolge merken** – the pads flash, repeat them; the sequence grows with the level
 - **Kopfrechnen** – ten sums against the clock, difficulty across all 500 levels
+- **Wer bin ich?** – everyone knows everyone but themselves; ask yes/no questions.
+  One device or online (`013_wer_bin_ich.sql`)
+- **Stadt-Land-Fluss** – one letter, a few columns, the clock runs. One device
+  (taking turns) or online, everyone writing at once (`014_stadt_land_fluss.sql`)
 - Level map 1–500 across five biomes (jungle → volcanic → rock desert → ice age → glacier peak)
 - Installable as an app (PWA) – "App installieren" on the home screen
 - Offline-first (IndexedDB)

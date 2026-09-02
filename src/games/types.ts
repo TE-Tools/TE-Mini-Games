@@ -11,6 +11,8 @@ export type GameId =
   | 'finde-den-imposter'
   | 'reihenfolge'
   | 'kopfrechnen'
+  | 'wer-bin-ich'
+  | 'stadt-land-fluss'
 
 export interface GameLevelConfig {
   level: number
