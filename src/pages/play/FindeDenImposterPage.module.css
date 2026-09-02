@@ -1,0 +1,246 @@
+.page {
+  min-height: 100dvh;
+  padding: 1rem 1.25rem 2rem;
+  max-width: 28rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.back {
+  opacity: 0.7;
+  color: inherit;
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.back:hover {
+  opacity: 1;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.45rem;
+  line-height: 1.25;
+}
+
+.subtitle {
+  margin: 0;
+  opacity: 0.75;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.card {
+  background: color-mix(in srgb, Canvas 92%, CanvasText 8%);
+  border: 1px solid color-mix(in srgb, CanvasText 12%, transparent);
+  border-radius: 1rem;
+  padding: 1.1rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.input,
+.select,
+.textarea {
+  font: inherit;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.65rem;
+  border: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
+  background: Canvas;
+  color: CanvasText;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.textarea {
+  min-height: 6.5rem;
+  resize: vertical;
+  line-height: 1.4;
+}
+
+.row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.row > * {
+  flex: 1 1 6rem;
+}
+
+.btn {
+  font: inherit;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  border: none;
+  cursor: pointer;
+  background: color-mix(in srgb, #2563eb 90%, black);
+  color: white;
+  font-weight: 600;
+  text-align: center;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btnSecondary {
+  font: inherit;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  border: none;
+  cursor: pointer;
+  background: color-mix(in srgb, CanvasText 12%, Canvas);
+  color: CanvasText;
+  font-weight: 600;
+  text-align: center;
+}
+
+.btnDanger {
+  font: inherit;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  border: none;
+  cursor: pointer;
+  background: color-mix(in srgb, #dc2626 88%, black);
+  color: white;
+  font-weight: 600;
+  text-align: center;
+}
+
+.cover {
+  text-align: center;
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.coverName {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.secretBox {
+  text-align: center;
+  padding: 1.25rem 0.5rem;
+}
+
+.roleImposter {
+  color: #dc2626;
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+
+.roleCitizen {
+  color: #16a34a;
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+
+.secretWord {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  margin: 0.5rem 0;
+}
+
+.meta {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.hintList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.hintList li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, CanvasText 6%, Canvas);
+  font-size: 0.95rem;
+}
+
+.voteGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.voteBtn {
+  font: inherit;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  border: none;
+  cursor: pointer;
+  background: color-mix(in srgb, CanvasText 12%, Canvas);
+  color: CanvasText;
+  font-weight: 500;
+  text-align: left;
+}
+
+.rankList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.rankList li {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem 0.55rem;
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, CanvasText 6%, Canvas);
+}
+
+.error {
+  color: #dc2626;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, CanvasText 10%, Canvas);
+  opacity: 0.85;
+}
+
+.decoyList {
+  font-size: 0.85rem;
+  opacity: 0.75;
+  margin: 0.25rem 0 0;
+}

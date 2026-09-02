@@ -4,7 +4,11 @@
  * Adding a new game only requires registering it – no changes to existing games.
  */
 
-export type GameId = 'perfect-second' | 'what-is-missing' | 'schuetzenrunde'
+export type GameId =
+  | 'perfect-second'
+  | 'what-is-missing'
+  | 'schuetzenrunde'
+  | 'finde-den-imposter'
 
 export interface GameLevelConfig {
   level: number

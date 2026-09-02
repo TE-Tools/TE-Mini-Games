@@ -111,6 +111,13 @@ export function HomePage() {
           <span className={styles.gameName}>Schützenrunde</span>
         </Link>
 
+        <Link to="/play/finde-den-imposter" className={styles.gameButton} data-game="finde-den-imposter">
+          <span className={styles.gameIcon} aria-hidden="true">
+            😈
+          </span>
+          <span className={styles.gameName}>Finde den Imposter</span>
+        </Link>
+
         <div className={styles.secondaryGrid}>
           <Link to="/daily" className={styles.secondaryButton}>
             <span className={styles.secondaryIcon} aria-hidden="true">
