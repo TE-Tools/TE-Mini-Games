@@ -15,8 +15,11 @@ export default defineConfig({
         short_name: 'TE-Mini Games',
         description:
           'Kurze Geschicklichkeits-, Gedächtnis-, Reaktions- und Logikspiele. Nur noch eine Runde.',
-        theme_color: '#16141c',
-        background_color: '#16141c',
+        // Muss zur echten Hintergrundfarbe der App passen (--color-bg in
+        // src/styles/tokens.css): Android baut daraus seinen Startbildschirm,
+        // und ein dunkler Start vor einer cremefarbenen App blitzt haesslich.
+        theme_color: '#fff8e8',
+        background_color: '#fff8e8',
         display: 'standalone',
         orientation: 'portrait-primary',
         start_url: '/',
@@ -54,6 +57,10 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Die iOS-Startbilder sind zusammen rund 3 MB und werden nur beim
+        // Start aus dem HTTP-Cache geladen -- in den Offline-Vorrat gehoeren
+        // sie nicht, sonst laedt jede Installation sie unnoetig mit.
+        globIgnores: ['splash/**'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

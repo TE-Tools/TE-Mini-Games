@@ -42,6 +42,8 @@ Progressive Web App with short skill, memory, reaction and logic games.
 - [Design-Spezifikationen](docs/design/) – u. a. die Levelkarte 1–500 („Zeitreise“)
 - [Ideen / Backlog](docs/ideas/)
 - [Supabase-Setup](docs/supabase-setup.md)
+- [Die App in den Store bringen](docs/app-store.md) – TWA für Google Play,
+  Startbilder, ehrliche Einschätzung zu iOS
 
 ## Develop
 

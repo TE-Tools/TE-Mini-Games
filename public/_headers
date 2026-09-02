@@ -4,3 +4,9 @@
 
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Google Play prueft ueber diese Datei, ob die App zur Domain gehoert.
+# Ohne den JSON-Typ lehnt der Digital-Asset-Links-Test sie ab.
+/.well-known/assetlinks.json
+  Content-Type: application/json
+  Access-Control-Allow-Origin: *
