@@ -200,5 +200,7 @@ export function gameLabel(gameId: string): string {
   if (gameId === 'perfect-second') return 'Die perfekte Sekunde'
   if (gameId === 'what-is-missing') return 'Was fehlt?'
   if (gameId === 'schuetzenrunde') return 'Schützenrunde'
+  if (gameId === 'reihenfolge') return 'Reihenfolge merken'
+  if (gameId === 'kopfrechnen') return 'Kopfrechnen'
   return gameId
 }

@@ -1,0 +1,74 @@
+/* Aufgabe, Eingabefeld und der Fortschritt durch die zehn Aufgaben. */
+
+.task {
+  font-size: clamp(2rem, 11vw, 3rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.answer {
+  width: 100%;
+  max-width: 14rem;
+  min-height: var(--touch-min);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-bg-elevated);
+  box-shadow: var(--btn-shadow);
+}
+
+.answer:focus {
+  outline: 3px solid var(--color-game-b);
+  outline-offset: 2px;
+}
+
+.counter {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.marks {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.mark,
+.markOk,
+.markBad {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 2px solid var(--color-border);
+  background: var(--color-bg-elevated);
+}
+
+.markOk {
+  background: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.markBad {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+/* Kurze Rückmeldung nach jeder Aufgabe. */
+.feedbackOk {
+  font-weight: 800;
+  color: var(--color-success);
+  min-height: 1.5rem;
+}
+
+.feedbackBad {
+  font-weight: 800;
+  color: var(--color-danger);
+  min-height: 1.5rem;
+}

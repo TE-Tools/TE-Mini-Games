@@ -176,6 +176,22 @@
   text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
 }
 
+/* Zwei weitere Spielfarben (02.09.2026): Blau fuer die Merkfolge, Orange
+   fuers Kopfrechnen -- beide klar von Gold, Tuerkis, Oliv und Rot getrennt. */
+.tile[data-game='reihenfolge'] {
+  background: linear-gradient(180deg, #dbeafe 0%, #60a5fa 45%, #1d4ed8 100%);
+  border-color: #1e40af;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+}
+
+.tile[data-game='kopfrechnen'] {
+  background: linear-gradient(180deg, #ffe8cc 0%, #fb923c 45%, #c2410c 100%);
+  border-color: #9a3412;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+}
+
 .tileIcon {
   font-size: 2.1rem;
   line-height: 1;
@@ -196,7 +212,9 @@
   text-shadow: 0 1px 0 rgb(255 255 255 / 0.35);
 }
 
-.tile[data-game='finde-den-imposter'] .tileName {
+.tile[data-game='finde-den-imposter'] .tileName,
+.tile[data-game='reihenfolge'] .tileName,
+.tile[data-game='kopfrechnen'] .tileName {
   text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
 }
 
@@ -210,7 +228,23 @@
     grid-template-columns: repeat(4, 1fr);
   }
 
-  .tileIcon {
+  /* Zwei weitere Spielfarben (02.09.2026): Blau fuer die Merkfolge, Orange
+   fuers Kopfrechnen -- beide klar von Gold, Tuerkis, Oliv und Rot getrennt. */
+.tile[data-game='reihenfolge'] {
+  background: linear-gradient(180deg, #dbeafe 0%, #60a5fa 45%, #1d4ed8 100%);
+  border-color: #1e40af;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+}
+
+.tile[data-game='kopfrechnen'] {
+  background: linear-gradient(180deg, #ffe8cc 0%, #fb923c 45%, #c2410c 100%);
+  border-color: #9a3412;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+}
+
+.tileIcon {
     font-size: 2.4rem;
     width: 3.6rem;
     height: 3.6rem;

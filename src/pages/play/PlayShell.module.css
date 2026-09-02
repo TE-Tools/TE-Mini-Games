@@ -1,0 +1,176 @@
+/*
+ * Gemeinsames Gerüst der Spielseiten: Kopfzeile, Knöpfe, Ergebnisblock.
+ * Wird zusätzlich zum spieleigenen Stylesheet importiert, damit nicht jede
+ * neue Seite dieselben 180 Zeilen mitschleppt.
+ */
+
+.page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-4);
+  max-width: 32rem;
+  margin: 0 auto;
+  width: 100%;
+  gap: var(--space-4);
+}
+
+.header {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  align-items: center;
+  width: 100%;
+  gap: var(--space-2);
+}
+
+.back {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xl);
+  color: var(--color-text-muted);
+  background: linear-gradient(180deg, #ffffff, #fff6dd);
+  border: 2px solid var(--color-border);
+  box-shadow: var(--btn-shadow);
+}
+
+.title {
+  font-size: var(--text-lg);
+  font-weight: 800;
+  text-align: center;
+}
+
+.levelBadge {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: #0f766e;
+  background: linear-gradient(180deg, #d5faf5, #99f6e4);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  border: 2px solid var(--color-game-b);
+  box-shadow: var(--btn-shadow);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  text-align: center;
+  flex: 1;
+}
+
+.info {
+  font-size: var(--text-xl);
+  font-weight: 800;
+  color: var(--color-game-b);
+}
+
+.hint {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  max-width: 22rem;
+  font-weight: 600;
+}
+
+.primaryBtn {
+  min-height: var(--touch-min);
+  min-width: 12rem;
+  padding: var(--space-4) var(--space-8);
+  background: linear-gradient(180deg, #5eead4 0%, #14b8a6 50%, #0d9488 100%);
+  color: #fff;
+  border-radius: var(--radius-2xl);
+  font-weight: 800;
+  font-size: var(--text-lg);
+  box-shadow: var(--btn-shadow);
+  border: 2px solid #0f766e;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.primaryBtn:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--btn-shadow-hover);
+}
+
+.primaryBtn:active {
+  transform: translateY(2px);
+  box-shadow: var(--btn-shadow-active);
+}
+
+.primaryBtn:disabled {
+  opacity: 0.55;
+  transform: none;
+}
+
+.secondaryBtn {
+  min-height: var(--touch-min);
+  min-width: 12rem;
+  padding: var(--space-3) var(--space-6);
+  background: linear-gradient(180deg, #ffffff, #f5f0ff);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  font-weight: 700;
+  box-shadow: var(--btn-shadow);
+}
+
+.timer {
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-game-b);
+}
+
+.timerLow {
+  color: var(--color-danger);
+}
+
+.correct {
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  color: var(--color-success);
+}
+
+.wrong {
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  color: var(--color-danger);
+}
+
+.stars {
+  font-size: var(--text-2xl);
+  letter-spacing: 0.1em;
+}
+
+.scoreLine {
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+}
+
+.scoreLine strong {
+  color: var(--color-primary);
+  font-weight: 800;
+}
+
+.resultActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: center;
+  width: 100%;
+}
+
+.homeLink {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-decoration: underline;
+}
+
+.muted {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
