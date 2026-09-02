@@ -18,14 +18,16 @@ Details und Originalspezifikation: `schuetzenrunde/START_HERE.md` und `schuetzen
 
 ## Finde den Imposter (Kurz)
 
-- Partyspiel am **einen** Gerät, 3–12 Mitspielende
+- Partyspiel am **einen** Gerät oder **online** mit eigenen Handys, 3–12
+  Mitspielende
 - Alle bekommen ein geheimes Wort — die Imposter nur ein einzelnes Hilfswort
-- Reihum sagt jeder laut sein Wort (nichts wird getippt), dann wird geredet
+- Danach nennt ein Bildschirm nur, wer zufällig anfängt; geredet wird frei,
+  wie viele Wortrunden man dreht, klärt die Gruppe selbst
 - Gemeinsam tippt die Runde auf einen Namen; war es ein Imposter, bekommt er
   die **letzte Chance**, das Wort zu erraten
 - **Ohne Punkte und ohne Rangliste** — wer gewonnen hat, sieht man am Tisch
 
-**Umgesetzt ist der Modus „Klassisch" (inkl. Doppel-Imposter).** Fünf weitere
-Modi sind angelegt, aber noch nicht spielbar; ebenso offen: Wortschatz auf
-1000, eigene Kategorien, Online-Mehrspieler. Details und vollständige Liste:
-`finde-den-imposter/STATUS.md`.
+**Umgesetzt ist der Modus „Klassisch" (inkl. Doppel-Imposter), am einen Gerät
+und online.** Fünf weitere Modi sind angelegt, aber noch nicht spielbar;
+ebenso offen: Wortschatz auf 1000, eigene Kategorien. Details und
+vollständige Liste: `finde-den-imposter/STATUS.md`.

@@ -4,12 +4,12 @@ import {
   createMatch,
   openSecret,
   confirmSecret,
-  passTurn,
   endDiscussion,
   accuse,
   submitLastChance,
   nextRound,
   activePlayer,
+  starterPlayer,
   accusedPlayer,
   phaseLabel,
   CATEGORIES,
@@ -17,6 +17,7 @@ import {
   type ImposterMatchState,
   type ImposterModeId,
 } from '@/games/finde-den-imposter'
+import { FindeDenImposterOnline } from './FindeDenImposterOnline'
 import styles from './FindeDenImposterPage.module.css'
 
 const DEFAULT_NAMES = 'Thomas\nMarina\nPhillip\nSonja'
@@ -28,6 +29,7 @@ export function FindeDenImposterPage() {
   const [mode, setMode] = useState<ImposterModeId>('classic')
   const [guessText, setGuessText] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [online, setOnline] = useState(false)
 
   const playerCount = useMemo(
     () =>
@@ -61,6 +63,15 @@ export function FindeDenImposterPage() {
       setError(e instanceof Error ? e.message : 'Start fehlgeschlagen')
     }
   }, [namesText, categoryId, mode, autoImposters])
+
+  if (online) {
+    return (
+      <main className={styles.page}>
+        <p className={styles.meta}>Finde den Imposter · online</p>
+        <FindeDenImposterOnline onBack={() => setOnline(false)} />
+      </main>
+    )
+  }
 
   if (!state) {
     return (
@@ -123,7 +134,10 @@ export function FindeDenImposterPage() {
         {error && <p className={styles.error}>{error}</p>}
 
         <button type="button" className={styles.btn} onClick={start}>
-          Runde starten
+          Am einen Gerät spielen
+        </button>
+        <button type="button" className={styles.btnSecondary} onClick={() => setOnline(true)}>
+          🌐 Online mit eigenen Handys
         </button>
       </main>
     )
@@ -187,62 +201,27 @@ export function FindeDenImposterPage() {
     )
   }
 
-  if (state.phase === 'turns') {
-    const offen = state.players.filter((p) => !p.hasSpoken).length
-    return (
-      <main className={styles.page}>
-        <p className={styles.meta}>
-          Reihum · {roundLabel} · Kategorie: {state.config.categoryLabel}
-        </p>
-        <div className={`${styles.card} ${styles.cover}`}>
-          <p className={styles.subtitle}>Jetzt ist dran</p>
-          <p className={styles.coverName}>{ap.name}</p>
-          <p className={styles.playHint}>spielt</p>
-          <p className={styles.meta}>
-            Sag dein Wort laut in die Runde. Die anderen warten und hören zu.
-          </p>
-          <button type="button" className={styles.btn} onClick={() => setState(passTurn(state))}>
-            Gesagt – weiter
-          </button>
-        </div>
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Wer war schon dran</h2>
-          <ul className={styles.hintList}>
-            {state.players.map((p) => (
-              <li key={p.id}>
-                <span>{p.name}</span>
-                <strong>{p.hasSpoken ? 'fertig' : p.id === ap.id ? 'spielt' : 'wartet'}</strong>
-              </li>
-            ))}
-          </ul>
-          <p className={styles.meta}>
-            {offen === 1 ? 'Noch einer, dann wird geredet.' : `Noch ${offen}, dann wird geredet.`}
-          </p>
-        </div>
-      </main>
-    )
-  }
-
   if (state.phase === 'discussion') {
+    const starter = starterPlayer(state)
     return (
       <main className={styles.page}>
         <p className={styles.meta}>
           Diskussion · {roundLabel} · Kategorie: {state.config.categoryLabel}
         </p>
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Jetzt redet miteinander</h2>
-          <p className={styles.subtitle}>
-            Alle haben ihr Wort gesagt. Wer klang verdächtig? Wenn ihr euch einig seid,
-            tippt ihr gemeinsam auf einen Namen.
+        <div className={`${styles.card} ${styles.cover}`}>
+          <p className={styles.subtitle}>Jetzt fängt an</p>
+          <p className={styles.coverName}>{starter.name}</p>
+          <p className={styles.playHint}>
+            Jetzt redet miteinander – klärt selbst, wie viele Runden ihr dreht.
           </p>
-          <button
-            type="button"
-            className={styles.btn}
-            onClick={() => setState(endDiscussion(state))}
-          >
-            Imposter raten
-          </button>
         </div>
+        <button
+          type="button"
+          className={styles.btn}
+          onClick={() => setState(endDiscussion(state))}
+        >
+          Imposter erraten
+        </button>
       </main>
     )
   }

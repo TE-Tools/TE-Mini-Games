@@ -169,3 +169,50 @@ psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/tests/schuetzenrunde.test.sql
 Der Test spielt Runden jeder Größe komplett durch und prüft Geheimhaltung,
 Uhr und Beitritt. **Nicht** gegen das echte Projekt laufen lassen – er legt
 Testnutzer und Runden an.
+
+
+## Finde den Imposter online (Migrationen 011 + 011b)
+
+Damit „Finde den Imposter" auch mit eigenen Handys statt an einem Gerät
+gespielt werden kann, brauchst du **zwei** Dateien im SQL-Editor:
+
+1. `supabase/migrations/011_imposter_online.sql` – Tabellen und Spiellogik
+2. `supabase/migrations/011b_imposter_words.sql` – 20 Kategorien und 355
+   Wörter (rein Daten, gefahrlos mehrfach ausführbar)
+
+Beide sind **nicht** in `ALL_IN_ONE.sql` enthalten: die Datei ist schon jetzt
+so lang, dass der SQL-Editor auf dem Handy daran hängenbleibt.
+
+**Wie das abgesichert ist**
+
+Gleiches Muster wie bei der Schützenrunde: `fdi_matches`, `fdi_players`,
+`fdi_words` und `fdi_categories` sind für Clients gesperrt, alles läuft über
+`security definer`-Funktionen. Der wichtigste Punkt ist spielspezifisch:
+
+- **Der Server zieht das geheime Wort**, nicht der Browser des Gastgebers –
+  sonst könnte ein Gastgeber, der selbst Imposter ist, es einfach ablesen.
+- `fdi_get_state()` gibt jedem Aufrufer nur seine eigene Sicht: das geheime
+  Wort ausschließlich an Nicht-Imposter, das Hilfswort ausschließlich an
+  Imposter, und wer Imposter war, erst wenn die Runde im Ergebnis steht.
+- Direkt lesbar ist nur ein Zähler (`fdi_state.version`), und auch der nur
+  für Mitglieder der jeweiligen Runde.
+
+**Was du dafür einstellen musst**
+
+1. Die beiden Dateien oben im SQL-Editor ausführen.
+2. Supabase → **Database → Replication** → Publication `supabase_realtime`:
+   zusätzlich `fdi_state` anhaken. Ohne das läuft alles trotzdem, die Seite
+   fragt dann alle drei Sekunden nach.
+
+**Testen ohne Supabase**
+
+```bash
+psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/tests/00_harness.sql
+psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/migrations/011_imposter_online.sql
+psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/migrations/011b_imposter_words.sql
+psql "$PGURL" -f supabase/tests/imposter_online_test.sql
+```
+
+Jede Zeile der Ausgabe beginnt mit `OK` oder `FEHLER`; am Ende steht
+`ALLE PRUEFUNGEN BESTANDEN`. **Nicht** gegen das echte Projekt laufen lassen –
+der Test legt Testnutzer und Runden an und räumt die `fdi_`-Tabellen leer.

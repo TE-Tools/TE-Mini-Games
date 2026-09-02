@@ -139,6 +139,15 @@
   font-weight: 700;
 }
 
+/* Der Satz unter dem Namen: "jetzt redet miteinander". */
+.playHint {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+  max-width: 22rem;
+  color: var(--color-text);
+}
+
 .secretBox {
   text-align: center;
   padding: 1.25rem 0.5rem;

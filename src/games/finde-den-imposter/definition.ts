@@ -11,7 +11,7 @@ export const findeDenImposterGame: GameDefinition = {
   id: 'finde-den-imposter',
   name: 'Finde den Imposter',
   description:
-    'Partyspiel: Einer kennt das geheime Wort nicht. Reihum reden, gemeinsam raten, letzte Chance.',
+    'Partyspiel: Einer kennt das geheime Wort nicht. Miteinander reden, gemeinsam raten, letzte Chance.',
   icon: '\u{1F608}',
   maxLevel: 1,
   createLevel: (level, seed) => ({
