@@ -179,10 +179,13 @@ export function WerBinIchPage() {
         <p className={styles.meta}>
           Nur für {ap.name} · {rundeLabel}
         </p>
-        <div className={`${styles.card} ${styles.meBox}`}>
-          <p className={styles.subtitle}>Du bist</p>
-          <p className={styles.unknownWord}>???</p>
-        </div>
+        {/* Das Kästchen mit „Du bist ???" stand hier mal. Es nahm die halbe
+            Seite ein, um mitzuteilen, was ohnehin jeder weiß (02.09.2026,
+            Thomas: „ist das nicht einfach zu viel und unnötig?"). Der eine
+            Satz reicht – die Liste der anderen ist das, worauf es ankommt. */}
+        <p className={styles.subtitle}>
+          Deinen eigenen Begriff siehst du nicht – den musst du erfragen.
+        </p>
         <div className={styles.card}>
           <h2 className={styles.cardTitle}>Die anderen</h2>
           <ul className={styles.list}>

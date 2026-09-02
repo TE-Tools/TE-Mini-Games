@@ -283,15 +283,15 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
 
       {(m.phase === 'ask' || m.phase === 'guess') && (
         <>
-          <div className={`${styles.card} ${styles.meBox}`}>
-            <p className={styles.subtitle}>Du bist</p>
-            <p className={styles.unknownWord}>{me.word ?? '???'}</p>
-            <p className={styles.meta}>
-              {me.word
-                ? 'Aufgelöst – dein Tipp steht.'
-                : 'Alle anderen sehen es. Frag dich durch.'}
-            </p>
-          </div>
+          {/* Nur zeigen, wenn wirklich etwas drinsteht. Vorher stand hier
+              ein Kästchen mit „???", solange man noch nicht geraten hatte --
+              viel Platz für gar keine Aussage (02.09.2026, Thomas). */}
+          {me.word && (
+            <div className={`${styles.card} ${styles.meBox}`}>
+              <p className={styles.subtitle}>Du warst</p>
+              <p className={styles.unknownWord}>{me.word}</p>
+            </div>
+          )}
 
           <div className={styles.card}>
             <h2 className={styles.cardTitle}>Die anderen</h2>
@@ -305,6 +305,11 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
                   </li>
                 ))}
             </ul>
+            <p className={styles.meta}>
+              {me.word
+                ? 'Dein Begriff ist aufgelöst.'
+                : 'Deinen eigenen Begriff siehst du nicht – alle anderen schon.'}
+            </p>
             {m.phase === 'ask' && (
               <p className={styles.meta}>
                 {starter ? `${starter.name}${starter.is_you ? ' (du)' : ''} fängt an. ` : ''}
