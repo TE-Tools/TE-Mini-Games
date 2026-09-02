@@ -40,11 +40,11 @@ function seite(w, h) {
   return `<!doctype html><html><head><meta charset="utf-8"><style>
   html, body { margin: 0; padding: 0; width: ${w}px; height: ${h}px; overflow: hidden; }
   body {
-    background-color: #fff8e8;
+    background-color: #0d0a1e;
     background-image:
-      radial-gradient(ellipse 100% 70% at 50% -20%, rgba(255,230,150,0.55), transparent 55%),
-      radial-gradient(ellipse 50% 45% at 100% 10%, rgba(200,180,255,0.22), transparent 50%),
-      radial-gradient(ellipse 45% 40% at 0% 85%, rgba(160,230,220,0.20), transparent 50%);
+      radial-gradient(ellipse 90% 55% at 50% -10%, rgba(124,58,237,0.38), transparent 60%),
+      radial-gradient(ellipse 60% 45% at 100% 8%, rgba(56,189,248,0.12), transparent 55%),
+      radial-gradient(ellipse 70% 45% at 0% 100%, rgba(192,132,252,0.16), transparent 55%);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: ${Math.round(symbolGroesse * 0.16)}px;
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -52,15 +52,16 @@ function seite(w, h) {
   .symbol {
     width: ${symbolGroesse}px; height: ${symbolGroesse}px;
     border-radius: ${Math.round(symbolGroesse * 0.22)}px;
-    background: linear-gradient(180deg, #fff3c4 0%, #f0c84a 45%, #c4920f 100%);
-    border: ${Math.max(3, Math.round(symbolGroesse * 0.02))}px solid #2a1f12;
+    background: linear-gradient(160deg, #2b2158, #1a1435);
+    border: ${Math.max(2, Math.round(symbolGroesse * 0.015))}px solid #a78bfa;
     display: flex; align-items: center; justify-content: center;
-    color: #2a1f12; font-weight: 800; font-size: ${Math.round(symbolGroesse * 0.42)}px;
+    color: #f0c84a; font-weight: 800; font-size: ${Math.round(symbolGroesse * 0.42)}px;
     letter-spacing: 0.02em;
-    box-shadow: 0 ${Math.round(symbolGroesse * 0.04)}px ${Math.round(symbolGroesse * 0.1)}px rgba(42,31,18,0.18);
+    box-shadow: 0 ${Math.round(symbolGroesse * 0.04)}px ${Math.round(symbolGroesse * 0.12)}px rgba(0,0,0,0.55),
+                0 0 ${Math.round(symbolGroesse * 0.12)}px rgba(139,92,246,0.45);
   }
-  .name { font-size: ${Math.round(symbolGroesse * 0.19)}px; font-weight: 800; color: #2a1f12; }
-  .claim { font-size: ${Math.round(symbolGroesse * 0.1)}px; font-weight: 600; color: #7a6a50; }
+  .name { font-size: ${Math.round(symbolGroesse * 0.19)}px; font-weight: 800; color: #f4f1ff; }
+  .claim { font-size: ${Math.round(symbolGroesse * 0.1)}px; font-weight: 600; color: #f0c84a; }
   </style></head><body>
     <div class="symbol">TE</div>
     <div class="name">TE-Mini Games</div>

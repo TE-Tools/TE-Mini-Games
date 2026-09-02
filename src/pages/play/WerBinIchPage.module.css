@@ -94,14 +94,14 @@
   font-weight: 800;
   font-size: var(--text-base);
   box-shadow: var(--btn-shadow);
-  border: 2px solid #1d4ed8;
-  background: linear-gradient(180deg, #60a5fa, #2563eb);
+  border: 2px solid #c084fc;
+  background: linear-gradient(180deg, #a855f7, #7e22ce);
   color: #fff;
 }
 
 .btnSecondary {
-  border-color: var(--color-border);
-  background: linear-gradient(180deg, #ffffff, #f3f4f6);
+  border-color: var(--color-border-strong);
+  background: var(--grad-surface);
   color: var(--color-text);
 }
 
