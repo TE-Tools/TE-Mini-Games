@@ -13,3 +13,15 @@ createRoot(rootElement).render(
     <App />
   </StrictMode>,
 )
+
+/**
+ * Den Startbildschirm aus index.html wegblenden, sobald React gerendert hat.
+ * `requestAnimationFrame` wartet auf genau das erste Bild -- vorher waere die
+ * Seite fuer einen Wimpernschlag leer.
+ */
+requestAnimationFrame(() => {
+  const splash = document.getElementById('splash')
+  if (!splash) return
+  splash.classList.add('weg')
+  window.setTimeout(() => splash.remove(), 300)
+})

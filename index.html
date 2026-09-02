@@ -8,9 +8,109 @@
     <meta name="description" content="TE-Mini Games – Kurze Geschicklichkeits-, Gedächtnis-, Reaktions- und Logikspiele. Nur noch eine Runde." />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="TE-Mini Games" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <title>TE-Mini Games</title>
+
+    <!--
+      Startbilder fuer iOS. Android baut sich seinen Startbildschirm aus dem
+      Manifest selbst; iOS zeigt ohne diese Zeilen beim Start der installierten
+      App eine weisse Flaeche. Erzeugt von scripts/build-splash-screens.mjs --
+      nicht von Hand pflegen.
+    -->
+    <link rel="apple-touch-startup-image" href="/splash/iphone-se-320x568@2x.png"
+      media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" />
+    <link rel="apple-touch-startup-image" href="/splash/iphone-8-375x667@2x.png"
+      media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" />
+    <link rel="apple-touch-startup-image" href="/splash/iphone-8-plus-414x736@3x.png"
+      media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)" />
+    <link rel="apple-touch-startup-image" href="/splash/iphone-x-375x812@3x.png"
+      media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" />
+    <link rel="apple-touch-startup-image" href="/splash/iphone-xr-414x896@2x.png"
+      media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)" />
+    <link rel="apple-touch-startup-image" href="/splash/iphone-xs-max-414x896@3x.png"
+      media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)" />
+    <link rel="apple-touch-startup-image" href="/splash/iphone-12-390x844@3x.png"
+      media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" />
+    <link rel="apple-touch-startup-image" href="/splash/iphone-14-pro-393x852@3x.png"
+      media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)" />
+    <link rel="apple-touch-startup-image" href="/splash/iphone-14-pro-max-430x932@3x.png"
+      media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)" />
+    <link rel="apple-touch-startup-image" href="/splash/ipad-768x1024@2x.png"
+      media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)" />
+    <link rel="apple-touch-startup-image" href="/splash/ipad-pro-11-834x1194@2x.png"
+      media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)" />
+    <link rel="apple-touch-startup-image" href="/splash/ipad-pro-12-1024x1366@2x.png"
+      media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" />
+
+    <style>
+      /*
+        Der Startbildschirm der Seite selbst: Er steht schon im HTML und ist
+        damit sofort da -- noch bevor JavaScript geladen ist. Sobald React
+        gerendert hat, blendet main.tsx ihn aus. Ohne ihn sieht man beim
+        Start je nach Verbindung eine Sekunde lang nichts.
+      */
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.1rem;
+        background-color: #fff8e8;
+        background-image:
+          radial-gradient(ellipse 100% 70% at 50% -20%, rgba(255, 230, 150, 0.55), transparent 55%),
+          radial-gradient(ellipse 50% 45% at 100% 10%, rgba(200, 180, 255, 0.22), transparent 50%),
+          radial-gradient(ellipse 45% 40% at 0% 85%, rgba(160, 230, 220, 0.2), transparent 50%);
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        transition: opacity 220ms ease;
+      }
+      #splash[hidden] {
+        display: none;
+      }
+      #splash.weg {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #splash .symbol {
+        width: 6.5rem;
+        height: 6.5rem;
+        border-radius: 1.5rem;
+        border: 3px solid #2a1f12;
+        background: linear-gradient(180deg, #fff3c4 0%, #f0c84a 45%, #c4920f 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.6rem;
+        font-weight: 800;
+        color: #2a1f12;
+        box-shadow: 0 6px 18px rgba(42, 31, 18, 0.18);
+      }
+      #splash .name {
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: #2a1f12;
+      }
+      #splash .claim {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #7a6a50;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #splash {
+          transition: none;
+        }
+      }
+    </style>
   </head>
   <body>
+    <div id="splash" role="status" aria-label="TE-Mini Games wird geladen">
+      <div class="symbol" aria-hidden="true">TE</div>
+      <div class="name">TE-Mini Games</div>
+      <div class="claim">Nur noch eine Runde. ✨</div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

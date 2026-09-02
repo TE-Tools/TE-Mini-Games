@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "dev.pages.te_mini_games.twa",
+      "sha256_cert_fingerprints": [
+        "HIER_DEN_FINGERABDRUCK_DEINES_SIGNIERSCHLUESSELS_EINTRAGEN"
+      ]
+    }
+  }
+]
