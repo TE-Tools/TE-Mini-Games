@@ -5,19 +5,17 @@ Neue Mini-Game-Ideen werden hier abgelegt. Implementiert wird erst, wenn explizi
 | Idee | Status | Ordner |
 |------|--------|--------|
 | **Schützenrunde** | **v4 implementiert** (lokal vs. Bots **und** Online-Multiplayer, serverautoritativ) | [schuetzenrunde/](./schuetzenrunde/) |
-| **Finde den Imposter** | Idee vorgemerkt — Beschreibung folgt | [finde-den-imposter/](./finde-den-imposter/) |
+| **Finde den Imposter** | **MVP in Arbeit** – Spec + Architektur + STATUS (01.09.2026) | [finde-den-imposter/](./finde-den-imposter/) |
 
 ## Schützenrunde (Kurz)
 
-- Multiplayer Social-Deduction mit Schützen-/Vereinsthema
+- Multiplayer-Social-Deduction mit Schützen-/Vereinsthema
 - 8–16 Spieler, regelbasierte Bots (keine externe KI)
-- Tag/Nacht, Rollen, Abstimmung, Züge/Clans, Events (Schützenkönig)
-- Serverautoritativ, kostenlos / kein Pay-to-win
+- Tag/Nacht, Rollen, Abstimmung, Züge/Clans, Events
+- Serverautoritativ
 
-Details und Originalspezifikation: `schuetzenrunde/START_HERE.md` und `schuetzenrunde/00_ORIGINAL_SPEZIFIKATION.txt`.
+Details: `schuetzenrunde/START_HERE.md`
 
 ## Finde den Imposter (Kurz)
 
-Nur der Name ist bekannt (01.09.2026). Thomas liefert die Erläuterung nach --
-bis dahin bewusst keine Annahmen über Regeln, Spielerzahl oder Spielmodus.
-Siehe `finde-den-imposter/README.md`.
+Vollständige Spezifikation am 01.09.2026 geliefert. Lokal Pass-and-Play, geheimes Wort, Hinweise, Abstimmung, letzte Chance. Siehe `finde-den-imposter/STATUS.md`.
