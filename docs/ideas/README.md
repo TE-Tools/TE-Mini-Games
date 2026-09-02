@@ -5,7 +5,7 @@ Neue Mini-Game-Ideen werden hier abgelegt. Implementiert wird erst, wenn explizi
 | Idee | Status | Ordner |
 |------|--------|--------|
 | **Schützenrunde** | **v4 implementiert** (lokal vs. Bots **und** Online-Multiplayer, serverautoritativ) | [schuetzenrunde/](./schuetzenrunde/) |
-| **Finde den Imposter** | Idee vorgemerkt — Beschreibung folgt | [finde-den-imposter/](./finde-den-imposter/) |
+| **Finde den Imposter** | **MVP „Klassisch“ integriert** (lokal Pass-and-Play) — weitere Modi offen | [finde-den-imposter/](./finde-den-imposter/) |
 
 ## Schützenrunde (Kurz)
 
@@ -18,6 +18,13 @@ Details und Originalspezifikation: `schuetzenrunde/START_HERE.md` und `schuetzen
 
 ## Finde den Imposter (Kurz)
 
-Nur der Name ist bekannt (01.09.2026). Thomas liefert die Erläuterung nach --
-bis dahin bewusst keine Annahmen über Regeln, Spielerzahl oder Spielmodus.
-Siehe `finde-den-imposter/README.md`.
+- Partyspiel am **einen** Gerät (Pass-and-Play), 3–12 Mitspielende
+- Alle bekommen ein geheimes Wort — nur die Imposter nicht
+- Reihum ein Hinweis, dann Diskussion und Abstimmung
+- Wird ein Imposter mehrheitlich enttarnt, bekommt er die **letzte Chance**: das Wort erraten
+- Mehrere Runden mit Gesamtpunkten
+
+**Umgesetzt ist der Modus „Klassisch" (inkl. Doppel-Imposter).** Fünf weitere
+Modi sind angelegt, aber noch nicht spielbar; ebenso offen: Wortschatz auf
+1000, eigene Kategorien, Online-Mehrspieler. Details und vollständige Liste:
+`finde-den-imposter/STATUS.md`.
