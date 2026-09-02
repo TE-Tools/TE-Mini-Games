@@ -21,7 +21,7 @@
   width: 48px;
   height: 48px;
   border-radius: var(--radius-full);
-  background: linear-gradient(180deg, #fff, #fff6dd);
+  background: var(--grad-surface);
   border: 2px solid var(--color-border);
   box-shadow: var(--btn-shadow);
   font-size: var(--text-xl);
@@ -76,7 +76,7 @@
   gap: var(--space-1);
   border-radius: var(--radius-xl);
   border: 2px solid var(--color-border);
-  background: linear-gradient(180deg, #ffffff, #fff8e8);
+  background: var(--grad-surface);
   box-shadow: var(--btn-shadow);
   font-weight: 700;
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
@@ -84,7 +84,7 @@
 
 .avatarSelected {
   border-color: var(--color-primary);
-  background: linear-gradient(180deg, #ede9fe, #c4b5fd);
+  background: linear-gradient(180deg, #4c1d95, #2e1065);
   box-shadow: var(--btn-shadow-hover);
 }
 

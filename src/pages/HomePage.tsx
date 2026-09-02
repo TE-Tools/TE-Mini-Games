@@ -5,6 +5,7 @@ import { getOrCreateGuestProfile, type LocalProfile } from '@/offline'
 import { xpProgressInLevel } from '@/progression'
 import { InstallButton } from '@/components/install/InstallButton'
 import { getAvatar } from '@/profile/avatars'
+import { LogoMark } from '@/components/brand/LogoMark'
 import { DATA_PULLED_EVENT } from '@/services/remotePull'
 
 export function HomePage() {
@@ -57,14 +58,14 @@ export function HomePage() {
 
   return (
     <main className={styles.page}>
+      {/* Kopfzeile wie in Thomas' Entwurf: die Marke in der Mitte, der Avatar
+          rechts als Eingang zu den Konto-Einstellungen. Das leere Feld links
+          haelt die Marke optisch mittig. */}
       <header className={styles.header}>
-        <div className={styles.headerText}>
-          <h1 className={styles.title}>TE-Mini Games</h1>
-          <p className={styles.tagline}>Nur noch eine Runde. ✨</p>
-        </div>
-        {/* Avatar oben als Eingang zu den Konto-Einstellungen (02.09.2026,
-            Thomas' Wunsch). Die Kachel "Konto" weiter unten entfaellt dafuer --
-            zwei Wege zur selben Seite waeren nur Ballast. */}
+        <span aria-hidden="true" />
+        <span className={styles.logo}>
+          <LogoMark size={62} />
+        </span>
         <Link to="/auth" className={styles.avatarButton} aria-label="Konto-Einstellungen">
           <span className={styles.avatarFace} aria-hidden="true">
             {getAvatar(profile?.avatar).emoji}
@@ -72,30 +73,57 @@ export function HomePage() {
         </Link>
       </header>
 
+      <div className={styles.headerText}>
+        <h1 className={styles.title}>
+          <span className={styles.titleTe}>TE</span> MINI GAMES
+        </h1>
+        <p className={styles.tagline}>Nur noch eine Runde. ✨</p>
+      </div>
+
       <section className={styles.stats} aria-label="Spielerfortschritt" aria-busy={loading}>
         <div className={styles.stat}>
           <span className={styles.statLabel}>Level</span>
-          <span className={styles.statValue}>{loading ? '…' : playerLevel}</span>
+          <span className={styles.statValue}>
+            <span aria-hidden="true">⭐</span> {loading ? '…' : playerLevel}
+          </span>
         </div>
         <div className={styles.stat}>
           <span className={styles.statLabel}>XP</span>
           <span className={styles.statValue}>
+            <span aria-hidden="true">💎</span>{' '}
             {loading ? '…' : totalXp.toLocaleString('de-DE')}
           </span>
         </div>
         <div className={styles.stat}>
           <span className={styles.statLabel}>Streak</span>
           <span className={styles.statValue}>
-            {loading ? '…' : streakDays > 0 ? `🔥 ${streakDays}` : '—'}
+            {loading ? '…' : streakDays > 0 ? <><span aria-hidden="true">🔥</span> {streakDays}</> : '—'}
           </span>
         </div>
       </section>
 
       {!loading && (
-        <p className={styles.xpHint}>
-          Noch <strong>{(xpProgress.needed - xpProgress.current).toLocaleString('de-DE')}</strong> XP
-          bis Spieler-Level {xpProgress.level + 1}
-        </p>
+        <div className={styles.xpBlock}>
+          <p className={styles.xpHint}>
+            Noch <strong>{(xpProgress.needed - xpProgress.current).toLocaleString('de-DE')}</strong>{' '}
+            XP bis Spieler-Level {xpProgress.level + 1}
+          </p>
+          <div
+            className={styles.xpTrack}
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={xpProgress.needed}
+            aria-valuenow={xpProgress.current}
+            aria-label={`Fortschritt zu Spieler-Level ${xpProgress.level + 1}`}
+          >
+            <span
+              className={styles.xpFill}
+              style={{
+                width: `${Math.max(2, Math.min(100, (xpProgress.current / Math.max(1, xpProgress.needed)) * 100))}%`,
+              }}
+            />
+          </div>
+        </div>
       )}
 
       <InstallButton />

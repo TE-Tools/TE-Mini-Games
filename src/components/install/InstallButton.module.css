@@ -12,7 +12,7 @@
   font-size: var(--text-sm);
   font-weight: 800;
   color: #2a1f12;
-  background: linear-gradient(180deg, #ffffff, #fff0c2);
+  background: var(--grad-surface);
   border: 2px solid #d4a017;
   box-shadow: var(--btn-shadow);
 }

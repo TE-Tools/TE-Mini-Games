@@ -27,7 +27,7 @@
   border-radius: var(--radius-full);
   font-size: var(--text-xl);
   color: var(--color-text-muted);
-  background: linear-gradient(180deg, #ffffff, #fff6dd);
+  background: var(--grad-surface);
   border: 2px solid var(--color-border);
   box-shadow: var(--btn-shadow);
 }
@@ -43,7 +43,7 @@
   font-size: var(--text-sm);
   padding: 0.25rem 0.6rem;
   border-radius: var(--radius-full);
-  background: linear-gradient(180deg, #fffbe8, #f3dd9a);
+  background: var(--grad-gold);
   border: 2px solid #d4a017;
 }
 
@@ -90,14 +90,14 @@
   width: 100%;
   padding: var(--space-3);
   border-radius: var(--radius-xl);
-  border: 3px solid #2f7d32;
-  background: linear-gradient(180deg, #f2fbef, #d9f0d6);
+  border: 3px solid #4ade80;
+  background: linear-gradient(180deg, #14532d, #0b3d20);
   text-align: center;
 }
 
 .roleCard[data-faction='saboteure'] {
-  border-color: #b3261e;
-  background: linear-gradient(180deg, #fdeceb, #f7cfcc);
+  border-color: #fb7185;
+  background: linear-gradient(180deg, #6b0f2a, #45081b);
 }
 
 .roleName {
@@ -116,7 +116,7 @@
   margin: 0.35rem 0 0;
   font-size: var(--text-sm);
   font-weight: 700;
-  color: #b3261e;
+  color: #fb7185;
 }
 
 .notes {
@@ -147,7 +147,7 @@
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-lg);
   border: 2px solid var(--color-border);
-  background: linear-gradient(180deg, #ffffff, #fff6dd);
+  background: var(--grad-surface);
   box-shadow: var(--btn-shadow);
   text-align: left;
 }
@@ -268,7 +268,7 @@
   border-radius: var(--radius-lg);
   font-weight: 800;
   border: 2px solid var(--color-border);
-  background: linear-gradient(180deg, #ffffff, #fff6dd);
+  background: var(--grad-surface);
   box-shadow: var(--btn-shadow);
 }
 
@@ -303,14 +303,14 @@
   font-size: var(--text-base);
   padding: 0.15rem 0.75rem;
   border-radius: var(--radius-full);
-  background: linear-gradient(180deg, #fffbe8, #f3dd9a);
+  background: var(--grad-gold);
   border: 2px solid #d4a017;
 }
 
 .clockHot {
-  background: linear-gradient(180deg, #fdeceb, #f7cfcc);
-  border-color: #b3261e;
-  color: #b3261e;
+  background: linear-gradient(180deg, #6b0f2a, #45081b);
+  border-color: #fb7185;
+  color: #ffe4e6;
 }
 
 /* ---- Zug balance on the lobby screen ---- */
@@ -323,7 +323,7 @@
   padding: var(--space-3);
   border-radius: var(--radius-lg);
   border: 2px solid var(--color-border);
-  background: linear-gradient(180deg, #ffffff, #fff6dd);
+  background: var(--grad-surface);
 }
 
 .boardTitle {
@@ -364,7 +364,7 @@
   font-size: var(--text-base);
   font-weight: 800;
   border: 2px solid var(--color-border);
-  background: linear-gradient(180deg, #ffffff, #fff6dd);
+  background: var(--grad-surface);
   box-shadow: var(--btn-shadow);
 }
 
@@ -393,7 +393,7 @@
   text-align: center;
   font-size: var(--text-sm);
   font-weight: 700;
-  color: #b3261e;
+  color: #fb7185;
 }
 
 .chatRow {

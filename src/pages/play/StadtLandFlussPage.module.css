@@ -94,14 +94,14 @@
   font-weight: 800;
   font-size: var(--text-base);
   box-shadow: var(--btn-shadow);
-  border: 2px solid #047857;
-  background: linear-gradient(180deg, #34d399, #059669);
+  border: 2px solid #34d399;
+  background: linear-gradient(180deg, #059669, #047857);
   color: #fff;
 }
 
 .btnSecondary {
-  border-color: var(--color-border);
-  background: linear-gradient(180deg, #ffffff, #f3f4f6);
+  border-color: var(--color-border-strong);
+  background: var(--grad-surface);
   color: var(--color-text);
 }
 
@@ -115,7 +115,7 @@
   font-size: 4rem;
   font-weight: 800;
   line-height: 1;
-  color: #047857;
+  color: #34d399;
 }
 
 .timer {
@@ -199,7 +199,7 @@
 .punkte {
   font-variant-numeric: tabular-nums;
   font-weight: 800;
-  color: #047857;
+  color: #34d399;
 }
 
 .punkteNull {

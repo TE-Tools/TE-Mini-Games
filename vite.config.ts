@@ -18,8 +18,8 @@ export default defineConfig({
         // Muss zur echten Hintergrundfarbe der App passen (--color-bg in
         // src/styles/tokens.css): Android baut daraus seinen Startbildschirm,
         // und ein dunkler Start vor einer cremefarbenen App blitzt haesslich.
-        theme_color: '#fff8e8',
-        background_color: '#fff8e8',
+        theme_color: '#0d0a1e',
+        background_color: '#0d0a1e',
         display: 'standalone',
         orientation: 'portrait-primary',
         start_url: '/',

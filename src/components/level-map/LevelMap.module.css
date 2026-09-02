@@ -279,7 +279,7 @@
   border-color: #b8860b;
   background:
     radial-gradient(circle at 35% 25%, rgb(255 255 255 / 0.85), transparent 55%),
-    linear-gradient(180deg, #fff8dc, #e8c86a 60%, #cfa93f);
+    var(--grad-gold);
   box-shadow:
     0 0 0 5px rgb(184 134 11 / 0.35),
     0 6px 0 rgb(90 60 10 / 0.4),

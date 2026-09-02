@@ -103,7 +103,7 @@
   border-radius: var(--radius-xl);
   font-weight: 800;
   color: #7f1d1d;
-  background: linear-gradient(180deg, #fff5f5, #fecaca);
+  background: var(--grad-danger-soft);
   border: 2px solid #b3261e;
   box-shadow: var(--btn-shadow);
 }
@@ -116,7 +116,7 @@
   min-height: var(--touch-min);
   width: 100%;
   padding: var(--space-3);
-  background: linear-gradient(180deg, #ffffff, #f3f4f6);
+  background: var(--grad-surface);
   color: var(--color-text);
   border-radius: var(--radius-2xl);
   font-weight: 700;

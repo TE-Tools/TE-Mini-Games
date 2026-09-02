@@ -173,7 +173,7 @@
   font-size: var(--text-sm);
   font-weight: 700;
   border: 2px solid var(--color-border);
-  background: linear-gradient(180deg, #ffffff, #fff6dd);
+  background: var(--grad-surface);
   box-shadow: var(--btn-shadow);
 }
 
