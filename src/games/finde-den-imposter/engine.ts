@@ -4,11 +4,10 @@
  * Ablauf am einen Gerät (02.09.2026, nach Thomas' Vorgaben umgebaut):
  *   1. Geheimnisse: Gerät wird herumgereicht, jeder sieht sein Wort
  *      (Imposter stattdessen ein einzelnes Hilfswort).
- *   2. Reihum: das Gerät zeigt nur, wer dran ist -- gesprochen wird laut,
- *      es wird nichts getippt.
- *   3. Miteinander reden.
- *   4. Anklage: eine Liste aller Namen, gemeinsam wird einer angetippt.
- *   5. War es ein Imposter, bekommt er die letzte Chance, das Wort zu raten.
+ *   2. Ein Bildschirm: wer anfängt (zufällig), dann redet die Gruppe frei --
+ *      wie viele Wortrunden sie dreht, klärt sie selbst.
+ *   3. Anklage: eine Liste aller Namen, gemeinsam wird einer angetippt.
+ *   4. War es ein Imposter, bekommt er die letzte Chance, das Wort zu raten.
  *
  * Bewusst ohne Punkte und ohne Rangliste -- wer gewonnen hat, sieht man am
  * Tisch, dafür braucht es keine Tabelle.
@@ -90,7 +89,6 @@ function buildPlayers(
     name,
     isImposter: imposterSet.has(i),
     word: imposterSet.has(i) ? null : secretWord,
-    hasSpoken: false,
     lastChanceGuess: null,
   }))
 }
@@ -150,6 +148,7 @@ export function createMatch(options: CreateMatchOptions): ImposterMatchState {
     players: buildPlayers(names, imposterCount, config.secretWord, rng),
     config,
     activePlayerIndex: 0,
+    starterIndex: Math.floor(rng() * names.length),
     handoffCover: true,
     discussionSeconds: options.discussionSeconds ?? 60,
     accusedId: null,
@@ -171,29 +170,12 @@ export function confirmSecret(state: ImposterMatchState): ImposterMatchState {
   if (state.phase !== 'secret_reveal') return state
   const next = state.activePlayerIndex + 1
   if (next >= state.players.length) {
-    return { ...state, phase: 'turns', activePlayerIndex: 0, handoffCover: false }
+    return { ...state, phase: 'discussion', activePlayerIndex: 0, handoffCover: false }
   }
   return { ...state, phase: 'secret_handoff', activePlayerIndex: next, handoffCover: true }
 }
 
-/* --------------------------------- Reihum -------------------------------- */
-
-/**
- * Die Person, die dran war, hat gesprochen -- weiter zur nächsten.
- * Kein Deckel und keine Eingabe: gesagt wird alles laut in der Runde.
- */
-export function passTurn(state: ImposterMatchState): ImposterMatchState {
-  if (state.phase !== 'turns') return state
-  const players = state.players.map((p, i) =>
-    i === state.activePlayerIndex ? { ...p, hasSpoken: true } : p,
-  )
-  const next = state.activePlayerIndex + 1
-  if (next >= players.length) {
-    return { ...state, players, phase: 'discussion', activePlayerIndex: 0 }
-  }
-  return { ...state, players, activePlayerIndex: next }
-}
-
+/** Genug geredet -- jetzt wird gemeinsam getippt. */
 export function endDiscussion(state: ImposterMatchState): ImposterMatchState {
   if (state.phase !== 'discussion') return state
   return { ...state, phase: 'accuse', activePlayerIndex: 0, handoffCover: false }
@@ -274,6 +256,7 @@ export function nextRound(state: ImposterMatchState): ImposterMatchState {
     ),
     config,
     activePlayerIndex: 0,
+    starterIndex: Math.floor(rng() * state.players.length),
     handoffCover: true,
     discussionSeconds: state.discussionSeconds,
     accusedId: null,
@@ -286,6 +269,11 @@ export function nextRound(state: ImposterMatchState): ImposterMatchState {
 
 export function activePlayer(state: ImposterMatchState): ImposterPlayer {
   return state.players[state.activePlayerIndex]!
+}
+
+/** Wer die Runde eröffnet. */
+export function starterPlayer(state: ImposterMatchState): ImposterPlayer {
+  return state.players[state.starterIndex] ?? state.players[0]!
 }
 
 export function accusedPlayer(state: ImposterMatchState): ImposterPlayer | null {
@@ -304,8 +292,6 @@ export function phaseLabel(phase: ImposterPhase): string {
     case 'secret_handoff':
     case 'secret_reveal':
       return 'Geheimnisse'
-    case 'turns':
-      return 'Reihum'
     case 'discussion':
       return 'Diskussion'
     case 'accuse':

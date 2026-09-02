@@ -6,8 +6,6 @@ export type ImposterPhase =
   | 'setup'
   | 'secret_handoff'
   | 'secret_reveal'
-  /** Reihum: wer dran ist, sagt sein Hinweiswort laut -- nichts wird getippt. */
-  | 'turns'
   | 'discussion'
   /** Gemeinsame Anklage: eine Liste aller Namen, einer wird angetippt. */
   | 'accuse'
@@ -29,8 +27,6 @@ export interface ImposterPlayer {
   isImposter: boolean
   /** Geheimes Wort -- nur für Nicht-Imposter. */
   word: string | null
-  /** Hat diese Person ihr Wort in der Reihum-Runde schon gesagt? */
-  hasSpoken: boolean
   lastChanceGuess: string | null
 }
 
@@ -55,8 +51,14 @@ export interface ImposterMatchState {
   phase: ImposterPhase
   players: ImposterPlayer[]
   config: ImposterRoundConfig
-  /** Wer sein Geheimnis sieht bzw. wer gerade dran ist. */
+  /** Wer gerade sein Geheimnis sieht. */
   activePlayerIndex: number
+  /**
+   * Wer die Runde eröffnet -- zufällig gezogen (02.09.2026, Thomas: "jetzt
+   * fängt Spieler X an, das soll random sein"). Danach redet die Gruppe frei;
+   * wie viele Wortrunden sie macht, klärt sie selbst.
+   */
+  starterIndex: number
   /** True, solange der „Gib das Gerät an X"-Deckel liegt (nur bei den Geheimnissen). */
   handoffCover: boolean
   discussionSeconds: number

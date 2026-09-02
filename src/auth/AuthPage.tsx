@@ -112,7 +112,7 @@ export function AuthPage({ gate = false }: Props) {
           Als Gast spielen
         </button>
         <p className={styles.muted}>
-          F\u00fcr Konto-Login: Supabase-Keys in Cloudflare setzen (siehe docs/supabase-setup.md).
+          Für Konto-Login: Supabase-Keys in Cloudflare setzen (siehe docs/supabase-setup.md).
         </p>
       </main>
     )
@@ -155,7 +155,7 @@ export function AuthPage({ gate = false }: Props) {
             <p className={styles.claimTitle}>Dir fehlt noch ein Benutzername</p>
             <p className={styles.muted}>
               In den Ranglisten steht dein Benutzername, nicht deine E-Mail. Ohne ihn tauchst du
-              dort nicht auf \u2013 auch wenn alles brav hochgeladen wird. Bei der Anmeldung \u00fcber
+              dort nicht auf – auch wenn alles brav hochgeladen wird. Bei der Anmeldung über
               Google wird keiner vergeben, deshalb hier nachtragen.
             </p>
             <label className={styles.label}>
@@ -240,13 +240,13 @@ export function AuthPage({ gate = false }: Props) {
 
         {!confirmReset ? (
           <button type="button" className={styles.danger} onClick={() => setConfirmReset(true)}>
-            Fortschritt zur\u00fccksetzen
+            Fortschritt zurücksetzen
           </button>
         ) : (
           <>
             <p className={styles.error}>
-              L\u00f6scht Level, Punkte, Rekorde, XP und Abzeichen – auf diesem Ger\u00e4t und im Konto. Das
-              l\u00e4sst sich nicht r\u00fcckg\u00e4ngig machen.
+              Löscht Level, Punkte, Rekorde, XP und Abzeichen – auf diesem Gerät und im Konto. Das
+              lässt sich nicht rückgängig machen.
             </p>
             <button
               type="button"
@@ -288,7 +288,7 @@ export function AuthPage({ gate = false }: Props) {
     return (
       <main className={styles.page}>
         <h1 className={styles.title}>Neues Passwort</h1>
-        <p className={styles.hint}>W\u00e4hle ein neues Passwort f\u00fcr dein Konto.</p>
+        <p className={styles.hint}>Wähle ein neues Passwort für dein Konto.</p>
         <label className={styles.label}>
           Neues Passwort *
           <input
@@ -517,7 +517,7 @@ export function AuthPage({ gate = false }: Props) {
         Als Gast spielen
       </button>
       <p className={styles.muted}>
-        Gast: nichts vom Konto wird geladen – nur lokal auf diesem Ger\u00e4t, ohne Cloud-Sync.
+        Gast: nichts vom Konto wird geladen – nur lokal auf diesem Gerät, ohne Cloud-Sync.
       </p>
 
       {!gate && (

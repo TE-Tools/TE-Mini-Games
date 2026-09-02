@@ -1,22 +1,23 @@
 /**
  * Regeln von "Finde den Imposter" nachgerechnet.
  *
- * Ablauf seit dem 02.09.2026 (Thomas' Vorgaben): reihum wird laut gesprochen
- * statt getippt, danach tippt die Runde gemeinsam auf einen Namen. Kein
- * Punktesystem, keine Rangliste. Imposter sehen genau EIN Hilfswort, das
- * jede Runde wechselt.
+ * Ablauf seit dem 02.09.2026 (Thomas' Vorgaben): nachdem jeder sein Wort
+ * gesehen hat, sagt ein Bildschirm nur noch, wer zufällig anfängt -- danach
+ * redet die Gruppe frei und tippt gemeinsam auf einen Namen. Kein
+ * Weiterklicken pro Person, kein Punktesystem, keine Rangliste. Imposter
+ * sehen genau EIN Hilfswort, das jede Runde wechselt.
  */
 import { describe, it, expect } from 'vitest'
 import {
   createMatch,
   openSecret,
   confirmSecret,
-  passTurn,
   endDiscussion,
   accuse,
   submitLastChance,
   nextRound,
   accusedPlayer,
+  starterPlayer,
   imposters,
   createRng,
 } from '@/games/finde-den-imposter/engine'
@@ -38,16 +39,9 @@ function allSecrets(state: ImposterMatchState): ImposterMatchState {
   return s
 }
 
-/** Reihum: jeder sagt sein Wort laut. */
-function allTurns(state: ImposterMatchState): ImposterMatchState {
-  let s = state
-  for (let i = 0; i < s.players.length; i++) s = passTurn(s)
-  return s
-}
-
 /** Bis zur gemeinsamen Anklage durchspielen. */
 function bisAnklage(state = start()): ImposterMatchState {
-  return endDiscussion(allTurns(allSecrets(state)))
+  return endDiscussion(allSecrets(state))
 }
 
 describe('Aufstellung', () => {
@@ -115,25 +109,25 @@ describe('Hilfswort', () => {
 })
 
 describe('Ablauf', () => {
-  it('führt von den Geheimnissen direkt zur Reihum-Phase (ohne Tippen)', () => {
+  it('geht nach dem letzten Geheimnis direkt ins Gespräch – ohne Weiterklicken', () => {
     const s = allSecrets(start())
-    expect(s.phase).toBe('turns')
+    expect(s.phase).toBe('discussion')
     expect(s.handoffCover).toBe(false)
   })
 
-  it('reicht reihum weiter und merkt sich, wer schon dran war', () => {
-    let s = allSecrets(start())
-    expect(s.players[0]!.hasSpoken).toBe(false)
-    s = passTurn(s)
-    expect(s.players[0]!.hasSpoken).toBe(true)
-    expect(s.activePlayerIndex).toBe(1)
-    expect(s.phase).toBe('turns')
+  it('benennt eine Person aus der Runde, die anfängt', () => {
+    const s = allSecrets(start())
+    expect(s.starterIndex).toBeGreaterThanOrEqual(0)
+    expect(s.starterIndex).toBeLessThan(s.players.length)
+    expect(s.players).toContain(starterPlayer(s))
   })
 
-  it('geht nach der letzten Person ins Gespräch', () => {
-    const s = allTurns(allSecrets(start()))
-    expect(s.phase).toBe('discussion')
-    expect(s.players.every((p) => p.hasSpoken)).toBe(true)
+  it('würfelt die anfangende Person aus – nicht immer dieselbe', () => {
+    const gezogen = new Set<number>()
+    for (let seed = 1; seed <= 40; seed++) {
+      gezogen.add(allSecrets(start(NAMES6, { seed })).starterIndex)
+    }
+    expect(gezogen.size).toBeGreaterThan(1)
   })
 
   it('zeigt zum Anklagen alle Mitspielenden – niemand ist ausgenommen', () => {
@@ -209,7 +203,7 @@ describe('Nächste Runde', () => {
     const r2 = nextRound(fertig)
     expect(r2.phase).toBe('secret_handoff')
     expect(r2.config.roundIndex).toBe(1)
-    expect(r2.players.every((p) => !p.hasSpoken && p.lastChanceGuess === null)).toBe(true)
+    expect(r2.players.every((p) => p.lastChanceGuess === null)).toBe(true)
     expect(r2.accusedId).toBeNull()
     expect(r2.players.map((p) => p.name)).toEqual(s0.players.map((p) => p.name))
   })
@@ -219,7 +213,7 @@ describe('Nächste Runde', () => {
     for (let i = 0; i < 4; i++) {
       s = nextRound(s)
       expect(s.phase).toBe('secret_handoff')
-      s = endDiscussion(allTurns(allSecrets(s)))
+      s = endDiscussion(allSecrets(s))
       s = accuse(s, s.players[0]!.id)
       if (s.phase === 'last_chance') s = submitLastChance(s, 'daneben')
       expect(s.phase).toBe('round_result')

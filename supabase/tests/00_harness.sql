@@ -1,8 +1,14 @@
 create extension if not exists pgcrypto;
 create schema if not exists auth;
 create table if not exists auth.users (id uuid primary key, email text, raw_user_meta_data jsonb default '{}'::jsonb);
+-- Wer gerade "angemeldet" ist. Die Schuetzenrunde setzt sr.uid, der
+-- Imposter-Test test.uid -- beide Namen gelten, damit jeder Test fuer sich
+-- lesbar bleibt.
 create or replace function auth.uid() returns uuid language sql stable as $$
-  select nullif(current_setting('sr.uid', true), '')::uuid
+  select coalesce(
+    nullif(current_setting('sr.uid', true), ''),
+    nullif(current_setting('test.uid', true), '')
+  )::uuid
 $$;
 create or replace function auth.role() returns text language sql stable as $$
   select 'authenticated'::text
