@@ -65,7 +65,22 @@ npm run build
 
 ## Deploy
 
-Cloudflare Pages: build `npm run build`, output `dist`, Node 20+.
+Cloudflare Pages ist direkt mit diesem Repo verbunden (Workers & Pages →
+`te-mini-games` → Settings → Builds & deployments). Jeder Push auf `main`
+löst dort einen Build aus: `npm run build`, Ausgabe `dist`, Node 20+.
+**Es gibt dafür keinen GitHub-Workflow** – der wäre ein zweiter Weg zum
+selben Ziel.
+
+Es gab hier einmal einen (`deploy.yml`). Er ist am 02.09.2026 entfernt
+worden: Er war seit dem 30.08. in allen 24 Läufen rot, weil in diesem Repo
+kein Cloudflare-Token hinterlegt ist – gebraucht wurde er nie, weil Pages
+ohnehin selbst baut. Ein dauerhaft roter, überflüssiger Workflow ist
+schlimmer als keiner: Er hat bei der Fehlersuche eine Stunde gekostet,
+weil er wie die kaputte Auslieferung aussah, während in Wahrheit nur der
+Pages-Build noch lief.
+
+Ob etwas wirklich draußen ist, steht im Cloudflare-Dashboard unter
+Deployments – nicht in GitHub Actions.
 
 ## Environment variables
 
