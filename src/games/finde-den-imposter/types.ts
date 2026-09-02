@@ -27,8 +27,21 @@ export interface ImposterPlayer {
   isImposter: boolean
   /** Geheimes Wort -- nur für Nicht-Imposter. */
   word: string | null
+  /** Nur im Duell-Modus gesetzt: 1 oder 2. Sonst null. */
+  team: 1 | 2 | null
   lastChanceGuess: string | null
+  /** Hat diese Person bei ihrer letzten Chance getroffen? */
+  lastChanceCorrect: boolean | null
 }
+
+/** Was ein Imposter beim Aufdecken zu sehen bekommt. */
+export type ImposterSees =
+  /** Ein einzelnes Wort aus derselben Kategorie (Klassisch, Doppel, Duell). */
+  | 'helper'
+  /** Nur der Name der Kategorie. */
+  | 'category'
+  /** Gar nichts. */
+  | 'nothing'
 
 export interface ImposterRoundConfig {
   mode: ImposterModeId
@@ -45,6 +58,17 @@ export interface ImposterRoundConfig {
   imposterCount: number
   roundIndex: number
   totalRounds: number
+  /** Was die Imposter in dieser Runde sehen -- hängt am Modus. */
+  imposterSees: ImposterSees
+  /**
+   * Ob die Kategorie überhaupt angezeigt wird. Im Modus "Leer" bleibt sie
+   * verborgen, sonst wäre er nicht härter als "Nur Kategorie".
+   */
+  showCategory: boolean
+  /** Tempo-Modus: Sekunden, bis automatisch getippt wird. Sonst null. */
+  timerSeconds: number | null
+  /** Chaos-Modus: Kennung der für diese Runde gezogenen Sonderregel. */
+  specialRule: string | null
 }
 
 export interface ImposterMatchState {
@@ -64,10 +88,22 @@ export interface ImposterMatchState {
   discussionSeconds: number
   /** Die gemeinsam angeklagte Person (leer, solange nicht angeklagt wurde). */
   accusedId: string | null
-  /** War die Anklage ein echter Imposter? */
+  /**
+   * Duell: pro Team eine Anklage. Index 0 ist Team 1, Index 1 ist Team 2.
+   * In allen anderen Modi bleiben beide leer.
+   */
+  teamAccused: (string | null)[]
+  /**
+   * Wer noch seine letzte Chance vor sich hat. Im Duell können das zwei
+   * Personen nacheinander sein, sonst höchstens eine.
+   */
+  lastChanceQueue: string[]
+  /** War die Anklage ein echter Imposter? (Duell: mindestens eine davon.) */
   correctAccusation: boolean
   /** Hat der Imposter bei der letzten Chance das Wort erraten? */
   lastChanceSuccess: boolean | null
+  /** Wörter einer eigenen Kategorie -- null, wenn eine eingebaute läuft. */
+  customWords: string[] | null
   seed: number
   finished: boolean
 }
@@ -95,4 +131,11 @@ export interface CreateMatchOptions {
   imposterCount?: number
   seed?: number
   discussionSeconds?: number
+  /**
+   * Eigene Kategorie: die Wörter kommen dann nicht aus dem eingebauten
+   * Wortschatz, sondern von hier (siehe customCategories.ts).
+   */
+  customWords?: string[]
+  /** Anzeigename der eigenen Kategorie. */
+  customCategoryLabel?: string
 }

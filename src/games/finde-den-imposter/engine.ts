@@ -3,11 +3,12 @@
  *
  * Ablauf am einen Gerät (02.09.2026, nach Thomas' Vorgaben umgebaut):
  *   1. Geheimnisse: Gerät wird herumgereicht, jeder sieht sein Wort
- *      (Imposter stattdessen ein einzelnes Hilfswort).
+ *      (Imposter je nach Modus ein Hilfswort, die Kategorie oder nichts).
  *   2. Ein Bildschirm: wer anfängt (zufällig), dann redet die Gruppe frei --
  *      wie viele Wortrunden sie dreht, klärt sie selbst.
  *   3. Anklage: eine Liste aller Namen, gemeinsam wird einer angetippt.
- *   4. War es ein Imposter, bekommt er die letzte Chance, das Wort zu raten.
+ *      Im Duell tippt jedes Team einen aus den eigenen Reihen.
+ *   4. Jeder erwischte Imposter bekommt die letzte Chance, das Wort zu raten.
  *
  * Bewusst ohne Punkte und ohne Rangliste -- wer gewonnen hat, sieht man am
  * Tisch, dafür braucht es keine Tabelle.
@@ -20,7 +21,7 @@ import type {
   ImposterPhase,
   ImposterRoundConfig,
 } from './types'
-import { defaultImposterCount } from './modes'
+import { defaultImposterCount, rulesOf, CHAOS_RULES, modeOf } from './modes'
 import { categoryLabel } from './data/categories'
 import { wordsForCategory } from './data/words'
 
@@ -48,18 +49,25 @@ function shuffleInPlace<T>(arr: T[], rng: () => number): void {
  * Geheimes Wort ziehen und dazu genau EIN Hilfswort für die Imposter.
  * Das Hilfswort wechselt jede Runde, damit sich die Runden unterscheiden.
  */
-function pickWord(categoryId: string, rng: () => number): { word: string; helperWord: string } {
-  const pool = wordsForCategory(categoryId)
+function pickWord(
+  pool: string[],
+  rng: () => number,
+): { word: string; helperWord: string } {
   if (pool.length === 0) return { word: 'Geheimnis', helperWord: 'Begriff' }
 
   const indices = pool.map((_, i) => i)
   shuffleInPlace(indices, rng)
-  const word = pool[indices[0]!]!.word
+  const word = pool[indices[0]!]!
   const helper = indices
     .slice(1)
-    .map((i) => pool[i]!.word)
+    .map((i) => pool[i]!)
     .find((w) => w.toLowerCase() !== word.toLowerCase())
   return { word, helperWord: helper ?? word }
+}
+
+function poolFor(categoryId: string, customWords: string[] | null): string[] {
+  if (customWords && customWords.length > 0) return customWords
+  return wordsForCategory(categoryId).map((w) => w.word)
 }
 
 function normalizeNames(names: string[]): string[] {
@@ -75,58 +83,106 @@ function normalizeNames(names: string[]): string[] {
   return cleaned
 }
 
+/**
+ * Rollen verteilen. Im Duell zuerst in zwei Teams aufteilen und dann in jedem
+ * Team genau einen Imposter ziehen -- sonst säßen beide in derselben Hälfte
+ * und ein Team hätte nichts zu suchen.
+ */
 function buildPlayers(
   names: string[],
-  imposterCount: number,
-  secretWord: string,
+  config: ImposterRoundConfig,
   rng: () => number,
 ): ImposterPlayer[] {
-  const order = names.map((_, i) => i)
-  shuffleInPlace(order, rng)
-  const imposterSet = new Set(order.slice(0, imposterCount))
-  return names.map((name, i) => ({
+  const players: ImposterPlayer[] = names.map((name, i) => ({
     id: `p${i}`,
     name,
-    isImposter: imposterSet.has(i),
-    word: imposterSet.has(i) ? null : secretWord,
+    isImposter: false,
+    word: config.secretWord,
+    team: null,
     lastChanceGuess: null,
+    lastChanceCorrect: null,
   }))
+
+  const order = players.map((_, i) => i)
+  shuffleInPlace(order, rng)
+
+  if (rulesOf(config.mode).teams) {
+    order.forEach((idx, platz) => {
+      players[idx]!.team = platz % 2 === 0 ? 1 : 2
+    })
+    for (const team of [1, 2] as const) {
+      const mitglieder = players.filter((p) => p.team === team)
+      const gezogen = mitglieder[Math.floor(rng() * mitglieder.length)]
+      if (gezogen) gezogen.isImposter = true
+    }
+  } else {
+    for (const idx of order.slice(0, config.imposterCount)) {
+      players[idx]!.isImposter = true
+    }
+  }
+
+  for (const p of players) if (p.isImposter) p.word = null
+  return players
 }
 
 function freshRoundConfig(
   opts: {
     categoryId: string
+    categoryLabel: string
     mode: ImposterMatchState['config']['mode']
     playerCount: number
     imposterCount: number
     roundIndex: number
     totalRounds: number
+    customWords: string[] | null
   },
   rng: () => number,
 ): ImposterRoundConfig {
-  const { word, helperWord } = pickWord(opts.categoryId, rng)
+  const { word, helperWord } = pickWord(poolFor(opts.categoryId, opts.customWords), rng)
+
+  let regeln = rulesOf(opts.mode)
+  let specialRule: string | null = null
+  if (opts.mode === 'chaos') {
+    const moeglich = CHAOS_RULES.filter((r) => r.minPlayers <= opts.playerCount)
+    const gezogen = moeglich[Math.floor(rng() * moeglich.length)] ?? CHAOS_RULES[0]!
+    regeln = gezogen.rules
+    specialRule = gezogen.id
+  }
+
+  // Modi mit fester Imposter-Zahl setzen sie durch; die Mindestgröße ist
+  // beim Start geprüft (Chaos zieht ohnehin nur passende Regeln).
+  const imposterCount = regeln.fixedImposters ?? opts.imposterCount
+
   return {
     mode: opts.mode,
     categoryId: opts.categoryId,
-    categoryLabel: categoryLabel(opts.categoryId),
+    categoryLabel: opts.categoryLabel,
     secretWord: word,
     helperWord,
     playerCount: opts.playerCount,
-    imposterCount: opts.imposterCount,
+    imposterCount: Math.min(imposterCount, Math.max(1, opts.playerCount - 1)),
     roundIndex: opts.roundIndex,
     totalRounds: opts.totalRounds,
+    imposterSees: regeln.imposterSees,
+    showCategory: regeln.showCategory,
+    timerSeconds: regeln.timerSeconds,
+    specialRule,
   }
 }
 
 export function createMatch(options: CreateMatchOptions): ImposterMatchState {
   const names = normalizeNames(options.names)
   const mode = options.mode ?? 'classic'
+  const def = modeOf(mode)
+  if (names.length < def.minPlayers) {
+    throw new Error(`„${def.label}" braucht mindestens ${def.minPlayers} Mitspielende`)
+  }
   const totalRounds = Math.max(1, Math.min(12, options.totalRounds ?? 3))
   const seed = options.seed ?? ((Date.now() ^ (Math.random() * 0x100000000)) >>> 0)
   const rng = createRng(seed)
-  const imposterCount =
-    options.imposterCount ??
-    defaultImposterCount(names.length, mode === 'double' ? 'double' : 'classic')
+  const customWords =
+    options.customWords && options.customWords.length > 0 ? [...options.customWords] : null
+  const imposterCount = options.imposterCount ?? defaultImposterCount(names.length, mode)
   if (imposterCount < 1 || imposterCount >= names.length) {
     throw new Error('Ungültige Imposter-Anzahl')
   }
@@ -134,26 +190,31 @@ export function createMatch(options: CreateMatchOptions): ImposterMatchState {
   const config = freshRoundConfig(
     {
       categoryId: options.categoryId,
+      categoryLabel: options.customCategoryLabel ?? categoryLabel(options.categoryId),
       mode,
       playerCount: names.length,
       imposterCount,
       roundIndex: 0,
       totalRounds,
+      customWords,
     },
     rng,
   )
 
   return {
     phase: 'secret_handoff',
-    players: buildPlayers(names, imposterCount, config.secretWord, rng),
+    players: buildPlayers(names, config, rng),
     config,
     activePlayerIndex: 0,
     starterIndex: Math.floor(rng() * names.length),
     handoffCover: true,
     discussionSeconds: options.discussionSeconds ?? 60,
     accusedId: null,
+    teamAccused: [null, null],
+    lastChanceQueue: [],
     correctAccusation: false,
     lastChanceSuccess: null,
+    customWords,
     seed,
     finished: false,
   }
@@ -183,46 +244,93 @@ export function endDiscussion(state: ImposterMatchState): ImposterMatchState {
 
 /* -------------------------------- Anklage -------------------------------- */
 
+/** Aus den Angeklagten die Warteschlange für die letzte Chance bauen. */
+function resolveAccusations(
+  state: ImposterMatchState,
+  angeklagt: string[],
+): ImposterMatchState {
+  const erwischt = angeklagt
+    .map((id) => state.players.find((p) => p.id === id))
+    .filter((p): p is ImposterPlayer => Boolean(p?.isImposter))
+
+  if (erwischt.length === 0) {
+    return {
+      ...state,
+      correctAccusation: false,
+      lastChanceSuccess: null,
+      lastChanceQueue: [],
+      phase: 'round_result',
+    }
+  }
+
+  return {
+    ...state,
+    correctAccusation: true,
+    lastChanceSuccess: null,
+    lastChanceQueue: erwischt.map((p) => p.id),
+    activePlayerIndex: state.players.indexOf(erwischt[0]!),
+    phase: 'last_chance',
+  }
+}
+
 /**
  * Gemeinsame Entscheidung: ein Name wird angetippt. Trifft es einen Imposter,
- * bekommt genau dieser die letzte Chance; sonst ist die Runde vorbei.
+ * bekommt genau der die letzte Chance; sonst ist die Runde vorbei.
+ *
+ * Im Duell füllt jeder Tipp den Platz des eigenen Teams. Erst wenn beide
+ * Teams getippt haben, wird ausgewertet.
  */
 export function accuse(state: ImposterMatchState, targetId: string): ImposterMatchState {
   if (state.phase !== 'accuse') return state
   const target = state.players.find((p) => p.id === targetId)
   if (!target) return state
 
-  if (target.isImposter) {
-    return {
-      ...state,
-      accusedId: targetId,
-      correctAccusation: true,
-      phase: 'last_chance',
-      activePlayerIndex: state.players.indexOf(target),
-      lastChanceSuccess: null,
-    }
+  if (rulesOf(state.config.mode).teams && target.team) {
+    const platz = target.team - 1
+    if (state.teamAccused[platz]) return state
+    const teamAccused = [...state.teamAccused]
+    teamAccused[platz] = targetId
+    const zwischenstand = { ...state, teamAccused, accusedId: targetId }
+    if (teamAccused.some((x) => x === null)) return zwischenstand
+    return resolveAccusations(
+      zwischenstand,
+      teamAccused.filter((x): x is string => Boolean(x)),
+    )
   }
-  return {
-    ...state,
-    accusedId: targetId,
-    correctAccusation: false,
-    lastChanceSuccess: null,
-    phase: 'round_result',
-  }
+
+  return resolveAccusations({ ...state, accusedId: targetId }, [targetId])
 }
 
 export function submitLastChance(state: ImposterMatchState, guess: string): ImposterMatchState {
   if (state.phase !== 'last_chance') return state
+  const dran = state.lastChanceQueue[0]
+  if (!dran) return state
+
   const g = guess.trim()
   const success =
     g.length > 0 && g.localeCompare(state.config.secretWord, 'de', { sensitivity: 'base' }) === 0
 
+  const players = state.players.map((p) =>
+    p.id === dran ? { ...p, lastChanceGuess: g, lastChanceCorrect: success } : p,
+  )
+  const rest = state.lastChanceQueue.slice(1)
+
+  if (rest.length > 0) {
+    return {
+      ...state,
+      players,
+      lastChanceQueue: rest,
+      activePlayerIndex: players.findIndex((p) => p.id === rest[0]),
+    }
+  }
+
   return {
     ...state,
-    players: state.players.map((p, i) =>
-      i === state.activePlayerIndex ? { ...p, lastChanceGuess: g } : p,
-    ),
-    lastChanceSuccess: success,
+    players,
+    lastChanceQueue: [],
+    // Bei einem Imposter ist das genau sein Ergebnis; im Duell heißt es
+    // "mindestens einer der Erwischten hat es doch noch gedreht".
+    lastChanceSuccess: players.some((p) => p.lastChanceCorrect === true),
     phase: 'round_result',
   }
 }
@@ -238,11 +346,13 @@ export function nextRound(state: ImposterMatchState): ImposterMatchState {
   const config = freshRoundConfig(
     {
       categoryId: state.config.categoryId,
+      categoryLabel: state.config.categoryLabel,
       mode: state.config.mode,
       playerCount: state.players.length,
       imposterCount: state.config.imposterCount,
       roundIndex: nextIndex,
       totalRounds: Math.max(state.config.totalRounds, nextIndex + 1),
+      customWords: state.customWords,
     },
     rng,
   )
@@ -250,8 +360,7 @@ export function nextRound(state: ImposterMatchState): ImposterMatchState {
     phase: 'secret_handoff',
     players: buildPlayers(
       state.players.map((p) => p.name),
-      config.imposterCount,
-      config.secretWord,
+      config,
       rng,
     ),
     config,
@@ -260,8 +369,11 @@ export function nextRound(state: ImposterMatchState): ImposterMatchState {
     handoffCover: true,
     discussionSeconds: state.discussionSeconds,
     accusedId: null,
+    teamAccused: [null, null],
+    lastChanceQueue: [],
     correctAccusation: false,
     lastChanceSuccess: null,
+    customWords: state.customWords,
     seed,
     finished: false,
   }
@@ -283,6 +395,18 @@ export function accusedPlayer(state: ImposterMatchState): ImposterPlayer | null 
 
 export function imposters(state: ImposterMatchState): ImposterPlayer[] {
   return state.players.filter((p) => p.isImposter)
+}
+
+/** Die Mitglieder eines Duell-Teams, in Sitzreihenfolge. */
+export function teamMembers(state: ImposterMatchState, team: 1 | 2): ImposterPlayer[] {
+  return state.players.filter((p) => p.team === team)
+}
+
+/** Hat das Team seinen eigenen Imposter erwischt? Null, solange es nicht getippt hat. */
+export function teamCaught(state: ImposterMatchState, team: 1 | 2): boolean | null {
+  const id = state.teamAccused[team - 1]
+  if (!id) return null
+  return Boolean(state.players.find((p) => p.id === id)?.isImposter)
 }
 
 export function phaseLabel(phase: ImposterPhase): string {

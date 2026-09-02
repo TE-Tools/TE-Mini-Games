@@ -18,10 +18,12 @@ import {
   nextRound,
   accusedPlayer,
   starterPlayer,
+  teamMembers,
+  teamCaught,
   imposters,
   createRng,
 } from '@/games/finde-den-imposter/engine'
-import { defaultImposterCount } from '@/games/finde-den-imposter/modes'
+import { defaultImposterCount, CHAOS_RULES } from '@/games/finde-den-imposter/modes'
 import { findeDenImposterGame } from '@/games/finde-den-imposter'
 import { wordsForCategory } from '@/games/finde-den-imposter/data/words'
 import type { ImposterMatchState } from '@/games/finde-den-imposter/types'
@@ -233,5 +235,191 @@ describe('Keine Wertung', () => {
     const felder = Object.keys(s.players[0]!)
     expect(felder).not.toContain('roundPoints')
     expect(felder).not.toContain('totalPoints')
+  })
+})
+
+/* ============================ Die weiteren Modi =========================== */
+
+describe('Modus „Leer"', () => {
+  it('zeigt dem Imposter weder Hilfswort noch Kategorie', () => {
+    const s = start(NAMES6, { mode: 'blank' })
+    expect(s.config.imposterSees).toBe('nothing')
+    expect(s.config.showCategory).toBe(false)
+  })
+
+  it('lässt die Unschuldigen das Wort trotzdem sehen', () => {
+    const s = start(NAMES6, { mode: 'blank' })
+    for (const p of s.players) {
+      expect(p.word).toBe(p.isImposter ? null : s.config.secretWord)
+    }
+  })
+})
+
+describe('Modus „Nur Kategorie"', () => {
+  it('gibt dem Imposter die Kategorie, aber kein Hilfswort', () => {
+    const s = start(NAMES6, { mode: 'categories_only' })
+    expect(s.config.imposterSees).toBe('category')
+    expect(s.config.showCategory).toBe(true)
+  })
+})
+
+describe('Modus „Tempo"', () => {
+  it('bringt eine Uhr mit, die anderen Modi nicht', () => {
+    expect(start(NAMES6, { mode: 'speed' }).config.timerSeconds).toBe(90)
+    expect(start(NAMES6, { mode: 'classic' }).config.timerSeconds).toBeNull()
+  })
+})
+
+describe('Modus „Chaos"', () => {
+  it('zieht jede Runde eine Sonderregel und sagt sie an', () => {
+    const s = start(NAMES6, { mode: 'chaos' })
+    expect(s.config.specialRule).toBeTruthy()
+    expect(CHAOS_RULES.map((r) => r.id)).toContain(s.config.specialRule)
+  })
+
+  it('zieht über viele Startwerte hinweg verschiedene Regeln', () => {
+    const gezogen = new Set<string | null>()
+    for (let seed = 1; seed <= 60; seed++) {
+      gezogen.add(start(NAMES6, { mode: 'chaos', seed }).config.specialRule)
+    }
+    expect(gezogen.size).toBeGreaterThan(1)
+  })
+
+  it('zieht in kleinen Runden keine Regel, die mehr Leute braucht', () => {
+    const klein = ['A', 'B', 'C']
+    for (let seed = 1; seed <= 60; seed++) {
+      const s = start(klein, { mode: 'chaos', seed })
+      expect(s.config.imposterCount).toBe(1)
+      const regel = CHAOS_RULES.find((r) => r.id === s.config.specialRule)!
+      expect(regel.minPlayers).toBeLessThanOrEqual(3)
+    }
+  })
+
+  it('wechselt die Regel von Runde zu Runde', () => {
+    let s = start(NAMES6, { mode: 'chaos' })
+    const regeln = new Set<string | null>([s.config.specialRule])
+    for (let i = 0; i < 12; i++) {
+      s = accuse(bisAnklage(s), s.players[0]!.id)
+      if (s.phase === 'last_chance') s = submitLastChance(s, 'daneben')
+      s = nextRound(s)
+      regeln.add(s.config.specialRule)
+    }
+    expect(regeln.size).toBeGreaterThan(1)
+  })
+})
+
+describe('Modus „Duell"', () => {
+  const NAMES8 = [...NAMES6, 'Gina', 'Hans']
+
+  it('braucht mindestens sechs Mitspielende', () => {
+    expect(() => start(['A', 'B', 'C', 'D'], { mode: 'duel' })).toThrow(/mindestens 6/)
+  })
+
+  it('teilt in zwei möglichst gleich große Teams', () => {
+    const s = start(NAMES8, { mode: 'duel' })
+    expect(teamMembers(s, 1)).toHaveLength(4)
+    expect(teamMembers(s, 2)).toHaveLength(4)
+    expect(s.players.every((p) => p.team === 1 || p.team === 2)).toBe(true)
+  })
+
+  it('setzt in jedes Team genau einen Imposter – über viele Startwerte', () => {
+    for (let seed = 1; seed <= 40; seed++) {
+      const s = start(NAMES8, { mode: 'duel', seed })
+      expect(teamMembers(s, 1).filter((p) => p.isImposter)).toHaveLength(1)
+      expect(teamMembers(s, 2).filter((p) => p.isImposter)).toHaveLength(1)
+    }
+  })
+
+  it('wertet erst aus, wenn beide Teams getippt haben', () => {
+    const s0 = bisAnklage(start(NAMES8, { mode: 'duel' }))
+    const nachTeam1 = accuse(s0, teamMembers(s0, 1)[0]!.id)
+    expect(nachTeam1.phase).toBe('accuse')
+    expect(nachTeam1.teamAccused[0]).toBeTruthy()
+    expect(nachTeam1.teamAccused[1]).toBeNull()
+
+    const fertig = accuse(nachTeam1, teamMembers(s0, 2)[0]!.id)
+    expect(fertig.phase).not.toBe('accuse')
+  })
+
+  it('lässt ein Team nicht zweimal tippen', () => {
+    const s0 = bisAnklage(start(NAMES8, { mode: 'duel' }))
+    const einmal = accuse(s0, teamMembers(s0, 1)[0]!.id)
+    const nochmal = accuse(einmal, teamMembers(s0, 1)[1]!.id)
+    expect(nochmal.teamAccused[0]).toBe(einmal.teamAccused[0])
+  })
+
+  it('gibt beiden erwischten Imposter nacheinander die letzte Chance', () => {
+    const s0 = bisAnklage(start(NAMES8, { mode: 'duel' }))
+    const i1 = teamMembers(s0, 1).find((p) => p.isImposter)!
+    const i2 = teamMembers(s0, 2).find((p) => p.isImposter)!
+
+    let s = accuse(accuse(s0, i1.id), i2.id)
+    expect(s.phase).toBe('last_chance')
+    expect(s.lastChanceQueue).toEqual([i1.id, i2.id])
+
+    s = submitLastChance(s, 'daneben')
+    expect(s.phase).toBe('last_chance')
+    expect(s.lastChanceQueue).toEqual([i2.id])
+
+    s = submitLastChance(s, s.config.secretWord)
+    expect(s.phase).toBe('round_result')
+    expect(s.players.find((p) => p.id === i1.id)!.lastChanceCorrect).toBe(false)
+    expect(s.players.find((p) => p.id === i2.id)!.lastChanceCorrect).toBe(true)
+  })
+
+  it('hält fest, welches Team seinen Imposter erwischt hat', () => {
+    const s0 = bisAnklage(start(NAMES8, { mode: 'duel' }))
+    const i1 = teamMembers(s0, 1).find((p) => p.isImposter)!
+    const daneben2 = teamMembers(s0, 2).find((p) => !p.isImposter)!
+
+    const s = accuse(accuse(s0, i1.id), daneben2.id)
+    expect(teamCaught(s, 1)).toBe(true)
+    expect(teamCaught(s, 2)).toBe(false)
+    expect(s.correctAccusation).toBe(true)
+  })
+
+  it('behält die Teams über die Runden hinweg als Aufteilung bei', () => {
+    const s0 = bisAnklage(start(NAMES8, { mode: 'duel' }))
+    let s = accuse(accuse(s0, teamMembers(s0, 1)[0]!.id), teamMembers(s0, 2)[0]!.id)
+    while (s.phase === 'last_chance') s = submitLastChance(s, 'daneben')
+    const r2 = nextRound(s)
+    expect(teamMembers(r2, 1)).toHaveLength(4)
+    expect(teamMembers(r2, 2)).toHaveLength(4)
+    expect(teamMembers(r2, 1).filter((p) => p.isImposter)).toHaveLength(1)
+  })
+})
+
+describe('Eigene Kategorien im Spiel', () => {
+  const EIGENE = ['Königsschuss', 'Vogelstange', 'Fahnenträger', 'Schützenkönig', 'Festzelt']
+
+  it('zieht das Wort aus der eigenen Liste statt aus dem Wortschatz', () => {
+    for (let seed = 1; seed <= 20; seed++) {
+      const s = createMatch({
+        names: NAMES6,
+        categoryId: 'eigene:schuetzen',
+        customWords: EIGENE,
+        customCategoryLabel: 'Schützenverein',
+        seed,
+      })
+      expect(EIGENE).toContain(s.config.secretWord)
+      expect(EIGENE).toContain(s.config.helperWord)
+      expect(s.config.helperWord).not.toBe(s.config.secretWord)
+      expect(s.config.categoryLabel).toBe('Schützenverein')
+    }
+  })
+
+  it('nimmt die eigene Liste auch in die nächste Runde mit', () => {
+    const s0 = createMatch({
+      names: NAMES6,
+      categoryId: 'eigene:schuetzen',
+      customWords: EIGENE,
+      customCategoryLabel: 'Schützenverein',
+      seed: 7,
+    })
+    let s = accuse(bisAnklage(s0), s0.players[0]!.id)
+    if (s.phase === 'last_chance') s = submitLastChance(s, 'daneben')
+    const r2 = nextRound(s)
+    expect(EIGENE).toContain(r2.config.secretWord)
+    expect(r2.config.categoryLabel).toBe('Schützenverein')
   })
 })
