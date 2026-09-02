@@ -18,11 +18,12 @@ Details und Originalspezifikation: `schuetzenrunde/START_HERE.md` und `schuetzen
 
 ## Finde den Imposter (Kurz)
 
-- Partyspiel am **einen** Gerät (Pass-and-Play), 3–12 Mitspielende
-- Alle bekommen ein geheimes Wort — nur die Imposter nicht
-- Reihum ein Hinweis, dann Diskussion und Abstimmung
-- Wird ein Imposter mehrheitlich enttarnt, bekommt er die **letzte Chance**: das Wort erraten
-- Mehrere Runden mit Gesamtpunkten
+- Partyspiel am **einen** Gerät, 3–12 Mitspielende
+- Alle bekommen ein geheimes Wort — die Imposter nur ein einzelnes Hilfswort
+- Reihum sagt jeder laut sein Wort (nichts wird getippt), dann wird geredet
+- Gemeinsam tippt die Runde auf einen Namen; war es ein Imposter, bekommt er
+  die **letzte Chance**, das Wort zu erraten
+- **Ohne Punkte und ohne Rangliste** — wer gewonnen hat, sieht man am Tisch
 
 **Umgesetzt ist der Modus „Klassisch" (inkl. Doppel-Imposter).** Fünf weitere
 Modi sind angelegt, aber noch nicht spielbar; ebenso offen: Wortschatz auf

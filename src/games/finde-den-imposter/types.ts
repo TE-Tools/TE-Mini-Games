@@ -6,12 +6,13 @@ export type ImposterPhase =
   | 'setup'
   | 'secret_handoff'
   | 'secret_reveal'
-  | 'hints'
+  /** Reihum: wer dran ist, sagt sein Hinweiswort laut -- nichts wird getippt. */
+  | 'turns'
   | 'discussion'
-  | 'vote'
+  /** Gemeinsame Anklage: eine Liste aller Namen, einer wird angetippt. */
+  | 'accuse'
   | 'last_chance'
   | 'round_result'
-  | 'match_result'
 
 export type ImposterModeId =
   | 'classic'
@@ -26,15 +27,11 @@ export interface ImposterPlayer {
   id: string
   name: string
   isImposter: boolean
-  /** Secret word only for non-imposters (classic). */
+  /** Geheimes Wort -- nur für Nicht-Imposter. */
   word: string | null
-  hint: string | null
-  voteForId: string | null
+  /** Hat diese Person ihr Wort in der Reihum-Runde schon gesagt? */
+  hasSpoken: boolean
   lastChanceGuess: string | null
-  /** Points earned this round. */
-  roundPoints: number
-  /** Cumulative match points. */
-  totalPoints: number
 }
 
 export interface ImposterRoundConfig {
@@ -42,8 +39,12 @@ export interface ImposterRoundConfig {
   categoryId: string
   categoryLabel: string
   secretWord: string
-  /** Extra decoy words shown only to imposters (optional help). */
-  decoys: string[]
+  /**
+   * Ein einzelnes Hilfswort, das nur die Imposter sehen -- jede Runde ein
+   * anderes, damit sich die Runden nicht gleich anfühlen (02.09.2026,
+   * Thomas' Wunsch). Vorher waren es fünf Wörter auf einmal.
+   */
+  helperWord: string
   playerCount: number
   imposterCount: number
   roundIndex: number
@@ -54,16 +55,16 @@ export interface ImposterMatchState {
   phase: ImposterPhase
   players: ImposterPlayer[]
   config: ImposterRoundConfig
-  /** Whose secret is being revealed / who is entering a hint / who is voting. */
+  /** Wer sein Geheimnis sieht bzw. wer gerade dran ist. */
   activePlayerIndex: number
-  /** True while the “give device to X” cover is shown. */
+  /** True, solange der „Gib das Gerät an X"-Deckel liegt (nur bei den Geheimnissen). */
   handoffCover: boolean
   discussionSeconds: number
-  /** Majority-voted player ids (may be empty). */
-  votedOutIds: string[]
-  /** Whether any voted-out player was actually an imposter. */
+  /** Die gemeinsam angeklagte Person (leer, solange nicht angeklagt wurde). */
+  accusedId: string | null
+  /** War die Anklage ein echter Imposter? */
   correctAccusation: boolean
-  /** Imposter last-chance succeeded. */
+  /** Hat der Imposter bei der letzten Chance das Wort erraten? */
   lastChanceSuccess: boolean | null
   seed: number
   finished: boolean

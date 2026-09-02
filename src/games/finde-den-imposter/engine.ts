@@ -1,6 +1,17 @@
 /**
- * Finde den Imposter – pure game engine (no React / no DOM).
- * Classic local pass-and-play flow.
+ * Finde den Imposter – reine Spiellogik (kein React, kein DOM).
+ *
+ * Ablauf am einen Gerät (02.09.2026, nach Thomas' Vorgaben umgebaut):
+ *   1. Geheimnisse: Gerät wird herumgereicht, jeder sieht sein Wort
+ *      (Imposter stattdessen ein einzelnes Hilfswort).
+ *   2. Reihum: das Gerät zeigt nur, wer dran ist -- gesprochen wird laut,
+ *      es wird nichts getippt.
+ *   3. Miteinander reden.
+ *   4. Anklage: eine Liste aller Namen, gemeinsam wird einer angetippt.
+ *   5. War es ein Imposter, bekommt er die letzte Chance, das Wort zu raten.
+ *
+ * Bewusst ohne Punkte und ohne Rangliste -- wer gewonnen hat, sieht man am
+ * Tisch, dafür braucht es keine Tabelle.
  */
 
 import type {
@@ -11,11 +22,10 @@ import type {
   ImposterRoundConfig,
 } from './types'
 import { defaultImposterCount } from './modes'
-import { applyRoundScores, rankPlayers } from './scoring'
 import { categoryLabel } from './data/categories'
 import { wordsForCategory } from './data/words'
 
-/** Mulberry32 – deterministic RNG from seed. */
+/** Mulberry32 – deterministischer Zufall aus einem Startwert. */
 export function createRng(seed: number): () => number {
   let t = seed >>> 0
   return () => {
@@ -35,20 +45,22 @@ function shuffleInPlace<T>(arr: T[], rng: () => number): void {
   }
 }
 
-function pickWord(categoryId: string, rng: () => number): { word: string; decoys: string[] } {
+/**
+ * Geheimes Wort ziehen und dazu genau EIN Hilfswort für die Imposter.
+ * Das Hilfswort wechselt jede Runde, damit sich die Runden unterscheiden.
+ */
+function pickWord(categoryId: string, rng: () => number): { word: string; helperWord: string } {
   const pool = wordsForCategory(categoryId)
-  if (pool.length === 0) {
-    return { word: 'Geheimnis', decoys: ['Tipp', 'Hinweis', 'Idee', 'Begriff', 'Thema'] }
-  }
+  if (pool.length === 0) return { word: 'Geheimnis', helperWord: 'Begriff' }
+
   const indices = pool.map((_, i) => i)
   shuffleInPlace(indices, rng)
   const word = pool[indices[0]!]!.word
-  const decoys: string[] = []
-  for (let i = 1; i < indices.length && decoys.length < 5; i++) {
-    const w = pool[indices[i]!]!.word
-    if (w.toLowerCase() !== word.toLowerCase()) decoys.push(w)
-  }
-  return { word, decoys }
+  const helper = indices
+    .slice(1)
+    .map((i) => pool[i]!.word)
+    .find((w) => w.toLowerCase() !== word.toLowerCase())
+  return { word, helperWord: helper ?? word }
 }
 
 function normalizeNames(names: string[]): string[] {
@@ -78,11 +90,8 @@ function buildPlayers(
     name,
     isImposter: imposterSet.has(i),
     word: imposterSet.has(i) ? null : secretWord,
-    hint: null,
-    voteForId: null,
+    hasSpoken: false,
     lastChanceGuess: null,
-    roundPoints: 0,
-    totalPoints: 0,
   }))
 }
 
@@ -97,13 +106,13 @@ function freshRoundConfig(
   },
   rng: () => number,
 ): ImposterRoundConfig {
-  const { word, decoys } = pickWord(opts.categoryId, rng)
+  const { word, helperWord } = pickWord(opts.categoryId, rng)
   return {
     mode: opts.mode,
     categoryId: opts.categoryId,
     categoryLabel: categoryLabel(opts.categoryId),
     secretWord: word,
-    decoys,
+    helperWord,
     playerCount: opts.playerCount,
     imposterCount: opts.imposterCount,
     roundIndex: opts.roundIndex,
@@ -115,10 +124,11 @@ export function createMatch(options: CreateMatchOptions): ImposterMatchState {
   const names = normalizeNames(options.names)
   const mode = options.mode ?? 'classic'
   const totalRounds = Math.max(1, Math.min(12, options.totalRounds ?? 3))
-  const seed = options.seed ?? (Date.now() ^ (Math.random() * 0x100000000)) >>> 0
+  const seed = options.seed ?? ((Date.now() ^ (Math.random() * 0x100000000)) >>> 0)
   const rng = createRng(seed)
   const imposterCount =
-    options.imposterCount ?? defaultImposterCount(names.length, mode === 'double' ? 'double' : 'classic')
+    options.imposterCount ??
+    defaultImposterCount(names.length, mode === 'double' ? 'double' : 'classic')
   if (imposterCount < 1 || imposterCount >= names.length) {
     throw new Error('Ungültige Imposter-Anzahl')
   }
@@ -134,16 +144,15 @@ export function createMatch(options: CreateMatchOptions): ImposterMatchState {
     },
     rng,
   )
-  const players = buildPlayers(names, imposterCount, config.secretWord, rng)
 
   return {
     phase: 'secret_handoff',
-    players,
+    players: buildPlayers(names, imposterCount, config.secretWord, rng),
     config,
     activePlayerIndex: 0,
     handoffCover: true,
     discussionSeconds: options.discussionSeconds ?? 60,
-    votedOutIds: [],
+    accusedId: null,
     correctAccusation: false,
     lastChanceSuccess: null,
     seed,
@@ -151,198 +160,98 @@ export function createMatch(options: CreateMatchOptions): ImposterMatchState {
   }
 }
 
-/** Advance past cover → show secret for active player. */
+/* ------------------------------- Geheimnisse ------------------------------ */
+
 export function openSecret(state: ImposterMatchState): ImposterMatchState {
   if (state.phase !== 'secret_handoff') return state
   return { ...state, phase: 'secret_reveal', handoffCover: false }
 }
 
-/** After player saw secret: next player or start hints. */
 export function confirmSecret(state: ImposterMatchState): ImposterMatchState {
   if (state.phase !== 'secret_reveal') return state
   const next = state.activePlayerIndex + 1
   if (next >= state.players.length) {
-    return {
-      ...state,
-      phase: 'hints',
-      activePlayerIndex: 0,
-      handoffCover: true,
-    }
+    return { ...state, phase: 'turns', activePlayerIndex: 0, handoffCover: false }
   }
-  return {
-    ...state,
-    phase: 'secret_handoff',
-    activePlayerIndex: next,
-    handoffCover: true,
-  }
+  return { ...state, phase: 'secret_handoff', activePlayerIndex: next, handoffCover: true }
 }
 
-export function openHint(state: ImposterMatchState): ImposterMatchState {
-  if (state.phase !== 'hints' || !state.handoffCover) return state
-  return { ...state, handoffCover: false }
-}
+/* --------------------------------- Reihum -------------------------------- */
 
-export function submitHint(state: ImposterMatchState, hint: string): ImposterMatchState {
-  if (state.phase !== 'hints' || state.handoffCover) return state
-  const text = hint.trim().slice(0, 40)
-  if (!text) return state
+/**
+ * Die Person, die dran war, hat gesprochen -- weiter zur nächsten.
+ * Kein Deckel und keine Eingabe: gesagt wird alles laut in der Runde.
+ */
+export function passTurn(state: ImposterMatchState): ImposterMatchState {
+  if (state.phase !== 'turns') return state
   const players = state.players.map((p, i) =>
-    i === state.activePlayerIndex ? { ...p, hint: text } : p,
+    i === state.activePlayerIndex ? { ...p, hasSpoken: true } : p,
   )
   const next = state.activePlayerIndex + 1
   if (next >= players.length) {
-    return {
-      ...state,
-      players,
-      phase: 'discussion',
-      activePlayerIndex: 0,
-      handoffCover: false,
-    }
+    return { ...state, players, phase: 'discussion', activePlayerIndex: 0 }
   }
-  return {
-    ...state,
-    players,
-    activePlayerIndex: next,
-    handoffCover: true,
-  }
+  return { ...state, players, activePlayerIndex: next }
 }
 
 export function endDiscussion(state: ImposterMatchState): ImposterMatchState {
   if (state.phase !== 'discussion') return state
-  return {
-    ...state,
-    phase: 'vote',
-    activePlayerIndex: 0,
-    handoffCover: true,
-  }
+  return { ...state, phase: 'accuse', activePlayerIndex: 0, handoffCover: false }
 }
 
-export function openVote(state: ImposterMatchState): ImposterMatchState {
-  if (state.phase !== 'vote' || !state.handoffCover) return state
-  return { ...state, handoffCover: false }
-}
+/* -------------------------------- Anklage -------------------------------- */
 
-export function submitVote(state: ImposterMatchState, targetId: string): ImposterMatchState {
-  if (state.phase !== 'vote' || state.handoffCover) return state
-  const voter = state.players[state.activePlayerIndex]
-  if (!voter || targetId === voter.id) return state
-  if (!state.players.some((p) => p.id === targetId)) return state
+/**
+ * Gemeinsame Entscheidung: ein Name wird angetippt. Trifft es einen Imposter,
+ * bekommt genau dieser die letzte Chance; sonst ist die Runde vorbei.
+ */
+export function accuse(state: ImposterMatchState, targetId: string): ImposterMatchState {
+  if (state.phase !== 'accuse') return state
+  const target = state.players.find((p) => p.id === targetId)
+  if (!target) return state
 
-  const players = state.players.map((p, i) =>
-    i === state.activePlayerIndex ? { ...p, voteForId: targetId } : p,
-  )
-  const next = state.activePlayerIndex + 1
-  if (next >= players.length) {
-    return resolveVotes({ ...state, players })
-  }
-  return {
-    ...state,
-    players,
-    activePlayerIndex: next,
-    handoffCover: true,
-  }
-}
-
-function resolveVotes(state: ImposterMatchState): ImposterMatchState {
-  const counts = new Map<string, number>()
-  for (const p of state.players) {
-    if (!p.voteForId) continue
-    counts.set(p.voteForId, (counts.get(p.voteForId) ?? 0) + 1)
-  }
-  let best = 0
-  const leaders: string[] = []
-  for (const [id, n] of counts) {
-    if (n > best) {
-      best = n
-      leaders.length = 0
-      leaders.push(id)
-    } else if (n === best) {
-      leaders.push(id)
-    }
-  }
-  // Majority = more than half of voters; otherwise no elimination (tie or weak vote)
-  const majorityNeeded = Math.floor(state.players.length / 2) + 1
-  const votedOutIds = best >= majorityNeeded ? leaders : []
-  const correctAccusation = votedOutIds.some((id) => {
-    const p = state.players.find((x) => x.id === id)
-    return p?.isImposter === true
-  })
-
-  if (correctAccusation && votedOutIds.length > 0) {
-    // First accused imposter gets last chance (or first voted-out who is imposter)
-    const accusedImposter = state.players.find((p) => votedOutIds.includes(p.id) && p.isImposter)
-    const idx = accusedImposter ? state.players.indexOf(accusedImposter) : 0
+  if (target.isImposter) {
     return {
       ...state,
-      votedOutIds,
+      accusedId: targetId,
       correctAccusation: true,
       phase: 'last_chance',
-      activePlayerIndex: idx,
-      handoffCover: true,
+      activePlayerIndex: state.players.indexOf(target),
       lastChanceSuccess: null,
     }
   }
-
-  // No correct accusation → score and result
-  const scored = applyRoundScores({
-    players: state.players,
-    correctAccusation: false,
-    lastChanceSuccess: null,
-  })
   return {
     ...state,
-    players: scored,
-    votedOutIds,
+    accusedId: targetId,
     correctAccusation: false,
     lastChanceSuccess: null,
     phase: 'round_result',
-    handoffCover: false,
   }
-}
-
-export function openLastChance(state: ImposterMatchState): ImposterMatchState {
-  if (state.phase !== 'last_chance' || !state.handoffCover) return state
-  return { ...state, handoffCover: false }
 }
 
 export function submitLastChance(state: ImposterMatchState, guess: string): ImposterMatchState {
-  if (state.phase !== 'last_chance' || state.handoffCover) return state
+  if (state.phase !== 'last_chance') return state
   const g = guess.trim()
   const success =
-    g.length > 0 &&
-    g.localeCompare(state.config.secretWord, 'de', { sensitivity: 'base' }) === 0
+    g.length > 0 && g.localeCompare(state.config.secretWord, 'de', { sensitivity: 'base' }) === 0
 
-  const players = state.players.map((p, i) =>
-    i === state.activePlayerIndex ? { ...p, lastChanceGuess: g } : p,
-  )
-  const scored = applyRoundScores({
-    players,
-    correctAccusation: true,
-    lastChanceSuccess: success,
-  })
   return {
     ...state,
-    players: scored,
+    players: state.players.map((p, i) =>
+      i === state.activePlayerIndex ? { ...p, lastChanceGuess: g } : p,
+    ),
     lastChanceSuccess: success,
     phase: 'round_result',
-    handoffCover: false,
   }
 }
 
-/** Start next round or finish match. Keeps totalPoints. */
+/* --------------------------------- Runden -------------------------------- */
+
+/** Nächste Runde mit neuem Wort und neu verteilten Rollen. */
 export function nextRound(state: ImposterMatchState): ImposterMatchState {
   if (state.phase !== 'round_result') return state
   const nextIndex = state.config.roundIndex + 1
-  if (nextIndex >= state.config.totalRounds) {
-    return {
-      ...state,
-      phase: 'match_result',
-      finished: true,
-      handoffCover: false,
-    }
-  }
-
-  const seed = (state.seed + nextIndex * 9973) >>> 0
+  const seed = (state.seed + (nextIndex + 1) * 9973) >>> 0
   const rng = createRng(seed)
   const config = freshRoundConfig(
     {
@@ -351,26 +260,23 @@ export function nextRound(state: ImposterMatchState): ImposterMatchState {
       playerCount: state.players.length,
       imposterCount: state.config.imposterCount,
       roundIndex: nextIndex,
-      totalRounds: state.config.totalRounds,
+      totalRounds: Math.max(state.config.totalRounds, nextIndex + 1),
     },
     rng,
   )
-  // Keep names & totals; reset round fields and re-roll roles
-  const names = state.players.map((p) => p.name)
-  const totals = state.players.map((p) => p.totalPoints)
-  const fresh = buildPlayers(names, config.imposterCount, config.secretWord, rng).map((p, i) => ({
-    ...p,
-    totalPoints: totals[i] ?? 0,
-  }))
-
   return {
     phase: 'secret_handoff',
-    players: fresh,
+    players: buildPlayers(
+      state.players.map((p) => p.name),
+      config.imposterCount,
+      config.secretWord,
+      rng,
+    ),
     config,
     activePlayerIndex: 0,
     handoffCover: true,
     discussionSeconds: state.discussionSeconds,
-    votedOutIds: [],
+    accusedId: null,
     correctAccusation: false,
     lastChanceSuccess: null,
     seed,
@@ -382,8 +288,13 @@ export function activePlayer(state: ImposterMatchState): ImposterPlayer {
   return state.players[state.activePlayerIndex]!
 }
 
-export function ranking(state: ImposterMatchState): ImposterPlayer[] {
-  return rankPlayers(state.players)
+export function accusedPlayer(state: ImposterMatchState): ImposterPlayer | null {
+  if (!state.accusedId) return null
+  return state.players.find((p) => p.id === state.accusedId) ?? null
+}
+
+export function imposters(state: ImposterMatchState): ImposterPlayer[] {
+  return state.players.filter((p) => p.isImposter)
 }
 
 export function phaseLabel(phase: ImposterPhase): string {
@@ -393,18 +304,16 @@ export function phaseLabel(phase: ImposterPhase): string {
     case 'secret_handoff':
     case 'secret_reveal':
       return 'Geheimnisse'
-    case 'hints':
-      return 'Hinweise'
+    case 'turns':
+      return 'Reihum'
     case 'discussion':
       return 'Diskussion'
-    case 'vote':
-      return 'Abstimmung'
+    case 'accuse':
+      return 'Imposter raten'
     case 'last_chance':
       return 'Letzte Chance'
     case 'round_result':
-      return 'Runden-Ergebnis'
-    case 'match_result':
-      return 'Endstand'
+      return 'Ergebnis'
     default:
       return phase
   }

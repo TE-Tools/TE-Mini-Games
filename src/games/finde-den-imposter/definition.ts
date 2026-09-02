@@ -1,11 +1,18 @@
 import type { GameDefinition } from '@/games/types'
 
+/**
+ * Bewusst ohne Punkte, XP und Sterne (02.09.2026, Thomas: "Punkte-System und
+ * Ranglisten für das Spiel lieber aus"). Das Spiel ist ein Partyspiel am Tisch
+ * -- wer gewonnen hat, sieht man dort, dafür braucht es keine Wertung. Die
+ * Registry verlangt die drei Funktionen, sie geben deshalb konstant 0 zurück,
+ * und die Seite speichert gar kein Ergebnis.
+ */
 export const findeDenImposterGame: GameDefinition = {
   id: 'finde-den-imposter',
   name: 'Finde den Imposter',
   description:
-    'Partyspiel: Einer kennt das geheime Wort nicht. Hinweise geben, abstimmen, letzte Chance.',
-  icon: '😈',
+    'Partyspiel: Einer kennt das geheime Wort nicht. Reihum reden, gemeinsam raten, letzte Chance.',
+  icon: '\u{1F608}',
   maxLevel: 1,
   createLevel: (level, seed) => ({
     level: 1,
@@ -13,16 +20,7 @@ export const findeDenImposterGame: GameDefinition = {
     label: 'Partyrunde',
     requestedLevel: level,
   }),
-  calculateScore: (_level, rawResult) => {
-    const raw = rawResult as { score?: number }
-    return Math.max(0, Math.min(1000, Math.floor(raw.score ?? 0)))
-  },
-  calculateXP: (_level, score) => (score >= 500 ? 120 : score > 0 ? 40 : 0),
-  calculateStars: (_level, score) => {
-    if (score >= 800) return 5
-    if (score >= 500) return 4
-    if (score >= 200) return 3
-    if (score > 0) return 2
-    return 0
-  },
+  calculateScore: () => 0,
+  calculateXP: () => 0,
+  calculateStars: () => 0,
 }

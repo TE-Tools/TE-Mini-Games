@@ -7,7 +7,8 @@ Hinweise, Abstimmung, letzte Chance, eigene Kategorien, ~1000 Wörter, 7 Modi).
 Umgesetzt und live ist davon der **Klassisch-Modus** samt Doppel-Imposter.
 
 - Menü-Button 😈 und Route `/play/finde-den-imposter` sind verdrahtet
-- Registry-Eintrag vorhanden, Ergebnisse laufen in XP/Abzeichen/Sync mit
+- **Ohne Punkte und ohne Rangliste** – das Spiel speichert bewusst kein
+  Ergebnis (02.09.2026, Thomas' Vorgabe)
 - Engine ist UI-unabhängig (`src/games/finde-den-imposter/engine.ts`) und
   durch Tests abgedeckt (`tests/finde-den-imposter.test.ts`)
 

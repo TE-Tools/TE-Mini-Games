@@ -3,16 +3,14 @@ export {
   createMatch,
   openSecret,
   confirmSecret,
-  openHint,
-  submitHint,
+  passTurn,
   endDiscussion,
-  openVote,
-  submitVote,
-  openLastChance,
+  accuse,
   submitLastChance,
   nextRound,
   activePlayer,
-  ranking,
+  accusedPlayer,
+  imposters,
   phaseLabel,
   createRng,
 } from './engine'
@@ -28,4 +26,3 @@ export type {
 export { CATEGORIES, categoryById, categoryLabel } from './data/categories'
 export { WORDS, wordsForCategory } from './data/words'
 export { MODES, modeOf, defaultImposterCount } from './modes'
-export { POINTS, applyRoundScores, rankPlayers } from './scoring'
