@@ -1,79 +1,51 @@
-# Finde den Imposter – Status & Übergabe
+# Finde den Imposter – Stand
 
-**Stand:** 2026-09-01 (spielbares Klassisch-MVP)
+**Stand:** 02.09.2026
 
-## Git-Stand beim Holen
+## Ablauf am Tisch
 
-| | |
-|--|--|
-| **Letzter Commit (origin/main)** | `187ac09` |
-| **Zeit** | **2026-09-01 23:06:06 +0200** |
-| **Message** | Idee vorgemerkt: „Finde den Imposter“ (#9) |
+Ein Gerät, alle sitzen zusammen:
 
-## Was implementiert ist (MVP Klassisch)
+1. **Geheimnisse** – das Gerät wird herumgereicht, jeder sieht sein Wort.
+   Die Imposter sehen stattdessen „IMPOSTER“ und darunter **ein einzelnes
+   Hilfswort** aus derselben Kategorie. Das Hilfswort wechselt jede Runde,
+   damit sich die Runden unterscheiden.
+2. **Reihum** – das Gerät zeigt nur, wer dran ist („spielt“), die anderen
+   warten. Gesprochen wird laut in die Runde, es wird **nichts getippt**.
+3. **Reden** – wenn alle dran waren, diskutiert die Gruppe frei.
+4. **Imposter raten** – eine Liste aller Namen; die Runde tippt gemeinsam
+   auf einen.
+5. **Letzte Chance** – war es wirklich ein Imposter, darf genau der noch
+   das geheime Wort raten und die Runde damit drehen.
 
-### Integration
-- [x] `GameId`: `'finde-den-imposter'`
-- [x] Registry: `findeDenImposterGame`
-- [x] Route: `/play/finde-den-imposter`
-- [x] HomePage-Button: 😈 Finde den Imposter
-- [x] `npm run typecheck` grün
-- [x] `npm run build` grün
+Danach: nächste Runde mit neuem Wort und neu verteilten Rollen, so oft man
+mag.
 
-### Engine (`src/games/finde-den-imposter/`)
-- [x] `types.ts`, `modes.ts`, `scoring.ts`, `engine.ts`, `definition.ts`, `index.ts`
-- [x] Phasen: setup → secret_handoff/reveal → hints → discussion → vote → last_chance → round_result → match_result
-- [x] Pass-and-Play-Cover vor Geheimnis / Hinweis / Abstimmung / Last Chance
-- [x] 1–2 Imposter (auto nach Spielerzahl; Modus Doppel)
-- [x] Mehrheits-Abstimmung (keine Selbst-Stimme)
-- [x] Letzte Chance: Wort raten (case-insensitive DE)
-- [x] Punkte: Dorf +2 / +1, Imposter +2 Überleben / +3 Last-Chance
-- [x] Mehrere Runden, Gesamtpunkte, Ranking
-- [x] Seed-RNG (Mulberry32)
+## Bewusst nicht drin
 
-### Daten
-- [x] 20 Kategorien
-- [x] ~300 echte deutsche Wörter (`data/words.ts`)
-- [ ] Ziel 1000 Wörter noch offen
-- [ ] Eigene Kategorien / Import/Export noch offen
+- **Kein Punktesystem, keine Rangliste** (02.09.2026, Thomas' Vorgabe). Wer
+  gewonnen hat, sieht man am Tisch. Das Spiel speichert deshalb auch kein
+  Ergebnis, vergibt keine XP und taucht in keiner Rangliste auf.
+- Keine getippten Hinweise mehr – der frühere Handoff-Stand ließ jeden sein
+  Hinweiswort eintippen, das ist durch das Sprechen in der Runde ersetzt.
+- Keine feste Rundenzahl – man spielt, solange Lust besteht.
 
-### UI (`FindeDenImposterPage.tsx`)
-- [x] Setup (Namen, Kategorie, Modus Klassisch/Doppel, Runden)
-- [x] Geheim-Bildschirme, Hinweise, Diskussion, Abstimmung, Last Chance
-- [x] Runden- und Endstand
-- [x] Ergebnis speichern (IndexedDB + XP + Sync-Versuch)
+## Umgesetzt
 
-### Noch nicht
-- Restliche Modi (Leer, Duell, Tempo, Chaos, …)
-- Online-Multiplayer
-- Eigene Kategorien + Share
-- Wörter auf 1000+
-- Unit-Tests in CI
-- Achievements speziell für Imposter
+- [x] Engine ohne UI-Bezug (`src/games/finde-den-imposter/engine.ts`)
+- [x] Modi **Klassisch** und **Doppel-Imposter**
+- [x] 20 Kategorien, 355 deutsche Wörter
+- [x] Ein zufälliges Hilfswort je Runde
+- [x] Reihum-Phase, gemeinsame Anklage, letzte Chance
+- [x] Route `/play/finde-den-imposter`, Home-Button, Registry-Eintrag
+- [x] Tests: `tests/finde-den-imposter.test.ts`
 
-## Lokal testen
+## Noch offen
 
-```bash
-cd artifacts/TE-Mini-Games   # oder euren Clone
-npm install
-npm run dev
-# Browser: http://localhost:5173 → 😈 Finde den Imposter
-```
-
-Oder Production-Preview:
-
-```bash
-npm run build && npm run preview
-```
-
-## Commit-Vorschlag
-
-```
-feat: Finde den Imposter – MVP Klassisch (lokal Pass-and-Play)
-
-- Engine + Scoring + ~300 DE-Wörter, 20 Kategorien
-- UI: Geheimnisse, Hinweise, Abstimmung, letzte Chance, Multi-Runde
-- Registry, Route, Home-Button
-```
-
-Push von der Agent-Session war nicht möglich (keine GitHub-Credentials).
+- **Online-Mehrspieler** – bisher nur am einen Gerät. Wie das ablaufen soll,
+  ist noch nicht festgelegt.
+- Fünf weitere Modi (Leer, Duell, Nur Kategorie, Tempo, Chaos) – in
+  `modes.ts` angelegt, aber als `available: false` markiert und im Menü
+  nicht wählbar.
+- Wortschatz von 355 auf ~1000
+- Eigene Kategorien samt Import/Export
