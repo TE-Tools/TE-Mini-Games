@@ -24,6 +24,17 @@
 -- Daten da sind. Ohne die erste bliebe sie eine Spur hinter dem echten Stand
 -- zurueck. Zusammen stimmt sie ab sofort.
 --
+-- ZWEI VIEWS, SONST NICHTS. Anfangs aenderte diese Migration zusaetzlich die
+-- bestehenden Ranglisten-Views, damit die Seite die Levelzahl gleich
+-- mitgeliefert bekommt. Das war ein Fehler: Die App fragte danach, bevor die
+-- Aenderung eingespielt war -- und eine fehlende Spalte laesst PostgREST die
+-- ganze Abfrage abweisen, nicht nur die eine Spalte. Ergebnis war eine leere
+-- Rangliste statt einer ohne Level (04.09.2026, von Thomas gemeldet).
+--
+-- Jetzt kommen die Levelzahlen aus eigenen, zusaetzlichen Views. Wer sie noch
+-- nicht hat, sieht die Rangliste wie vorher; wer sie hat, sieht die Level
+-- dazu. Nichts Bestehendes wird angefasst.
+--
 -- Gefahrlos mehrfach ausfuehrbar.
 
 create or replace view public.level_stand as
@@ -49,39 +60,17 @@ comment on view public.level_stand is
 
 grant select on public.level_stand to anon, authenticated;
 
--- Die Rangliste je Spiel bekommt dieselbe Zahl gleich mitgeliefert, damit die
--- Seite dafuer keine zweite Abfrage braucht. Neue Spalte am Ende -- so laesst
--- sich die View ersetzen, ohne sie vorher zu loeschen.
-create or replace view public.leaderboard_xp_total as
-select
-  p.username,
-  r.game_id,
-  sum(r.xp)::integer as total_xp,
-  sum(r.score)::integer as total_score,
-  count(*)::integer as play_count,
-  max(r.created_at) as last_played_at,
-  max(r.level)::integer as highest_level
-from public.game_results r
-join public.profiles p on p.id = r.user_id
-where p.username is not null
-group by p.username, r.game_id;
 
-grant select on public.leaderboard_xp_total to anon, authenticated;
+-- Das Spielerlevel je Spieler -- fuer die Gesamtrangliste, wo es kein
+-- Spiel-Level gibt. Bewusst eine eigene View statt einer Spalte in
+-- level_stand: dort steht eine Zeile je Spiel, das Spielerlevel gaebe es
+-- dann vervielfacht.
+create or replace view public.spieler_stand as
+select p.username, p.player_level::integer as player_level
+  from public.profiles p
+ where p.username is not null;
 
--- In der Gesamtrangliste ist das Spielerlevel gemeint, nicht das eines
--- einzelnen Spiels -- ueber alle Spiele hinweg gibt es kein Spiel-Level.
-create or replace view public.leaderboard_overall as
-select
-  p.username,
-  sum(r.xp)::integer as total_xp,
-  sum(r.score)::integer as total_score,
-  count(*)::integer as play_count,
-  count(distinct r.game_id)::integer as game_count,
-  max(r.created_at) as last_played_at,
-  max(p.player_level)::integer as player_level
-from public.game_results r
-join public.profiles p on p.id = r.user_id
-where p.username is not null
-group by p.username;
+comment on view public.spieler_stand is
+  'Spielerlevel je Spieler -- fuer die Gesamtrangliste. Nur Spieler mit Benutzernamen.';
 
-grant select on public.leaderboard_overall to anon, authenticated;
+grant select on public.spieler_stand to anon, authenticated;

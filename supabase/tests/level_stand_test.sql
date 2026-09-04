@@ -81,16 +81,18 @@ begin
 
   /* ---------------- Ranglisten ---------------- */
 
-  perform pg_temp.pruefe('Rangliste je Spiel nennt das hoechste gespielte Level',
-    (select highest_level from public.leaderboard_xp_total
-      where username = 'anna' and game_id = 'perfect-second') = 9);
-
-  perform pg_temp.pruefe('Rangliste je Spiel rechnet weiterhin richtig zusammen',
+  -- Die bestehenden Ranglisten-Views werden bewusst NICHT angefasst: Eine
+  -- fehlende Spalte laesst PostgREST die ganze Abfrage abweisen, und die
+  -- Rangliste war leer statt nur ohne Level (04.09.2026).
+  perform pg_temp.pruefe('Rangliste je Spiel bleibt unveraendert',
     (select total_xp from public.leaderboard_xp_total
       where username = 'anna' and game_id = 'perfect-second') = 130);
 
-  perform pg_temp.pruefe('Gesamtrangliste nennt das Spielerlevel',
-    (select player_level from public.leaderboard_overall where username = 'anna') = 7);
+  perform pg_temp.pruefe('Das Spielerlevel steht in einer eigenen View',
+    (select player_level from public.spieler_stand where username = 'anna') = 7);
+
+  perform pg_temp.pruefe('Auch dort bleibt ohne Benutzernamen alles verborgen',
+    (select count(*) from public.spieler_stand) = 2);
 
   perform pg_temp.pruefe('Gesamtrangliste zaehlt weiterhin alle Spiele',
     (select game_count from public.leaderboard_overall where username = 'bert') = 2);
