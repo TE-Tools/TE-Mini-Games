@@ -276,7 +276,8 @@ export function LeaderboardPage() {
                     {e.username === myName ? ' (du)' : ''}
                     <span className={styles.sub}>
                       {' '}
-                      Level {e.playerLevel} · {e.playCount}{' '}
+                      {e.playerLevel > 0 ? `Level ${e.playerLevel} · ` : ''}
+                      {e.playCount}{' '}
                       {e.playCount === 1 ? 'Runde' : 'Runden'} · {e.gameCount}{' '}
                       {e.gameCount === 1 ? 'Spiel' : 'Spiele'}
                     </span>
