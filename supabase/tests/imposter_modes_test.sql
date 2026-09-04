@@ -149,12 +149,14 @@ begin
   perform pg_temp.pruefe('double: bei drei Mitspielenden nur ein Imposter',
     (select count(*) from public.fdi_players where match_id = m and is_imposter) = 1);
 
-  -- Duell gibt es online nicht -- die Datenbank nimmt den Modus gar nicht an.
+  -- Duell gibt es seit Migration 015 auch online; geprueft wird es dort
+  -- (supabase/tests/imposter_duell_test.sql). Hier bleibt nur, dass ein
+  -- ausgedachter Modus weiterhin abgewiesen wird.
   begin
-    perform public.fdi_create_match('tiere', 'duel', 'Anna');
-    perform pg_temp.pruefe('Duell wird online abgewiesen', false);
+    perform public.fdi_create_match('tiere', 'quatsch', 'Anna');
+    perform pg_temp.pruefe('Unbekannter Modus wird abgewiesen', false);
   exception when others then
-    perform pg_temp.pruefe('Duell wird online abgewiesen', true);
+    perform pg_temp.pruefe('Unbekannter Modus wird abgewiesen', true);
   end;
 
   if current_setting('test.failed')::int > 0 then

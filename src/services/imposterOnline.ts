@@ -15,6 +15,8 @@ export const isImposterOnlineAvailable = isSupabaseConfigured
 export interface OnlinePlayer {
   seat: number
   name: string
+  /** Nur im Duell gefüllt: 1 oder 2. */
+  team: 1 | 2 | null
   has_voted: boolean
   is_you: boolean
   /** Erst im Ergebnis gefüllt. */
@@ -22,14 +24,24 @@ export interface OnlinePlayer {
   last_chance_guess: string | null
 }
 
-export type OnlineMode = 'classic' | 'double' | 'blank' | 'categories_only' | 'speed' | 'chaos'
+export type OnlineMode =
+  | 'classic'
+  | 'double'
+  | 'blank'
+  | 'categories_only'
+  | 'speed'
+  | 'chaos'
+  | 'duel'
 
 export interface OnlineMatch {
   id: string
   code: string
   phase: 'lobby' | 'discussion' | 'accuse' | 'last_chance' | 'result'
   round: number
-  category_id: string
+  /** Bei einer eigenen Wortliste null – dann steht die Kennung in der Runde. */
+  category_id: string | null
+  /** Ob die Wörter aus einer eigenen Liste kommen statt aus einer fertigen. */
+  is_custom_category: boolean
   /** Im Modus „Leer" bis zum Ergebnis null – dort bleibt die Kategorie geheim. */
   category_label: string | null
   show_category: boolean
@@ -48,6 +60,12 @@ export interface OnlineMatch {
   accused_seat: number | null
   correct_accusation: boolean | null
   last_chance_success: boolean | null
+  /** Duell: wen das jeweilige Team angeklagt hat (null = Gleichstand). */
+  team1_seat: number | null
+  team2_seat: number | null
+  /** Duell: ob das Team seine Abstimmung schon hinter sich hat. */
+  team1_done: boolean
+  team2_done: boolean
   is_host: boolean
   size: number
   /** Erst im Ergebnis gefüllt. */
@@ -59,6 +77,13 @@ export interface OnlineMe {
   name: string
   is_imposter: boolean
   vote_seat: number | null
+  /** Nur im Duell gefüllt. */
+  team: 1 | 2 | null
+  /**
+   * Ob gerade ich mit der letzten Chance dran bin. Im Duell kommen beide
+   * Erwischten nacheinander – der Server sagt, wer vorne steht.
+   */
+  my_turn_last_chance: boolean
   /** Nur für Nicht-Imposter. */
   word: string | null
   /** Nur für Imposter. */
@@ -92,15 +117,40 @@ async function rpc<T>(name: string, args: Record<string, unknown>): Promise<T> {
   return data as T
 }
 
+export interface CustomCategoryOnline {
+  id: string
+  label: string
+  word_count: number
+}
+
+/**
+ * Eine eigene Wortliste auf den Server legen, damit auch Online-Runden damit
+ * gespielt werden können. Was das schützt und was nicht: Der Gastgeber kennt
+ * die Liste – er hat sie getippt –, erfährt aber nicht, welches Wort gezogen
+ * wurde. Dieselbe Zusage wie bei den fertigen Kategorien.
+ */
+export const saveCustomCategoryOnline = (label: string, words: string[]) =>
+  rpc<string>('fdi_save_custom_category', { p_label: label, p_words: words })
+
+export const fetchMyCustomCategories = () =>
+  rpc<CustomCategoryOnline[]>('fdi_my_custom_categories', {})
+
+export const deleteCustomCategoryOnline = (id: string) =>
+  rpc<void>('fdi_delete_custom_category', { p_id: id })
+
 export async function createOnlineMatch(opts: {
-  categoryId: string
+  /** Eine fertige Kategorie – oder null, wenn eine eigene Liste gespielt wird. */
+  categoryId: string | null
   mode: OnlineMode
   name?: string
+  /** Kennung einer eigenen Wortliste aus `fetchMyCustomCategories`. */
+  customCategoryId?: string | null
 }): Promise<{ match_id: string; code: string }> {
   const rows = await rpc<{ match_id: string; code: string }[]>('fdi_create_match', {
     p_category: opts.categoryId,
     p_mode: opts.mode,
     p_name: opts.name ?? null,
+    p_custom_category: opts.customCategoryId ?? null,
   })
   const first = Array.isArray(rows) ? rows[0] : (rows as unknown as { match_id: string; code: string })
   if (!first) throw new Error('Die Runde konnte nicht eröffnet werden.')

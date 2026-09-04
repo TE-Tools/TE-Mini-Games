@@ -16,9 +16,7 @@ ausdrücklichen Wunsch vom 02.09.2026:
   Ergebnis, vergibt keine XP und taucht in keiner Rangliste auf – wer
   gewonnen hat, sieht man am Tisch.
 
-Offen ist nur noch, was sich nicht auf das Online-Modell übertragen lässt:
-
-- **Duell online** – dort stimmt die ganze Runde per Mehrheit ab, das Duell
-  braucht zwei getrennte Anklagen (eine je Team). Am einen Gerät läuft es.
-- **Eigene Kategorien online** – der Server zieht das geheime Wort; schickte
-  der Browser die Wörter mit, kennte der Gastgeber es auch als Imposter.
+Seit dem 04.09.2026 ist der Zettel abgearbeitet: **Duell** läuft auch online
+(jedes Team stimmt getrennt ab), und **eigene Kategorien** lassen sich für
+Online-Runden hochladen – der Server zieht das Wort weiterhin selbst, der
+Gastgeber erfährt nur nicht, welches es geworden ist.

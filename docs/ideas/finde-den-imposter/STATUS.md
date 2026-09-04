@@ -43,10 +43,14 @@ kennt, kennt die Kategorie sowieso.
 *Nur Kategorie*, *Doppelt* (ab 6) oder *Die Uhr läuft* und sagt sie allen an.
 Geheim wäre sie sinnlos – der Reiz liegt darin, dass sie wechselt.
 
-**Duell** gibt es nur am einen Gerät. Online stimmt jeder einzeln ab und es
-entscheidet die Mehrheit; das Duell braucht dagegen zwei getrennte
-Anklagen, eine je Team. Die Datenbank weist den Modus deshalb ab
-(geprüft in `imposter_modes_test.sql`).
+**Duell** gibt es seit dem 04.09.2026 auch online (Migration 015). Jedes
+Team bekommt dort seine eigene Abstimmung: Man kann nur auf Leute aus den
+eigenen Reihen tippen, und ausgewertet wird erst, wenn beide Teams fertig
+sind. Bei Gleichstand klagt das betroffene Team niemanden an – der Imposter
+dieses Teams kommt durch, das andere Team spielt trotzdem zu Ende. Werden
+beide erwischt, kommen sie nacheinander zur letzten Chance; getroffen hat
+die Runde, wenn mindestens einer das Wort doch noch nennt. Geprüft in
+`imposter_duell_test.sql` mit ganzen Runden.
 
 ## Wortschatz und eigene Kategorien
 
@@ -113,9 +117,18 @@ u. a. „Imposter sieht das geheime Wort NICHT“, „Imposter bekommt KEIN
 Hilfswort“ (Leer, Nur Kategorie) und „Kategorie bleibt während der Runde
 verborgen“ (Leer).
 
+## Eigene Kategorien online
+
+Seit dem 04.09.2026 lassen sich eigene Wortlisten für Online-Runden auf den
+Server legen (`fdi_save_custom_category`). Was das schützt und was nicht,
+ohne Beschönigung: Der Gastgeber kennt die Liste – er hat sie getippt –,
+erfährt aber nicht, welches Wort gezogen wurde. Das ist dieselbe Zusage wie
+bei den fertigen Kategorien, deren 50 Wörter ohnehin jeder nachlesen könnte.
+Wer mit fünf Wörtern spielt, hat es als Gastgeber bei der letzten Chance
+leichter; die Oberfläche sagt das, statt eine Regel daraus zu machen, die es
+am einen Gerät nicht gibt. Fremde Listen bleiben unerreichbar – lesen,
+bespielen und löschen darf sie nur, wem sie gehören.
+
 ## Noch offen
 
-- **Duell online** – bräuchte pro Team eine eigene Abstimmung auf dem
-  Server; heute stimmt online die ganze Runde gemeinsam ab.
-- Eigene Kategorien für Online-Runden (nur mit einem Weg, die Wörter
-  serverseitig abzulegen, ohne dass der Gastgeber sie kennt).
+Nichts mehr aus dem ursprünglichen Zettel.

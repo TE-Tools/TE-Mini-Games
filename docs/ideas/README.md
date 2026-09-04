@@ -5,7 +5,7 @@ Neue Mini-Game-Ideen werden hier abgelegt. Implementiert wird erst, wenn explizi
 | Idee | Status | Ordner |
 |------|--------|--------|
 | **Schützenrunde** | **v4 implementiert** (lokal vs. Bots **und** Online-Multiplayer, serverautoritativ) | [schuetzenrunde/](./schuetzenrunde/) |
-| **Finde den Imposter** | **MVP „Klassisch“ integriert** (lokal Pass-and-Play) — weitere Modi offen | [finde-den-imposter/](./finde-den-imposter/) |
+| **Finde den Imposter** | **fertig** — alle sieben Modi lokal und online, eigene Wortlisten auch online | [finde-den-imposter/](./finde-den-imposter/) |
 
 ## Schützenrunde (Kurz)
 
