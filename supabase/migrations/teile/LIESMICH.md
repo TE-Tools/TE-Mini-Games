@@ -13,22 +13,30 @@ Jedes Stück ist für sich mehrfach ausführbar. Wenn du mittendrin abbrichst
 oder ein Stück versehentlich zweimal abschickst, passiert nichts Schlimmes —
 weitermachen, wo du warst.
 
-## Wenn du nur wenig Zeit hast
+## Brauchst du wirklich alles?
 
-`12_016_level_stand.sql` ist 2 KB und braucht **keines** der anderen Stücke.
-Danach siehst du auf der Levelkarte, wo die anderen stehen, und in der
-Rangliste ihr Level. Die Online-Runden brauchen dagegen 01 bis 11.
+Nein. Am einen Gerät laufen **alle** Spiele ohne eine Zeile hiervon — die
+Stücke schalten nur das Spielen von getrennten Handys aus frei, und Stück 12
+die Levelanzeige. Nimm, was ihr wirklich spielt:
 
-## Was wozu gehört
+| Ziel | Nötig | Grösse |
+|------|-------|--------|
+| Auf der Karte und in der Rangliste sehen, wo andere stehen | **12** | 2 KB |
+| „Stadt-Land-Fluss" online | **08 + 09** | 15 KB |
+| „Finde den Imposter" online (Klassisch, Doppel) | **01–05** | 46 KB |
+| … dazu die Modi Leer, Nur Kategorie, Tempo, Chaos | **+ 06** | 9 KB |
+| … dazu Duell online und eigene Wortlisten | **+ 10 + 11** | 20 KB |
+| „Wer bin ich?" online | **01–05 + 07** | 60 KB |
 
-| Stücke | Was danach geht |
-|--------|-----------------|
-| 01–05  | „Finde den Imposter" online, mit allen 1000 Wörtern |
-| 06     | die weiteren Imposter-Modi (Leer, Nur Kategorie, Tempo, Chaos) |
-| 07     | „Wer bin ich?" online |
-| 08–09  | „Stadt-Land-Fluss" online |
-| 10–11  | Imposter: Duell online und eigene Wortlisten |
-| 12     | Levelkarte und Rangliste zeigen, wo andere stehen |
+Alles zusammen sind es 106 KB.
+
+**Warum „Wer bin ich?" die Imposter-Stücke braucht:** Es holt Kategorien und
+Wörter aus denselben Tabellen (`fdi_categories`, `fdi_words`) — den Wortschatz
+gibt es absichtlich nur einmal, statt ihn zweimal zu pflegen. Ohne 01–05
+bricht Stück 07 mit `relation "public.fdi_categories" does not exist` ab.
+
+Diese Zusammenstellungen sind einzeln nachgeprüft: jede auf einer Datenbank im
+Stand 010 eingespielt, danach liefen die SQL-Tests des jeweiligen Spiels durch.
 
 ## Warum hier keine Kommentare stehen
 
