@@ -119,8 +119,11 @@ Browser eines Telefons ab (04.09.2026 von Thomas gemeldet). Unter
 als 14 KB, nacheinander einzufügen. Die Anleitung steht in
 `supabase/migrations/teile/LIESMICH.md`.
 
-Nur wenig Zeit? `12_016_level_stand.sql` ist 2 KB, braucht keines der anderen
-Stücke und schaltet die Levelanzeige auf der Karte und in der Rangliste frei.
+Es muss nicht alles sein: Am einen Gerät laufen alle Spiele ohne eine Zeile
+davon. Welche Stücke wofür nötig sind, steht als Tabelle im LIESMICH -- das
+kleinste ist `12_016_level_stand.sql` mit 2 KB (Levelanzeige, ohne
+Abhängigkeit), „Wer bin ich?" online braucht dagegen die Imposter-Stücke mit,
+weil es sich denselben Wortschatz teilt.
 
 Erzeugt mit `node scripts/build-teile.mjs`; `tests/teile.test.ts` schlägt fehl,
 sobald die Stücke nicht mehr zu den Migrationen passen.
