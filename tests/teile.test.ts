@@ -88,6 +88,23 @@ describe('Stücke zum Einfügen auf dem Handy', () => {
     expect(woerter).toBeGreaterThanOrEqual(1000)
   })
 
+  it('die Anleitung liegt daneben und ist nicht leer', () => {
+    // Sie ist zweimal verschwunden: Der Generator raeumte den ganzen Ordner
+    // leer, und "git add -A" committete das Loeschen mit. Von aussen sah alles
+    // in Ordnung aus -- die Stuecke waren ja da, nur wusste niemand mehr, in
+    // welcher Reihenfolge sie gehoeren.
+    const liesmich = import.meta.glob('../supabase/migrations/teile/LIESMICH.md', {
+      query: '?raw',
+      import: 'default',
+      eager: true,
+    }) as Record<string, string>
+    const inhalt = Object.values(liesmich)[0]
+    expect(inhalt, 'LIESMICH.md fehlt im Ordner teile/').toBeTruthy()
+    expect(inhalt!.length).toBeGreaterThan(500)
+    // Der verlaessliche Weg gehoert obenan, nicht als Fussnote.
+    expect(inhalt).toContain('Migrationen einspielen')
+  })
+
   it('sagt in jedem Stück, woher es kommt', () => {
     for (const [pfad, inhalt] of Object.entries(stuecke)) {
       expect(inhalt.slice(0, 400), pfad).toContain('build-teile.mjs')

@@ -110,8 +110,15 @@ const dateien = readdirSync(quelle)
   .filter((d) => /^\d+[a-z]?_.*\.sql$/.test(d) && d.slice(0, 3) >= AB)
   .sort()
 
-rmSync(ziel, { recursive: true, force: true })
+// Nur die erzeugten SQL-Dateien wegraeumen, nicht den ganzen Ordner: Dort
+// liegt auch LIESMICH.md, das von Hand geschrieben ist. Vorher stand hier ein
+// rmSync(ziel, {recursive:true}) -- das hat die Anleitung stillschweigend
+// mitgenommen, und ein "git add -A" hat das Loeschen dann mitcommittet.
+// Aufgefallen erst zwei Tage spaeter, als jemand die Anleitung suchte.
 mkdirSync(ziel, { recursive: true })
+for (const veraltet of readdirSync(ziel).filter((d) => d.endsWith('.sql'))) {
+  rmSync(join(ziel, veraltet))
+}
 
 let nummer = 0
 const uebersicht = []
