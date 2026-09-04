@@ -111,10 +111,33 @@ keine Tabellen -- das Sammelskript war nach dem Hinzufügen der Migrationen
 App wurde erfolgreich ausgeliefert, die Rangliste lief, nur die Online-Runden
 brachen ab. `tests/all-in-one.test.ts` lässt das nicht wieder still passieren.
 
+## Auf Knopfdruck einspielen (empfohlen)
+
+Seit dem 05.09.2026 muss niemand mehr SQL irgendwo einfügen. In GitHub unter
+**Actions → „Migrationen einspielen" → Run workflow** wird
+`ALL_IN_ONE.sql` in die Datenbank gespielt, in einer Transaktion: Bricht etwas
+ab, bleibt die Datenbank auf dem Stand von vorher.
+
+Einmalig einzurichten ist eine einzige Angabe als Repository-Secret,
+`SUPABASE_DB_URL` — die Verbindungszeichenkette aus Supabase unter *Project
+Settings → Database → Connection string → URI*. **Den Eintrag mit Port 5432
+nehmen**, nicht 6543: Der Transaction-Modus des Poolers kann keine Funktionen
+anlegen. Die Einzelheiten stehen im Kopf von
+`.github/workflows/migrationen-einspielen.yml`.
+
+Der Ablauf hat einen Haken „nur nachsehen, was fehlt" — damit lässt sich der
+Stand der Datenbank abfragen, ohne etwas zu ändern.
+
+Er läuft **nicht** von selbst mit, nur auf Knopfdruck. Eine Datenbank im
+Vorbeigehen zu verändern, weil jemand etwas gepusht hat, wäre die falsche Art
+von Bequemlichkeit.
+
 ## Vom Handy einspielen
 
 `ALL_IN_ONE.sql` ist rund 190 KB -- der SQL-Editor von Supabase stürzt damit im
-Browser eines Telefons ab (04.09.2026 von Thomas gemeldet). Unter
+Browser eines Telefons ab (04.09.2026 von Thomas gemeldet). Er stürzt auch bei
+Stücken von 14 KB noch ab (05.09.2026), weshalb der Weg über Actions oben der
+verlässlichere ist. Die Stücke bleiben als Rückfallweg. Unter
 `supabase/migrations/teile/` liegt dasselbe in zwölf Stücken, keines grösser
 als 14 KB, nacheinander einzufügen. Die Anleitung steht in
 `supabase/migrations/teile/LIESMICH.md`.

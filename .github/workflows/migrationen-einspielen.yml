@@ -1,0 +1,101 @@
+name: Migrationen einspielen
+
+# Spielt supabase/migrations/ALL_IN_ONE.sql in die Datenbank ein -- auf Knopfdruck,
+# ohne dass jemand SQL irgendwo einfuegen muss.
+#
+# ANLASS (05.09.2026, Thomas): "superbase kann ich den Code nicht einfuegen per
+# handy stuerzt die seite ab weil zu lange" -- und auch in Stuecken von 14 KB
+# bricht der SQL-Editor auf dem Telefon ab. Kopieren war der falsche Weg.
+#
+# EINMALIG EINZURICHTEN -- eine einzige Angabe unter
+# GitHub -> Settings -> Secrets and variables -> Actions -> New repository secret:
+#
+#   SUPABASE_DB_URL   Die Verbindungszeichenkette der Datenbank.
+#                     Supabase -> Project Settings -> Database ->
+#                     "Connection string" -> Reiter URI. Sie sieht so aus:
+#                     postgresql://postgres.<ref>:<Passwort>@aws-0-...pooler.supabase.com:5432/postgres
+#
+#                     Nimm den Eintrag mit Port 5432 (Session-Modus), nicht 6543:
+#                     der Transaction-Modus kann keine Funktionen anlegen.
+#
+#                     Das Passwort ist das Datenbank-Passwort des Projekts, nicht
+#                     das des Supabase-Kontos. Kennst du es nicht mehr, kannst du
+#                     es auf derselben Seite neu setzen.
+#
+# Ohne das Secret bricht der Ablauf mit einer klaren Meldung ab, statt einen
+# halben Einspielvorgang zu hinterlassen.
+#
+# LAEUFT NICHT VON SELBST. Nur auf Knopfdruck (Actions -> Migrationen
+# einspielen -> Run workflow). Eine Datenbank im Vorbeigehen zu veraendern,
+# weil jemand etwas gepusht hat, waere die falsche Art von Bequemlichkeit.
+
+on:
+  workflow_dispatch:
+    inputs:
+      nur_pruefen:
+        description: 'Nur nachsehen, was fehlt (nichts einspielen)'
+        type: boolean
+        default: false
+
+jobs:
+  einspielen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Zugangsdaten vorhanden?
+        run: |
+          if [ -z "${{ secrets.SUPABASE_DB_URL }}" ]; then
+            echo "::error::Das Secret SUPABASE_DB_URL fehlt. Wie du es anlegst, steht im Kopf dieser Datei."
+            exit 1
+          fi
+
+      - name: psql installieren
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+
+      # Erst zeigen, was da ist. Das ist die Antwort auf "ist es schon drin?"
+      # und kostet nichts.
+      - name: Stand vorher
+        env:
+          PGURL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          psql "$PGURL" -v ON_ERROR_STOP=1 -At -c "
+            select t.name || ': ' || case when c.oid is null then 'FEHLT' else 'da' end
+              from (values
+                ('fdi_state'), ('fdi_words'), ('fdi_custom_categories'),
+                ('wbi_state'), ('slf_state'), ('level_stand'), ('spieler_stand')
+              ) as t(name)
+              left join pg_class c
+                on c.relname = t.name
+               and c.relnamespace = 'public'::regnamespace
+             order by t.name;"
+
+      - name: Einspielen
+        if: ${{ inputs.nur_pruefen == false }}
+        env:
+          PGURL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          # In einer Transaktion: Bricht etwas ab, bleibt die Datenbank auf dem
+          # Stand von vorher, statt halb umgebaut liegen zu bleiben.
+          psql "$PGURL" -v ON_ERROR_STOP=1 --single-transaction \
+            -f supabase/migrations/ALL_IN_ONE.sql
+
+      - name: Stand nachher
+        if: ${{ inputs.nur_pruefen == false }}
+        env:
+          PGURL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          psql "$PGURL" -v ON_ERROR_STOP=1 -At -c "
+            select t.name || ': ' || case when c.oid is null then 'FEHLT' else 'da' end
+              from (values
+                ('fdi_state'), ('fdi_words'), ('fdi_custom_categories'),
+                ('wbi_state'), ('slf_state'), ('level_stand'), ('spieler_stand')
+              ) as t(name)
+              left join pg_class c
+                on c.relname = t.name
+               and c.relnamespace = 'public'::regnamespace
+             order by t.name;"
+          echo "Woerter im Imposter-Wortschatz:"
+          psql "$PGURL" -At -c "select count(*) from public.fdi_words;"
