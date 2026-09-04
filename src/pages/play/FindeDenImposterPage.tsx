@@ -219,9 +219,6 @@ export function FindeDenImposterPage() {
             </select>
           </label>
           <p className={styles.subtitle}>{modusDef.description}</p>
-          {modusDef.localOnly && (
-            <p className={styles.meta}>Nur am einen Gerät – online gibt es diesen Modus nicht.</p>
-          )}
         </div>
 
         {error && <p className={styles.error}>{error}</p>}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CATEGORIES, ONLINE_MODES, modeOf, chaosRuleLabel } from '@/games/finde-den-imposter'
+import { loadCustomCategories } from '@/games/finde-den-imposter/customCategories'
 import { getCurrentUser } from '@/auth/authService'
 import {
   isImposterOnlineAvailable,
@@ -14,7 +15,10 @@ import {
   nextRoundOnline,
   fetchOnlineState,
   fetchMyOnlineMatches,
+  fetchMyCustomCategories,
+  saveCustomCategoryOnline,
   subscribeToOnlineMatch,
+  type CustomCategoryOnline,
   type OnlineMode,
   type OnlineState,
   type OpenMatch,
@@ -24,11 +28,21 @@ import styles from './FindeDenImposterPage.module.css'
 /** Nachfassen, falls Realtime mal nichts liefert. */
 const POLL_MS = 3000
 
+/**
+ * Eigene Listen stehen im selben Auswahlfeld wie die fertigen Kategorien.
+ * Damit die Kennungen sich nicht in die Quere kommen, bekommen sie ein
+ * Präfix -- eine zweite Auswahl daneben wäre für einen Griff zu viel.
+ */
+const EIGEN_PREFIX = 'eigen:'
+
 export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
   const [ready, setReady] = useState(false)
   const [signedIn, setSignedIn] = useState(false)
 
   const [categoryId, setCategoryId] = useState(CATEGORIES[0]?.id ?? 'tiere')
+  // Eigene Listen liegen auf dem Server, nicht im Browser: Der Server zieht
+  // das Wort, sonst könnte der Gastgeber als Imposter einfach nachsehen.
+  const [eigene, setEigene] = useState<CustomCategoryOnline[]>([])
   const [mode, setMode] = useState<OnlineMode>('classic')
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
@@ -54,12 +68,25 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
         } catch {
           /* Die Liste ist nur Komfort. */
         }
+        try {
+          const listen = await fetchMyCustomCategories()
+          if (!abbruch) setEigene(listen)
+        } catch {
+          /* Ohne eigene Listen spielt man eben mit den fertigen. */
+        }
       }
     })()
     return () => {
       abbruch = true
     }
   }, [])
+
+  // Die Listen im Browser sind die Wahrheit fuer das Spiel am einen Geraet.
+  // Fuer online muessen sie hochgeladen werden -- abgeglichen wird ueber den
+  // Namen, denn die lokale Kennung kennt der Server nicht.
+  const nochNichtHochgeladen = loadCustomCategories().filter(
+    (c) => !eigene.some((e) => e.label.toLowerCase() === c.label.toLowerCase()),
+  )
 
   const laden = useCallback(async (id: string) => {
     try {
@@ -194,6 +221,15 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
                   {c.label}
                 </option>
               ))}
+              {eigene.length > 0 && (
+                <optgroup label="Eigene Listen">
+                  {eigene.map((c) => (
+                    <option key={c.id} value={`${EIGEN_PREFIX}${c.id}`}>
+                      {c.label} ({c.word_count} Wörter)
+                    </option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           </label>
           <label className={styles.label}>
@@ -212,17 +248,51 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
             </select>
           </label>
           <p className={styles.subtitle}>{modeOf(mode).description}</p>
-          <p className={styles.meta}>
-            Eigene Kategorien gibt es nur am einen Gerät – online zieht der Server das Wort,
-            und der kennt nur den eingebauten Wortschatz.
-          </p>
+          {nochNichtHochgeladen.length > 0 && (
+            <div className={styles.meta}>
+              <p>
+                Auf diesem Gerät liegen {nochNichtHochgeladen.length} eigene Listen, die der
+                Server noch nicht kennt.
+              </p>
+              <button
+                type="button"
+                className={styles.btnSecondary}
+                disabled={busy}
+                onClick={() =>
+                  void run(async () => {
+                    for (const c of nochNichtHochgeladen) {
+                      await saveCustomCategoryOnline(c.label, c.words)
+                    }
+                    setEigene(await fetchMyCustomCategories())
+                  })
+                }
+              >
+                Für Online-Runden hochladen
+              </button>
+            </div>
+          )}
+          {(categoryId.startsWith(EIGEN_PREFIX) || eigene.length > 0) && (
+            <p className={styles.meta}>
+              Bei einer eigenen Liste kennst du als Gastgeber die Wörter – du erfährst aber
+              nicht, welches gezogen wurde. Je kürzer die Liste, desto leichter hast du es
+              trotzdem bei der letzten Chance.
+            </p>
+          )}
           <button
             type="button"
             className={styles.btn}
             disabled={busy}
             onClick={() =>
               void run(async () => {
-                const neu = await createOnlineMatch({ categoryId, mode, name })
+                const eigenId = categoryId.startsWith(EIGEN_PREFIX)
+                  ? categoryId.slice(EIGEN_PREFIX.length)
+                  : null
+                const neu = await createOnlineMatch({
+                  categoryId: eigenId ? null : categoryId,
+                  customCategoryId: eigenId,
+                  mode,
+                  name,
+                })
                 setMatchId(neu.match_id)
               })
             }
@@ -294,6 +364,10 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
   const restSekunden =
     ablauf === null || jetzt === 0 ? null : Math.max(0, Math.ceil((ablauf - jetzt) / 1000))
   const chaosRegel = chaosRuleLabel(m.special_rule)
+  const istDuell = m.mode === 'duel'
+  // Im Duell sucht jedes Team in den eigenen Reihen.
+  const waehlbar = istDuell ? state.players.filter((p) => p.team === me.team) : state.players
+  const meinTeamFertig = me.team === 1 ? m.team1_done : me.team === 2 ? m.team2_done : false
   // Das Ratefeld gehört zu genau einer Runde -- in der nächsten steht es
   // wieder leer da, ohne dass wir es eigens zurücksetzen müssten.
   const ratetext = guess.round === m.round ? guess.text : ''
@@ -419,11 +493,18 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
           <h2 className={styles.cardTitle}>Wer ist der Imposter?</h2>
           <p className={styles.subtitle}>
             {me.vote_seat
-              ? 'Deine Stimme ist abgegeben – warte auf die anderen.'
-              : 'Tippe auf einen Namen. Es zählt, wer die meisten Stimmen bekommt.'}
+              ? istDuell
+                ? 'Deine Stimme ist abgegeben – warte auf dein Team.'
+                : 'Deine Stimme ist abgegeben – warte auf die anderen.'
+              : istDuell
+                ? 'Tippe auf jemanden aus deinem Team. Es zählt, wer im Team die meisten Stimmen bekommt.'
+                : 'Tippe auf einen Namen. Es zählt, wer die meisten Stimmen bekommt.'}
           </p>
           <div className={styles.voteGrid}>
-            {state.players.map((p) => (
+            {/* Im Duell steht nur das eigene Team zur Wahl -- der Server weist
+                alles andere ohnehin ab, aber ein Knopf, der nur eine Fehler-
+                meldung bringt, ist kein Knopf. */}
+            {waehlbar.map((p) => (
               <button
                 key={p.seat}
                 type="button"
@@ -436,12 +517,19 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
               </button>
             ))}
           </div>
+          {istDuell && (
+            <p className={styles.meta}>
+              {meinTeamFertig
+                ? 'Euer Team ist durch. Jetzt fehlt noch das andere Team.'
+                : 'Beide Teams stimmen getrennt ab – ausgewertet wird erst, wenn beide fertig sind.'}
+            </p>
+          )}
         </div>
       )}
 
       {m.phase === 'last_chance' && (
         <div className={styles.card}>
-          {m.accused_seat === me.seat ? (
+          {me.my_turn_last_chance ? (
             <>
               <h2 className={styles.cardTitle}>Erwischt!</h2>
               <p className={styles.subtitle}>
@@ -470,6 +558,15 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
                 {state.players.find((p) => p.seat === m.accused_seat)?.name} wurde erwischt und
                 rät jetzt das geheime Wort.
               </p>
+              {/* Im Duell können beide Imposter erwischt worden sein -- dann
+                  kommen sie nacheinander dran, und wer wartet, soll wissen,
+                  dass danach noch jemand kommt. */}
+              {istDuell && m.correct_accusation === true && (
+                <p className={styles.meta}>
+                  Im Duell rät jeder Erwischte einzeln. Trifft einer von beiden, ist die Runde
+                  für die Imposter gedreht.
+                </p>
+              )}
             </>
           )}
         </div>

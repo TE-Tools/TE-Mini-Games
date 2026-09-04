@@ -6,8 +6,6 @@ export interface ModeDef {
   description: string
   /** Steht der Modus im Menü zur Wahl? */
   available: boolean
-  /** Nur am einen Gerät spielbar (Duell braucht zwei getrennte Anklagen). */
-  localOnly?: boolean
   /** Mindestzahl an Mitspielenden für diesen Modus. */
   minPlayers: number
 }
@@ -64,7 +62,8 @@ export const MODES: ModeDef[] = [
     description:
       'Zwei Teams, in jedem genau ein Imposter. Jedes Team tippt auf einen aus den eigenen Reihen.',
     available: true,
-    localOnly: true,
+    // Seit Migration 015 auch online: dort bekommt jedes Team seine eigene
+    // Abstimmung, statt dass die ganze Runde gemeinsam per Mehrheit tippt.
     minPlayers: 6,
   },
 ]
@@ -79,8 +78,12 @@ export function modeOf(id: ImposterModeId): ModeDef {
   return MODES.find((m) => m.id === id) ?? MODES[0]!
 }
 
-/** Modi, die auch online funktionieren. */
-export const ONLINE_MODES = MODES.filter((m) => m.available && !m.localOnly)
+/**
+ * Modi, die auch online funktionieren -- seit Migration 015 sind das alle.
+ * Duell war der letzte, der nur am einen Gerät ging; die Liste bleibt als
+ * eigener Begriff stehen, weil das Online-Menü sie so nennt.
+ */
+export const ONLINE_MODES = MODES.filter((m) => m.available)
 
 export interface ModeRules {
   imposterSees: ImposterSees

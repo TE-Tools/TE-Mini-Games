@@ -96,11 +96,26 @@ Mail anklicken, bevor die erste Anmeldung geht. Zwei Dinge dazu:
 
 Offline als Gast geht weiterhin ohne Keys.
 
+## Nach jedem neuen Online-Spiel: ALL_IN_ONE.sql erneut ausführen
+
+`ALL_IN_ONE.sql` ist mehrfach ausführbar (jede Migration ist idempotent
+geschrieben). Wenn hier ein neues Online-Spiel dazukommt, reicht es also,
+die Datei erneut komplett in den SQL-Editor zu kippen -- nichts Vorhandenes
+geht dabei kaputt.
+
+**Warum das hier so deutlich steht:** Am 04.09.2026 fiel auf, dass die
+laufende Datenbank beim Stand von Migration 010 stehengeblieben war. „Finde
+den Imposter" online, „Wer bin ich?" und „Stadt-Land-Fluss" hatten dort gar
+keine Tabellen -- das Sammelskript war nach dem Hinzufügen der Migrationen
+011 bis 014 nie neu erzeugt worden. Von aussen sah alles in Ordnung aus: Die
+App wurde erfolgreich ausgeliefert, die Rangliste lief, nur die Online-Runden
+brachen ab. `tests/all-in-one.test.ts` lässt das nicht wieder still passieren.
+
 ## Checkliste: was noch offen ist
 
 | Punkt | Wo | Status |
 |-------|----|--------|
-| Schema, RLS, Username-Check, Level-500-Limits, Rangliste-View | `supabase/migrations/ALL_IN_ONE.sql` | im Repo, **muss von dir ausgeführt werden** |
+| Schema, RLS, Username-Check, Level-500-Limits, Rangliste-View, **alle Online-Spiele** | `supabase/migrations/ALL_IN_ONE.sql` | im Repo, **muss von dir ausgeführt werden** |
 | Auth-Provider Email (+ optional Google) | Supabase → Authentication → Providers | **du** |
 | Site URL + Redirect URLs | Supabase → Authentication → URL Configuration | **du** |
 | `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` | Cloudflare Pages → Environment variables (Production **und** Preview) | **du** |

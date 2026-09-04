@@ -1,6 +1,7 @@
 -- TE-Mini Games – complete Supabase setup
--- (schema + RLS + username + level 500 + leaderboard + self-deletion
---  + Schützenrunde multiplayer)
+-- (Schema + RLS + Benutzername + Level 500 + Rangliste + Selbstlöschung
+--  + Schützenrunde online + Finde den Imposter online + Wer bin ich?
+--  + Stadt-Land-Fluss)
 -- Generated from the migrations in this folder; safe to run more than once.
 -- Paste into Supabase → SQL Editor → New query → Run.
 
@@ -1700,3 +1701,3506 @@ comment on view public.leaderboard_overall is
   'Aufaddierte XP und Punkte je Spieler über alle Spiele zusammen -- die spielübergreifende Gesamtrangliste.';
 
 grant select on public.leaderboard_overall to anon, authenticated;
+
+-- ==================== 011_imposter_online.sql ====================
+-- "Finde den Imposter" online: Raum mit Code, jeder auf dem eigenen Gerät.
+--
+-- Sicherheitsmodell wie bei der Schützenrunde (007): Die Tabellen sind für
+-- Clients komplett gesperrt, alles läuft über security-definer-Funktionen.
+-- Entscheidend ist hier, dass NIEMAND das geheime Wort lesen kann, der es
+-- nicht kennen darf -- fdi_get_state() gibt jedem Aufrufer nur das zurück,
+-- was er wissen soll. Deshalb zieht auch der Server das Wort und nicht der
+-- Browser des Gastgebers: sonst kennte der es selbst als Imposter.
+
+/* ============================ Tabellen ============================ */
+
+create table if not exists public.fdi_categories (
+  id text primary key,
+  label text not null
+);
+
+create table if not exists public.fdi_words (
+  category_id text not null references public.fdi_categories (id) on delete cascade,
+  word text not null,
+  primary key (category_id, word)
+);
+
+create table if not exists public.fdi_matches (
+  id uuid primary key default gen_random_uuid(),
+  code text not null unique,
+  host_id uuid not null references auth.users (id) on delete cascade,
+  category_id text not null references public.fdi_categories (id),
+  mode text not null default 'classic' check (mode in ('classic', 'double')),
+  phase text not null default 'lobby'
+    check (phase in ('lobby', 'discussion', 'accuse', 'last_chance', 'result')),
+  round integer not null default 1 check (round >= 1),
+  -- Nur der Server schreibt hier hinein; kein Client liest die Tabelle direkt.
+  secret_word text,
+  helper_word text,
+  imposter_count integer not null default 1 check (imposter_count >= 1),
+  -- Wer die Runde eröffnet -- zufällig gezogen, sobald ausgeteilt ist.
+  starter_seat integer,
+  accused_seat integer,
+  correct_accusation boolean,
+  last_chance_success boolean,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.fdi_players (
+  match_id uuid not null references public.fdi_matches (id) on delete cascade,
+  seat integer not null check (seat >= 1),
+  user_id uuid references auth.users (id) on delete set null,
+  name text not null,
+  is_imposter boolean not null default false,
+  vote_seat integer,
+  last_chance_guess text,
+  joined_at timestamptz not null default now(),
+  primary key (match_id, seat),
+  unique (match_id, user_id)
+);
+
+-- Ein Zähler, den Mitglieder direkt lesen dürfen: ändert er sich, holt die
+-- App den Spielstand neu. So braucht Realtime keinen Zugriff auf Spieldaten.
+create table if not exists public.fdi_state (
+  match_id uuid primary key references public.fdi_matches (id) on delete cascade,
+  version bigint not null default 0
+);
+
+create index if not exists fdi_players_user_idx on public.fdi_players (user_id);
+
+/* ============================ Zugriff ============================= */
+
+alter table public.fdi_categories enable row level security;
+alter table public.fdi_words      enable row level security;
+alter table public.fdi_matches    enable row level security;
+alter table public.fdi_players    enable row level security;
+alter table public.fdi_state      enable row level security;
+
+revoke all on public.fdi_categories, public.fdi_words, public.fdi_matches,
+  public.fdi_players, public.fdi_state from anon, authenticated;
+
+create or replace function public.fdi_is_member(p_match uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select exists (
+    select 1 from public.fdi_players
+    where match_id = p_match and user_id = auth.uid()
+  );
+$$;
+
+-- Nur der Zähler ist direkt lesbar, damit Realtime-Updates ankommen.
+grant select on public.fdi_state to authenticated;
+
+drop policy if exists fdi_state_read on public.fdi_state;
+create policy fdi_state_read on public.fdi_state
+  for select using (public.fdi_is_member(match_id));
+
+-- Die Kategorienliste ist harmlos und wird für die Auswahl gebraucht.
+grant select on public.fdi_categories to anon, authenticated;
+drop policy if exists fdi_categories_read on public.fdi_categories;
+create policy fdi_categories_read on public.fdi_categories for select using (true);
+
+/* ========================= Interne Helfer ========================= */
+
+create or replace function public.fdi_touch(p_match uuid)
+returns void
+language sql
+security definer
+set search_path = public, pg_temp
+as $$
+  update public.fdi_matches set updated_at = now() where id = p_match;
+  insert into public.fdi_state (match_id, version) values (p_match, 1)
+  on conflict (match_id) do update set version = public.fdi_state.version + 1;
+$$;
+
+create or replace function public.fdi_new_code()
+returns text
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_alphabet text := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';  -- ohne I/O/0/1
+  v_code text;
+  i integer;
+begin
+  loop
+    v_code := '';
+    for i in 1..5 loop
+      v_code := v_code || substr(v_alphabet, 1 + floor(random() * length(v_alphabet))::int, 1);
+    end loop;
+    exit when not exists (select 1 from public.fdi_matches where code = v_code);
+  end loop;
+  return v_code;
+end;
+$$;
+
+/** Wie viele Imposter bei dieser Spielerzahl? Spiegelt modes.ts. */
+create or replace function public.fdi_imposter_count(p_size integer, p_mode text)
+returns integer
+language sql
+immutable
+as $$
+  select case
+    when p_mode = 'double' then case when p_size < 6 then 1 else 2 end
+    when p_size <= 8 then 1
+    else 2
+  end;
+$$;
+
+/** Rollen und Wörter für eine Runde neu ziehen. */
+create or replace function public.fdi_deal(p_match uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_match public.fdi_matches;
+  v_size integer;
+  v_imposters integer;
+  v_secret text;
+  v_helper text;
+begin
+  select * into v_match from public.fdi_matches where id = p_match;
+  select count(*) into v_size from public.fdi_players where match_id = p_match;
+  v_imposters := public.fdi_imposter_count(v_size, v_match.mode);
+
+  -- Zwei verschiedene Wörter aus der Kategorie: eines geheim, eines als Hilfe.
+  select word into v_secret from public.fdi_words
+   where category_id = v_match.category_id order by random() limit 1;
+  select word into v_helper from public.fdi_words
+   where category_id = v_match.category_id and word <> v_secret
+   order by random() limit 1;
+  if v_secret is null then
+    raise exception 'Kategorie % hat keine Wörter', v_match.category_id;
+  end if;
+
+  update public.fdi_players
+     set is_imposter = false, vote_seat = null, last_chance_guess = null
+   where match_id = p_match;
+
+  update public.fdi_players set is_imposter = true
+   where match_id = p_match
+     and seat in (
+       select seat from public.fdi_players
+        where match_id = p_match order by random() limit v_imposters
+     );
+
+  update public.fdi_matches
+     set secret_word = v_secret,
+         helper_word = coalesce(v_helper, v_secret),
+         imposter_count = v_imposters,
+         -- Es wird nicht mehr reihum geklickt: ausgeteilt, einer fängt an,
+         -- danach redet die Gruppe frei (02.09.2026, Thomas).
+         phase = 'discussion',
+         starter_seat = (
+           select seat from public.fdi_players
+            where match_id = p_match order by random() limit 1
+         ),
+         accused_seat = null,
+         correct_accusation = null,
+         last_chance_success = null
+   where id = p_match;
+end;
+$$;
+
+/* ==================== Öffentliche Schnittstelle =================== */
+
+/** Runde eröffnen. Der Gastgeber sitzt danach auf Platz 1. */
+create or replace function public.fdi_create_match(
+  p_category text,
+  p_mode text default 'classic',
+  p_name text default null
+)
+returns table (match_id uuid, code text)
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_id uuid;
+  v_code text;
+  v_name text;
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+  if p_mode not in ('classic', 'double') then raise exception 'Unbekannter Modus'; end if;
+  if not exists (select 1 from public.fdi_categories where id = p_category) then
+    raise exception 'Unbekannte Kategorie';
+  end if;
+
+  v_code := public.fdi_new_code();
+  insert into public.fdi_matches (code, host_id, category_id, mode)
+  values (v_code, auth.uid(), p_category, p_mode)
+  returning id into v_id;
+
+  v_name := coalesce(nullif(trim(p_name), ''), 'Gastgeber');
+  insert into public.fdi_players (match_id, seat, user_id, name) values (v_id, 1, auth.uid(), v_name);
+  insert into public.fdi_state (match_id, version) values (v_id, 1);
+
+  return query select v_id, v_code;
+end;
+$$;
+
+/** Einer offenen Runde beitreten. */
+create or replace function public.fdi_join_match(p_code text, p_name text default null)
+returns uuid
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_match public.fdi_matches;
+  v_seat integer;
+  v_size integer;
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+
+  select * into v_match from public.fdi_matches where code = upper(trim(p_code));
+  if v_match.id is null then raise exception 'Diesen Code gibt es nicht'; end if;
+  if v_match.phase <> 'lobby' then raise exception 'Die Runde läuft schon'; end if;
+
+  -- Schon dabei? Dann einfach zurückgeben, nicht doppelt setzen.
+  if exists (select 1 from public.fdi_players where match_id = v_match.id and user_id = auth.uid()) then
+    return v_match.id;
+  end if;
+
+  select count(*) into v_size from public.fdi_players where match_id = v_match.id;
+  if v_size >= 12 then raise exception 'Die Runde ist voll (12 Plätze)'; end if;
+
+  select coalesce(max(seat), 0) + 1 into v_seat from public.fdi_players where match_id = v_match.id;
+  insert into public.fdi_players (match_id, seat, user_id, name)
+  values (v_match.id, v_seat, auth.uid(), coalesce(nullif(trim(p_name), ''), 'Platz ' || v_seat));
+
+  perform public.fdi_touch(v_match.id);
+  return v_match.id;
+end;
+$$;
+
+/** Vor dem Start wieder aussteigen. */
+create or replace function public.fdi_leave_match(p_match uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if not public.fdi_is_member(p_match) then raise exception 'Du bist nicht dabei'; end if;
+  if (select phase from public.fdi_matches where id = p_match) <> 'lobby' then
+    raise exception 'Während der Runde kann man nicht aussteigen';
+  end if;
+  delete from public.fdi_players where match_id = p_match and user_id = auth.uid();
+  -- Ohne Mitspieler braucht die Runde nicht zu bleiben.
+  if not exists (select 1 from public.fdi_players where match_id = p_match) then
+    delete from public.fdi_matches where id = p_match;
+  else
+    perform public.fdi_touch(p_match);
+  end if;
+end;
+$$;
+
+/** Runde starten (nur Gastgeber, ab 3 Mitspielenden). */
+create or replace function public.fdi_start_match(p_match uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare v_size integer;
+begin
+  if (select host_id from public.fdi_matches where id = p_match) <> auth.uid() then
+    raise exception 'Nur der Gastgeber startet';
+  end if;
+  if (select phase from public.fdi_matches where id = p_match) <> 'lobby' then
+    raise exception 'Läuft schon';
+  end if;
+  select count(*) into v_size from public.fdi_players where match_id = p_match;
+  if v_size < 3 then raise exception 'Mindestens 3 Mitspielende nötig'; end if;
+
+  perform public.fdi_deal(p_match);
+  perform public.fdi_touch(p_match);
+end;
+$$;
+
+/** Genug geredet -- jetzt wird getippt (nur Gastgeber). */
+create or replace function public.fdi_to_accuse(p_match uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if (select host_id from public.fdi_matches where id = p_match) <> auth.uid() then
+    raise exception 'Nur der Gastgeber';
+  end if;
+  if (select phase from public.fdi_matches where id = p_match) <> 'discussion' then
+    raise exception 'Gerade wird nicht geredet';
+  end if;
+  update public.fdi_matches set phase = 'accuse' where id = p_match;
+  perform public.fdi_touch(p_match);
+end;
+$$;
+
+/**
+ * Auf einen Namen tippen. Haben alle getippt, wird ausgewertet: wer die
+ * meisten Stimmen hat, ist angeklagt -- bei Gleichstand niemand.
+ */
+create or replace function public.fdi_vote(p_match uuid, p_seat integer)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_seat integer;
+  v_offen integer;
+  v_top integer;
+  v_count integer;
+  v_ties integer;
+  v_is_imposter boolean;
+begin
+  select seat into v_seat from public.fdi_players where match_id = p_match and user_id = auth.uid();
+  if v_seat is null then raise exception 'Du bist nicht dabei'; end if;
+  if (select phase from public.fdi_matches where id = p_match) <> 'accuse' then
+    raise exception 'Gerade wird nicht getippt';
+  end if;
+  if not exists (select 1 from public.fdi_players where match_id = p_match and seat = p_seat) then
+    raise exception 'Diesen Platz gibt es nicht';
+  end if;
+
+  update public.fdi_players set vote_seat = p_seat
+   where match_id = p_match and seat = v_seat;
+
+  select count(*) into v_offen from public.fdi_players
+   where match_id = p_match and vote_seat is null;
+  if v_offen > 0 then
+    perform public.fdi_touch(p_match);
+    return;
+  end if;
+
+  select vote_seat, count(*) into v_top, v_count
+    from public.fdi_players where match_id = p_match
+   group by vote_seat order by count(*) desc, vote_seat limit 1;
+
+  select count(*) into v_ties from (
+    select count(*) c from public.fdi_players where match_id = p_match group by vote_seat
+  ) t where t.c = v_count;
+
+  if v_ties > 1 then
+    -- Gleichstand: niemand wird angeklagt, die Imposter kommen durch.
+    update public.fdi_matches
+       set phase = 'result', accused_seat = null, correct_accusation = false
+     where id = p_match;
+  else
+    select is_imposter into v_is_imposter from public.fdi_players
+     where match_id = p_match and seat = v_top;
+    if v_is_imposter then
+      update public.fdi_matches
+         set phase = 'last_chance', accused_seat = v_top, correct_accusation = true
+       where id = p_match;
+    else
+      update public.fdi_matches
+         set phase = 'result', accused_seat = v_top, correct_accusation = false
+       where id = p_match;
+    end if;
+  end if;
+  perform public.fdi_touch(p_match);
+end;
+$$;
+
+/** Letzte Chance: nur der Angeklagte darf raten. */
+create or replace function public.fdi_last_chance(p_match uuid, p_guess text)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_seat integer;
+  v_match public.fdi_matches;
+  v_ok boolean;
+begin
+  select * into v_match from public.fdi_matches where id = p_match;
+  if v_match.phase <> 'last_chance' then raise exception 'Gerade ist keine letzte Chance'; end if;
+  select seat into v_seat from public.fdi_players where match_id = p_match and user_id = auth.uid();
+  if v_seat is null or v_seat <> v_match.accused_seat then
+    raise exception 'Nur die angeklagte Person darf raten';
+  end if;
+
+  v_ok := lower(trim(coalesce(p_guess, ''))) = lower(trim(v_match.secret_word))
+          and trim(coalesce(p_guess, '')) <> '';
+
+  update public.fdi_players set last_chance_guess = trim(coalesce(p_guess, ''))
+   where match_id = p_match and seat = v_seat;
+  update public.fdi_matches set phase = 'result', last_chance_success = v_ok where id = p_match;
+  perform public.fdi_touch(p_match);
+end;
+$$;
+
+/** Nächste Runde: neues Wort, neue Rollen (nur Gastgeber). */
+create or replace function public.fdi_next_round(p_match uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if (select host_id from public.fdi_matches where id = p_match) <> auth.uid() then
+    raise exception 'Nur der Gastgeber';
+  end if;
+  if (select phase from public.fdi_matches where id = p_match) <> 'result' then
+    raise exception 'Die Runde läuft noch';
+  end if;
+  update public.fdi_matches set round = round + 1 where id = p_match;
+  perform public.fdi_deal(p_match);
+  perform public.fdi_touch(p_match);
+end;
+$$;
+
+/**
+ * Der Spielstand -- zugeschnitten auf den Aufrufer.
+ *
+ * Das ist die Stelle, an der das Spiel steht und fällt: Das geheime Wort geht
+ * NUR an Nicht-Imposter, das Hilfswort NUR an Imposter, und wer sonst noch
+ * Imposter ist, erfährt man erst im Ergebnis. Deshalb liest kein Client die
+ * Tabellen direkt -- es gibt schlicht keinen anderen Weg an die Daten.
+ */
+create or replace function public.fdi_get_state(p_match uuid)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_match public.fdi_matches;
+  v_me public.fdi_players;
+  v_fertig boolean;
+begin
+  if not public.fdi_is_member(p_match) then raise exception 'Du bist nicht dabei'; end if;
+  select * into v_match from public.fdi_matches where id = p_match;
+  select * into v_me from public.fdi_players where match_id = p_match and user_id = auth.uid();
+  v_fertig := v_match.phase = 'result';
+
+  return jsonb_build_object(
+    'match', jsonb_build_object(
+      'id', v_match.id,
+      'code', v_match.code,
+      'phase', v_match.phase,
+      'round', v_match.round,
+      'category_id', v_match.category_id,
+      'category_label', (select label from public.fdi_categories where id = v_match.category_id),
+      'mode', v_match.mode,
+      'imposter_count', v_match.imposter_count,
+      'starter_seat', v_match.starter_seat,
+      'accused_seat', v_match.accused_seat,
+      'correct_accusation', v_match.correct_accusation,
+      'last_chance_success', v_match.last_chance_success,
+      'is_host', v_match.host_id = auth.uid(),
+      'size', (select count(*) from public.fdi_players where match_id = p_match),
+      -- Erst am Rundenende darf das Wort an alle.
+      'secret_word', case when v_fertig then v_match.secret_word else null end
+    ),
+    'me', jsonb_build_object(
+      'seat', v_me.seat,
+      'name', v_me.name,
+      'is_imposter', v_me.is_imposter,
+      'vote_seat', v_me.vote_seat,
+      -- Nicht-Imposter bekommen das geheime Wort, Imposter stattdessen das Hilfswort.
+      'word', case when v_match.phase <> 'lobby' and not v_me.is_imposter
+                   then v_match.secret_word else null end,
+      'helper_word', case when v_match.phase <> 'lobby' and v_me.is_imposter
+                          then v_match.helper_word else null end
+    ),
+    'players', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'seat', p.seat,
+        'name', p.name,
+        'has_voted', p.vote_seat is not null,
+        'is_you', p.user_id = auth.uid(),
+        -- Wer Imposter war, steht erst im Ergebnis drin.
+        'is_imposter', case when v_fertig then p.is_imposter else null end,
+        'last_chance_guess', case when v_fertig then p.last_chance_guess else null end
+      ) order by p.seat)
+      from public.fdi_players p where p.match_id = p_match
+    ), '[]'::jsonb)
+  );
+end;
+$$;
+
+/** Meine offenen Runden -- für die Wiedereinstiegsliste. */
+create or replace function public.fdi_my_matches()
+returns table (match_id uuid, code text, phase text, round integer, size integer)
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select m.id, m.code, m.phase, m.round,
+         (select count(*)::integer from public.fdi_players x where x.match_id = m.id)
+    from public.fdi_matches m
+    join public.fdi_players p on p.match_id = m.id and p.user_id = auth.uid()
+   order by m.updated_at desc
+   limit 10;
+$$;
+
+/* =========================== Rechte =============================== */
+
+-- Die internen Helfer darf niemand von außen aufrufen.
+revoke all on function public.fdi_touch(uuid) from public, anon, authenticated;
+revoke all on function public.fdi_new_code() from public, anon, authenticated;
+revoke all on function public.fdi_deal(uuid) from public, anon, authenticated;
+
+grant execute on function public.fdi_create_match(text, text, text) to authenticated;
+grant execute on function public.fdi_join_match(text, text) to authenticated;
+grant execute on function public.fdi_leave_match(uuid) to authenticated;
+grant execute on function public.fdi_start_match(uuid) to authenticated;
+grant execute on function public.fdi_to_accuse(uuid) to authenticated;
+grant execute on function public.fdi_vote(uuid, integer) to authenticated;
+grant execute on function public.fdi_last_chance(uuid, text) to authenticated;
+grant execute on function public.fdi_next_round(uuid) to authenticated;
+grant execute on function public.fdi_get_state(uuid) to authenticated;
+grant execute on function public.fdi_my_matches() to authenticated;
+-- Wird in der Regel von fdi_state ausgewertet und muss deshalb aufrufbar bleiben.
+grant execute on function public.fdi_is_member(uuid) to authenticated;
+
+/* ===================== Realtime (optional) ======================== */
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    begin
+      alter publication supabase_realtime add table public.fdi_state;
+    exception when duplicate_object then null;
+    end;
+  end if;
+end
+$$;
+
+-- ==================== 011b_imposter_words.sql ====================
+-- Wörter und Kategorien für das Online-Spiel "Finde den Imposter".
+--
+-- NICHT von Hand pflegen: erzeugt aus src/games/finde-den-imposter/data/ mit
+--   node scripts/build-imposter-words-sql.mjs
+-- tests/imposter-words-sql.test.ts schlägt fehl, sobald beides auseinanderläuft.
+--
+-- Der Server zieht das geheime Wort selbst -- würde der Gastgeber es im
+-- Browser auswählen, kennte er es auch als Imposter.
+
+insert into public.fdi_categories (id, label) values
+  ('tiere', 'Tiere'),
+  ('essen', 'Essen & Trinken'),
+  ('berufe', 'Berufe'),
+  ('sport', 'Sport'),
+  ('reisen', 'Reisen & Orte'),
+  ('technik', 'Technik'),
+  ('filme', 'Filme & Serien'),
+  ('musik', 'Musik'),
+  ('schule', 'Schule & Lernen'),
+  ('haus', 'Haus & Wohnen'),
+  ('natur', 'Natur & Wetter'),
+  ('koerper', 'Körper & Gesundheit'),
+  ('kleidung', 'Kleidung'),
+  ('fahrzeuge', 'Fahrzeuge'),
+  ('spiele', 'Spiele & Hobbys'),
+  ('feiertage', 'Feiertage & Feste'),
+  ('gefuehle', 'Gefühle'),
+  ('stadt', 'Stadt & Alltag'),
+  ('maerchen', 'Märchen & Fantasie'),
+  ('beruehmt', 'Berühmte Personen')
+on conflict (id) do update set label = excluded.label;
+
+insert into public.fdi_words (category_id, word) values
+  ('tiere', 'Hund'),
+  ('tiere', 'Katze'),
+  ('tiere', 'Pferd'),
+  ('tiere', 'Kuh'),
+  ('tiere', 'Schwein'),
+  ('tiere', 'Huhn'),
+  ('tiere', 'Ente'),
+  ('tiere', 'Gans'),
+  ('tiere', 'Schaf'),
+  ('tiere', 'Ziege'),
+  ('tiere', 'Hase'),
+  ('tiere', 'Fuchs'),
+  ('tiere', 'Wolf'),
+  ('tiere', 'Bär'),
+  ('tiere', 'Löwe'),
+  ('tiere', 'Tiger'),
+  ('tiere', 'Elefant'),
+  ('tiere', 'Giraffe'),
+  ('tiere', 'Affe'),
+  ('tiere', 'Pinguin'),
+  ('tiere', 'Delfin'),
+  ('tiere', 'Hai'),
+  ('tiere', 'Wal'),
+  ('tiere', 'Adler'),
+  ('tiere', 'Eule'),
+  ('tiere', 'Spatz'),
+  ('tiere', 'Storch'),
+  ('tiere', 'Biene'),
+  ('tiere', 'Ameise'),
+  ('tiere', 'Spinne'),
+  ('tiere', 'Schmetterling'),
+  ('tiere', 'Frosch'),
+  ('tiere', 'Schildkröte'),
+  ('tiere', 'Schlange'),
+  ('tiere', 'Krokodil'),
+  ('tiere', 'Igel'),
+  ('tiere', 'Eichhörnchen'),
+  ('tiere', 'Maus'),
+  ('tiere', 'Ratte'),
+  ('tiere', 'Fledermaus'),
+  ('tiere', 'Reh'),
+  ('tiere', 'Hirsch'),
+  ('tiere', 'Wildschwein'),
+  ('tiere', 'Kamel'),
+  ('tiere', 'Zebra'),
+  ('tiere', 'Nashorn'),
+  ('tiere', 'Nilpferd'),
+  ('tiere', 'Papagei'),
+  ('tiere', 'Möwe'),
+  ('tiere', 'Marienkäfer'),
+  ('essen', 'Pizza'),
+  ('essen', 'Brot'),
+  ('essen', 'Butter'),
+  ('essen', 'Käse'),
+  ('essen', 'Milch'),
+  ('essen', 'Joghurt'),
+  ('essen', 'Apfel'),
+  ('essen', 'Banane'),
+  ('essen', 'Erdbeere'),
+  ('essen', 'Kirsche'),
+  ('essen', 'Weintraube'),
+  ('essen', 'Zitrone'),
+  ('essen', 'Kartoffel'),
+  ('essen', 'Möhre'),
+  ('essen', 'Gurke'),
+  ('essen', 'Tomate'),
+  ('essen', 'Zwiebel'),
+  ('essen', 'Knoblauch'),
+  ('essen', 'Salat'),
+  ('essen', 'Reis'),
+  ('essen', 'Nudeln'),
+  ('essen', 'Suppe'),
+  ('essen', 'Braten'),
+  ('essen', 'Schnitzel'),
+  ('essen', 'Wurst'),
+  ('essen', 'Schinken'),
+  ('essen', 'Spiegelei'),
+  ('essen', 'Pfannkuchen'),
+  ('essen', 'Kuchen'),
+  ('essen', 'Torte'),
+  ('essen', 'Keks'),
+  ('essen', 'Schokolade'),
+  ('essen', 'Speiseeis'),
+  ('essen', 'Honig'),
+  ('essen', 'Marmelade'),
+  ('essen', 'Müsli'),
+  ('essen', 'Brötchen'),
+  ('essen', 'Brezel'),
+  ('essen', 'Pommes'),
+  ('essen', 'Currywurst'),
+  ('essen', 'Döner'),
+  ('essen', 'Kaffee'),
+  ('essen', 'Tee'),
+  ('essen', 'Kakao'),
+  ('essen', 'Limonade'),
+  ('essen', 'Apfelsaft'),
+  ('essen', 'Mineralwasser'),
+  ('essen', 'Bier'),
+  ('essen', 'Wein'),
+  ('essen', 'Sekt'),
+  ('berufe', 'Arzt'),
+  ('berufe', 'Krankenschwester'),
+  ('berufe', 'Lehrer'),
+  ('berufe', 'Erzieher'),
+  ('berufe', 'Polizist'),
+  ('berufe', 'Feuerwehrmann'),
+  ('berufe', 'Bäcker'),
+  ('berufe', 'Metzger'),
+  ('berufe', 'Koch'),
+  ('berufe', 'Kellner'),
+  ('berufe', 'Friseur'),
+  ('berufe', 'Gärtner'),
+  ('berufe', 'Landwirt'),
+  ('berufe', 'Tierarzt'),
+  ('berufe', 'Apotheker'),
+  ('berufe', 'Zahnarzt'),
+  ('berufe', 'Anwalt'),
+  ('berufe', 'Richter'),
+  ('berufe', 'Bankkaufmann'),
+  ('berufe', 'Verkäufer'),
+  ('berufe', 'Kassierer'),
+  ('berufe', 'Postbote'),
+  ('berufe', 'Busfahrer'),
+  ('berufe', 'Lokführer'),
+  ('berufe', 'Pilot'),
+  ('berufe', 'Flugbegleiter'),
+  ('berufe', 'Kapitän'),
+  ('berufe', 'Elektriker'),
+  ('berufe', 'Klempner'),
+  ('berufe', 'Maler'),
+  ('berufe', 'Maurer'),
+  ('berufe', 'Dachdecker'),
+  ('berufe', 'Schreiner'),
+  ('berufe', 'Mechaniker'),
+  ('berufe', 'Ingenieur'),
+  ('berufe', 'Architekt'),
+  ('berufe', 'Programmierer'),
+  ('berufe', 'Journalist'),
+  ('berufe', 'Fotograf'),
+  ('berufe', 'Musiker'),
+  ('berufe', 'Schauspieler'),
+  ('berufe', 'Sänger'),
+  ('berufe', 'Bibliothekar'),
+  ('berufe', 'Hausmeister'),
+  ('berufe', 'Reinigungskraft'),
+  ('berufe', 'Schornsteinfeger'),
+  ('berufe', 'Optiker'),
+  ('berufe', 'Physiotherapeut'),
+  ('berufe', 'Steuerberater'),
+  ('berufe', 'Soldat'),
+  ('sport', 'Fußball'),
+  ('sport', 'Handball'),
+  ('sport', 'Basketball'),
+  ('sport', 'Volleyball'),
+  ('sport', 'Tennis'),
+  ('sport', 'Tischtennis'),
+  ('sport', 'Badminton'),
+  ('sport', 'Golf'),
+  ('sport', 'Hockey'),
+  ('sport', 'Eishockey'),
+  ('sport', 'Schwimmen'),
+  ('sport', 'Tauchen'),
+  ('sport', 'Rudern'),
+  ('sport', 'Segeln'),
+  ('sport', 'Surfen'),
+  ('sport', 'Klettern'),
+  ('sport', 'Wandern'),
+  ('sport', 'Joggen'),
+  ('sport', 'Marathon'),
+  ('sport', 'Radfahren'),
+  ('sport', 'Mountainbike'),
+  ('sport', 'Reiten'),
+  ('sport', 'Turnen'),
+  ('sport', 'Leichtathletik'),
+  ('sport', 'Weitsprung'),
+  ('sport', 'Hochsprung'),
+  ('sport', 'Speerwurf'),
+  ('sport', 'Kugelstoßen'),
+  ('sport', 'Boxen'),
+  ('sport', 'Judo'),
+  ('sport', 'Karate'),
+  ('sport', 'Ringen'),
+  ('sport', 'Fechten'),
+  ('sport', 'Skifahren'),
+  ('sport', 'Snowboard'),
+  ('sport', 'Rodeln'),
+  ('sport', 'Eiskunstlauf'),
+  ('sport', 'Biathlon'),
+  ('sport', 'Skispringen'),
+  ('sport', 'Bogenschießen'),
+  ('sport', 'Sportschießen'),
+  ('sport', 'Kegeln'),
+  ('sport', 'Bowling'),
+  ('sport', 'Dart'),
+  ('sport', 'Billard'),
+  ('sport', 'Yoga'),
+  ('sport', 'Pilates'),
+  ('sport', 'Krafttraining'),
+  ('sport', 'Rennrad'),
+  ('sport', 'Triathlon'),
+  ('reisen', 'Strand'),
+  ('reisen', 'Berg'),
+  ('reisen', 'Insel'),
+  ('reisen', 'Wüste'),
+  ('reisen', 'Dschungel'),
+  ('reisen', 'Hotel'),
+  ('reisen', 'Ferienwohnung'),
+  ('reisen', 'Campingplatz'),
+  ('reisen', 'Zelt'),
+  ('reisen', 'Wohnwagen'),
+  ('reisen', 'Flughafen'),
+  ('reisen', 'Bahnhof'),
+  ('reisen', 'Hafen'),
+  ('reisen', 'Fähre'),
+  ('reisen', 'Kreuzfahrt'),
+  ('reisen', 'Reisebüro'),
+  ('reisen', 'Koffer'),
+  ('reisen', 'Rucksack'),
+  ('reisen', 'Reisepass'),
+  ('reisen', 'Landkarte'),
+  ('reisen', 'Stadtführung'),
+  ('reisen', 'Museum'),
+  ('reisen', 'Schloss'),
+  ('reisen', 'Burg'),
+  ('reisen', 'Leuchtturm'),
+  ('reisen', 'Wasserfall'),
+  ('reisen', 'Höhle'),
+  ('reisen', 'Bergsee'),
+  ('reisen', 'Fluss'),
+  ('reisen', 'Meer'),
+  ('reisen', 'Alpen'),
+  ('reisen', 'Nordsee'),
+  ('reisen', 'Ostsee'),
+  ('reisen', 'Schwarzwald'),
+  ('reisen', 'Bodensee'),
+  ('reisen', 'Rom'),
+  ('reisen', 'Paris'),
+  ('reisen', 'London'),
+  ('reisen', 'Wien'),
+  ('reisen', 'Amsterdam'),
+  ('reisen', 'Barcelona'),
+  ('reisen', 'Prag'),
+  ('reisen', 'Venedig'),
+  ('reisen', 'Mallorca'),
+  ('reisen', 'Türkei'),
+  ('reisen', 'Italien'),
+  ('reisen', 'Norwegen'),
+  ('reisen', 'Kanada'),
+  ('reisen', 'Japan'),
+  ('reisen', 'Ägypten'),
+  ('technik', 'Handy'),
+  ('technik', 'Tablet'),
+  ('technik', 'Laptop'),
+  ('technik', 'Computer'),
+  ('technik', 'Monitor'),
+  ('technik', 'Tastatur'),
+  ('technik', 'Maus'),
+  ('technik', 'Drucker'),
+  ('technik', 'Scanner'),
+  ('technik', 'Router'),
+  ('technik', 'WLAN'),
+  ('technik', 'Bluetooth'),
+  ('technik', 'USB-Stick'),
+  ('technik', 'Festplatte'),
+  ('technik', 'Kopfhörer'),
+  ('technik', 'Lautsprecher'),
+  ('technik', 'Fernseher'),
+  ('technik', 'Fernbedienung'),
+  ('technik', 'Beamer'),
+  ('technik', 'Kamera'),
+  ('technik', 'Drohne'),
+  ('technik', 'Smartwatch'),
+  ('technik', 'Ladekabel'),
+  ('technik', 'Powerbank'),
+  ('technik', 'Steckdose'),
+  ('technik', 'Batterie'),
+  ('technik', 'Solarzelle'),
+  ('technik', 'Windrad'),
+  ('technik', 'Roboter'),
+  ('technik', 'Sprachassistent'),
+  ('technik', 'App'),
+  ('technik', 'Passwort'),
+  ('technik', 'E-Mail'),
+  ('technik', 'Suchmaschine'),
+  ('technik', 'Videoanruf'),
+  ('technik', 'Streaming'),
+  ('technik', 'Update'),
+  ('technik', 'Virenscanner'),
+  ('technik', 'Taschenlampe'),
+  ('technik', 'Mikrowelle'),
+  ('technik', 'Waschmaschine'),
+  ('technik', 'Staubsauger'),
+  ('technik', 'Kühlschrank'),
+  ('technik', 'Spülmaschine'),
+  ('technik', 'Bohrmaschine'),
+  ('technik', 'Rasenmäher'),
+  ('technik', 'Navigationsgerät'),
+  ('technik', 'Klimaanlage'),
+  ('technik', 'Nähmaschine'),
+  ('technik', 'Wärmepumpe'),
+  ('filme', 'Titanic'),
+  ('filme', 'Avatar'),
+  ('filme', 'Matrix'),
+  ('filme', 'Gladiator'),
+  ('filme', 'Rocky'),
+  ('filme', 'Terminator'),
+  ('filme', 'Jurassic Park'),
+  ('filme', 'Star Wars'),
+  ('filme', 'Herr der Ringe'),
+  ('filme', 'Harry Potter'),
+  ('filme', 'Der Pate'),
+  ('filme', 'Forrest Gump'),
+  ('filme', 'Findet Nemo'),
+  ('filme', 'König der Löwen'),
+  ('filme', 'Shrek'),
+  ('filme', 'Die Eiskönigin'),
+  ('filme', 'Minions'),
+  ('filme', 'Toy Story'),
+  ('filme', 'Ice Age'),
+  ('filme', 'Das Dschungelbuch'),
+  ('filme', 'Tatort'),
+  ('filme', 'Lindenstraße'),
+  ('filme', 'Die Sendung mit der Maus'),
+  ('filme', 'Tagesschau'),
+  ('filme', 'Big Bang Theory'),
+  ('filme', 'Friends'),
+  ('filme', 'Die Simpsons'),
+  ('filme', 'Game of Thrones'),
+  ('filme', 'Stranger Things'),
+  ('filme', 'Breaking Bad'),
+  ('filme', 'Dark'),
+  ('filme', 'Kinosaal'),
+  ('filme', 'Popcorn'),
+  ('filme', 'Filmmusik'),
+  ('filme', 'Abspann'),
+  ('filme', 'Regisseur'),
+  ('filme', 'Drehbuch'),
+  ('filme', 'Trailer'),
+  ('filme', 'Hauptrolle'),
+  ('filme', 'Statist'),
+  ('filme', 'Kostüm'),
+  ('filme', 'Kulisse'),
+  ('filme', 'Oscar'),
+  ('filme', 'Serienfinale'),
+  ('filme', 'Fortsetzung'),
+  ('filme', 'Zeichentrick'),
+  ('filme', 'Dokumentation'),
+  ('filme', 'Krimi'),
+  ('filme', 'Western'),
+  ('filme', 'Filmpremiere'),
+  ('musik', 'Gitarre'),
+  ('musik', 'E-Gitarre'),
+  ('musik', 'Bass'),
+  ('musik', 'Schlagzeug'),
+  ('musik', 'Klavier'),
+  ('musik', 'Flügel'),
+  ('musik', 'Geige'),
+  ('musik', 'Cello'),
+  ('musik', 'Kontrabass'),
+  ('musik', 'Querflöte'),
+  ('musik', 'Blockflöte'),
+  ('musik', 'Klarinette'),
+  ('musik', 'Saxofon'),
+  ('musik', 'Trompete'),
+  ('musik', 'Posaune'),
+  ('musik', 'Tuba'),
+  ('musik', 'Waldhorn'),
+  ('musik', 'Harfe'),
+  ('musik', 'Akkordeon'),
+  ('musik', 'Mundharmonika'),
+  ('musik', 'Xylofon'),
+  ('musik', 'Triangel'),
+  ('musik', 'Tamburin'),
+  ('musik', 'Orgel'),
+  ('musik', 'Keyboard'),
+  ('musik', 'Mikrofon'),
+  ('musik', 'Chor'),
+  ('musik', 'Orchester'),
+  ('musik', 'Band'),
+  ('musik', 'Dirigent'),
+  ('musik', 'Konzert'),
+  ('musik', 'Festival'),
+  ('musik', 'Noten'),
+  ('musik', 'Takt'),
+  ('musik', 'Refrain'),
+  ('musik', 'Strophe'),
+  ('musik', 'Melodie'),
+  ('musik', 'Rhythmus'),
+  ('musik', 'Schlager'),
+  ('musik', 'Rock'),
+  ('musik', 'Pop'),
+  ('musik', 'Jazz'),
+  ('musik', 'Klassik'),
+  ('musik', 'Hip-Hop'),
+  ('musik', 'Techno'),
+  ('musik', 'Volksmusik'),
+  ('musik', 'Blaskapelle'),
+  ('musik', 'Radio'),
+  ('musik', 'Plattenspieler'),
+  ('musik', 'Ohrwurm'),
+  ('schule', 'Tafel'),
+  ('schule', 'Kreide'),
+  ('schule', 'Whiteboard'),
+  ('schule', 'Schulheft'),
+  ('schule', 'Schulbuch'),
+  ('schule', 'Federmappe'),
+  ('schule', 'Bleistift'),
+  ('schule', 'Kugelschreiber'),
+  ('schule', 'Radiergummi'),
+  ('schule', 'Lineal'),
+  ('schule', 'Zirkel'),
+  ('schule', 'Geodreieck'),
+  ('schule', 'Taschenrechner'),
+  ('schule', 'Schulranzen'),
+  ('schule', 'Pausenbrot'),
+  ('schule', 'Pausenhof'),
+  ('schule', 'Schulklingel'),
+  ('schule', 'Stundenplan'),
+  ('schule', 'Hausaufgaben'),
+  ('schule', 'Klassenarbeit'),
+  ('schule', 'Diktat'),
+  ('schule', 'Zeugnis'),
+  ('schule', 'Schulnote'),
+  ('schule', 'Sitzenbleiben'),
+  ('schule', 'Klassenfahrt'),
+  ('schule', 'Wandertag'),
+  ('schule', 'Schulbus'),
+  ('schule', 'Turnhalle'),
+  ('schule', 'Sportunterricht'),
+  ('schule', 'Mathematik'),
+  ('schule', 'Deutsch'),
+  ('schule', 'Englisch'),
+  ('schule', 'Französisch'),
+  ('schule', 'Biologie'),
+  ('schule', 'Chemie'),
+  ('schule', 'Physik'),
+  ('schule', 'Erdkunde'),
+  ('schule', 'Geschichte'),
+  ('schule', 'Kunstunterricht'),
+  ('schule', 'Musikunterricht'),
+  ('schule', 'Religion'),
+  ('schule', 'Werken'),
+  ('schule', 'Lehrerzimmer'),
+  ('schule', 'Sekretariat'),
+  ('schule', 'Schulleiter'),
+  ('schule', 'Klassensprecher'),
+  ('schule', 'Elternabend'),
+  ('schule', 'Abitur'),
+  ('schule', 'Sommerferien'),
+  ('schule', 'Schulhof'),
+  ('haus', 'Wohnzimmer'),
+  ('haus', 'Schlafzimmer'),
+  ('haus', 'Kinderzimmer'),
+  ('haus', 'Küche'),
+  ('haus', 'Badezimmer'),
+  ('haus', 'Flur'),
+  ('haus', 'Keller'),
+  ('haus', 'Dachboden'),
+  ('haus', 'Garage'),
+  ('haus', 'Balkon'),
+  ('haus', 'Terrasse'),
+  ('haus', 'Garten'),
+  ('haus', 'Treppe'),
+  ('haus', 'Fenster'),
+  ('haus', 'Haustür'),
+  ('haus', 'Dach'),
+  ('haus', 'Schornstein'),
+  ('haus', 'Sofa'),
+  ('haus', 'Sessel'),
+  ('haus', 'Couchtisch'),
+  ('haus', 'Esstisch'),
+  ('haus', 'Stuhl'),
+  ('haus', 'Bett'),
+  ('haus', 'Matratze'),
+  ('haus', 'Kissen'),
+  ('haus', 'Bettdecke'),
+  ('haus', 'Kleiderschrank'),
+  ('haus', 'Kommode'),
+  ('haus', 'Regal'),
+  ('haus', 'Bücherregal'),
+  ('haus', 'Teppich'),
+  ('haus', 'Vorhang'),
+  ('haus', 'Lampe'),
+  ('haus', 'Kronleuchter'),
+  ('haus', 'Spiegel'),
+  ('haus', 'Bilderrahmen'),
+  ('haus', 'Blumentopf'),
+  ('haus', 'Herd'),
+  ('haus', 'Backofen'),
+  ('haus', 'Spüle'),
+  ('haus', 'Wasserhahn'),
+  ('haus', 'Badewanne'),
+  ('haus', 'Dusche'),
+  ('haus', 'Waschbecken'),
+  ('haus', 'Heizung'),
+  ('haus', 'Türklinke'),
+  ('haus', 'Briefkasten'),
+  ('haus', 'Zaun'),
+  ('haus', 'Hecke'),
+  ('haus', 'Gartenzwerg'),
+  ('natur', 'Sonne'),
+  ('natur', 'Mond'),
+  ('natur', 'Sterne'),
+  ('natur', 'Wolke'),
+  ('natur', 'Regen'),
+  ('natur', 'Schnee'),
+  ('natur', 'Hagel'),
+  ('natur', 'Nebel'),
+  ('natur', 'Wind'),
+  ('natur', 'Sturm'),
+  ('natur', 'Gewitter'),
+  ('natur', 'Blitz'),
+  ('natur', 'Donner'),
+  ('natur', 'Regenbogen'),
+  ('natur', 'Frost'),
+  ('natur', 'Raureif'),
+  ('natur', 'Morgentau'),
+  ('natur', 'Hitze'),
+  ('natur', 'Dürre'),
+  ('natur', 'Überschwemmung'),
+  ('natur', 'Lawine'),
+  ('natur', 'Erdbeben'),
+  ('natur', 'Vulkan'),
+  ('natur', 'Gletscher'),
+  ('natur', 'Wald'),
+  ('natur', 'Wiese'),
+  ('natur', 'Feld'),
+  ('natur', 'Moor'),
+  ('natur', 'Sumpf'),
+  ('natur', 'Baum'),
+  ('natur', 'Eiche'),
+  ('natur', 'Buche'),
+  ('natur', 'Tanne'),
+  ('natur', 'Birke'),
+  ('natur', 'Blume'),
+  ('natur', 'Rose'),
+  ('natur', 'Tulpe'),
+  ('natur', 'Sonnenblume'),
+  ('natur', 'Gänseblümchen'),
+  ('natur', 'Löwenzahn'),
+  ('natur', 'Klee'),
+  ('natur', 'Moos'),
+  ('natur', 'Pilz'),
+  ('natur', 'Farn'),
+  ('natur', 'Bach'),
+  ('natur', 'Teich'),
+  ('natur', 'Quelle'),
+  ('natur', 'Küste'),
+  ('natur', 'Düne'),
+  ('natur', 'Herbstlaub'),
+  ('koerper', 'Kopf'),
+  ('koerper', 'Haar'),
+  ('koerper', 'Stirn'),
+  ('koerper', 'Auge'),
+  ('koerper', 'Augenbraue'),
+  ('koerper', 'Wimper'),
+  ('koerper', 'Nase'),
+  ('koerper', 'Mund'),
+  ('koerper', 'Lippe'),
+  ('koerper', 'Zahn'),
+  ('koerper', 'Zunge'),
+  ('koerper', 'Kinn'),
+  ('koerper', 'Ohr'),
+  ('koerper', 'Hals'),
+  ('koerper', 'Nacken'),
+  ('koerper', 'Schulter'),
+  ('koerper', 'Arm'),
+  ('koerper', 'Ellenbogen'),
+  ('koerper', 'Handgelenk'),
+  ('koerper', 'Hand'),
+  ('koerper', 'Finger'),
+  ('koerper', 'Daumen'),
+  ('koerper', 'Fingernagel'),
+  ('koerper', 'Brustkorb'),
+  ('koerper', 'Bauch'),
+  ('koerper', 'Rücken'),
+  ('koerper', 'Hüfte'),
+  ('koerper', 'Bein'),
+  ('koerper', 'Knie'),
+  ('koerper', 'Wade'),
+  ('koerper', 'Knöchel'),
+  ('koerper', 'Fuß'),
+  ('koerper', 'Zeh'),
+  ('koerper', 'Ferse'),
+  ('koerper', 'Haut'),
+  ('koerper', 'Muskel'),
+  ('koerper', 'Knochen'),
+  ('koerper', 'Herz'),
+  ('koerper', 'Lunge'),
+  ('koerper', 'Magen'),
+  ('koerper', 'Leber'),
+  ('koerper', 'Niere'),
+  ('koerper', 'Gehirn'),
+  ('koerper', 'Blut'),
+  ('koerper', 'Puls'),
+  ('koerper', 'Fieber'),
+  ('koerper', 'Husten'),
+  ('koerper', 'Schnupfen'),
+  ('koerper', 'Kopfschmerzen'),
+  ('koerper', 'Pflaster'),
+  ('kleidung', 'Hemd'),
+  ('kleidung', 'Bluse'),
+  ('kleidung', 'T-Shirt'),
+  ('kleidung', 'Pullover'),
+  ('kleidung', 'Strickjacke'),
+  ('kleidung', 'Weste'),
+  ('kleidung', 'Jacke'),
+  ('kleidung', 'Mantel'),
+  ('kleidung', 'Anorak'),
+  ('kleidung', 'Regenjacke'),
+  ('kleidung', 'Hose'),
+  ('kleidung', 'Jeans'),
+  ('kleidung', 'Shorts'),
+  ('kleidung', 'Rock'),
+  ('kleidung', 'Kleid'),
+  ('kleidung', 'Anzug'),
+  ('kleidung', 'Krawatte'),
+  ('kleidung', 'Fliege'),
+  ('kleidung', 'Gürtel'),
+  ('kleidung', 'Hosenträger'),
+  ('kleidung', 'Socken'),
+  ('kleidung', 'Strumpfhose'),
+  ('kleidung', 'Unterhemd'),
+  ('kleidung', 'Schlafanzug'),
+  ('kleidung', 'Bademantel'),
+  ('kleidung', 'Badehose'),
+  ('kleidung', 'Badeanzug'),
+  ('kleidung', 'Bikini'),
+  ('kleidung', 'Turnschuhe'),
+  ('kleidung', 'Sandalen'),
+  ('kleidung', 'Stiefel'),
+  ('kleidung', 'Gummistiefel'),
+  ('kleidung', 'Hausschuhe'),
+  ('kleidung', 'Wanderschuhe'),
+  ('kleidung', 'Mütze'),
+  ('kleidung', 'Hut'),
+  ('kleidung', 'Kappe'),
+  ('kleidung', 'Schal'),
+  ('kleidung', 'Handschuhe'),
+  ('kleidung', 'Halstuch'),
+  ('kleidung', 'Brille'),
+  ('kleidung', 'Sonnenbrille'),
+  ('kleidung', 'Armbanduhr'),
+  ('kleidung', 'Ring'),
+  ('kleidung', 'Halskette'),
+  ('kleidung', 'Ohrring'),
+  ('kleidung', 'Handtasche'),
+  ('kleidung', 'Geldbeutel'),
+  ('kleidung', 'Regenschirm'),
+  ('kleidung', 'Lätzchen'),
+  ('fahrzeuge', 'Auto'),
+  ('fahrzeuge', 'Fahrrad'),
+  ('fahrzeuge', 'Motorrad'),
+  ('fahrzeuge', 'Roller'),
+  ('fahrzeuge', 'Moped'),
+  ('fahrzeuge', 'Lastwagen'),
+  ('fahrzeuge', 'Lieferwagen'),
+  ('fahrzeuge', 'Bus'),
+  ('fahrzeuge', 'Reisebus'),
+  ('fahrzeuge', 'Straßenbahn'),
+  ('fahrzeuge', 'U-Bahn'),
+  ('fahrzeuge', 'S-Bahn'),
+  ('fahrzeuge', 'Zug'),
+  ('fahrzeuge', 'Lokomotive'),
+  ('fahrzeuge', 'Güterzug'),
+  ('fahrzeuge', 'Taxi'),
+  ('fahrzeuge', 'Krankenwagen'),
+  ('fahrzeuge', 'Feuerwehrauto'),
+  ('fahrzeuge', 'Polizeiauto'),
+  ('fahrzeuge', 'Müllwagen'),
+  ('fahrzeuge', 'Traktor'),
+  ('fahrzeuge', 'Mähdrescher'),
+  ('fahrzeuge', 'Bagger'),
+  ('fahrzeuge', 'Kran'),
+  ('fahrzeuge', 'Gabelstapler'),
+  ('fahrzeuge', 'Betonmischer'),
+  ('fahrzeuge', 'Schneepflug'),
+  ('fahrzeuge', 'Wohnmobil'),
+  ('fahrzeuge', 'Anhänger'),
+  ('fahrzeuge', 'Cabrio'),
+  ('fahrzeuge', 'Geländewagen'),
+  ('fahrzeuge', 'Sportwagen'),
+  ('fahrzeuge', 'Oldtimer'),
+  ('fahrzeuge', 'Rennwagen'),
+  ('fahrzeuge', 'Flugzeug'),
+  ('fahrzeuge', 'Hubschrauber'),
+  ('fahrzeuge', 'Segelflugzeug'),
+  ('fahrzeuge', 'Heißluftballon'),
+  ('fahrzeuge', 'Rakete'),
+  ('fahrzeuge', 'Schiff'),
+  ('fahrzeuge', 'Segelboot'),
+  ('fahrzeuge', 'Ruderboot'),
+  ('fahrzeuge', 'Kanu'),
+  ('fahrzeuge', 'Schlauchboot'),
+  ('fahrzeuge', 'U-Boot'),
+  ('fahrzeuge', 'Jetski'),
+  ('fahrzeuge', 'Seilbahn'),
+  ('fahrzeuge', 'Skilift'),
+  ('fahrzeuge', 'Rollstuhl'),
+  ('fahrzeuge', 'Tretroller'),
+  ('spiele', 'Schach'),
+  ('spiele', 'Dame'),
+  ('spiele', 'Mühle'),
+  ('spiele', 'Halma'),
+  ('spiele', 'Backgammon'),
+  ('spiele', 'Mensch ärgere dich nicht'),
+  ('spiele', 'Monopoly'),
+  ('spiele', 'Scrabble'),
+  ('spiele', 'Risiko'),
+  ('spiele', 'Die Siedler von Catan'),
+  ('spiele', 'Uno'),
+  ('spiele', 'Skat'),
+  ('spiele', 'Doppelkopf'),
+  ('spiele', 'Rommé'),
+  ('spiele', 'Mau-Mau'),
+  ('spiele', 'Poker'),
+  ('spiele', 'Memory'),
+  ('spiele', 'Puzzle'),
+  ('spiele', 'Domino'),
+  ('spiele', 'Kniffel'),
+  ('spiele', 'Bingo'),
+  ('spiele', 'Sudoku'),
+  ('spiele', 'Kreuzworträtsel'),
+  ('spiele', 'Verstecken'),
+  ('spiele', 'Fangen'),
+  ('spiele', 'Blinde Kuh'),
+  ('spiele', 'Topfschlagen'),
+  ('spiele', 'Reise nach Jerusalem'),
+  ('spiele', 'Stille Post'),
+  ('spiele', 'Sackhüpfen'),
+  ('spiele', 'Gummitwist'),
+  ('spiele', 'Seilspringen'),
+  ('spiele', 'Hüpfkästchen'),
+  ('spiele', 'Murmeln'),
+  ('spiele', 'Drachensteigen'),
+  ('spiele', 'Sandburg'),
+  ('spiele', 'Schaukel'),
+  ('spiele', 'Rutsche'),
+  ('spiele', 'Wippe'),
+  ('spiele', 'Klettergerüst'),
+  ('spiele', 'Lego'),
+  ('spiele', 'Playmobil'),
+  ('spiele', 'Modelleisenbahn'),
+  ('spiele', 'Sammelalbum'),
+  ('spiele', 'Briefmarken'),
+  ('spiele', 'Stricken'),
+  ('spiele', 'Häkeln'),
+  ('spiele', 'Basteln'),
+  ('spiele', 'Gartenarbeit'),
+  ('spiele', 'Angeln'),
+  ('feiertage', 'Weihnachten'),
+  ('feiertage', 'Heiligabend'),
+  ('feiertage', 'Silvester'),
+  ('feiertage', 'Neujahr'),
+  ('feiertage', 'Ostern'),
+  ('feiertage', 'Karfreitag'),
+  ('feiertage', 'Pfingsten'),
+  ('feiertage', 'Fronleichnam'),
+  ('feiertage', 'Christi Himmelfahrt'),
+  ('feiertage', 'Nikolaus'),
+  ('feiertage', 'Advent'),
+  ('feiertage', 'Adventskranz'),
+  ('feiertage', 'Weihnachtsbaum'),
+  ('feiertage', 'Krippe'),
+  ('feiertage', 'Weihnachtsmarkt'),
+  ('feiertage', 'Plätzchen'),
+  ('feiertage', 'Osterhase'),
+  ('feiertage', 'Ostereier'),
+  ('feiertage', 'Eiersuche'),
+  ('feiertage', 'Karneval'),
+  ('feiertage', 'Fasching'),
+  ('feiertage', 'Rosenmontag'),
+  ('feiertage', 'Aschermittwoch'),
+  ('feiertage', 'Muttertag'),
+  ('feiertage', 'Vatertag'),
+  ('feiertage', 'Valentinstag'),
+  ('feiertage', 'Halloween'),
+  ('feiertage', 'Erntedankfest'),
+  ('feiertage', 'Martinstag'),
+  ('feiertage', 'Laternenumzug'),
+  ('feiertage', 'Schützenfest'),
+  ('feiertage', 'Oktoberfest'),
+  ('feiertage', 'Kirmes'),
+  ('feiertage', 'Jahrmarkt'),
+  ('feiertage', 'Geburtstag'),
+  ('feiertage', 'Geburtstagstorte'),
+  ('feiertage', 'Hochzeit'),
+  ('feiertage', 'Polterabend'),
+  ('feiertage', 'Taufe'),
+  ('feiertage', 'Kommunion'),
+  ('feiertage', 'Konfirmation'),
+  ('feiertage', 'Jubiläum'),
+  ('feiertage', 'Richtfest'),
+  ('feiertage', 'Einschulung'),
+  ('feiertage', 'Abschlussfeier'),
+  ('feiertage', 'Feuerwerk'),
+  ('feiertage', 'Girlande'),
+  ('feiertage', 'Luftballon'),
+  ('feiertage', 'Geschenk'),
+  ('feiertage', 'Festessen'),
+  ('gefuehle', 'Freude'),
+  ('gefuehle', 'Glück'),
+  ('gefuehle', 'Liebe'),
+  ('gefuehle', 'Zuneigung'),
+  ('gefuehle', 'Stolz'),
+  ('gefuehle', 'Dankbarkeit'),
+  ('gefuehle', 'Erleichterung'),
+  ('gefuehle', 'Hoffnung'),
+  ('gefuehle', 'Vorfreude'),
+  ('gefuehle', 'Neugier'),
+  ('gefuehle', 'Begeisterung'),
+  ('gefuehle', 'Zufriedenheit'),
+  ('gefuehle', 'Geborgenheit'),
+  ('gefuehle', 'Mitgefühl'),
+  ('gefuehle', 'Sehnsucht'),
+  ('gefuehle', 'Heimweh'),
+  ('gefuehle', 'Fernweh'),
+  ('gefuehle', 'Traurigkeit'),
+  ('gefuehle', 'Kummer'),
+  ('gefuehle', 'Enttäuschung'),
+  ('gefuehle', 'Wut'),
+  ('gefuehle', 'Ärger'),
+  ('gefuehle', 'Zorn'),
+  ('gefuehle', 'Frust'),
+  ('gefuehle', 'Neid'),
+  ('gefuehle', 'Eifersucht'),
+  ('gefuehle', 'Angst'),
+  ('gefuehle', 'Panik'),
+  ('gefuehle', 'Sorge'),
+  ('gefuehle', 'Nervosität'),
+  ('gefuehle', 'Aufregung'),
+  ('gefuehle', 'Scham'),
+  ('gefuehle', 'Schuldgefühl'),
+  ('gefuehle', 'Verlegenheit'),
+  ('gefuehle', 'Peinlichkeit'),
+  ('gefuehle', 'Langeweile'),
+  ('gefuehle', 'Müdigkeit'),
+  ('gefuehle', 'Erschöpfung'),
+  ('gefuehle', 'Überraschung'),
+  ('gefuehle', 'Verwirrung'),
+  ('gefuehle', 'Zweifel'),
+  ('gefuehle', 'Misstrauen'),
+  ('gefuehle', 'Einsamkeit'),
+  ('gefuehle', 'Heiterkeit'),
+  ('gefuehle', 'Schadenfreude'),
+  ('gefuehle', 'Gelassenheit'),
+  ('gefuehle', 'Ungeduld'),
+  ('gefuehle', 'Respekt'),
+  ('gefuehle', 'Bewunderung'),
+  ('gefuehle', 'Zuversicht'),
+  ('stadt', 'Rathaus'),
+  ('stadt', 'Marktplatz'),
+  ('stadt', 'Kirche'),
+  ('stadt', 'Dom'),
+  ('stadt', 'Bushaltestelle'),
+  ('stadt', 'Fußgängerzone'),
+  ('stadt', 'Einkaufszentrum'),
+  ('stadt', 'Supermarkt'),
+  ('stadt', 'Bäckerei'),
+  ('stadt', 'Metzgerei'),
+  ('stadt', 'Apotheke'),
+  ('stadt', 'Drogerie'),
+  ('stadt', 'Buchhandlung'),
+  ('stadt', 'Blumenladen'),
+  ('stadt', 'Kiosk'),
+  ('stadt', 'Postfiliale'),
+  ('stadt', 'Bank'),
+  ('stadt', 'Geldautomat'),
+  ('stadt', 'Bibliothek'),
+  ('stadt', 'Schwimmbad'),
+  ('stadt', 'Sporthalle'),
+  ('stadt', 'Stadion'),
+  ('stadt', 'Kino'),
+  ('stadt', 'Theater'),
+  ('stadt', 'Stadtmuseum'),
+  ('stadt', 'Zoo'),
+  ('stadt', 'Stadtpark'),
+  ('stadt', 'Spielplatz'),
+  ('stadt', 'Friedhof'),
+  ('stadt', 'Krankenhaus'),
+  ('stadt', 'Feuerwache'),
+  ('stadt', 'Polizeirevier'),
+  ('stadt', 'Ampel'),
+  ('stadt', 'Zebrastreifen'),
+  ('stadt', 'Kreisverkehr'),
+  ('stadt', 'Parkhaus'),
+  ('stadt', 'Baustelle'),
+  ('stadt', 'Straßenlaterne'),
+  ('stadt', 'Mülleimer'),
+  ('stadt', 'Parkbank'),
+  ('stadt', 'Brunnen'),
+  ('stadt', 'Denkmal'),
+  ('stadt', 'Brücke'),
+  ('stadt', 'Tunnel'),
+  ('stadt', 'Stau'),
+  ('stadt', 'Radweg'),
+  ('stadt', 'Bürgersteig'),
+  ('stadt', 'Hochhaus'),
+  ('stadt', 'Fahrkartenautomat'),
+  ('stadt', 'Wochenmarkt'),
+  ('maerchen', 'Schneewittchen'),
+  ('maerchen', 'Aschenputtel'),
+  ('maerchen', 'Dornröschen'),
+  ('maerchen', 'Rotkäppchen'),
+  ('maerchen', 'Rapunzel'),
+  ('maerchen', 'Hänsel und Gretel'),
+  ('maerchen', 'Frau Holle'),
+  ('maerchen', 'Rumpelstilzchen'),
+  ('maerchen', 'Der Froschkönig'),
+  ('maerchen', 'Die Bremer Stadtmusikanten'),
+  ('maerchen', 'Der gestiefelte Kater'),
+  ('maerchen', 'Tischlein deck dich'),
+  ('maerchen', 'Das tapfere Schneiderlein'),
+  ('maerchen', 'Die Sterntaler'),
+  ('maerchen', 'Der Wolf und die sieben Geißlein'),
+  ('maerchen', 'Peter Pan'),
+  ('maerchen', 'Pinocchio'),
+  ('maerchen', 'Alice im Wunderland'),
+  ('maerchen', 'Der kleine Prinz'),
+  ('maerchen', 'Robin Hood'),
+  ('maerchen', 'König Artus'),
+  ('maerchen', 'Drache'),
+  ('maerchen', 'Ritter'),
+  ('maerchen', 'Prinzessin'),
+  ('maerchen', 'Prinz'),
+  ('maerchen', 'König'),
+  ('maerchen', 'Königin'),
+  ('maerchen', 'Hexe'),
+  ('maerchen', 'Zauberer'),
+  ('maerchen', 'Fee'),
+  ('maerchen', 'Elfe'),
+  ('maerchen', 'Zwerg'),
+  ('maerchen', 'Riese'),
+  ('maerchen', 'Troll'),
+  ('maerchen', 'Kobold'),
+  ('maerchen', 'Einhorn'),
+  ('maerchen', 'Meerjungfrau'),
+  ('maerchen', 'Vampir'),
+  ('maerchen', 'Werwolf'),
+  ('maerchen', 'Gespenst'),
+  ('maerchen', 'Zauberstab'),
+  ('maerchen', 'Zaubertrank'),
+  ('maerchen', 'Zauberspiegel'),
+  ('maerchen', 'Märchenschloss'),
+  ('maerchen', 'Verwunschener Wald'),
+  ('maerchen', 'Goldene Kugel'),
+  ('maerchen', 'Glasschuh'),
+  ('maerchen', 'Spinnrad'),
+  ('maerchen', 'Siebenmeilenstiefel'),
+  ('maerchen', 'Wunschbrunnen'),
+  ('beruehmt', 'Albert Einstein'),
+  ('beruehmt', 'Isaac Newton'),
+  ('beruehmt', 'Marie Curie'),
+  ('beruehmt', 'Charles Darwin'),
+  ('beruehmt', 'Leonardo da Vinci'),
+  ('beruehmt', 'Michelangelo'),
+  ('beruehmt', 'Vincent van Gogh'),
+  ('beruehmt', 'Pablo Picasso'),
+  ('beruehmt', 'Ludwig van Beethoven'),
+  ('beruehmt', 'Wolfgang Amadeus Mozart'),
+  ('beruehmt', 'Johann Sebastian Bach'),
+  ('beruehmt', 'Johann Wolfgang von Goethe'),
+  ('beruehmt', 'Friedrich Schiller'),
+  ('beruehmt', 'Die Gebrüder Grimm'),
+  ('beruehmt', 'William Shakespeare'),
+  ('beruehmt', 'Astrid Lindgren'),
+  ('beruehmt', 'Anne Frank'),
+  ('beruehmt', 'Martin Luther'),
+  ('beruehmt', 'Martin Luther King'),
+  ('beruehmt', 'Mahatma Gandhi'),
+  ('beruehmt', 'Nelson Mandela'),
+  ('beruehmt', 'Mutter Teresa'),
+  ('beruehmt', 'Winston Churchill'),
+  ('beruehmt', 'Konrad Adenauer'),
+  ('beruehmt', 'Angela Merkel'),
+  ('beruehmt', 'Helmut Kohl'),
+  ('beruehmt', 'Christoph Kolumbus'),
+  ('beruehmt', 'Neil Armstrong'),
+  ('beruehmt', 'Alexander von Humboldt'),
+  ('beruehmt', 'Karl der Große'),
+  ('beruehmt', 'Napoleon'),
+  ('beruehmt', 'Kleopatra'),
+  ('beruehmt', 'Julius Cäsar'),
+  ('beruehmt', 'Elvis Presley'),
+  ('beruehmt', 'Michael Jackson'),
+  ('beruehmt', 'Die Beatles'),
+  ('beruehmt', 'Freddie Mercury'),
+  ('beruehmt', 'Marilyn Monroe'),
+  ('beruehmt', 'Charlie Chaplin'),
+  ('beruehmt', 'Walt Disney'),
+  ('beruehmt', 'Steve Jobs'),
+  ('beruehmt', 'Bill Gates'),
+  ('beruehmt', 'Muhammad Ali'),
+  ('beruehmt', 'Pelé'),
+  ('beruehmt', 'Franz Beckenbauer'),
+  ('beruehmt', 'Michael Schumacher'),
+  ('beruehmt', 'Steffi Graf'),
+  ('beruehmt', 'Boris Becker'),
+  ('beruehmt', 'Dirk Nowitzki'),
+  ('beruehmt', 'Usain Bolt')
+on conflict (category_id, word) do nothing;
+
+-- ==================== 012_imposter_modes.sql ====================
+-- "Finde den Imposter" online: die weiteren Modi (02.09.2026).
+--
+-- Neu spielbar sind Leer, Nur Kategorie, Tempo und Chaos. Duell bleibt am
+-- einen Gerät: dort tippt jedes Team getrennt, das passt nicht zur
+-- Mehrheitsabstimmung dieser Runde.
+--
+-- Sicherheitsrelevant ist vor allem eines: Was ein Imposter zu sehen bekommt,
+-- entscheidet weiterhin ausschliesslich der Server in fdi_get_state(). Im
+-- Modus "Leer" bleibt auch die Kategorie fuer alle verborgen -- sonst waere
+-- er nicht haerter als "Nur Kategorie".
+--
+-- Gefahrlos mehrfach ausfuehrbar. Setzt 011 und 011b voraus.
+
+/* ===================== Neue Felder an der Runde ==================== */
+
+alter table public.fdi_matches
+  add column if not exists imposter_sees text not null default 'helper',
+  add column if not exists show_category boolean not null default true,
+  add column if not exists timer_seconds integer,
+  -- Kennung der gezogenen Chaos-Regel; den deutschen Satz dazu kennt die App.
+  add column if not exists special_rule text,
+  -- Wann ausgeteilt wurde. Nur dafuer da, dass im Tempo-Modus auf allen
+  -- Handys dieselbe Uhr laeuft und nicht jedes bei sich zu zaehlen anfaengt.
+  add column if not exists phase_at timestamptz not null default now();
+
+do $$
+begin
+  alter table public.fdi_matches drop constraint if exists fdi_matches_mode_check;
+  alter table public.fdi_matches add constraint fdi_matches_mode_check
+    check (mode in ('classic', 'double', 'blank', 'categories_only', 'speed', 'chaos'));
+  alter table public.fdi_matches drop constraint if exists fdi_matches_imposter_sees_check;
+  alter table public.fdi_matches add constraint fdi_matches_imposter_sees_check
+    check (imposter_sees in ('helper', 'category', 'nothing'));
+end $$;
+
+/* ========================= Regeln je Modus ========================= */
+
+/**
+ * Die Wirkung eines Modus (oder einer Chaos-Regel) in einer Zeile:
+ * was der Imposter sieht, ob die Kategorie sichtbar ist, wie viele Imposter
+ * es gibt (null = nach Gruppengroesse) und wie lange die Uhr laeuft.
+ */
+create or replace function public.fdi_mode_rules(p_effect text)
+returns table (imposter_sees text, show_category boolean, fixed_imposters integer, timer_seconds integer)
+language sql
+immutable
+as $$
+  select r.imposter_sees, r.show_category, r.fixed_imposters, r.timer_seconds
+    from (values
+    ('blank',            'nothing',  false, null::integer, null::integer),
+    ('blind',            'nothing',  false, null,          null),
+    ('categories_only',  'category', true,  null,          null),
+    ('kategorie',        'category', true,  null,          null),
+    ('speed',            'helper',   true,  null,          90),
+    ('uhr',              'helper',   true,  null,          90),
+    ('double',           'helper',   true,  2,             null),
+    ('doppelt',          'helper',   true,  2,             null)
+  ) as r(effect, imposter_sees, show_category, fixed_imposters, timer_seconds)
+  where r.effect = p_effect
+  union all
+  select 'helper', true, null::integer, null::integer
+   where p_effect not in ('blank','blind','categories_only','kategorie','speed','uhr','double','doppelt');
+$$;
+
+/** Die Chaos-Regeln mit ihrer Mindestgruppe -- dieselben wie in modes.ts. */
+create or replace function public.fdi_chaos_rules()
+returns table (id text, min_players integer)
+language sql
+immutable
+as $$
+  select * from (values
+    ('normal', 3), ('blind', 3), ('kategorie', 3), ('doppelt', 6), ('uhr', 3)
+  ) as r(id, min_players);
+$$;
+
+/* ================== Runde eroeffnen: neue Modi ===================== */
+
+/**
+ * Wie 011, nur dass die neuen Modi durchgelassen werden. "duel" steht
+ * bewusst NICHT in der Liste -- dort tippt jedes Team getrennt, und das
+ * passt nicht zur Mehrheitsabstimmung dieser Runde.
+ */
+create or replace function public.fdi_create_match(
+  p_category text,
+  p_mode text default 'classic',
+  p_name text default null
+)
+returns table (match_id uuid, code text)
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_id uuid;
+  v_code text;
+  v_name text;
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+  if p_mode not in ('classic', 'double', 'blank', 'categories_only', 'speed', 'chaos') then
+    raise exception 'Unbekannter Modus';
+  end if;
+  if not exists (select 1 from public.fdi_categories where id = p_category) then
+    raise exception 'Unbekannte Kategorie';
+  end if;
+
+  v_code := public.fdi_new_code();
+  insert into public.fdi_matches (code, host_id, category_id, mode)
+  values (v_code, auth.uid(), p_category, p_mode)
+  returning id into v_id;
+
+  v_name := coalesce(nullif(trim(p_name), ''), 'Gastgeber');
+  insert into public.fdi_players (match_id, seat, user_id, name) values (v_id, 1, auth.uid(), v_name);
+  insert into public.fdi_state (match_id, version) values (v_id, 1);
+
+  return query select v_id, v_code;
+end;
+$$;
+
+/* ===================== Austeilen mit Modusregeln ==================== */
+
+create or replace function public.fdi_deal(p_match uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_match public.fdi_matches;
+  v_size integer;
+  v_imposters integer;
+  v_secret text;
+  v_helper text;
+  v_rule text;
+  v_effect text;
+  v_sees text;
+  v_show boolean;
+  v_fixed integer;
+  v_timer integer;
+begin
+  select * into v_match from public.fdi_matches where id = p_match;
+  select count(*) into v_size from public.fdi_players where match_id = p_match;
+
+  -- Chaos zieht jede Runde eine Regel; sie wird spaeter allen angesagt.
+  v_rule := null;
+  if v_match.mode = 'chaos' then
+    select id into v_rule from public.fdi_chaos_rules()
+     where min_players <= v_size order by random() limit 1;
+    v_effect := coalesce(v_rule, 'normal');
+  else
+    v_effect := v_match.mode;
+  end if;
+
+  select imposter_sees, show_category, fixed_imposters, timer_seconds
+    into v_sees, v_show, v_fixed, v_timer
+    from public.fdi_mode_rules(v_effect);
+
+  -- Zwei Imposter erst ab sechs Mitspielenden -- darunter bliebe fuer die
+  -- Unschuldigen nichts zu suchen. Gilt fuer "Doppel" wie fuer die
+  -- Chaos-Regel "Doppelt" (die ohnehin erst ab sechs gezogen wird).
+  if v_fixed is not null and v_size >= 6 then
+    v_imposters := v_fixed;
+  else
+    v_imposters := public.fdi_imposter_count(v_size, 'classic');
+  end if;
+  v_imposters := least(v_imposters, greatest(1, v_size - 1));
+
+  -- Zwei verschiedene Wörter aus der Kategorie: eines geheim, eines als Hilfe.
+  select word into v_secret from public.fdi_words
+   where category_id = v_match.category_id order by random() limit 1;
+  select word into v_helper from public.fdi_words
+   where category_id = v_match.category_id and word <> v_secret
+   order by random() limit 1;
+  if v_secret is null then
+    raise exception 'Kategorie % hat keine Wörter', v_match.category_id;
+  end if;
+
+  update public.fdi_players
+     set is_imposter = false, vote_seat = null, last_chance_guess = null
+   where match_id = p_match;
+
+  update public.fdi_players set is_imposter = true
+   where match_id = p_match
+     and seat in (
+       select seat from public.fdi_players
+        where match_id = p_match order by random() limit v_imposters
+     );
+
+  update public.fdi_matches
+     set secret_word = v_secret,
+         helper_word = coalesce(v_helper, v_secret),
+         imposter_count = v_imposters,
+         imposter_sees = v_sees,
+         show_category = v_show,
+         timer_seconds = v_timer,
+         special_rule = v_rule,
+         phase_at = now(),
+         -- Es wird nicht mehr reihum geklickt: ausgeteilt, einer fängt an,
+         -- danach redet die Gruppe frei (02.09.2026, Thomas).
+         phase = 'discussion',
+         starter_seat = (
+           select seat from public.fdi_players
+            where match_id = p_match order by random() limit 1
+         ),
+         accused_seat = null,
+         correct_accusation = null,
+         last_chance_success = null
+   where id = p_match;
+end;
+$$;
+
+/* ================== Spielstand mit den Modusregeln ================= */
+
+create or replace function public.fdi_get_state(p_match uuid)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_match public.fdi_matches;
+  v_me public.fdi_players;
+  v_fertig boolean;
+  v_laeuft boolean;
+begin
+  if not public.fdi_is_member(p_match) then raise exception 'Du bist nicht dabei'; end if;
+  select * into v_match from public.fdi_matches where id = p_match;
+  select * into v_me from public.fdi_players where match_id = p_match and user_id = auth.uid();
+  v_fertig := v_match.phase = 'result';
+  v_laeuft := v_match.phase <> 'lobby';
+
+  return jsonb_build_object(
+    'match', jsonb_build_object(
+      'id', v_match.id,
+      'code', v_match.code,
+      'phase', v_match.phase,
+      'round', v_match.round,
+      'category_id', v_match.category_id,
+      -- Im Modus "Leer" bleibt die Kategorie waehrend der Runde geheim; im
+      -- Ergebnis darf sie an alle.
+      'category_label', case
+        when not v_laeuft or v_match.show_category or v_fertig
+        then (select label from public.fdi_categories where id = v_match.category_id)
+        else null end,
+      'show_category', v_match.show_category,
+      'mode', v_match.mode,
+      'imposter_sees', v_match.imposter_sees,
+      'timer_seconds', v_match.timer_seconds,
+      'phase_at', v_match.phase_at,
+      'special_rule', v_match.special_rule,
+      'imposter_count', v_match.imposter_count,
+      'starter_seat', v_match.starter_seat,
+      'accused_seat', v_match.accused_seat,
+      'correct_accusation', v_match.correct_accusation,
+      'last_chance_success', v_match.last_chance_success,
+      'is_host', v_match.host_id = auth.uid(),
+      'size', (select count(*) from public.fdi_players where match_id = p_match),
+      -- Erst am Rundenende darf das Wort an alle.
+      'secret_word', case when v_fertig then v_match.secret_word else null end
+    ),
+    'me', jsonb_build_object(
+      'seat', v_me.seat,
+      'name', v_me.name,
+      'is_imposter', v_me.is_imposter,
+      'vote_seat', v_me.vote_seat,
+      -- Nicht-Imposter bekommen das geheime Wort ...
+      'word', case when v_laeuft and not v_me.is_imposter then v_match.secret_word else null end,
+      -- ... Imposter das Hilfswort, aber nur wenn der Modus es vorsieht.
+      'helper_word', case
+        when v_laeuft and v_me.is_imposter and v_match.imposter_sees = 'helper'
+        then v_match.helper_word else null end
+    ),
+    'players', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'seat', p.seat,
+        'name', p.name,
+        'has_voted', p.vote_seat is not null,
+        'is_you', p.user_id = auth.uid(),
+        -- Wer Imposter war, steht erst im Ergebnis drin.
+        'is_imposter', case when v_fertig then p.is_imposter else null end,
+        'last_chance_guess', case when v_fertig then p.last_chance_guess else null end
+      ) order by p.seat)
+      from public.fdi_players p where p.match_id = p_match
+    ), '[]'::jsonb)
+  );
+end;
+$$;
+
+/* =========================== Rechte =============================== */
+
+revoke all on function public.fdi_deal(uuid) from public, anon, authenticated;
+revoke all on function public.fdi_mode_rules(text) from public, anon, authenticated;
+revoke all on function public.fdi_chaos_rules() from public, anon, authenticated;
+grant execute on function public.fdi_get_state(uuid) to authenticated;
+grant execute on function public.fdi_create_match(text, text, text) to authenticated;
+
+-- ==================== 013_wer_bin_ich.sql ====================
+-- "Wer bin ich?" online: Raum mit Code, jeder auf dem eigenen Geraet.
+--
+-- Setzt 011/011b voraus: Kategorien und Woerter kommen aus fdi_categories
+-- und fdi_words, damit es den Wortschatz nur einmal gibt.
+--
+-- Sicherheitsmodell wie beim Imposter (011) und der Schuetzenrunde (007):
+-- Die Tabellen sind fuer Clients gesperrt, alles laeuft ueber
+-- security-definer-Funktionen. Der springende Punkt hier ist umgekehrt zum
+-- Imposter: Jeder soll die Woerter der ANDEREN sehen, aber niemals sein
+-- eigenes. Deshalb zieht der Server die Woerter, und wbi_get_state() streicht
+-- dem Aufrufer sein eigenes Wort heraus -- bis die Runde aufgeloest ist.
+
+/* ============================ Tabellen ============================ */
+
+create table if not exists public.wbi_matches (
+  id uuid primary key default gen_random_uuid(),
+  code text not null unique,
+  host_id uuid not null references auth.users (id) on delete cascade,
+  category_id text not null references public.fdi_categories (id),
+  phase text not null default 'lobby'
+    check (phase in ('lobby', 'ask', 'guess', 'result')),
+  round integer not null default 1 check (round >= 1),
+  -- Wer die Fragerunde eroeffnet, zufaellig gezogen.
+  starter_seat integer,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.wbi_players (
+  match_id uuid not null references public.wbi_matches (id) on delete cascade,
+  seat integer not null check (seat >= 1),
+  user_id uuid references auth.users (id) on delete set null,
+  name text not null,
+  -- Das Wort dieser Person. Sie selbst bekommt es nie zu sehen.
+  word text,
+  guess text,
+  correct boolean,
+  joined_at timestamptz not null default now(),
+  primary key (match_id, seat),
+  unique (match_id, user_id)
+);
+
+-- Zaehler fuer Realtime: das einzige, was Mitglieder direkt lesen duerfen.
+create table if not exists public.wbi_state (
+  match_id uuid primary key references public.wbi_matches (id) on delete cascade,
+  version bigint not null default 1
+);
+
+alter table public.wbi_matches enable row level security;
+alter table public.wbi_players enable row level security;
+alter table public.wbi_state enable row level security;
+
+revoke all on public.wbi_matches from anon, authenticated;
+revoke all on public.wbi_players from anon, authenticated;
+revoke all on public.wbi_state from anon, authenticated;
+
+/* ====================== Interne Helferlein ======================== */
+
+create or replace function public.wbi_is_member(p_match uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select exists (
+    select 1 from public.wbi_players
+     where match_id = p_match and user_id = auth.uid()
+  );
+$$;
+
+grant select on public.wbi_state to authenticated;
+drop policy if exists wbi_state_read on public.wbi_state;
+create policy wbi_state_read on public.wbi_state
+  for select to authenticated
+  using (public.wbi_is_member(match_id));
+
+create or replace function public.wbi_touch(p_match uuid)
+returns void
+language sql
+security definer
+set search_path = public, pg_temp
+as $$
+  update public.wbi_matches set updated_at = now() where id = p_match;
+  update public.wbi_state set version = version + 1 where match_id = p_match;
+$$;
+
+/** Fuenfstelliger Code ohne leicht zu verwechselnde Zeichen. */
+create or replace function public.wbi_new_code()
+returns text
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_alphabet text := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  v_code text;
+  i integer;
+begin
+  loop
+    v_code := '';
+    for i in 1..5 loop
+      v_code := v_code || substr(v_alphabet, 1 + floor(random() * length(v_alphabet))::int, 1);
+    end loop;
+    exit when not exists (select 1 from public.wbi_matches where code = v_code);
+  end loop;
+  return v_code;
+end;
+$$;
+
+/**
+ * Vergleich ohne Ruecksicht auf Gross-/Kleinschreibung und Umlautschreibung:
+ * wer "loewe" tippt, meint den Loewen. Muss zur Funktion `gleich()` in
+ * src/games/wer-bin-ich/engine.ts passen.
+ */
+create or replace function public.wbi_normalize(p_text text)
+returns text
+language sql
+immutable
+as $$
+  select regexp_replace(
+    replace(replace(replace(replace(lower(coalesce(trim(p_text), '')),
+      'ä', 'ae'), 'ö', 'oe'), 'ü', 'ue'), 'ß', 'ss'),
+    '[^a-z0-9]', '', 'g');
+$$;
+
+/** Woerter neu austeilen -- eines je Platz, keins doppelt. */
+create or replace function public.wbi_deal(p_match uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_match public.wbi_matches;
+  v_size integer;
+  v_vorrat integer;
+begin
+  select * into v_match from public.wbi_matches where id = p_match;
+  select count(*) into v_size from public.wbi_players where match_id = p_match;
+  select count(*) into v_vorrat from public.fdi_words where category_id = v_match.category_id;
+  if v_vorrat < v_size then
+    raise exception 'Kategorie % hat zu wenige Wörter', v_match.category_id;
+  end if;
+
+  update public.wbi_players p
+     set word = z.word, guess = null, correct = null
+    from (
+      select pl.seat,
+             (array(
+               select w.word from public.fdi_words w
+                where w.category_id = v_match.category_id
+                order by random() limit v_size
+             ))[row_number() over (order by pl.seat)] as word
+        from public.wbi_players pl
+       where pl.match_id = p_match
+    ) z
+   where p.match_id = p_match and p.seat = z.seat;
+
+  update public.wbi_matches
+     set phase = 'ask',
+         starter_seat = (
+           select seat from public.wbi_players where match_id = p_match order by random() limit 1
+         )
+   where id = p_match;
+end;
+$$;
+
+/* ==================== Oeffentliche Schnittstelle =================== */
+
+create or replace function public.wbi_create_match(
+  p_category text,
+  p_name text default null
+)
+returns table (match_id uuid, code text)
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_id uuid;
+  v_code text;
+  v_name text;
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+  if not exists (select 1 from public.fdi_categories where id = p_category) then
+    raise exception 'Unbekannte Kategorie';
+  end if;
+
+  v_code := public.wbi_new_code();
+  insert into public.wbi_matches (code, host_id, category_id)
+  values (v_code, auth.uid(), p_category)
+  returning id into v_id;
+
+  v_name := coalesce(nullif(trim(p_name), ''), 'Gastgeber');
+  insert into public.wbi_players (match_id, seat, user_id, name) values (v_id, 1, auth.uid(), v_name);
+  insert into public.wbi_state (match_id, version) values (v_id, 1);
+
+  return query select v_id, v_code;
+end;
+$$;
+
+create or replace function public.wbi_join_match(p_code text, p_name text default null)
+returns uuid
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_match public.wbi_matches;
+  v_seat integer;
+  v_name text;
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+  select * into v_match from public.wbi_matches where code = upper(trim(p_code));
+  if v_match.id is null then raise exception 'Diesen Code gibt es nicht'; end if;
+
+  if exists (select 1 from public.wbi_players where match_id = v_match.id and user_id = auth.uid()) then
+    return v_match.id;
+  end if;
+  if v_match.phase <> 'lobby' then raise exception 'Die Runde läuft schon'; end if;
+  if (select count(*) from public.wbi_players where match_id = v_match.id) >= 12 then
+    raise exception 'Die Runde ist voll';
+  end if;
+
+  select coalesce(max(seat), 0) + 1 into v_seat from public.wbi_players where match_id = v_match.id;
+  v_name := coalesce(nullif(trim(p_name), ''), 'Spieler ' || v_seat);
+  insert into public.wbi_players (match_id, seat, user_id, name)
+  values (v_match.id, v_seat, auth.uid(), v_name);
+  perform public.wbi_touch(v_match.id);
+  return v_match.id;
+end;
+$$;
+
+create or replace function public.wbi_leave_match(p_match uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if (select phase from public.wbi_matches where id = p_match) <> 'lobby' then
+    raise exception 'Eine laufende Runde kann man nicht verlassen';
+  end if;
+  delete from public.wbi_players where match_id = p_match and user_id = auth.uid();
+  perform public.wbi_touch(p_match);
+end;
+$$;
+
+create or replace function public.wbi_start_match(p_match uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if (select host_id from public.wbi_matches where id = p_match) <> auth.uid() then
+    raise exception 'Nur der Gastgeber';
+  end if;
+  if (select phase from public.wbi_matches where id = p_match) <> 'lobby' then
+    raise exception 'Die Runde läuft schon';
+  end if;
+  if (select count(*) from public.wbi_players where match_id = p_match) < 2 then
+    raise exception 'Mindestens 2 Mitspielende';
+  end if;
+  perform public.wbi_deal(p_match);
+  perform public.wbi_touch(p_match);
+end;
+$$;
+
+/** Genug gefragt -- jetzt raten alle (nur Gastgeber). */
+create or replace function public.wbi_to_guess(p_match uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if (select host_id from public.wbi_matches where id = p_match) <> auth.uid() then
+    raise exception 'Nur der Gastgeber';
+  end if;
+  if (select phase from public.wbi_matches where id = p_match) <> 'ask' then
+    raise exception 'Gerade wird nicht gefragt';
+  end if;
+  update public.wbi_matches set phase = 'guess' where id = p_match;
+  perform public.wbi_touch(p_match);
+end;
+$$;
+
+/**
+ * Seinen Tipp abgeben. Ausgewertet wird auf dem Server: Der Browser kennt
+ * das eigene Wort nicht und koennte gar nicht vergleichen.
+ */
+create or replace function public.wbi_guess(p_match uuid, p_guess text)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_seat integer;
+  v_word text;
+  v_offen integer;
+begin
+  if (select phase from public.wbi_matches where id = p_match) <> 'guess' then
+    raise exception 'Gerade wird nicht geraten';
+  end if;
+  select seat, word into v_seat, v_word
+    from public.wbi_players where match_id = p_match and user_id = auth.uid();
+  if v_seat is null then raise exception 'Du bist nicht dabei'; end if;
+  if (select guess is not null from public.wbi_players where match_id = p_match and seat = v_seat) then
+    raise exception 'Du hast schon geraten';
+  end if;
+
+  update public.wbi_players
+     set guess = trim(p_guess),
+         correct = public.wbi_normalize(p_guess) = public.wbi_normalize(v_word)
+                   and public.wbi_normalize(p_guess) <> ''
+   where match_id = p_match and seat = v_seat;
+
+  select count(*) into v_offen
+    from public.wbi_players where match_id = p_match and guess is null;
+  if v_offen = 0 then
+    update public.wbi_matches set phase = 'result' where id = p_match;
+  end if;
+  perform public.wbi_touch(p_match);
+end;
+$$;
+
+create or replace function public.wbi_next_round(p_match uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if (select host_id from public.wbi_matches where id = p_match) <> auth.uid() then
+    raise exception 'Nur der Gastgeber';
+  end if;
+  if (select phase from public.wbi_matches where id = p_match) <> 'result' then
+    raise exception 'Die Runde läuft noch';
+  end if;
+  update public.wbi_matches set round = round + 1 where id = p_match;
+  perform public.wbi_deal(p_match);
+  perform public.wbi_touch(p_match);
+end;
+$$;
+
+/**
+ * Der Spielstand aus Sicht des Aufrufers.
+ *
+ * Der ganze Trick steckt in einer Zeile: `case when p.seat = mein Platz then
+ * null else p.word end`. Jeder sieht die Woerter der anderen, seins nie --
+ * bis die Runde aufgeloest ist. Deshalb duerfen die Tabellen auch von
+ * niemandem direkt gelesen werden.
+ */
+create or replace function public.wbi_get_state(p_match uuid)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_match public.wbi_matches;
+  v_me public.wbi_players;
+  v_fertig boolean;
+begin
+  if not public.wbi_is_member(p_match) then raise exception 'Du bist nicht dabei'; end if;
+  select * into v_match from public.wbi_matches where id = p_match;
+  select * into v_me from public.wbi_players where match_id = p_match and user_id = auth.uid();
+  v_fertig := v_match.phase = 'result';
+
+  return jsonb_build_object(
+    'match', jsonb_build_object(
+      'id', v_match.id,
+      'code', v_match.code,
+      'phase', v_match.phase,
+      'round', v_match.round,
+      'category_id', v_match.category_id,
+      'category_label', (select label from public.fdi_categories where id = v_match.category_id),
+      'starter_seat', v_match.starter_seat,
+      'is_host', v_match.host_id = auth.uid(),
+      'size', (select count(*) from public.wbi_players where match_id = p_match),
+      'open_guesses', (select count(*) from public.wbi_players where match_id = p_match and guess is null)
+    ),
+    'me', jsonb_build_object(
+      'seat', v_me.seat,
+      'name', v_me.name,
+      'guess', v_me.guess,
+      'correct', v_me.correct,
+      -- Das eigene Wort erst, wenn geraten wurde oder die Runde vorbei ist.
+      'word', case when v_fertig or v_me.guess is not null then v_me.word else null end
+    ),
+    'players', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'seat', p.seat,
+        'name', p.name,
+        'is_you', p.user_id = auth.uid(),
+        -- Fremde Woerter sieht man immer, das eigene nie.
+        'word', case when p.user_id = auth.uid() and not v_fertig then null else p.word end,
+        'has_guessed', p.guess is not null,
+        'guess', case when v_fertig or p.user_id = auth.uid() then p.guess else null end,
+        'correct', case when v_fertig or p.user_id = auth.uid() then p.correct else null end
+      ) order by p.seat)
+      from public.wbi_players p where p.match_id = p_match
+    ), '[]'::jsonb)
+  );
+end;
+$$;
+
+create or replace function public.wbi_my_matches()
+returns table (match_id uuid, code text, phase text, round integer, size integer)
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select m.id, m.code, m.phase, m.round,
+         (select count(*)::integer from public.wbi_players x where x.match_id = m.id)
+    from public.wbi_matches m
+    join public.wbi_players p on p.match_id = m.id and p.user_id = auth.uid()
+   order by m.updated_at desc
+   limit 10;
+$$;
+
+/* =========================== Rechte =============================== */
+
+revoke all on function public.wbi_touch(uuid) from public, anon, authenticated;
+revoke all on function public.wbi_new_code() from public, anon, authenticated;
+revoke all on function public.wbi_deal(uuid) from public, anon, authenticated;
+revoke all on function public.wbi_normalize(text) from public, anon, authenticated;
+
+grant execute on function public.wbi_create_match(text, text) to authenticated;
+grant execute on function public.wbi_join_match(text, text) to authenticated;
+grant execute on function public.wbi_leave_match(uuid) to authenticated;
+grant execute on function public.wbi_start_match(uuid) to authenticated;
+grant execute on function public.wbi_to_guess(uuid) to authenticated;
+grant execute on function public.wbi_guess(uuid, text) to authenticated;
+grant execute on function public.wbi_next_round(uuid) to authenticated;
+grant execute on function public.wbi_get_state(uuid) to authenticated;
+grant execute on function public.wbi_my_matches() to authenticated;
+grant execute on function public.wbi_is_member(uuid) to authenticated;
+
+/* ===================== Realtime (optional) ======================== */
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    begin
+      alter publication supabase_realtime add table public.wbi_state;
+    exception when duplicate_object then null;
+    end;
+  end if;
+end $$;
+
+-- ==================== 014_stadt_land_fluss.sql ====================
+-- "Stadt-Land-Fluss" online: Raum mit Code, alle schreiben gleichzeitig.
+--
+-- Anders als beim Imposter gibt es hier kein Geheimnis zu huetten -- wohl
+-- aber einen Grund, warum die Auswertung auf dem Server laufen muss: Wer
+-- seine Punkte selbst ausrechnet, rechnet sich gern zu viele aus. Ausserdem
+-- darf niemand die Antworten der anderen sehen, solange geschrieben wird;
+-- sonst schriebe man einfach ab.
+--
+-- Sicherheitsmodell wie 007/011/013: Tabellen gesperrt, Zugriff nur ueber
+-- security-definer-Funktionen.
+
+/* ============================ Tabellen ============================ */
+
+create table if not exists public.slf_matches (
+  id uuid primary key default gen_random_uuid(),
+  code text not null unique,
+  host_id uuid not null references auth.users (id) on delete cascade,
+  phase text not null default 'lobby' check (phase in ('lobby', 'write', 'result')),
+  round integer not null default 1 check (round >= 1),
+  letter text,
+  columns_json jsonb not null default '["stadt","land","fluss","name","tier"]'::jsonb,
+  seconds integer not null default 120 check (seconds between 20 and 600),
+  -- Wann die Runde begonnen hat und wann spaetestens Schluss ist.
+  started_at timestamptz,
+  deadline timestamptz,
+  stopped_by integer,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.slf_players (
+  match_id uuid not null references public.slf_matches (id) on delete cascade,
+  seat integer not null check (seat >= 1),
+  user_id uuid references auth.users (id) on delete set null,
+  name text not null,
+  answers jsonb not null default '{}'::jsonb,
+  submitted boolean not null default false,
+  round_score integer not null default 0,
+  total_score integer not null default 0,
+  joined_at timestamptz not null default now(),
+  primary key (match_id, seat),
+  unique (match_id, user_id)
+);
+
+create table if not exists public.slf_state (
+  match_id uuid primary key references public.slf_matches (id) on delete cascade,
+  version bigint not null default 1
+);
+
+alter table public.slf_matches enable row level security;
+alter table public.slf_players enable row level security;
+alter table public.slf_state enable row level security;
+
+revoke all on public.slf_matches from anon, authenticated;
+revoke all on public.slf_players from anon, authenticated;
+revoke all on public.slf_state from anon, authenticated;
+
+/* ====================== Interne Helferlein ======================== */
+
+create or replace function public.slf_is_member(p_match uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select exists (
+    select 1 from public.slf_players where match_id = p_match and user_id = auth.uid()
+  );
+$$;
+
+grant select on public.slf_state to authenticated;
+drop policy if exists slf_state_read on public.slf_state;
+create policy slf_state_read on public.slf_state
+  for select to authenticated
+  using (public.slf_is_member(match_id));
+
+create or replace function public.slf_touch(p_match uuid)
+returns void
+language sql
+security definer
+set search_path = public, pg_temp
+as $$
+  update public.slf_matches set updated_at = now() where id = p_match;
+  update public.slf_state set version = version + 1 where match_id = p_match;
+$$;
+
+create or replace function public.slf_new_code()
+returns text
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_alphabet text := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  v_code text;
+  i integer;
+begin
+  loop
+    v_code := '';
+    for i in 1..5 loop
+      v_code := v_code || substr(v_alphabet, 1 + floor(random() * length(v_alphabet))::int, 1);
+    end loop;
+    exit when not exists (select 1 from public.slf_matches where code = v_code);
+  end loop;
+  return v_code;
+end;
+$$;
+
+/** Muss zu normalisieren() in src/games/stadt-land-fluss/rules.ts passen. */
+create or replace function public.slf_normalize(p_text text)
+returns text
+language sql
+immutable
+as $$
+  select regexp_replace(
+    replace(replace(replace(replace(lower(coalesce(trim(p_text), '')),
+      'ä', 'ae'), 'ö', 'oe'), 'ü', 'ue'), 'ß', 'ss'),
+    '[^a-z0-9]', '', 'g');
+$$;
+
+/** Q, X und Y bleiben draussen -- dazu faellt am Tisch niemandem etwas ein. */
+create or replace function public.slf_draw_letter(p_ausser text default null)
+returns text
+language sql
+volatile
+as $$
+  select l from unnest(string_to_array('A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,R,S,T,U,V,W,Z', ',')) l
+   where p_ausser is null or l <> p_ausser
+   order by random() limit 1;
+$$;
+
+/**
+ * Die Runde werten -- klassische Punkte:
+ *   20 nur einer hatte ueberhaupt etwas, 10 einzigartig, 5 geteilt, sonst 0.
+ * Auf dem Server, weil sich sonst jeder selbst zu viele Punkte gaebe.
+ */
+create or replace function public.slf_score(p_match uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_match public.slf_matches;
+begin
+  select * into v_match from public.slf_matches where id = p_match;
+
+  with spalten as (
+    select jsonb_array_elements_text(v_match.columns_json) as spalte
+  ),
+  eintraege as (
+    select p.seat,
+           s.spalte,
+           coalesce(p.answers ->> s.spalte, '') as antwort
+      from public.slf_players p cross join spalten s
+     where p.match_id = p_match
+  ),
+  gueltig as (
+    select *, public.slf_normalize(antwort) as key
+      from eintraege
+     where btrim(antwort) <> ''
+       and upper(left(btrim(antwort), 1)) = upper(v_match.letter)
+  ),
+  je_spalte as (
+    select spalte, count(*) as anzahl from gueltig group by spalte
+  ),
+  je_antwort as (
+    select spalte, key, count(*) as anzahl from gueltig group by spalte, key
+  ),
+  punkte as (
+    select g.seat,
+           case
+             when js.anzahl = 1 then 20
+             when ja.anzahl > 1 then 5
+             else 10
+           end as p
+      from gueltig g
+      join je_spalte js on js.spalte = g.spalte
+      join je_antwort ja on ja.spalte = g.spalte and ja.key = g.key
+  ),
+  summe as (
+    select seat, sum(p)::integer as gesamt from punkte group by seat
+  )
+  update public.slf_players pl
+     set round_score = coalesce(su.gesamt, 0),
+         total_score = pl.total_score + coalesce(su.gesamt, 0)
+    from (select seat from public.slf_players where match_id = p_match) alle
+    left join summe su on su.seat = alle.seat
+   where pl.match_id = p_match and pl.seat = alle.seat;
+
+  update public.slf_matches set phase = 'result', deadline = null where id = p_match;
+end;
+$$;
+
+/* ==================== Oeffentliche Schnittstelle =================== */
+
+create or replace function public.slf_create_match(
+  p_columns jsonb default null,
+  p_seconds integer default 120,
+  p_name text default null
+)
+returns table (match_id uuid, code text)
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_id uuid;
+  v_code text;
+  v_name text;
+  v_columns jsonb;
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+  v_columns := coalesce(p_columns, '["stadt","land","fluss","name","tier"]'::jsonb);
+  if jsonb_array_length(v_columns) < 1 or jsonb_array_length(v_columns) > 10 then
+    raise exception 'Zwischen 1 und 10 Spalten';
+  end if;
+
+  v_code := public.slf_new_code();
+  insert into public.slf_matches (code, host_id, columns_json, seconds)
+  values (v_code, auth.uid(), v_columns, greatest(20, least(600, coalesce(p_seconds, 120))))
+  returning id into v_id;
+
+  v_name := coalesce(nullif(trim(p_name), ''), 'Gastgeber');
+  insert into public.slf_players (match_id, seat, user_id, name) values (v_id, 1, auth.uid(), v_name);
+  insert into public.slf_state (match_id, version) values (v_id, 1);
+
+  return query select v_id, v_code;
+end;
+$$;
+
+create or replace function public.slf_join_match(p_code text, p_name text default null)
+returns uuid
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_match public.slf_matches;
+  v_seat integer;
+  v_name text;
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+  select * into v_match from public.slf_matches where code = upper(trim(p_code));
+  if v_match.id is null then raise exception 'Diesen Code gibt es nicht'; end if;
+  if exists (select 1 from public.slf_players where match_id = v_match.id and user_id = auth.uid()) then
+    return v_match.id;
+  end if;
+  if v_match.phase <> 'lobby' then raise exception 'Die Runde läuft schon'; end if;
+  if (select count(*) from public.slf_players where match_id = v_match.id) >= 12 then
+    raise exception 'Die Runde ist voll';
+  end if;
+
+  select coalesce(max(seat), 0) + 1 into v_seat from public.slf_players where match_id = v_match.id;
+  v_name := coalesce(nullif(trim(p_name), ''), 'Spieler ' || v_seat);
+  insert into public.slf_players (match_id, seat, user_id, name)
+  values (v_match.id, v_seat, auth.uid(), v_name);
+  perform public.slf_touch(v_match.id);
+  return v_match.id;
+end;
+$$;
+
+create or replace function public.slf_leave_match(p_match uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if (select phase from public.slf_matches where id = p_match) = 'write' then
+    raise exception 'Mitten in der Runde geht das nicht';
+  end if;
+  delete from public.slf_players where match_id = p_match and user_id = auth.uid();
+  perform public.slf_touch(p_match);
+end;
+$$;
+
+/** Runde starten: Buchstabe ziehen, Uhr stellen (nur Gastgeber). */
+create or replace function public.slf_start_round(p_match uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_match public.slf_matches;
+begin
+  select * into v_match from public.slf_matches where id = p_match;
+  if v_match.host_id <> auth.uid() then raise exception 'Nur der Gastgeber'; end if;
+  if v_match.phase = 'write' then raise exception 'Die Runde läuft schon'; end if;
+  if (select count(*) from public.slf_players where match_id = p_match) < 2 then
+    raise exception 'Mindestens 2 Mitspielende';
+  end if;
+
+  update public.slf_players
+     set answers = '{}'::jsonb, submitted = false, round_score = 0
+   where match_id = p_match;
+
+  update public.slf_matches
+     set phase = 'write',
+         letter = public.slf_draw_letter(v_match.letter),
+         started_at = now(),
+         deadline = now() + make_interval(secs => v_match.seconds),
+         stopped_by = null,
+         round = case when v_match.phase = 'result' then v_match.round + 1 else v_match.round end
+   where id = p_match;
+  perform public.slf_touch(p_match);
+end;
+$$;
+
+/**
+ * Fertig -- Antworten abgeben. Wer als Erster fertig ist, stoppt die Runde:
+ * Die anderen bekommen noch sieben Sekunden, dann wird gewertet. Genau so
+ * laeuft es auch am Tisch, wenn einer "Stopp" ruft.
+ */
+create or replace function public.slf_submit(p_match uuid, p_answers jsonb)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_seat integer;
+  v_offen integer;
+  v_match public.slf_matches;
+begin
+  select * into v_match from public.slf_matches where id = p_match;
+  if v_match.phase <> 'write' then raise exception 'Gerade wird nicht geschrieben'; end if;
+  select seat into v_seat from public.slf_players where match_id = p_match and user_id = auth.uid();
+  if v_seat is null then raise exception 'Du bist nicht dabei'; end if;
+
+  update public.slf_players
+     set answers = coalesce(p_answers, '{}'::jsonb), submitted = true
+   where match_id = p_match and seat = v_seat;
+
+  if v_match.stopped_by is null then
+    update public.slf_matches
+       set stopped_by = v_seat,
+           deadline = least(v_match.deadline, now() + interval '7 seconds')
+     where id = p_match;
+  end if;
+
+  select count(*) into v_offen
+    from public.slf_players where match_id = p_match and not submitted;
+  if v_offen = 0 then
+    perform public.slf_score(p_match);
+  end if;
+  perform public.slf_touch(p_match);
+end;
+$$;
+
+/**
+ * Die Uhr nachsehen. Darf jeder anstossen -- entschieden wird trotzdem hier,
+ * mit der Serverzeit. Ein manipulierter Client kann die Runde also weder
+ * verlaengern noch fruehzeitig werten lassen.
+ */
+create or replace function public.slf_tick(p_match uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_match public.slf_matches;
+begin
+  if not public.slf_is_member(p_match) then raise exception 'Du bist nicht dabei'; end if;
+  select * into v_match from public.slf_matches where id = p_match;
+  if v_match.phase = 'write' and v_match.deadline is not null and now() >= v_match.deadline then
+    perform public.slf_score(p_match);
+    perform public.slf_touch(p_match);
+  end if;
+end;
+$$;
+
+/**
+ * Der Spielstand aus Sicht des Aufrufers. Solange geschrieben wird, sieht
+ * niemand die Antworten der anderen -- sonst schriebe man ab.
+ */
+create or replace function public.slf_get_state(p_match uuid)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_match public.slf_matches;
+  v_me public.slf_players;
+  v_fertig boolean;
+begin
+  if not public.slf_is_member(p_match) then raise exception 'Du bist nicht dabei'; end if;
+  select * into v_match from public.slf_matches where id = p_match;
+  select * into v_me from public.slf_players where match_id = p_match and user_id = auth.uid();
+  v_fertig := v_match.phase = 'result';
+
+  return jsonb_build_object(
+    'match', jsonb_build_object(
+      'id', v_match.id,
+      'code', v_match.code,
+      'phase', v_match.phase,
+      'round', v_match.round,
+      'letter', case when v_match.phase = 'lobby' then null else v_match.letter end,
+      'columns', v_match.columns_json,
+      'seconds', v_match.seconds,
+      'deadline', v_match.deadline,
+      'stopped', v_match.stopped_by is not null,
+      'is_host', v_match.host_id = auth.uid(),
+      'size', (select count(*) from public.slf_players where match_id = p_match),
+      'open_writers', (select count(*) from public.slf_players where match_id = p_match and not submitted)
+    ),
+    'me', jsonb_build_object(
+      'seat', v_me.seat,
+      'name', v_me.name,
+      'submitted', v_me.submitted,
+      'answers', v_me.answers,
+      'round_score', v_me.round_score,
+      'total_score', v_me.total_score
+    ),
+    'players', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'seat', p.seat,
+        'name', p.name,
+        'is_you', p.user_id = auth.uid(),
+        'submitted', p.submitted,
+        -- Fremde Antworten erst in der Auswertung.
+        'answers', case when v_fertig or p.user_id = auth.uid() then p.answers else '{}'::jsonb end,
+        'round_score', case when v_fertig then p.round_score else 0 end,
+        'total_score', p.total_score
+      ) order by p.seat)
+      from public.slf_players p where p.match_id = p_match
+    ), '[]'::jsonb)
+  );
+end;
+$$;
+
+create or replace function public.slf_my_matches()
+returns table (match_id uuid, code text, phase text, round integer, size integer)
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select m.id, m.code, m.phase, m.round,
+         (select count(*)::integer from public.slf_players x where x.match_id = m.id)
+    from public.slf_matches m
+    join public.slf_players p on p.match_id = m.id and p.user_id = auth.uid()
+   order by m.updated_at desc
+   limit 10;
+$$;
+
+/* =========================== Rechte =============================== */
+
+revoke all on function public.slf_touch(uuid) from public, anon, authenticated;
+revoke all on function public.slf_new_code() from public, anon, authenticated;
+revoke all on function public.slf_score(uuid) from public, anon, authenticated;
+revoke all on function public.slf_normalize(text) from public, anon, authenticated;
+revoke all on function public.slf_draw_letter(text) from public, anon, authenticated;
+
+grant execute on function public.slf_create_match(jsonb, integer, text) to authenticated;
+grant execute on function public.slf_join_match(text, text) to authenticated;
+grant execute on function public.slf_leave_match(uuid) to authenticated;
+grant execute on function public.slf_start_round(uuid) to authenticated;
+grant execute on function public.slf_submit(uuid, jsonb) to authenticated;
+grant execute on function public.slf_tick(uuid) to authenticated;
+grant execute on function public.slf_get_state(uuid) to authenticated;
+grant execute on function public.slf_my_matches() to authenticated;
+grant execute on function public.slf_is_member(uuid) to authenticated;
+
+/* ===================== Realtime (optional) ======================== */
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    begin
+      alter publication supabase_realtime add table public.slf_state;
+    exception when duplicate_object then null;
+    end;
+  end if;
+end $$;
+
+-- ==================== 015_imposter_duell_eigene.sql ====================
+-- "Finde den Imposter" online: Duell und eigene Kategorien (04.09.2026).
+--
+-- Damit ist der Modus-Zettel abgearbeitet: Duell war bis hierher der einzige
+-- Modus, den es nur am einen Geraet gab, und eigene Woerter blieben auf dem
+-- Handy liegen, das sie angelegt hat.
+--
+-- DUELL. Am einen Geraet tippt jedes Team gemeinsam auf einen aus den eigenen
+-- Reihen. Online stimmt sonst die ganze Runde per Mehrheit ab -- genau deshalb
+-- fehlte der Modus. Hier bekommt jedes Team seine eigene Abstimmung: Man darf
+-- nur Leute aus dem eigenen Team waehlen, und erst wenn beide Teams fertig
+-- sind, wird ausgewertet. Bei Gleichstand klagt das betroffene Team niemanden
+-- an -- gleiche Regel wie bisher, nur je Team statt fuer alle.
+--
+-- Werden beide Imposter erwischt, kommen beide nacheinander zur letzten
+-- Chance. Dafuer gibt es jetzt eine Warteschlange statt eines einzelnen
+-- Angeklagten; "geschafft" heisst wie am einen Geraet: mindestens einer der
+-- Erwischten hat das Wort doch noch geraten.
+--
+-- EIGENE KATEGORIEN. Der Gastgeber legt Woerter ab, der Server zieht daraus.
+-- Ehrlich gesagt, was das schuetzt und was nicht: Der Gastgeber kennt die
+-- Liste, er hat sie ja getippt -- aber er erfaehrt nicht, welches Wort gezogen
+-- wurde. Das ist genau dieselbe Zusage wie bei den fertigen Kategorien, deren
+-- 50 Woerter ohnehin jeder nachlesen koennte. Wer mit einer Liste aus drei
+-- Woertern spielt, hebelt das aus -- deshalb sind mindestens acht verlangt.
+--
+-- Fremde Listen bleiben fremd: Lesen darf sie nur, wem sie gehoert, und die
+-- Woerter verlassen den Server ueberhaupt nicht -- fdi_get_state() gibt
+-- weiterhin nur das aus, was der Aufrufer wissen darf.
+--
+-- Gefahrlos mehrfach ausfuehrbar. Setzt 011, 011b und 012 voraus.
+
+/* ==================== Eigene Kategorien ==================== */
+
+create table if not exists public.fdi_custom_categories (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null references auth.users (id) on delete cascade,
+  label text not null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.fdi_custom_words (
+  category_id uuid not null references public.fdi_custom_categories (id) on delete cascade,
+  word text not null,
+  primary key (category_id, word)
+);
+
+create index if not exists fdi_custom_categories_owner_idx
+  on public.fdi_custom_categories (owner_id);
+
+alter table public.fdi_custom_categories enable row level security;
+alter table public.fdi_custom_words      enable row level security;
+revoke all on public.fdi_custom_categories, public.fdi_custom_words
+  from anon, authenticated;
+
+/* ==================== Neue Felder an der Runde ==================== */
+
+alter table public.fdi_players
+  add column if not exists team integer;
+
+alter table public.fdi_matches
+  -- Wen das jeweilige Team angeklagt hat (null = noch offen oder Gleichstand).
+  add column if not exists team1_seat integer,
+  add column if not exists team2_seat integer,
+  -- Ob das Team schon fertig abgestimmt hat -- ein Gleichstand endet mit
+  -- team_seat = null, das allein waere von "noch offen" nicht zu unterscheiden.
+  add column if not exists team1_done boolean not null default false,
+  add column if not exists team2_done boolean not null default false,
+  -- Die noch ausstehenden letzten Chancen, in Sitzreihenfolge.
+  add column if not exists last_chance_seats integer[] not null default '{}',
+  add column if not exists custom_category_id uuid
+    references public.fdi_custom_categories (id) on delete set null;
+
+do $$
+begin
+  alter table public.fdi_players drop constraint if exists fdi_players_team_check;
+  alter table public.fdi_players add constraint fdi_players_team_check
+    check (team is null or team in (1, 2));
+
+  alter table public.fdi_matches drop constraint if exists fdi_matches_mode_check;
+  alter table public.fdi_matches add constraint fdi_matches_mode_check
+    check (mode in ('classic', 'double', 'blank', 'categories_only', 'speed', 'chaos', 'duel'));
+
+  -- Bei einer eigenen Kategorie gibt es keine Zeile in fdi_categories.
+  alter table public.fdi_matches alter column category_id drop not null;
+
+  alter table public.fdi_matches drop constraint if exists fdi_matches_kategorie_check;
+  alter table public.fdi_matches add constraint fdi_matches_kategorie_check
+    check ((category_id is not null) <> (custom_category_id is not null));
+end $$;
+
+/* ==================== Eigene Kategorie ablegen ==================== */
+
+/**
+ * Eine eigene Wortliste ablegen und ihre Kennung zurueckgeben.
+ *
+ * Mindestens fuenf Woerter -- dieselbe Grenze wie am einen Geraet. Doppelte
+ * werden stillschweigend zusammengefasst; das ist kein Fehler, den jemand
+ * gemeldet bekommen muesste.
+ */
+create or replace function public.fdi_save_custom_category(
+  p_label text,
+  p_words text[]
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_id uuid;
+  v_label text;
+  v_words text[];
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+
+  v_label := nullif(trim(coalesce(p_label, '')), '');
+  if v_label is null then raise exception 'Die Kategorie braucht einen Namen'; end if;
+
+  -- Erst trimmen, dann entdoppeln. Andersherum ueberleben "Sofa" und " Sofa "
+  -- beide und kollidieren danach im Primaerschluessel -- genau so beim ersten
+  -- Testlauf passiert.
+  select array_agg(distinct trim(w)) into v_words
+    from unnest(coalesce(p_words, '{}'::text[])) w
+   where nullif(trim(w), '') is not null;
+
+  if coalesce(array_length(v_words, 1), 0) < 5 then
+    raise exception 'Eine eigene Kategorie braucht mindestens 5 Wörter';
+  end if;
+
+  insert into public.fdi_custom_categories (owner_id, label)
+  values (auth.uid(), v_label)
+  returning id into v_id;
+
+  insert into public.fdi_custom_words (category_id, word)
+  select v_id, w from unnest(v_words) w;
+
+  return v_id;
+end;
+$$;
+
+/** Die eigenen Listen, zum Auswaehlen beim Anlegen einer Runde. */
+create or replace function public.fdi_my_custom_categories()
+returns table (id uuid, label text, word_count bigint)
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select c.id, c.label, (select count(*) from public.fdi_custom_words w where w.category_id = c.id)
+    from public.fdi_custom_categories c
+   where c.owner_id = auth.uid()
+   order by c.created_at desc
+$$;
+
+/** Eine eigene Liste wieder loeschen. Fremde Listen sind unerreichbar. */
+create or replace function public.fdi_delete_custom_category(p_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  delete from public.fdi_custom_categories
+   where id = p_id and owner_id = auth.uid();
+  if not found then raise exception 'Diese Kategorie gehört dir nicht'; end if;
+end;
+$$;
+
+/* ==================== Runde anlegen ==================== */
+
+-- Die alte Fassung MUSS weg, bevor die neue entsteht: Ein zusaetzlicher
+-- Parameter mit Vorgabewert erzeugt eine zweite Signatur, und ein Aufruf mit
+-- drei Argumenten -- also jeder Aufruf der App -- waere dann mehrdeutig und
+-- schluege fehl. Aufgefallen beim ersten Testlauf gegen eine echte Datenbank.
+drop function if exists public.fdi_create_match(text, text, text);
+
+create or replace function public.fdi_create_match(
+  p_category text,
+  p_mode text default 'classic',
+  p_name text default null,
+  p_custom_category uuid default null
+)
+returns table (match_id uuid, code text)
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_id uuid;
+  v_code text;
+  v_name text;
+  v_category text;
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+  if p_mode not in ('classic', 'double', 'blank', 'categories_only', 'speed', 'chaos', 'duel') then
+    raise exception 'Unbekannter Modus';
+  end if;
+
+  if p_custom_category is not null then
+    if not exists (
+      select 1 from public.fdi_custom_categories
+       where id = p_custom_category and owner_id = auth.uid()
+    ) then
+      raise exception 'Diese Kategorie gehört dir nicht';
+    end if;
+    if (select count(*) from public.fdi_custom_words where category_id = p_custom_category) < 5 then
+      raise exception 'Diese Kategorie hat zu wenige Wörter';
+    end if;
+    v_category := null;
+  else
+    if not exists (select 1 from public.fdi_categories where id = p_category) then
+      raise exception 'Unbekannte Kategorie';
+    end if;
+    v_category := p_category;
+  end if;
+
+  v_code := public.fdi_new_code();
+  insert into public.fdi_matches (code, host_id, category_id, custom_category_id, mode)
+  values (v_code, auth.uid(), v_category, p_custom_category, p_mode)
+  returning id into v_id;
+
+  v_name := coalesce(nullif(trim(p_name), ''), 'Gastgeber');
+  insert into public.fdi_players (match_id, seat, user_id, name) values (v_id, 1, auth.uid(), v_name);
+  insert into public.fdi_state (match_id, version) values (v_id, 1);
+
+  return query select v_id, v_code;
+end;
+$$;
+
+/* ==================== Austeilen ==================== */
+
+create or replace function public.fdi_deal(p_match uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_match public.fdi_matches;
+  v_size integer;
+  v_imposters integer;
+  v_secret text;
+  v_helper text;
+  v_rule text;
+  v_effect text;
+  v_sees text;
+  v_show boolean;
+  v_fixed integer;
+  v_timer integer;
+begin
+  select * into v_match from public.fdi_matches where id = p_match;
+  select count(*) into v_size from public.fdi_players where match_id = p_match;
+
+  if v_match.mode = 'duel' and v_size < 6 then
+    raise exception 'Duell braucht mindestens 6 Mitspielende';
+  end if;
+
+  v_rule := null;
+  if v_match.mode = 'chaos' then
+    select id into v_rule from public.fdi_chaos_rules()
+     where min_players <= v_size order by random() limit 1;
+    v_effect := coalesce(v_rule, 'normal');
+  else
+    v_effect := v_match.mode;
+  end if;
+
+  select imposter_sees, show_category, fixed_imposters, timer_seconds
+    into v_sees, v_show, v_fixed, v_timer
+    from public.fdi_mode_rules(v_effect);
+
+  if v_fixed is not null and v_size >= 6 then
+    v_imposters := v_fixed;
+  else
+    v_imposters := public.fdi_imposter_count(v_size, 'classic');
+  end if;
+  v_imposters := least(v_imposters, greatest(1, v_size - 1));
+
+  -- Woerter: aus der fertigen Kategorie oder aus der eigenen Liste.
+  if v_match.custom_category_id is not null then
+    select word into v_secret from public.fdi_custom_words
+     where category_id = v_match.custom_category_id order by random() limit 1;
+    select word into v_helper from public.fdi_custom_words
+     where category_id = v_match.custom_category_id and word <> v_secret
+     order by random() limit 1;
+  else
+    select word into v_secret from public.fdi_words
+     where category_id = v_match.category_id order by random() limit 1;
+    select word into v_helper from public.fdi_words
+     where category_id = v_match.category_id and word <> v_secret
+     order by random() limit 1;
+  end if;
+  if v_secret is null then
+    raise exception 'Die Kategorie hat keine Wörter';
+  end if;
+
+  update public.fdi_players
+     set is_imposter = false, vote_seat = null, last_chance_guess = null, team = null
+   where match_id = p_match;
+
+  if v_match.mode = 'duel' then
+    -- Erst zufaellig in zwei Haelften teilen, dann in JEDEM Team genau einen
+    -- Imposter ziehen. Wuerde man zwei aus dem ganzen Feld ziehen, saessen sie
+    -- womoeglich beide in derselben Haelfte und ein Team haette nichts zu
+    -- suchen. Gleiche Regel wie am einen Geraet.
+    with gemischt as (
+      select seat, row_number() over (order by random()) as nr
+        from public.fdi_players where match_id = p_match
+    )
+    update public.fdi_players p
+       set team = case when g.nr % 2 = 1 then 1 else 2 end
+      from gemischt g
+     where p.match_id = p_match and p.seat = g.seat;
+
+    update public.fdi_players set is_imposter = true
+     where match_id = p_match
+       and seat in (
+         select seat from (
+           select seat, row_number() over (partition by team order by random()) as nr
+             from public.fdi_players where match_id = p_match
+         ) t where t.nr = 1
+       );
+    v_imposters := 2;
+  else
+    update public.fdi_players set is_imposter = true
+     where match_id = p_match
+       and seat in (
+         select seat from public.fdi_players
+          where match_id = p_match order by random() limit v_imposters
+       );
+  end if;
+
+  update public.fdi_matches
+     set secret_word = v_secret,
+         helper_word = coalesce(v_helper, v_secret),
+         imposter_count = v_imposters,
+         imposter_sees = v_sees,
+         show_category = v_show,
+         timer_seconds = v_timer,
+         special_rule = v_rule,
+         phase_at = now(),
+         phase = 'discussion',
+         starter_seat = (
+           select seat from public.fdi_players
+            where match_id = p_match order by random() limit 1
+         ),
+         accused_seat = null,
+         correct_accusation = null,
+         last_chance_success = null,
+         team1_seat = null, team2_seat = null,
+         team1_done = false, team2_done = false,
+         last_chance_seats = '{}'
+   where id = p_match;
+end;
+$$;
+
+/* ==================== Abstimmen ==================== */
+
+/**
+ * Aus den Angeklagten die Warteschlange fuer die letzte Chance bauen.
+ * Steckt hier in einer eigenen Funktion, weil Duell und alle anderen Modi
+ * danach dasselbe tun sollen -- zwei Fassungen wuerden auseinanderlaufen.
+ */
+create or replace function public.fdi_resolve(p_match uuid, p_seats integer[])
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_erwischt integer[];
+begin
+  select coalesce(array_agg(seat order by seat), '{}')
+    into v_erwischt
+    from public.fdi_players
+   where match_id = p_match
+     and seat = any (coalesce(p_seats, '{}'::integer[]))
+     and is_imposter;
+
+  if coalesce(array_length(v_erwischt, 1), 0) = 0 then
+    update public.fdi_matches
+       set phase = 'result', correct_accusation = false, last_chance_seats = '{}'
+     where id = p_match;
+  else
+    update public.fdi_matches
+       set phase = 'last_chance',
+           correct_accusation = true,
+           accused_seat = v_erwischt[1],
+           last_chance_seats = v_erwischt
+     where id = p_match;
+  end if;
+end;
+$$;
+
+create or replace function public.fdi_vote(p_match uuid, p_seat integer)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_match public.fdi_matches;
+  v_seat integer;
+  v_team integer;
+  v_ziel_team integer;
+  v_offen integer;
+  v_top integer;
+  v_count integer;
+  v_ties integer;
+begin
+  select * into v_match from public.fdi_matches where id = p_match;
+  select seat, team into v_seat, v_team from public.fdi_players
+   where match_id = p_match and user_id = auth.uid();
+  if v_seat is null then raise exception 'Du bist nicht dabei'; end if;
+  if v_match.phase <> 'accuse' then raise exception 'Gerade wird nicht getippt'; end if;
+
+  select team into v_ziel_team from public.fdi_players
+   where match_id = p_match and seat = p_seat;
+  if not found then raise exception 'Diesen Platz gibt es nicht'; end if;
+
+  if v_match.mode = 'duel' then
+    -- Jedes Team sucht in den eigenen Reihen. Auf die andere Haelfte zu
+    -- tippen waere kein Spielzug, sondern ein Weg, das fremde Team zu
+    -- sabotieren.
+    if v_ziel_team is distinct from v_team then
+      raise exception 'Im Duell tippst du nur auf dein eigenes Team';
+    end if;
+  end if;
+
+  update public.fdi_players set vote_seat = p_seat
+   where match_id = p_match and seat = v_seat;
+
+  if v_match.mode = 'duel' then
+    select count(*) into v_offen from public.fdi_players
+     where match_id = p_match and team = v_team and vote_seat is null;
+    if v_offen > 0 then
+      perform public.fdi_touch(p_match);
+      return;
+    end if;
+
+    select vote_seat, count(*) into v_top, v_count
+      from public.fdi_players
+     where match_id = p_match and team = v_team
+     group by vote_seat order by count(*) desc, vote_seat limit 1;
+
+    select count(*) into v_ties from (
+      select count(*) c from public.fdi_players
+       where match_id = p_match and team = v_team group by vote_seat
+    ) t where t.c = v_count;
+
+    -- Gleichstand: dieses Team klagt niemanden an. Der Imposter des Teams
+    -- kommt durch, das andere Team spielt trotzdem zu Ende.
+    if v_ties > 1 then v_top := null; end if;
+
+    if v_team = 1 then
+      update public.fdi_matches set team1_seat = v_top, team1_done = true where id = p_match;
+    else
+      update public.fdi_matches set team2_seat = v_top, team2_done = true where id = p_match;
+    end if;
+
+    select * into v_match from public.fdi_matches where id = p_match;
+    if v_match.team1_done and v_match.team2_done then
+      perform public.fdi_resolve(
+        p_match,
+        array_remove(array[v_match.team1_seat, v_match.team2_seat], null)
+      );
+    end if;
+    perform public.fdi_touch(p_match);
+    return;
+  end if;
+
+  select count(*) into v_offen from public.fdi_players
+   where match_id = p_match and vote_seat is null;
+  if v_offen > 0 then
+    perform public.fdi_touch(p_match);
+    return;
+  end if;
+
+  select vote_seat, count(*) into v_top, v_count
+    from public.fdi_players where match_id = p_match
+   group by vote_seat order by count(*) desc, vote_seat limit 1;
+
+  select count(*) into v_ties from (
+    select count(*) c from public.fdi_players where match_id = p_match group by vote_seat
+  ) t where t.c = v_count;
+
+  if v_ties > 1 then
+    update public.fdi_matches
+       set phase = 'result', accused_seat = null, correct_accusation = false
+     where id = p_match;
+  else
+    update public.fdi_matches set accused_seat = v_top where id = p_match;
+    perform public.fdi_resolve(p_match, array[v_top]);
+  end if;
+  perform public.fdi_touch(p_match);
+end;
+$$;
+
+/* ==================== Letzte Chance ==================== */
+
+/**
+ * Nur wer gerade vorne in der Warteschlange steht, darf raten. Im Duell sind
+ * das nacheinander beide Erwischten; sonst ist es der eine Angeklagte.
+ */
+create or replace function public.fdi_last_chance(p_match uuid, p_guess text)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_match public.fdi_matches;
+  v_seat integer;
+  v_ok boolean;
+  v_rest integer[];
+begin
+  select * into v_match from public.fdi_matches where id = p_match;
+  if v_match.phase <> 'last_chance' then raise exception 'Gerade ist keine letzte Chance'; end if;
+
+  select seat into v_seat from public.fdi_players where match_id = p_match and user_id = auth.uid();
+  if v_seat is null or v_seat is distinct from v_match.last_chance_seats[1] then
+    raise exception 'Du bist gerade nicht dran';
+  end if;
+
+  v_ok := trim(coalesce(p_guess, '')) <> ''
+          and lower(trim(coalesce(p_guess, ''))) = lower(trim(v_match.secret_word));
+
+  update public.fdi_players
+     set last_chance_guess = trim(coalesce(p_guess, ''))
+   where match_id = p_match and seat = v_seat;
+
+  v_rest := v_match.last_chance_seats[2:];
+
+  if coalesce(array_length(v_rest, 1), 0) > 0 then
+    update public.fdi_matches
+       set last_chance_seats = v_rest,
+           accused_seat = v_rest[1],
+           -- Schon jetzt festhalten, wenn es geklappt hat: der Naechste darf
+           -- das Ergebnis des Vorherigen nicht wieder loeschen.
+           last_chance_success = coalesce(v_match.last_chance_success, false) or v_ok
+     where id = p_match;
+  else
+    update public.fdi_matches
+       set phase = 'result',
+           last_chance_seats = '{}',
+           last_chance_success = coalesce(v_match.last_chance_success, false) or v_ok
+     where id = p_match;
+  end if;
+  perform public.fdi_touch(p_match);
+end;
+$$;
+
+/* ==================== Spielstand ==================== */
+
+create or replace function public.fdi_get_state(p_match uuid)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_match public.fdi_matches;
+  v_me public.fdi_players;
+  v_fertig boolean;
+  v_laeuft boolean;
+  v_label text;
+begin
+  if not public.fdi_is_member(p_match) then raise exception 'Du bist nicht dabei'; end if;
+  select * into v_match from public.fdi_matches where id = p_match;
+  select * into v_me from public.fdi_players where match_id = p_match and user_id = auth.uid();
+  v_fertig := v_match.phase = 'result';
+  v_laeuft := v_match.phase <> 'lobby';
+
+  if v_match.custom_category_id is not null then
+    select label into v_label from public.fdi_custom_categories where id = v_match.custom_category_id;
+  else
+    select label into v_label from public.fdi_categories where id = v_match.category_id;
+  end if;
+
+  return jsonb_build_object(
+    'match', jsonb_build_object(
+      'id', v_match.id,
+      'code', v_match.code,
+      'phase', v_match.phase,
+      'round', v_match.round,
+      'category_id', v_match.category_id,
+      'is_custom_category', v_match.custom_category_id is not null,
+      'category_label', case
+        when not v_laeuft or v_match.show_category or v_fertig then v_label
+        else null end,
+      'show_category', v_match.show_category,
+      'mode', v_match.mode,
+      'imposter_sees', v_match.imposter_sees,
+      'timer_seconds', v_match.timer_seconds,
+      'phase_at', v_match.phase_at,
+      'special_rule', v_match.special_rule,
+      'imposter_count', v_match.imposter_count,
+      'starter_seat', v_match.starter_seat,
+      'accused_seat', v_match.accused_seat,
+      'correct_accusation', v_match.correct_accusation,
+      'last_chance_success', v_match.last_chance_success,
+      -- Im Duell darf jeder sehen, wie weit das eigene und das andere Team
+      -- sind -- wen sie angeklagt haben, steht ohnehin gleich im Ergebnis.
+      'team1_seat', v_match.team1_seat,
+      'team2_seat', v_match.team2_seat,
+      'team1_done', v_match.team1_done,
+      'team2_done', v_match.team2_done,
+      'is_host', v_match.host_id = auth.uid(),
+      'size', (select count(*) from public.fdi_players where match_id = p_match),
+      'secret_word', case when v_fertig then v_match.secret_word else null end
+    ),
+    'me', jsonb_build_object(
+      'seat', v_me.seat,
+      'name', v_me.name,
+      'team', v_me.team,
+      'is_imposter', v_me.is_imposter,
+      'vote_seat', v_me.vote_seat,
+      -- Nur wer vorne in der Warteschlange steht, bekommt das Eingabefeld.
+      'my_turn_last_chance', v_match.phase = 'last_chance'
+                             and v_me.seat is not distinct from v_match.last_chance_seats[1],
+      'word', case when v_laeuft and not v_me.is_imposter then v_match.secret_word else null end,
+      'helper_word', case
+        when v_laeuft and v_me.is_imposter and v_match.imposter_sees = 'helper'
+        then v_match.helper_word else null end
+    ),
+    'players', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'seat', p.seat,
+        'name', p.name,
+        'team', p.team,
+        'has_voted', p.vote_seat is not null,
+        'is_you', p.user_id = auth.uid(),
+        'is_imposter', case when v_fertig then p.is_imposter else null end,
+        'last_chance_guess', case when v_fertig then p.last_chance_guess else null end
+      ) order by p.seat)
+      from public.fdi_players p where p.match_id = p_match
+    ), '[]'::jsonb)
+  );
+end;
+$$;
+
+/* ==================== Rechte ==================== */
+
+revoke all on function public.fdi_deal(uuid) from public, anon, authenticated;
+revoke all on function public.fdi_resolve(uuid, integer[]) from public, anon, authenticated;
+grant execute on function public.fdi_get_state(uuid) to authenticated;
+grant execute on function public.fdi_vote(uuid, integer) to authenticated;
+grant execute on function public.fdi_last_chance(uuid, text) to authenticated;
+grant execute on function public.fdi_create_match(text, text, text, uuid) to authenticated;
+grant execute on function public.fdi_save_custom_category(text, text[]) to authenticated;
+grant execute on function public.fdi_my_custom_categories() to authenticated;
+grant execute on function public.fdi_delete_custom_category(uuid) to authenticated;
