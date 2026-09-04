@@ -12,6 +12,11 @@ import {
 } from '@/progression/zones'
 import styles from './LevelMap.module.css'
 
+export interface MitspielerStand {
+  username: string
+  level: number
+}
+
 export interface LevelMapProps {
   currentLevel: number
   highestLevel: number
@@ -19,6 +24,11 @@ export interface LevelMapProps {
   maxLevel?: number
   onSelectLevel: (level: number) => void
   gameLabel: string
+  /**
+   * Wo die anderen stehen. Leer lassen, wenn es niemanden gibt oder das
+   * Konto nicht verbunden ist -- die Karte sieht dann aus wie bisher.
+   */
+  mitspieler?: MitspielerStand[]
 }
 
 /** Vertical distance between two level nodes, in px. */
@@ -116,8 +126,20 @@ export function LevelMap({
   maxLevel = MAX_LEVEL,
   onSelectLevel,
   gameLabel,
+  mitspieler = [],
 }: LevelMapProps) {
   const avatar = getAvatar(avatarId)
+
+  // Nach Level einsortieren, damit jede Stufe in einem Griff weiss, wer dort
+  // steht. Mehr als drei Namen an einer Stufe werden zu "+n" -- sonst deckt
+  // eine grosse Familie die Strasse zu.
+  const stehenBei = new Map<number, string[]>()
+  for (const m of mitspieler) {
+    const liste = stehenBei.get(m.level) ?? []
+    liste.push(m.username)
+    stehenBei.set(m.level, liste)
+  }
+  for (const liste of stehenBei.values()) liste.sort((a, b) => a.localeCompare(b, 'de'))
   const unlocked = Math.max(1, Math.min(maxLevel, Math.max(highestLevel, currentLevel)))
   const lastSegment = segmentIndexForLevel(maxLevel)
 
@@ -286,6 +308,11 @@ export function LevelMap({
             const side = point.x > 50 ? 'left' : 'right'
             const decor =
               index % 2 === 0 ? levelZone.creatures[index % levelZone.creatures.length] : null
+            // Die Namen stehen neben der Stufe, auf der Seite mit der
+            // Landschaft. Nicht IM Knopf: der ist rund und beschneidet, was
+            // ueber den Rand hinausragt -- und in seinem Namen haben fremde
+            // Namen nichts verloren.
+            const hierStehen = stehenBei.get(L) ?? []
 
             return (
               <div
@@ -294,6 +321,24 @@ export function LevelMap({
                 className={styles.stop}
                 style={{ ...zoneStyle(levelZone), left: `${point.x}%`, top: `${point.y}px` }}
               >
+                {hierStehen.length > 0 && (
+                  <span
+                    className={[
+                      styles.mitspieler,
+                      side === 'left' ? styles.mitspielerLinks : styles.mitspielerRechts,
+                    ].join(' ')}
+                    title={hierStehen.join(', ')}
+                  >
+                    {hierStehen.slice(0, 3).map((name) => (
+                      <span key={name} className={styles.mitspielerName}>
+                        {name}
+                      </span>
+                    ))}
+                    {hierStehen.length > 3 && (
+                      <span className={styles.mitspielerName}>+{hierStehen.length - 3}</span>
+                    )}
+                  </span>
+                )}
                 {decor && (
                   <span
                     className={[

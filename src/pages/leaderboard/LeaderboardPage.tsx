@@ -276,7 +276,8 @@ export function LeaderboardPage() {
                     {e.username === myName ? ' (du)' : ''}
                     <span className={styles.sub}>
                       {' '}
-                      {e.playCount} {e.playCount === 1 ? 'Runde' : 'Runden'} · {e.gameCount}{' '}
+                      Level {e.playerLevel} · {e.playCount}{' '}
+                      {e.playCount === 1 ? 'Runde' : 'Runden'} · {e.gameCount}{' '}
                       {e.gameCount === 1 ? 'Spiel' : 'Spiele'}
                     </span>
                   </span>
@@ -410,6 +411,7 @@ export function LeaderboardPage() {
                     {e.displayName === myName ? ' (du)' : ''}
                     <span className={styles.sub}>
                       {' '}
+                      {e.level > 0 ? `Level ${e.level} · ` : ''}
                       {e.playCount} {e.playCount === 1 ? 'Runde' : 'Runden'}
                       {e.achievedAt
                         ? ` · zuletzt ${new Date(e.achievedAt).toLocaleDateString('de-DE')}`

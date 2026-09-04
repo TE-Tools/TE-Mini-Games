@@ -17,6 +17,7 @@ import {
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
 import { DATA_PULLED_EVENT } from '@/services/remotePull'
+import { getLevelStand, type LevelStandEintrag } from '@/services/leaderboard'
 import { milestoneBonusXp } from '@/games/milestones'
 import { LevelMap } from '@/components/level-map/LevelMap'
 import shell from './PlayShell.module.css'
@@ -86,6 +87,25 @@ export function ReihenfolgePage() {
     }
     window.addEventListener(DATA_PULLED_EVENT, onPulled)
     return () => window.removeEventListener(DATA_PULLED_EVENT, onPulled)
+  }, [])
+
+  // Wo die anderen stehen. Kommt nichts zurueck (kein Konto, kein Netz, oder
+  // niemand hat sich einen Benutzernamen gegeben), sieht die Karte aus wie
+  // bisher -- das ist kein Fehlerfall, sondern der Normalfall beim Alleinspielen.
+  const [mitspieler, setMitspieler] = useState<LevelStandEintrag[]>([])
+  useEffect(() => {
+    let abbruch = false
+    const holen = () => {
+      void getLevelStand('reihenfolge').then((liste) => {
+        if (!abbruch) setMitspieler(liste)
+      })
+    }
+    holen()
+    window.addEventListener(DATA_PULLED_EVENT, holen)
+    return () => {
+      abbruch = true
+      window.removeEventListener(DATA_PULLED_EVENT, holen)
+    }
   }, [])
 
   // Die Folge vorspielen: ein Feld leuchtet, dann eine Pause, dann das
@@ -287,6 +307,7 @@ export function ReihenfolgePage() {
             maxLevel={MAX_GAME_LEVEL}
             onSelectLevel={selectLevel}
             gameLabel="Reihenfolge merken"
+            mitspieler={mitspieler}
           />
           <button type="button" className={shell.primaryBtn} onClick={() => selectLevel(level)}>
             Weiter spielen · Level {level}

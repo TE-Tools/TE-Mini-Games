@@ -111,6 +111,20 @@ keine Tabellen -- das Sammelskript war nach dem Hinzufügen der Migrationen
 App wurde erfolgreich ausgeliefert, die Rangliste lief, nur die Online-Runden
 brachen ab. `tests/all-in-one.test.ts` lässt das nicht wieder still passieren.
 
+## Vom Handy einspielen
+
+`ALL_IN_ONE.sql` ist rund 190 KB -- der SQL-Editor von Supabase stürzt damit im
+Browser eines Telefons ab (04.09.2026 von Thomas gemeldet). Unter
+`supabase/migrations/teile/` liegt dasselbe in zwölf Stücken, keines grösser
+als 14 KB, nacheinander einzufügen. Die Anleitung steht in
+`supabase/migrations/teile/LIESMICH.md`.
+
+Nur wenig Zeit? `12_016_level_stand.sql` ist 2 KB, braucht keines der anderen
+Stücke und schaltet die Levelanzeige auf der Karte und in der Rangliste frei.
+
+Erzeugt mit `node scripts/build-teile.mjs`; `tests/teile.test.ts` schlägt fehl,
+sobald die Stücke nicht mehr zu den Migrationen passen.
+
 ## Checkliste: was noch offen ist
 
 | Punkt | Wo | Status |
