@@ -1,4 +1,5 @@
 import { db, GUEST_USER_ID, type LocalGameProgress } from './db'
+import { enqueueLatestOutbox } from './outbox'
 import type { GameId } from '@/games/types'
 
 function progressId(userId: string, gameId: string): string {
@@ -53,6 +54,17 @@ export async function recordLevelComplete(
     updatedAt: nowIso(),
   }
   await db.gameProgress.put(updated)
+  // Ohne diese Zeile blieb game_progress in der Cloud leer: Der Push kannte
+  // den Fall 'progress' zwar, aber niemand legte je einen an. Auf einem
+  // zweiten Gerät fing man deshalb in jedem Spiel wieder bei Level 1 an,
+  // obwohl Rekorde und Abzeichen ankamen (04.09.2026).
+  await enqueueLatestOutbox('progress', `${userId}:${gameId}`, {
+    userId,
+    gameId,
+    currentLevel: updated.currentLevel,
+    highestLevel: updated.highestLevel,
+    totalXp: updated.totalXp,
+  })
   return updated
 }
 

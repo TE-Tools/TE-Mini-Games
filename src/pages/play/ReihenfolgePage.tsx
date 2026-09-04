@@ -288,7 +288,10 @@ export function ReihenfolgePage() {
             onSelectLevel={selectLevel}
             gameLabel="Reihenfolge merken"
           />
-          <p className={shell.hint}>Tippe ein freies Level – so siehst du, wo du stehst.</p>
+          <button type="button" className={shell.primaryBtn} onClick={() => selectLevel(level)}>
+            Weiter spielen · Level {level}
+          </button>
+          <p className={shell.hint}>Oder tippe ein freies Level auf der Karte an.</p>
           <Link to="/profile" className={shell.homeLink}>
             Avatar ändern
           </Link>

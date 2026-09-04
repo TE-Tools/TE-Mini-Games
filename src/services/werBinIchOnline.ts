@@ -9,6 +9,7 @@
  */
 
 import { supabase, isSupabaseConfigured } from '@/database/supabase'
+import { onlineFehlerText } from './onlineFehler'
 
 export const isWerBinIchOnlineAvailable = isSupabaseConfigured
 
@@ -68,7 +69,7 @@ function client() {
 
 async function rpc<T>(name: string, args: Record<string, unknown>): Promise<T> {
   const { data, error } = await client().rpc(name, args)
-  if (error) throw new Error(error.message)
+  if (error) throw new Error(onlineFehlerText(error))
   return data as T
 }
 

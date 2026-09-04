@@ -11,6 +11,7 @@
  */
 
 import { supabase, isSupabaseConfigured } from '@/database/supabase'
+import { onlineFehlerText } from './onlineFehler'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
 export type OnlinePhase = 'lobby' | 'night' | 'day' | 'vote' | 'result' | 'over'
@@ -87,7 +88,7 @@ function client() {
 
 /** Supabase liefert Fehler als Objekt zurück – daraus einen lesbaren Satz machen. */
 function fail(message: string | undefined, fallback: string): never {
-  throw new Error(message && message.length > 0 ? message : fallback)
+  throw new Error(onlineFehlerText(message && message.length > 0 ? message : fallback))
 }
 
 async function rpc<T>(name: string, args: Record<string, unknown>, fallback: string): Promise<T> {

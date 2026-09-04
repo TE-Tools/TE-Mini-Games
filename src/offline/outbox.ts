@@ -24,6 +24,29 @@ export async function enqueueOutbox(
   return item
 }
 
+/**
+ * Wie enqueueOutbox, aber es bleibt höchstens ein Eintrag je Schlüssel liegen.
+ *
+ * Für Spielstand und Profil ist die Nutzlast kein Ereignis, sondern eine
+ * Momentaufnahme ("so weit bin ich"). Zehnmal dieselbe Momentaufnahme
+ * hochzuladen bringt nichts -- der Server nimmt ohnehin jeweils den höheren
+ * Wert. Der neueste Stand ersetzt deshalb den älteren, statt sich dahinter
+ * anzustellen.
+ */
+export async function enqueueLatestOutbox(
+  type: SyncOutboxItem['type'],
+  key: string,
+  payload: Record<string, unknown>,
+): Promise<SyncOutboxItem> {
+  const alte = await db.syncOutbox
+    .where('type')
+    .equals(type)
+    .filter((i) => (i.payload.outboxKey as string | undefined) === key)
+    .toArray()
+  for (const a of alte) await db.syncOutbox.delete(a.id)
+  return enqueueOutbox(type, { ...payload, outboxKey: key })
+}
+
 export async function getPendingOutbox(limit = 50): Promise<SyncOutboxItem[]> {
   return db.syncOutbox.orderBy('createdAt').limit(limit).toArray()
 }

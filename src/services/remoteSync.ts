@@ -190,7 +190,7 @@ export async function trySyncNow(): Promise<void> {
  */
 export async function syncFullNow(): Promise<PullResult> {
   if (!isSupabaseConfigured) {
-    return { pulled: false, games: 0, records: 0, achievements: 0, restoredLevel: 0 }
+    return { pulled: false, games: 0, records: 0, achievements: 0, profile: false, restoredLevel: 0 }
   }
   await processSyncQueue()
   return pullRemoteState()
