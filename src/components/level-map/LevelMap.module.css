@@ -458,3 +458,43 @@
   margin: 0;
   font-weight: 600;
 }
+
+/* ---- Wo die anderen stehen ----
+   Namen neben der Stufe, nicht darauf: Die Stufe selbst ist ein Knopf und
+   muss antippbar bleiben. Deshalb auch pointer-events: none. */
+
+.mitspieler {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.mitspielerLinks {
+  right: calc(100% + 0.45rem);
+  align-items: flex-end;
+}
+
+.mitspielerRechts {
+  left: calc(100% + 0.45rem);
+  align-items: flex-start;
+}
+
+.mitspielerName {
+  max-width: 6.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.35;
+  padding: 0.08rem 0.4rem;
+  border-radius: var(--radius-full);
+  color: #fff;
+  background: rgb(15 12 34 / 0.82);
+  border: 1px solid rgb(255 255 255 / 0.28);
+}

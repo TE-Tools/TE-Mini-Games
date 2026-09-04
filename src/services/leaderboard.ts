@@ -132,7 +132,7 @@ export async function getRemoteXpTotals(
     // game_results direkt – RLS hält jede einzelne Runde privat.
     const { data, error } = await supabase
       .from('leaderboard_xp_total')
-      .select('username, total_xp, total_score, play_count, last_played_at')
+      .select('username, total_xp, total_score, play_count, last_played_at, highest_level')
       .eq('game_id', gameId)
       .order('total_xp', { ascending: false })
       .limit(limit)
@@ -145,11 +145,45 @@ export async function getRemoteXpTotals(
       score: row.total_score as number,
       xp: row.total_xp as number,
       playCount: row.play_count as number,
-      level: 0,
+      // Das höchste Level, das dieser Spieler in diesem Spiel gespielt hat.
+      // Stand vorher fest auf 0 -- die globale Liste zeigte deshalb als
+      // einzige kein Level an (04.09.2026, Thomas).
+      level: (row.highest_level as number | null) ?? 0,
       gameId,
       source: 'remote' as const,
       achievedAt: (row.last_played_at as string | null) ?? undefined,
     }))
+  } catch {
+    return []
+  }
+}
+
+export interface LevelStandEintrag {
+  username: string
+  level: number
+}
+
+/**
+ * Wo die anderen stehen -- je Spiel das höchste Level, das jemand erreicht hat.
+ *
+ * Sichtbar ist nur, wer sich einen Benutzernamen gegeben hat; genau damit
+ * meldet man sich für die Rangliste an. Die View `level_stand` (Migration 016)
+ * setzt das durch, nicht diese Funktion -- hier steht es nur, damit beim Lesen
+ * klar ist, warum die Liste kürzer sein kann als die Zahl der Mitspielenden.
+ */
+export async function getLevelStand(gameId: GameId, limit = 30): Promise<LevelStandEintrag[]> {
+  if (!isSupabaseConfigured || !supabase) return []
+  try {
+    const { data, error } = await supabase
+      .from('level_stand')
+      .select('username, level')
+      .eq('game_id', gameId)
+      .order('level', { ascending: false })
+      .limit(limit)
+    if (error || !data) return []
+    return data
+      .map((r) => ({ username: (r.username as string | null) ?? '', level: (r.level as number) ?? 1 }))
+      .filter((r) => r.username.length > 0)
   } catch {
     return []
   }
@@ -163,6 +197,8 @@ export interface OverallEntry {
   playCount: number
   gameCount: number
   lastPlayedAt: string | null
+  /** Spielerlevel -- über alle Spiele hinweg gibt es kein Spiel-Level. */
+  playerLevel: number
 }
 
 /**
@@ -176,7 +212,7 @@ export async function getRemoteOverall(limit = 20): Promise<OverallEntry[]> {
   try {
     const { data, error } = await supabase
       .from('leaderboard_overall')
-      .select('username, total_xp, total_score, play_count, game_count, last_played_at')
+      .select('username, total_xp, total_score, play_count, game_count, last_played_at, player_level')
       .order('total_xp', { ascending: false })
       .limit(limit)
 
@@ -190,6 +226,7 @@ export async function getRemoteOverall(limit = 20): Promise<OverallEntry[]> {
       playCount: (row.play_count as number) ?? 0,
       gameCount: (row.game_count as number) ?? 0,
       lastPlayedAt: (row.last_played_at as string | null) ?? null,
+      playerLevel: (row.player_level as number | null) ?? 1,
     }))
   } catch {
     return []
