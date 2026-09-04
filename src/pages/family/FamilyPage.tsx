@@ -1,3 +1,18 @@
+/**
+ * Familien-Modus: ein Gerät wandert reihum, jede und jeder spielt dieselbe
+ * Aufgabe, am Ende gibt es eine Rangliste.
+ *
+ * WARUM NUR ZWEI SPIELE HIER STEHEN (Entscheidung Thomas, 04.09.2026):
+ * Bei einer Durchsicht fiel auf, dass von den vier Solo-Spielen nur "Die
+ * perfekte Sekunde" und "Was fehlt?" hier auftauchen -- "Reihenfolge merken"
+ * und "Kopfrechnen" fehlen. Das ist Absicht und soll so bleiben: Beide sind
+ * als Spiel gegen sich selbst gedacht, nicht als Wettbewerb am
+ * weitergereichten Gerät. Wer es doch gemeinsam will, hat dafür die
+ * Partyspiele.
+ *
+ * Also bitte nicht "nachziehen", weil es nach einer Lücke aussieht -- es ist
+ * keine.
+ */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {

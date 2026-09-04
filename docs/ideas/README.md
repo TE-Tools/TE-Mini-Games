@@ -56,3 +56,11 @@ Play Store, weil sie dasselbe Feld bespielt. Ihre Modi im Vergleich:
 Was Splash gar nicht hat und wir schon: Levelkarte 1–500, XP, Streaks,
 Abzeichen und Ranglisten. Die Partyspiele sind bei uns bewusst ohne Wertung
 (siehe `finde-den-imposter/STATUS.md`), die Einzelspiele dafür mit.
+
+## Bewusst nicht gebaut
+
+- **Reihenfolge merken und Kopfrechnen im Familien-Modus** (entschieden am
+  04.09.2026). Der Familien-Modus deckt zwei der vier Solo-Spiele ab. Das
+  sieht bei einer Durchsicht nach einer Lücke aus, ist aber keine: Beide
+  Spiele sind als Spiel gegen sich selbst gedacht. Für gemeinsam am Tisch
+  gibt es die Partyspiele.
