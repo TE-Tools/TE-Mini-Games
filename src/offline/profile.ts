@@ -1,5 +1,26 @@
 import { db, GUEST_USER_ID, type LocalProfile } from './db'
+import { enqueueLatestOutbox } from './outbox'
 import { levelFromTotalXp } from '@/progression/xp'
+
+/**
+ * XP, Spielerlevel und Streak gehören mit in die Cloud -- sonst steht auf dem
+ * zweiten Gerät ein anderer Stand. Der Push kannte den Fall 'profile' von
+ * Anfang an, nur legte niemand je einen an (gefunden am 04.09.2026, nachdem
+ * genau das gemeldet wurde: "melde mich an PC und Handy an und habe
+ * unterschiedlichen Stand, auch wenn ich Sync drücke").
+ *
+ * Es bleibt immer nur der neueste Eintrag liegen: Die Nutzlast ist eine
+ * Momentaufnahme, keine Buchung.
+ */
+async function profilVormerken(profile: LocalProfile): Promise<void> {
+  await enqueueLatestOutbox('profile', profile.id, {
+    userId: profile.id,
+    totalXp: profile.totalXp,
+    playerLevel: profile.playerLevel,
+    streakDays: profile.streakDays,
+    lastPlayedAt: profile.lastPlayedAt,
+  })
+}
 
 function nowIso(): string {
   return new Date().toISOString()
@@ -40,6 +61,7 @@ export async function addXp(userId: string, amount: number): Promise<LocalProfil
     updatedAt: nowIso(),
   }
   await db.profiles.put(updated)
+  await profilVormerken(updated)
   return updated
 }
 
@@ -52,6 +74,7 @@ export async function updateStreak(userId: string, streakDays: number): Promise<
     updatedAt: nowIso(),
   }
   await db.profiles.put(updated)
+  await profilVormerken(updated)
   return updated
 }
 

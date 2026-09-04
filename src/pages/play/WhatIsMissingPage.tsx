@@ -222,7 +222,10 @@ export function WhatIsMissingPage() {
             onSelectLevel={selectLevel}
             gameLabel="Was fehlt?"
           />
-          <p className={styles.hint}>Tippe ein freies Level – so siehst du, wo du stehst.</p>
+          <button type="button" className={styles.primaryBtn} onClick={() => selectLevel(level)}>
+            Weiter spielen · Level {level}
+          </button>
+          <p className={styles.hint}>Oder tippe ein freies Level auf der Karte an.</p>
           <Link to="/profile" className={styles.homeLink}>
             Avatar ändern
           </Link>

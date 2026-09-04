@@ -24,6 +24,8 @@ export interface PullResult {
   games: number
   records: number
   achievements: number
+  /** Ob XP, Spielerlevel oder Streak vom Konto übernommen wurden. */
+  profile: boolean
   /** Highest level that came down from the cloud, for the UI message. */
   restoredLevel: number
 }
@@ -33,6 +35,7 @@ const EMPTY: PullResult = {
   games: 0,
   records: 0,
   achievements: 0,
+  profile: false,
   restoredLevel: 0,
 }
 
@@ -68,6 +71,7 @@ export async function pullRemoteState(userId: string = GUEST_USER_ID): Promise<P
       createdAt: local?.createdAt ?? nowIso(),
       updatedAt: nowIso(),
     })
+    result.profile = true
   }
 
   // ---- per game progress: the higher level wins -----------------------------
@@ -141,7 +145,11 @@ export async function pullRemoteState(userId: string = GUEST_USER_ID): Promise<P
     result.achievements += 1
   }
 
-  if (result.games > 0 || result.records > 0 || result.achievements > 0) {
+  // Auch das Profil zählt: XP, Spielerlevel und Streak sind genau das, was auf
+  // der Startseite steht. Ohne diese Bedingung blieb dort der alte Stand
+  // stehen, obwohl der Abgleich schon durch war -- man drückte "Jetzt
+  // synchronisieren" und sah dieselbe Zahl wie vorher.
+  if (result.games > 0 || result.records > 0 || result.achievements > 0 || result.profile) {
     window.dispatchEvent(new CustomEvent(DATA_PULLED_EVENT))
   }
   return result
