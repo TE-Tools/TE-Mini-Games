@@ -78,21 +78,7 @@ export function BienenFlowPage() {
     [highest, startLevel],
   )
 
-  const onTapTray = useCallback(
-    (trayIndex: number) => {
-      if (!state || state.phase !== 'play') return
-      const next = tapTray(state, trayIndex)
-      setState(next)
-      if (next.phase === 'won') {
-        void finishWon(next)
-      } else if (next.phase === 'lost') {
-        setPhase('lost')
-      }
-    },
-    [state],
-  )
-
-  async function finishWon(final: BienenState) {
+  const finishWon = useCallback(async (final: BienenState) => {
     const raw = {
       won: true,
       moves: final.moves,
@@ -118,14 +104,26 @@ export function BienenFlowPage() {
       await processAfterResult({
         gameId: 'bienen-flow',
         level: final.level,
-        score: sc,
-        xp,
       })
       void trySyncNow()
     } catch (e) {
       console.error(e)
     }
-  }
+  }, [])
+
+  const onTapTray = useCallback(
+    (trayIndex: number) => {
+      if (!state || state.phase !== 'play') return
+      const next = tapTray(state, trayIndex)
+      setState(next)
+      if (next.phase === 'won') {
+        void finishWon(next)
+      } else if (next.phase === 'lost') {
+        setPhase('lost')
+      }
+    },
+    [state, finishWon],
+  )
 
   const reach = useMemo(() => {
     if (!state) return new Set<number>()
@@ -145,14 +143,14 @@ export function BienenFlowPage() {
       <main className={styles.page}>
         <header className={styles.top}>
           <Link to="/" className={styles.back}>
-            ← Zurück
+            {'\u2190'} Zurück
           </Link>
           <h1 className={styles.title}>
             <span aria-hidden="true">🐝</span> Bienen-Flow
           </h1>
         </header>
         <p className={styles.hint}>
-          Tippe Pollen-Stapel, schicke Bienen aus, räume das Brett. Slotssind begrenzt – plane die
+          Tippe Pollen-Stapel, schicke Bienen aus, räume das Brett. Slots sind begrenzt – plane die
           Reihenfolge. Alle 20 Level wartet ein Tor.
         </p>
         <LevelMap
@@ -175,7 +173,7 @@ export function BienenFlowPage() {
     <main className={styles.page}>
       <header className={styles.top}>
         <button type="button" className={styles.back} onClick={() => setPhase('map')}>
-          ← Karte
+          {'\u2190'} Karte
         </button>
         <h1 className={styles.title}>
           Level {state.level}
@@ -206,7 +204,7 @@ export function BienenFlowPage() {
             key={i}
             className={styles.cell}
             style={{
-              background: c === 0 ? 'transparent' : COLOR_HEX[c] ?? '#888',
+              background: c === 0 ? 'transparent' : (COLOR_HEX[c] ?? '#888'),
               width: cellSize,
               height: cellSize,
               opacity: c === 0 ? 0.15 : reach.has(c) ? 1 : 0.55,
