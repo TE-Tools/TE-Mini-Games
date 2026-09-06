@@ -147,3 +147,113 @@
   font-size: var(--text-xs);
   color: var(--color-text-muted);
 }
+
+/* --------------------------------------------------------- Namensfeld
+
+   Steht ganz oben, weil der Name in jeder Runde und auf jeder Liste
+   auftaucht -- das Gesicht dagegen nur auf der Levelkarte.
+
+   Bis zum 06.09.2026 liess er sich ueberhaupt nicht aendern: Der lokale
+   Name wurde beim ersten Start auf "Gast" gesetzt, und setDisplayName()
+   rief keine einzige Stelle der Oberflaeche auf. Wer im Konto keinen
+   Namen stehen hatte, hiess fuer immer "Gast".
+*/
+
+.nameBlock {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-2xl);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.nameLabel {
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.nameHinweis {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.nameZeile {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.nameEingabe {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--touch-min);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: var(--text-base);
+  font-family: inherit;
+}
+
+.nameEingabe:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.nameKnopf {
+  flex-shrink: 0;
+  min-height: var(--touch-min);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--grad-primary);
+  color: var(--color-primary-text);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.nameKnopf:disabled {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+.nameFehler {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  color: var(--color-danger);
+}
+
+.nameOk {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-success);
+}
+
+.nameZurueck {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  padding: var(--space-2) 0 0;
+  color: var(--color-primary);
+  font-size: var(--text-xs);
+  font-family: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.nameZurueck:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
