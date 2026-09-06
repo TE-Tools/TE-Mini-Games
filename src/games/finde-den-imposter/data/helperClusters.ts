@@ -72,33 +72,33 @@ export const HELPER_CLUSTERS: Record<string, string[][]> = {
     ['Blockbuster', 'Independent', 'Kurzfilm', 'Spielfilm', 'Dreh', 'Kulisse', 'Maske', 'Kostüm'],
   ],
   /**
-   * Musik: Instrumente eng gruppiert, damit Imposter-Hilfen nah am Geheimwort bleiben.
-   * Akkordeon z.B. mit Mundharmonika/Orgel/Keyboard statt Kontrabass.
+   * Musik: Instrumente eng gruppiert (nur Wörter, die in words.ts stehen).
+   * Akkordeon → Mundharmonika / Orgel / Keyboard (nah), nie mehr Kontrabass.
    */
   musik: [
-    // Saiten / Zupfen & Streichen
+    // Saiten
     ['Gitarre', 'E-Gitarre', 'Bass', 'Kontrabass', 'Harfe'],
-    ['Geige', 'Cello', 'Bratsche'],
+    ['Geige', 'Cello'],
     // Tasten
     ['Klavier', 'Flügel', 'Orgel', 'Keyboard'],
-    // Schlagzeug & Perkussion
+    // Schlag / Perkussion
     ['Schlagzeug', 'Xylofon', 'Triangel', 'Tamburin'],
     // Holzblas
-    ['Querflöte', 'Blockflöte', 'Klarinette', 'Saxofon', 'Oboe'],
+    ['Querflöte', 'Blockflöte', 'Klarinette', 'Saxofon'],
     // Blechblas
     ['Trompete', 'Posaune', 'Tuba', 'Waldhorn'],
-    // Freizungen / Quetschkommode-Familie (Akkordeon nah an Mundharmonika)
-    ['Akkordeon', 'Mundharmonika'],
-    // Ensemble & Bühne
+    // Quetschkommode / Freizunge + verwandte Tasteninstrumente
+    ['Akkordeon', 'Mundharmonika', 'Orgel', 'Keyboard'],
+    // Ensemble
     ['Chor', 'Orchester', 'Band', 'Dirigent', 'Blaskapelle'],
-    // Konzert / Event
+    // Event
     ['Konzert', 'Festival', 'Mikrofon'],
-    // Song-Struktur
-    ['Lied', 'Melodie', 'Rhythmus', 'Text', 'Refrain', 'Strophe', 'Noten', 'Takt', 'Ohrwurm'],
+    // Song-Struktur (nur Wörter aus words.ts)
+    ['Melodie', 'Rhythmus', 'Refrain', 'Strophe', 'Noten', 'Takt', 'Ohrwurm'],
     // Genres
     ['Pop', 'Rock', 'Jazz', 'Klassik', 'Hip-Hop', 'Techno', 'Schlager', 'Volksmusik'],
-    // Medium / Gerät
-    ['Radio', 'Plattenspieler', 'Playlist', 'Album', 'Single', 'Streaming', 'CD', 'Schallplatte', 'Kopfhörer'],
+    // Medium
+    ['Radio', 'Plattenspieler'],
   ],
   schule: [
     ['Lehrer', 'Schüler', 'Klasse', 'Schule', 'Unterricht', 'Pause', 'Stundenplan'],
