@@ -17,6 +17,7 @@ import { WortbombePage } from '@/pages/play/WortbombePage'
 import { WerWuerdeEherPage } from '@/pages/play/WerWuerdeEherPage'
 import { SchuetzenopolyPage } from '@/pages/play/SchuetzenopolyPage'
 import { KniffelPage } from '@/pages/play/KniffelPage'
+import { BienenFlowPage } from '@/pages/play/BienenFlowPage'
 import { FamilyPage } from '@/pages/family/FamilyPage'
 import { DailyPage } from '@/pages/daily/DailyPage'
 import { LeaderboardPage } from '@/pages/leaderboard/LeaderboardPage'
@@ -46,8 +47,6 @@ function AuthGate({ children }: { children: ReactNode }) {
       if (session?.user) {
         setPlayMode('account')
         setGate({ status: 'ready', mode: 'account' })
-        // Einmal den Namen aus dem Konto uebernehmen, falls lokal noch
-        // "Gast" steht. Sonst haengt er daran, dass ein Abgleich laeuft.
         void ermittleSpielerName()
         void syncFullNow()
         return
@@ -147,6 +146,7 @@ export function App() {
           <Route path="/play/wer-wuerde-eher" element={<WerWuerdeEherPage />} />
           <Route path="/play/schuetzenopoly" element={<SchuetzenopolyPage />} />
           <Route path="/play/kniffel" element={<KniffelPage />} />
+          <Route path="/play/bienen-flow" element={<BienenFlowPage />} />
           <Route path="/family" element={<FamilyPage />} />
           <Route path="/daily" element={<DailyPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
