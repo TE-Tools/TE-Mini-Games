@@ -40,7 +40,7 @@ export function openMask(board: CellColor[], rows: number, cols: number): boolea
     }
   }
 
-  const dirs = [
+  const dirs: readonly [number, number][] = [
     [-1, 0],
     [1, 0],
     [0, -1],
@@ -71,7 +71,7 @@ export function reachableColors(
 ): Set<CellColor> {
   const open = openMask(board, rows, cols)
   const out = new Set<CellColor>()
-  const dirs = [
+  const dirs: readonly [number, number][] = [
     [-1, 0],
     [1, 0],
     [0, -1],
@@ -116,7 +116,7 @@ function reachableCellIndices(
   color: CellColor,
 ): number[] {
   const open = openMask(board, rows, cols)
-  const dirs = [
+  const dirs: readonly [number, number][] = [
     [-1, 0],
     [1, 0],
     [0, -1],
@@ -167,8 +167,8 @@ export interface TapResult {
 }
 
 function resolveWithWaves(state: BienenState): { state: BienenState; waves: ClearWave[] } {
-  let board = state.board.slice()
-  let slots = state.slots.slice()
+  const board = state.board.slice()
+  const slots = state.slots.slice()
   const waves: ClearWave[] = []
   let guard = 0
   while (guard++ < 200) {
