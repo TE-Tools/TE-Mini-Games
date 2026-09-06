@@ -248,6 +248,12 @@
   --kachel-rand: #a5b4fc;
 }
 
+.tile[data-game='schuetzenopoly'] {
+  /* Dunkelgruen mit Goldrand -- dieselben Farben wie das Spielbrett selbst. */
+  --kachel-flaeche: linear-gradient(160deg, #166534, #0a2515);
+  --kachel-rand: #f0c84a;
+}
+
 .tile[data-tile='daily'] {
   --kachel-flaeche: linear-gradient(160deg, #4338ca, #1e1b4b);
   --kachel-rand: #818cf8;
