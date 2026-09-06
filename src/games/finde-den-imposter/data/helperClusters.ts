@@ -1,5 +1,8 @@
 /**
  * Themen-Cluster für Imposter-Hilfswörter (nur Wörter aus words.ts).
+ *
+ * Nur Wörter, die hier in einer Gruppe stehen, bekommen nahe Nachbarn.
+ * Fehlt ein Wort → Fallback = gesamter Kategorie-Pool (kann weit weg sein).
  */
 
 export const HELPER_CLUSTERS: Record<string, string[][]> = {
@@ -68,14 +71,34 @@ export const HELPER_CLUSTERS: Record<string, string[][]> = {
     ['Netflix', 'Streaming', 'DVD', 'Blu-ray', 'Untertitel', 'Synchron', 'Originalton'],
     ['Blockbuster', 'Independent', 'Kurzfilm', 'Spielfilm', 'Dreh', 'Kulisse', 'Maske', 'Kostüm'],
   ],
+  /**
+   * Musik: Instrumente eng gruppiert, damit Imposter-Hilfen nah am Geheimwort bleiben.
+   * Akkordeon z.B. mit Mundharmonika/Orgel/Keyboard statt Kontrabass.
+   */
   musik: [
-    ['Gitarre', 'Klavier', 'Geige', 'Schlagzeug', 'Bass', 'Flöte', 'Saxophon'],
-    ['Trompete', 'Posaune', 'Klarinette', 'Harfe', 'Cello', 'Bratsche', 'Oboe'],
-    ['Gesang', 'Chor', 'Band', 'Orchester', 'Dirigent', 'Komponist', 'Sänger'],
-    ['Konzert', 'Festival', 'Bühne', 'Mikrofon', 'Verstärker', 'Boxen', 'Mischpult'],
-    ['Lied', 'Melodie', 'Rhythmus', 'Text', 'Refrain', 'Strophe', 'Song'],
-    ['Pop', 'Rock', 'Jazz', 'Klassik', 'Hip-Hop', 'Techno', 'Folk'],
-    ['Playlist', 'Album', 'Single', 'Radio', 'Streaming', 'CD', 'Schallplatte', 'Kopfhörer'],
+    // Saiten / Zupfen & Streichen
+    ['Gitarre', 'E-Gitarre', 'Bass', 'Kontrabass', 'Harfe'],
+    ['Geige', 'Cello', 'Bratsche'],
+    // Tasten
+    ['Klavier', 'Flügel', 'Orgel', 'Keyboard'],
+    // Schlagzeug & Perkussion
+    ['Schlagzeug', 'Xylofon', 'Triangel', 'Tamburin'],
+    // Holzblas
+    ['Querflöte', 'Blockflöte', 'Klarinette', 'Saxofon', 'Oboe'],
+    // Blechblas
+    ['Trompete', 'Posaune', 'Tuba', 'Waldhorn'],
+    // Freizungen / Quetschkommode-Familie (Akkordeon nah an Mundharmonika)
+    ['Akkordeon', 'Mundharmonika'],
+    // Ensemble & Bühne
+    ['Chor', 'Orchester', 'Band', 'Dirigent', 'Blaskapelle'],
+    // Konzert / Event
+    ['Konzert', 'Festival', 'Mikrofon'],
+    // Song-Struktur
+    ['Lied', 'Melodie', 'Rhythmus', 'Text', 'Refrain', 'Strophe', 'Noten', 'Takt', 'Ohrwurm'],
+    // Genres
+    ['Pop', 'Rock', 'Jazz', 'Klassik', 'Hip-Hop', 'Techno', 'Schlager', 'Volksmusik'],
+    // Medium / Gerät
+    ['Radio', 'Plattenspieler', 'Playlist', 'Album', 'Single', 'Streaming', 'CD', 'Schallplatte', 'Kopfhörer'],
   ],
   schule: [
     ['Lehrer', 'Schüler', 'Klasse', 'Schule', 'Unterricht', 'Pause', 'Stundenplan'],
