@@ -257,6 +257,14 @@ export function HomePage() {
           <span aria-hidden="true">☕</span> Spenden über PayPal
         </a>
         <p className={styles.spendeKlein}>Öffnet PayPal in einem neuen Fenster.</p>
+
+        {/* Pflichtangaben. Sie stehen hier unten, wo man sie sucht -- und seit
+            es einen Spenden-Knopf gibt, gehoeren sie ohnehin dazu. */}
+        <p className={styles.rechtliches}>
+          <Link to="/impressum">Impressum</Link>
+          <span aria-hidden="true"> · </span>
+          <Link to="/datenschutz">Datenschutz</Link>
+        </p>
       </footer>
     </main>
   )
