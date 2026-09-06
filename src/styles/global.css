@@ -12,7 +12,15 @@ html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
   height: 100%;
-  color-scheme: dark;
+  /*
+   * Seit dem hellen Design (06.09.2026) ist das Schema hell. Solange hier
+   * "dark" stand, zeichnete der Browser alles, was er selbst faerbt, in
+   * Nachtfarben: aufgeklappte Auswahllisten, Bildlaufleisten -- und die
+   * Systemfarben `Canvas`/`CanvasText`, ueber die die Imposter-Seite ihre
+   * Karten gebaut hatte. Die wurde dadurch fast schwarz, waehrend die
+   * Schrift darauf die dunkle Textfarbe der App behielt.
+   */
+  color-scheme: light;
 }
 
 body {

@@ -18,8 +18,8 @@ export default defineConfig({
         // Muss zur echten Hintergrundfarbe der App passen (--color-bg in
         // src/styles/tokens.css): Android baut daraus seinen Startbildschirm,
         // und ein dunkler Start vor einer cremefarbenen App blitzt haesslich.
-        theme_color: '#0d0a1e',
-        background_color: '#0d0a1e',
+        theme_color: '#f0efe9',
+        background_color: '#f0efe9',
         display: 'standalone',
         orientation: 'portrait-primary',
         start_url: '/',
@@ -89,6 +89,9 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './tests/setup.ts',
+    // Vitest laesst Stylesheets sonst leer. tests/helles-design.test.ts liest
+    // sie aber wirklich -- es sucht nach Resten des alten Nachtdesigns.
+    css: true,
     include: ['src/**/*.{test,spec}.{ts,tsx}', 'tests/**/*.{test,spec}.{ts,tsx}'],
     coverage: {
       provider: 'v8',
