@@ -18,6 +18,7 @@ export type GameId =
   | 'wer-wuerde-eher'
   | 'schuetzenopoly'
   | 'kniffel'
+  | 'bienen-flow'
 
 export interface GameLevelConfig {
   level: number
