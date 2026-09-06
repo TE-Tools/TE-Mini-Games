@@ -139,7 +139,7 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
 
   if (!matchId || !state) {
     return (
-      <main className={shell.page}>
+      <main className={`${shell.page} ${styles.breiteSeite}`}>
         <header className={shell.header}>
           <button type="button" className={shell.back} onClick={onZurueck} aria-label="Zurück">
             ←
@@ -258,7 +258,7 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
 
   if (match.phase === 'lobby') {
     return (
-      <main className={shell.page}>
+      <main className={`${shell.page} ${styles.breiteSeite}`}>
         <header className={shell.header}>
           <button type="button" className={shell.back} onClick={verlassen} aria-label="Zurück">
             ←
@@ -315,7 +315,7 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
     const ich = players.find((p) => p.is_you)
     const gewonnen = tabelle[0]?.is_you ?? false
     return (
-      <main className={shell.page}>
+      <main className={`${shell.page} ${styles.breiteSeite}`}>
         <header className={shell.header}>
           <button type="button" className={shell.back} onClick={verlassen} aria-label="Zurück">
             ←
@@ -352,7 +352,7 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
   }
 
   return (
-    <main className={shell.page}>
+    <main className={`${shell.page} ${styles.breiteSeite}`}>
       <header className={shell.header}>
         <button type="button" className={shell.back} onClick={verlassen} aria-label="Zurück">
           ←
@@ -362,6 +362,8 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
       </header>
 
       <section className={styles.tisch}>
+        {/* Wie im Solospiel: oben bleibt stehen, der Block scrollt. */}
+        <div className={styles.oben}>
         <p className={styles.amZug} aria-live="polite">
           {ichBinDran ? 'Du bist dran' : `${amZugSpieler?.name ?? 'Jemand'} ist dran`}
           <span className={styles.wurfZaehler}>
@@ -399,6 +401,7 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
         )}
 
         {!ichBinDran && <p className={styles.warten}>Warte, bis du dran bist…</p>}
+        </div>
 
         {fehler && (
           <p className={styles.fehler} role="alert">

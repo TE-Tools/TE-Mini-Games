@@ -16,13 +16,23 @@
    * Alle Farben stecken hier, damit ein Umbau nicht wieder durch zwanzig
    * Dateien wandern muss. Das hat sich jetzt zum zweiten Mal ausgezahlt.
    */
-  --color-bg: #f4f5fa;
-  --color-bg-elevated: #ffffff;
-  --color-surface: #eef0f7;
-  --color-border: #e0e4ee;
-  --color-border-strong: #c6cddd;
-  --color-text: #1a1f31;
-  --color-text-muted: #5d6478;
+  /*
+   * Warmer Grundton nach Thomas' Entwurf vom 06.09.2026 (Nachmittag).
+   * Vorher lag ueber allem ein kuehles Blaugrau; die Vorlage zeigt ein
+   * gebrochenes Weiss mit einem Stich ins Sandfarbene. Der Unterschied
+   * klingt klein, macht aber den ganzen Auftritt ruhiger: Auf warmem Grund
+   * wirken die weissen Karten wie Papier, auf kuehlem wie Fenster.
+   *
+   * Die Textfarbe bleibt dasselbe dunkle Blauviolett -- sie traegt den
+   * Kontrast, und ein warmer Text daneben saehe vergilbt aus.
+   */
+  --color-bg: #f0efe9;
+  --color-bg-elevated: #faf9f5;
+  --color-surface: #e9e7dd;
+  --color-border: #e2ded1;
+  --color-border-strong: #c9c4b2;
+  --color-text: #1f2233;
+  --color-text-muted: #66655f;
   --color-primary: #5a3ce0;
   --color-primary-hover: #4a2fc8;
   --color-primary-text: #ffffff;
@@ -44,15 +54,19 @@
   /* Haarlinien und Schleier. Auf dunklem Grund waren das weisse Auflagen --
      auf hellem Grund sind sie unsichtbar, deshalb liegen sie jetzt als
      Tokens hier und sind dunkel. */
-  --hairline: rgb(26 31 49 / 0.09);
-  --hairline-strong: rgb(26 31 49 / 0.16);
-  --schleier: rgb(26 31 49 / 0.04);
+  --hairline: rgb(31 34 51 / 0.09);
+  --hairline-strong: rgb(31 34 51 / 0.16);
+  --schleier: rgb(31 34 51 / 0.04);
+
+  /* Das dunkle Navy der Vorlage: aktiver Reiter, Knoepfe auf den Karten. */
+  --color-navy: #262a3d;
+  --color-navy-hover: #343954;
 
   /* Wiederkehrende Verlaeufe -- frueher stand jeder davon zehnmal im Code. */
-  --grad-surface: linear-gradient(180deg, #ffffff, #f2f4fa);
-  --grad-surface-hover: linear-gradient(180deg, #ffffff, #e9edf7);
+  --grad-surface: linear-gradient(180deg, #ffffff, #f6f4ec);
+  --grad-surface-hover: linear-gradient(180deg, #ffffff, #efece0);
   --grad-primary: linear-gradient(180deg, #6d4ae8, #5227cf);
-  --grad-primary-soft: linear-gradient(180deg, #ffffff, #f3f1fd);
+  --grad-primary-soft: linear-gradient(180deg, #ffffff, #f2f0fb);
   --grad-gold: linear-gradient(180deg, #e8b93a, #c99512 55%, #a67c0a);
   --grad-danger-soft: linear-gradient(180deg, #fff5f7, #ffe9ee);
 

@@ -14,6 +14,7 @@
 import { supabase, isSupabaseConfigured } from '@/database/supabase'
 import { getCurrentUser } from '@/auth/authService'
 import { db, GUEST_USER_ID, type LocalGameProgress, type LocalPersonalRecord } from '@/offline/db'
+import { GAST_NAME } from '@/offline/profile'
 import { levelFromTotalXp } from '@/progression/xp'
 
 /** Fired after a pull brought new data down, so open pages can re-read. */
@@ -60,9 +61,28 @@ export async function pullRemoteState(userId: string = GUEST_USER_ID): Promise<P
   if (profile) {
     const local = await db.profiles.get(userId)
     const totalXp = Math.max(local?.totalXp ?? 0, (profile.total_xp as number | null) ?? 0)
+
+    /*
+     * Der Name vom Konto muss durchkommen.
+     *
+     * Vorher stand hier `local?.displayName ?? profile.display_name`, und
+     * damit gewann der lokale Name immer -- er existiert ja immer, weil
+     * getOrCreateGuestProfile() beim ersten Start "Gast" anlegt. Wer sich
+     * anmeldete, hiess deshalb weiter "Gast", auch im Spiel.
+     *
+     * "Gast" ist der unangetastete Vorgabewert und zaehlt darum als
+     * "noch nicht gesetzt". Einen selbst gewaehlten Namen ueberschreibt
+     * der Abgleich weiterhin nicht -- der lokale hat dann Vorrang.
+     */
+    const lokalerName = local?.displayName?.trim()
+    const kontoName = (profile.display_name as string | null)?.trim()
+    const nameSelbstGesetzt = Boolean(lokalerName) && lokalerName !== GAST_NAME
+
     await db.profiles.put({
       id: userId,
-      displayName: local?.displayName ?? (profile.display_name as string | null) ?? 'Gast',
+      displayName: nameSelbstGesetzt
+        ? (lokalerName as string)
+        : (kontoName || lokalerName || GAST_NAME),
       avatar: local?.avatar ?? (profile.avatar as string | null) ?? null,
       totalXp,
       playerLevel: Math.max(levelFromTotalXp(totalXp), (profile.player_level as number) ?? 1),
