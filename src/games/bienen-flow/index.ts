@@ -2,13 +2,23 @@ export { bienenFlowGame } from './definition'
 export { createBienenLevel } from './level'
 export {
   createMatch,
-  tapTray,
-  tapTrayDetailed,
-  remainingCells,
+  tapCell,
+  canTap,
+  reachableMask,
+  reachableCells,
   reachableColors,
+  openMask,
+  remainingCells,
+  usedSlots,
   isWon,
   isLost,
 } from './engine'
-export type { ClearWave, TapResult } from './engine'
-export type { BienenLevel, BienenState, BienenPhase, CellColor } from './types'
-export { BIENEN_MAX_LEVEL, COLOR_HEX } from './types'
+export type { TapResult } from './engine'
+export {
+  BIENEN_MAX_LEVEL,
+  MERGE_COUNT,
+  COLOR_HEX,
+  type BienenLevel,
+  type BienenState,
+  type CellColor,
+} from './types'

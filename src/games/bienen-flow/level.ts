@@ -4,14 +4,28 @@
  * Wellen innerhalb eines Segments (pos 0…19):
  *   0–6   sehr leicht
  *   7–13  etwas schwerer
- *   14–18 wieder leichter
+ *   14–18 wieder leichter (der „Dip", damit es nicht nur bergauf geht)
  *   19    Tor – deutlich schwerer
  *
  * Über die Segmente hinweg steigt die Grundschwierigkeit.
+ *
+ * Zwei Regeln, ohne die das Spiel nicht aufgeht (06.09.2026):
+ *
+ * 1. Jede Farbe kommt in einem Vielfachen von drei vor. Sonst bliebe am Ende
+ *    ein Rest übrig, der sich nie zu einem Dreier ergänzen lässt -- das Level
+ *    wäre unlösbar, und zwar erst nach fünf Minuten sichtbar.
+ * 2. Die Pollen liegen als Haufen von unten aufgeschichtet. Nur die
+ *    Oberfläche liegt frei, deshalb ist die Reihenfolge eine Entscheidung.
+ *
+ * Die Schwierigkeit steckt in drei Schrauben: wie viele Farben gleichzeitig
+ * im Spiel sind (jede angefangene belegt einen Platz), wie viele Plätze die
+ * Leiste hat, und wie weit die Dreier auseinanderliegen. Die Zahlen unten
+ * sind nicht geraten, sondern über einen Löser eingestellt (siehe
+ * tests/bienen-flow.test.ts).
  */
 
 import { SEGMENT_SIZE, isSegmentGate, segmentIndexForLevel } from '@/progression/zones'
-import { BIENEN_MAX_LEVEL, type BienenLevel, type CellColor } from './types'
+import { BIENEN_MAX_LEVEL, MERGE_COUNT, type BienenLevel, type CellColor } from './types'
 
 function mulberry(seed: number): () => number {
   let t = seed >>> 0
@@ -27,7 +41,7 @@ function clamp(n: number, a: number, b: number): number {
   return Math.max(a, Math.min(b, n))
 }
 
-/** 0 = easy wave, 1 = mid, 0.4 = dip, 1.3 = gate boost inside segment */
+/** 0 = ganz leicht … 1.35 = Tor. */
 function waveFactor(posInSeg: number): number {
   if (posInSeg >= 19) return 1.35
   if (posInSeg <= 6) return 0.35 + (posInSeg / 6) * 0.25
@@ -43,86 +57,75 @@ export function createBienenLevel(level: number): BienenLevel {
   const gate = isSegmentGate(L)
   const rng = mulberry(L * 9973 + 42)
 
-  const baseColors = clamp(2 + Math.floor((segment - 1) * 0.9), 2, 6)
-  const colorCount = clamp(Math.round(baseColors + wave * 1.2 + (gate ? 1 : 0)), 2, 8)
+  // Farben: die eigentliche Schraube. Mehr Farben als Plätze heißt, dass man
+  // sich verzetteln kann -- weniger heißt, dass fast alles aufgeht.
+  const maxFarben = gate ? 8 : segment >= 3 ? 7 : 6
+  const colorCount = clamp(Math.round(2.4 + segment * 0.75 + wave * 1.6 + (gate ? 1 : 0)), 3, maxFarben)
 
-  const baseRows = 5 + segment
-  const baseCols = 5 + Math.floor(segment / 2)
-  const rows = clamp(Math.round(baseRows + wave * 1.5), 5, 12)
-  const cols = clamp(Math.round(baseCols + wave), 5, 10)
+  // Plätze: sieben ist die bequeme Leiste, am Tor wird sie enger.
+  const slotCount = gate ? 5 : segment >= 4 ? 6 : 7
 
-  const slotCount = gate ? 4 : 5
+  const rows = clamp(Math.round(5 + segment * 0.8 + wave * 1.5), 5, 12)
+  const cols = clamp(Math.round(5 + segment * 0.5 + wave), 5, 9)
+
+  // Wie voll der Haufen ist -- bestimmt vor allem die Länge einer Partie.
+  const fillRatio = clamp(0.5 + wave * 0.18 + segment * 0.03, 0.45, 0.85)
+  // Auf ganze Dreier abrunden, aber mindestens einer je Farbe.
+  const tiles = Math.floor(rows * cols * fillRatio)
+  const triples = Math.max(colorCount, Math.floor(tiles / MERGE_COUNT))
+
+  // Jede Farbe bekommt mindestens einen Dreier, der Rest wird verteilt.
+  const proFarbe = new Array<number>(colorCount).fill(1)
+  for (let t = colorCount; t < triples; t++) {
+    proFarbe[Math.floor(rng() * colorCount)]! += 1
+  }
+
+  const pollen: CellColor[] = []
+  for (let c = 0; c < colorCount; c++) {
+    for (let k = 0; k < proFarbe[c]! * MERGE_COUNT; k++) pollen.push((c + 1) as CellColor)
+  }
+
+  // Die Dreier liegen zunächst beieinander -- so ist ein Level leicht. Je
+  // schwerer, desto mehr wird gemischt, bis sie über den ganzen Haufen
+  // verstreut sind und man Plätze belegen muss, ohne sie gleich zu schließen.
+  const bloecke: CellColor[][] = []
+  for (let i = 0; i < pollen.length; i += MERGE_COUNT) bloecke.push(pollen.slice(i, i + MERGE_COUNT))
+  for (let i = bloecke.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1))
+    const tmp = bloecke[i]!
+    bloecke[i] = bloecke[j]!
+    bloecke[j] = tmp
+  }
+  const folge = bloecke.flat()
+  const streuung = Math.round(folge.length * clamp(wave * 0.85, 0.1, 1))
+  for (let s = 0; s < streuung; s++) {
+    const a = Math.floor(rng() * folge.length)
+    const b = Math.floor(rng() * folge.length)
+    const tmp = folge[a]!
+    folge[a] = folge[b]!
+    folge[b] = tmp
+  }
+
+  // Der Haufen: von unten aufgeschichtet, mit ausgefranster Oberkante.
+  const plaetze: number[] = []
+  for (let r = rows - 1; r >= 0; r--) {
+    for (let c = 0; c < cols; c++) plaetze.push(r * cols + c)
+  }
+  for (let i = plaetze.length - 1; i > 0; i--) {
+    if (rng() < 0.3) {
+      const j = Math.max(0, i - 1 - Math.floor(rng() * cols))
+      const tmp = plaetze[i]!
+      plaetze[i] = plaetze[j]!
+      plaetze[j] = tmp
+    }
+  }
 
   const board: CellColor[] = new Array(rows * cols).fill(0)
-  const fillRatio = clamp(0.45 + wave * 0.25 + segment * 0.04, 0.4, 0.85)
-  const cellsToFill = Math.floor(rows * cols * fillRatio)
-
-  const weights = Array.from({ length: colorCount }, (_, i) => colorCount - i)
-  const weightSum = weights.reduce((a, b) => a + b, 0)
-  function pickColor(): CellColor {
-    let r = rng() * weightSum
-    for (let i = 0; i < colorCount; i++) {
-      r -= weights[i]!
-      if (r <= 0) return i + 1
-    }
-    return colorCount
+  for (let i = 0; i < folge.length && i < plaetze.length; i++) {
+    board[plaetze[i]!] = folge[i]!
   }
 
-  let filled = 0
-  const order: number[] = []
-  for (let r = rows - 1; r >= 0; r--) {
-    for (let c = 0; c < cols; c++) order.push(r * cols + c)
-  }
-  for (let i = order.length - 1; i > 0; i--) {
-    if (rng() < 0.35) {
-      const j = Math.floor(rng() * (i + 1))
-      const tmp = order[i]!
-      order[i] = order[j]!
-      order[j] = tmp
-    }
-  }
-  for (const i of order) {
-    if (filled >= cellsToFill) break
-    board[i] = pickColor()
-    filled++
-  }
+  const label = gate ? 'Tor' : wave >= 0.9 ? 'Knifflig' : wave >= 0.6 ? 'Mittel' : 'Locker'
 
-  const present = new Set<CellColor>()
-  for (const c of board) if (c > 0) present.add(c)
-  const tray: CellColor[] = []
-  const copies = gate ? 3 : 2
-  for (const c of present) {
-    for (let k = 0; k < copies; k++) tray.push(c)
-  }
-  const extras = Math.floor(wave * 2) + (gate ? 2 : 0)
-  for (let e = 0; e < extras; e++) {
-    const list = [...present]
-    tray.push(list[Math.floor(rng() * list.length)]!)
-  }
-  for (let i = tray.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1))
-    const tmp = tray[i]!
-    tray[i] = tray[j]!
-    tray[j] = tmp
-  }
-
-  const label = gate
-    ? 'Tor'
-    : wave >= 0.9
-      ? 'Knifflig'
-      : wave >= 0.6
-        ? 'Mittel'
-        : 'Locker'
-
-  return {
-    level: L,
-    rows,
-    cols,
-    board,
-    tray,
-    slotCount,
-    colorCount,
-    isGate: gate,
-    label,
-  }
+  return { level: L, rows, cols, board, slotCount, colorCount, isGate: gate, label }
 }

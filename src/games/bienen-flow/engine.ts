@@ -1,213 +1,200 @@
 /**
- * Bienen-Flow – reine Spiellogik.
+ * Bienen-Flow – reine Spiellogik (kein React, kein DOM).
  *
- * - Brett: farbige Zellen, 0 = leer
- * - Tray antippen → Farbe in freien Slot
- * - Bienen räumen erreichbare Zellen der Slot-Farben
- * - Events für die Animationsschicht (Zellen in Räum-Reihenfolge)
+ * Ablauf (06.09.2026, nach dem Umbau auf die Mechanik des Originals):
+ *   1. Auf dem Brett liegen Pollen. Antippen darf man nur, was frei liegt --
+ *      die Oberfläche des Haufens, nicht das, was darunter steckt.
+ *   2. Eine Biene trägt genau diesen einen Pollen in die Wabenleiste.
+ *   3. Drei gleiche Farben in der Leiste verschmelzen zu Honig und geben
+ *      ihre Plätze wieder frei.
+ *   4. Volle Leiste ohne Dreier: verloren. Leeres Brett: gewonnen.
+ *
+ * Die Spannung kommt allein aus der Leiste: Jede Farbe, die man anfängt und
+ * nicht zu dritt bekommt, blockiert einen Platz bis zum Schluss.
  */
 
-import type { BienenLevel, BienenState, CellColor } from './types'
+import { MERGE_COUNT, type BienenLevel, type BienenState, type CellColor } from './types'
 
 function idx(row: number, col: number, cols: number): number {
   return row * cols + col
 }
 
+const DIRS: readonly [number, number][] = [
+  [-1, 0],
+  [1, 0],
+  [0, -1],
+  [0, 1],
+]
+
+/**
+ * Leere Felder, die mit dem Rand zusammenhängen -- also Luft, durch die eine
+ * Biene an einen Pollen herankommt. Eine eingeschlossene Lücke mitten im
+ * Haufen zählt nicht.
+ */
 export function openMask(board: CellColor[], rows: number, cols: number): boolean[] {
-  const open = new Array(board.length).fill(false)
+  const open: boolean[] = new Array(board.length).fill(false)
   const q: number[] = []
-  for (let c = 0; c < cols; c++) {
-    const i = idx(0, c, cols)
-    if (board[i] === 0) {
-      open[i] = true
-      q.push(i)
-    }
-  }
-  for (let r = 0; r < rows; r++) {
-    for (const c of [0, cols - 1]) {
-      const i = idx(r, c, cols)
-      if (board[i] === 0 && !open[i]) {
-        open[i] = true
-        q.push(i)
-      }
-    }
-  }
-  for (let c = 0; c < cols; c++) {
-    const i = idx(rows - 1, c, cols)
+
+  const start = (i: number) => {
     if (board[i] === 0 && !open[i]) {
       open[i] = true
       q.push(i)
     }
   }
+  for (let c = 0; c < cols; c++) {
+    start(idx(0, c, cols))
+    start(idx(rows - 1, c, cols))
+  }
+  for (let r = 0; r < rows; r++) {
+    start(idx(r, 0, cols))
+    start(idx(r, cols - 1, cols))
+  }
 
-  const dirs: readonly [number, number][] = [
-    [-1, 0],
-    [1, 0],
-    [0, -1],
-    [0, 1],
-  ]
   while (q.length) {
     const i = q.pop()!
     const r = Math.floor(i / cols)
     const c = i % cols
-    for (const [dr, dc] of dirs) {
+    for (const [dr, dc] of DIRS) {
       const nr = r + dr
       const nc = c + dc
       if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue
-      const ni = idx(nr, nc, cols)
-      if (board[ni] === 0 && !open[ni]) {
-        open[ni] = true
-        q.push(ni)
-      }
+      start(idx(nr, nc, cols))
     }
   }
   return open
 }
 
+/**
+ * Welche Pollen frei liegen: alles, was an offene Luft grenzt oder in der
+ * obersten Reihe liegt. Der Haufen wird also von oben und von den Lücken her
+ * abgetragen -- deshalb ist die Reihenfolge überhaupt eine Entscheidung.
+ */
+export function reachableMask(board: CellColor[], rows: number, cols: number): boolean[] {
+  const open = openMask(board, rows, cols)
+  const frei: boolean[] = new Array(board.length).fill(false)
+  for (let i = 0; i < board.length; i++) {
+    if (board[i] === 0) continue
+    const r = Math.floor(i / cols)
+    const c = i % cols
+    if (r === 0) {
+      frei[i] = true
+      continue
+    }
+    for (const [dr, dc] of DIRS) {
+      const nr = r + dr
+      const nc = c + dc
+      if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue
+      if (open[idx(nr, nc, cols)]) {
+        frei[i] = true
+        break
+      }
+    }
+  }
+  return frei
+}
+
+/** Farben, die gerade frei liegen -- für das Ausgrauen in der Anzeige. */
 export function reachableColors(
   board: CellColor[],
   rows: number,
   cols: number,
 ): Set<CellColor> {
-  const open = openMask(board, rows, cols)
+  const frei = reachableMask(board, rows, cols)
   const out = new Set<CellColor>()
-  const dirs: readonly [number, number][] = [
-    [-1, 0],
-    [1, 0],
-    [0, -1],
-    [0, 1],
-  ]
-  for (let i = 0; i < board.length; i++) {
-    const color = board[i]!
-    if (color === 0) continue
-    const r = Math.floor(i / cols)
-    const c = i % cols
-    if (r === 0) {
-      out.add(color)
-      continue
-    }
-    for (const [dr, dc] of dirs) {
-      const nr = r + dr
-      const nc = c + dc
-      if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) {
-        if (nr < 0) out.add(color)
-        continue
-      }
-      if (open[idx(nr, nc, cols)]) {
-        out.add(color)
-        break
-      }
-    }
-  }
+  for (let i = 0; i < board.length; i++) if (frei[i]) out.add(board[i]!)
   return out
 }
 
-function countColor(board: CellColor[], color: CellColor): number {
+/** Indizes aller frei liegenden Pollen (oben→unten, links→rechts). */
+export function reachableCells(state: BienenState): number[] {
+  const frei = reachableMask(state.board, state.rows, state.cols)
+  const out: number[] = []
+  for (let i = 0; i < frei.length; i++) if (frei[i]) out.push(i)
+  return out
+}
+
+export function canTap(state: BienenState, cellIndex: number): boolean {
+  if (state.phase !== 'play') return false
+  if (cellIndex < 0 || cellIndex >= state.board.length) return false
+  if (state.board[cellIndex] === 0) return false
+  if (belegteSlots(state.slots) >= state.slotCount) return false
+  return reachableMask(state.board, state.rows, state.cols)[cellIndex] === true
+}
+
+function belegteSlots(slots: (CellColor | null)[]): number {
   let n = 0
-  for (const c of board) if (c === color) n++
+  for (const s of slots) if (s != null) n++
   return n
 }
 
-/** Indices der erreichbaren Zellen einer Farbe (oben→unten, links→rechts). */
-function reachableCellIndices(
-  board: CellColor[],
-  rows: number,
-  cols: number,
-  color: CellColor,
-): number[] {
-  const open = openMask(board, rows, cols)
-  const dirs: readonly [number, number][] = [
-    [-1, 0],
-    [1, 0],
-    [0, -1],
-    [0, 1],
-  ]
-  const found: number[] = []
-  for (let i = 0; i < board.length; i++) {
-    if (board[i] !== color) continue
-    const r = Math.floor(i / cols)
-    const c = i % cols
-    let ok = r === 0
-    if (!ok) {
-      for (const [dr, dc] of dirs) {
-        const nr = r + dr
-        const nc = c + dc
-        if (nr < 0) {
-          ok = true
-          break
-        }
-        if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue
-        if (open[idx(nr, nc, cols)]) {
-          ok = true
-          break
-        }
-      }
-    }
-    if (ok) found.push(i)
-  }
-  return found
-}
-
-/** Ein Räum-Schritt für die Animation. */
-export interface ClearWave {
-  color: CellColor
-  /** Slot-Index, der diese Farbe hält */
-  slotIndex: number
-  /** Zellen-Indizes (board flat), die in diesem Schritt verschwinden */
-  cells: number[]
-}
-
+/** Ein Zug für die Animationsschicht. */
 export interface TapResult {
   state: BienenState
-  /** Wellen in der Reihenfolge, in der Bienen arbeiten */
-  waves: ClearWave[]
-  /** Slot, in den die Tray-Farbe gelegt wurde */
-  deployedSlot: number
-  deployedColor: CellColor
+  /** Der Flug: von dieser Zelle auf diesen Platz. */
+  flight: { cell: number; slot: number; color: CellColor }
+  /** Entstand ein Dreier, dann diese Plätze -- sonst null. */
+  merge: { color: CellColor; slots: number[] } | null
 }
 
-function resolveWithWaves(state: BienenState): { state: BienenState; waves: ClearWave[] } {
+/**
+ * Pollen einsortieren. Gleiche Farben liegen in der Leiste beieinander,
+ * damit man den Dreier kommen sieht; alles Belegte rutscht nach links.
+ */
+function einsortieren(
+  slots: (CellColor | null)[],
+  color: CellColor,
+  slotCount: number,
+): { slots: (CellColor | null)[]; position: number } {
+  const tiles = slots.filter((s): s is CellColor => s != null)
+  let pos = tiles.length
+  const letzte = tiles.lastIndexOf(color)
+  if (letzte >= 0) pos = letzte + 1
+  tiles.splice(pos, 0, color)
+  const neu: (CellColor | null)[] = Array.from({ length: slotCount }, (_, i) => tiles[i] ?? null)
+  return { slots: neu, position: pos }
+}
+
+/** Pollen antippen – liefert Endzustand, Flug und den Dreier, falls einer fällt. */
+export function tapCell(state: BienenState, cellIndex: number): TapResult | null {
+  if (!canTap(state, cellIndex)) return null
+  const color = state.board[cellIndex]!
+
   const board = state.board.slice()
-  const slots = state.slots.slice()
-  const waves: ClearWave[] = []
-  let guard = 0
-  while (guard++ < 200) {
-    const reach = reachableColors(board, state.rows, state.cols)
-    let any = false
-    for (let s = 0; s < slots.length; s++) {
-      const color = slots[s]
-      if (color == null) continue
-      if (!reach.has(color)) continue
-      const cells = reachableCellIndices(board, state.rows, state.cols, color)
-      if (cells.length === 0) continue
-      for (const i of cells) board[i] = 0
-      waves.push({ color, slotIndex: s, cells })
-      any = true
-    }
-    for (let s = 0; s < slots.length; s++) {
-      const color = slots[s]
-      if (color != null && countColor(board, color) === 0) {
-        slots[s] = null
-      }
-    }
-    if (!any) break
+  board[cellIndex] = 0
+
+  const { slots, position } = einsortieren(state.slots, color, state.slotCount)
+
+  // Drei gleiche verschmelzen. Es kann pro Zug nur einer entstehen -- es
+  // kommt ja nur ein Pollen dazu.
+  const gleiche: number[] = []
+  for (let i = 0; i < slots.length; i++) if (slots[i] === color) gleiche.push(i)
+
+  let merge: TapResult['merge'] = null
+  let nachMerge = slots
+  if (gleiche.length >= MERGE_COUNT) {
+    const weg = new Set(gleiche.slice(0, MERGE_COUNT))
+    const rest = slots.filter((s, i) => s != null && !weg.has(i)) as CellColor[]
+    nachMerge = Array.from({ length: state.slotCount }, (_, i) => rest[i] ?? null)
+    merge = { color, slots: gleiche.slice(0, MERGE_COUNT) }
   }
 
-  const empty = board.every((c) => c === 0)
-  if (empty) {
-    return { state: { ...state, board, slots, phase: 'won' }, waves }
-  }
+  const leer = board.every((c) => c === 0)
+  const belegt = belegteSlots(nachMerge)
+  const phase: BienenState['phase'] =
+    leer && belegt === 0 ? 'won' : belegt >= state.slotCount ? 'lost' : 'play'
 
-  const free = slots.some((s) => s == null)
-  if (!free) {
-    const reach = reachableColors(board, state.rows, state.cols)
-    const anyUseful = slots.some((c) => c != null && reach.has(c))
-    if (!anyUseful) {
-      return { state: { ...state, board, slots, phase: 'lost' }, waves }
-    }
+  return {
+    state: {
+      ...state,
+      board,
+      slots: nachMerge,
+      moves: state.moves + 1,
+      peakSlots: Math.max(state.peakSlots, belegt),
+      phase,
+    },
+    flight: { cell: cellIndex, slot: position, color },
+    merge,
   }
-
-  return { state: { ...state, board, slots, phase: 'play' }, waves }
 }
 
 export function createMatch(level: BienenLevel): BienenState {
@@ -216,50 +203,21 @@ export function createMatch(level: BienenLevel): BienenState {
     rows: level.rows,
     cols: level.cols,
     board: level.board.slice(),
-    tray: level.tray.slice(),
     slots: Array.from({ length: level.slotCount }, () => null),
     slotCount: level.slotCount,
     colorCount: level.colorCount,
     phase: 'play',
     moves: 0,
+    peakSlots: 0,
   }
-}
-
-/** Tray antippen – liefert Endzustand + Animationswellen. */
-export function tapTrayDetailed(state: BienenState, trayIndex: number): TapResult | null {
-  if (state.phase !== 'play') return null
-  if (trayIndex < 0 || trayIndex >= state.tray.length) return null
-  const freeIdx = state.slots.findIndex((s) => s == null)
-  if (freeIdx < 0) return null
-
-  const color = state.tray[trayIndex]!
-  const tray = state.tray.slice()
-  tray.splice(trayIndex, 1)
-  const slots = state.slots.slice()
-  slots[freeIdx] = color
-
-  const mid: BienenState = {
-    ...state,
-    tray,
-    slots,
-    moves: state.moves + 1,
-  }
-  const { state: final, waves } = resolveWithWaves(mid)
-  return {
-    state: final,
-    waves,
-    deployedSlot: freeIdx,
-    deployedColor: color,
-  }
-}
-
-/** Kompatibel: nur Zustand. */
-export function tapTray(state: BienenState, trayIndex: number): BienenState {
-  return tapTrayDetailed(state, trayIndex)?.state ?? state
 }
 
 export function remainingCells(state: BienenState): number {
   return state.board.reduce((n, c) => n + (c === 0 ? 0 : 1), 0)
+}
+
+export function usedSlots(state: BienenState): number {
+  return belegteSlots(state.slots)
 }
 
 export function isWon(state: BienenState): boolean {
