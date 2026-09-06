@@ -106,11 +106,13 @@ export function createBienenLevel(level: number): BienenLevel {
     tray[j] = tmp
   }
 
-  let label = 'Locker'
-  if (gate) label = 'Tor'
-  else if (wave >= 0.9) label = 'Knifflig'
-  else if (wave >= 0.6) label = 'Mittel'
-  else label = 'Locker'
+  const label = gate
+    ? 'Tor'
+    : wave >= 0.9
+      ? 'Knifflig'
+      : wave >= 0.6
+        ? 'Mittel'
+        : 'Locker'
 
   return {
     level: L,
