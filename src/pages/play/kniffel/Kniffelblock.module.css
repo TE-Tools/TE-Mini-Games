@@ -1,0 +1,168 @@
+/* Der Block. Die Namensspalte bleibt beim seitlichen Scrollen stehen --
+   ohne sie weiß man nach zwei Spalten nicht mehr, welche Zeile man liest. */
+
+.huelle {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  box-shadow: var(--shadow-sm);
+  -webkit-overflow-scrolling: touch;
+}
+
+.block {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--text-sm);
+}
+
+.ecke,
+.feldName,
+.summeName {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg-elevated);
+  border-bottom: 1px solid var(--color-border);
+  font-weight: 700;
+  color: var(--color-text);
+  white-space: nowrap;
+  /* Kante zum scrollenden Teil, damit man sieht, dass es weitergeht. */
+  box-shadow: 1px 0 0 var(--color-border);
+}
+
+.ecke {
+  z-index: 3;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.kurz {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.kopf {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-align: center;
+  min-width: 4.4rem;
+  max-width: 6rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kopfAmZug {
+  color: var(--color-primary);
+  font-weight: 800;
+  background: var(--grad-primary-soft);
+  border-bottom: 2px solid var(--color-primary);
+}
+
+.wert,
+.gestrichen,
+.frei,
+.summeWert,
+.gesamtWert {
+  padding: var(--space-2);
+  text-align: center;
+  border-bottom: 1px solid var(--color-border);
+  font-variant-numeric: tabular-nums;
+}
+
+.wert {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.gestrichen {
+  color: var(--color-text-muted);
+}
+
+.frei {
+  padding: 3px;
+}
+
+/* Der Vorschlag ist ein Knopf: antippen trägt ein. Blass, damit er nicht
+   wie eine schon eingetragene Zahl aussieht. */
+.vorschlag,
+.vorschlagNull {
+  width: 100%;
+  min-height: 34px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--color-border-strong);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.vorschlag {
+  background: color-mix(in srgb, var(--color-primary) 10%, #ffffff);
+  border-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.vorschlag:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-primary) 20%, #ffffff);
+}
+
+.vorschlagNull {
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.vorschlag:disabled,
+.vorschlagNull:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.summeZeile,
+.bonusZeile {
+  background: var(--color-surface);
+}
+
+.summeZeile .summeName,
+.bonusZeile .summeName {
+  background: var(--color-surface);
+}
+
+.summeWert {
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.bonusDa {
+  color: var(--color-success);
+}
+
+.bonusFehlt {
+  font-size: var(--text-xs);
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.gesamtZeile .summeName,
+.gesamtWert {
+  background: var(--grad-gold);
+  color: #24180a;
+  font-weight: 800;
+  font-size: var(--text-base);
+  border-bottom: none;
+}

@@ -34,8 +34,13 @@ die Levelanzeige. Nimm, was ihr wirklich spielt:
 | … dazu die Modi Leer, Nur Kategorie, Tempo, Chaos | **+ 06** | 9 KB |
 | … dazu Duell online und eigene Wortlisten | **+ 10 + 11** | 20 KB |
 | „Wer bin ich?" online | **01–05 + 07** | 60 KB |
+| „Kniffel" online | **13 + 14** | 17 KB |
 
-Alles zusammen sind es 106 KB.
+Alles zusammen sind es 123 KB.
+
+**„Kniffel" online braucht sonst nichts.** Es bringt seine eigenen Tabellen
+mit und teilt sich mit keinem anderen Spiel etwas — die beiden Stücke laufen
+auch auf einer Datenbank, auf der sonst nichts von hier eingespielt ist.
 
 **Warum „Wer bin ich?" die Imposter-Stücke braucht:** Es holt Kategorien und
 Wörter aus denselben Tabellen (`fdi_categories`, `fdi_words`) — den Wortschatz

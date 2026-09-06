@@ -216,6 +216,13 @@ export function HomePage() {
           <span className={styles.tileName}>Schützenopoly</span>
         </Link>
 
+        <Link to="/play/kniffel" className={styles.tile} data-game="kniffel">
+          <span className={styles.tileIcon} aria-hidden="true">
+            🎲
+          </span>
+          <span className={styles.tileName}>Kniffel</span>
+        </Link>
+
         <Link to="/daily" className={styles.tile} data-tile="daily">
           <span className={styles.tileIcon} aria-hidden="true">
             📅

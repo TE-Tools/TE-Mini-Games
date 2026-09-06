@@ -16,6 +16,7 @@ import { ScharadePage } from '@/pages/play/ScharadePage'
 import { WortbombePage } from '@/pages/play/WortbombePage'
 import { WerWuerdeEherPage } from '@/pages/play/WerWuerdeEherPage'
 import { SchuetzenopolyPage } from '@/pages/play/SchuetzenopolyPage'
+import { KniffelPage } from '@/pages/play/KniffelPage'
 import { FamilyPage } from '@/pages/family/FamilyPage'
 import { DailyPage } from '@/pages/daily/DailyPage'
 import { LeaderboardPage } from '@/pages/leaderboard/LeaderboardPage'
@@ -140,6 +141,7 @@ export function App() {
           <Route path="/play/wortbombe" element={<WortbombePage />} />
           <Route path="/play/wer-wuerde-eher" element={<WerWuerdeEherPage />} />
           <Route path="/play/schuetzenopoly" element={<SchuetzenopolyPage />} />
+          <Route path="/play/kniffel" element={<KniffelPage />} />
           <Route path="/family" element={<FamilyPage />} />
           <Route path="/daily" element={<DailyPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />

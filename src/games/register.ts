@@ -11,6 +11,7 @@ import { scharadeGame } from './scharade'
 import { wortbombeGame } from './wortbombe'
 import { werWuerdeEherGame } from './wer-wuerde-eher'
 import { schuetzenopolyGame } from './schuetzenopoly'
+import { kniffelGame } from './kniffel'
 
 /** Register all built-in games. Call once at app startup. */
 export function registerAllGames(): void {
@@ -26,4 +27,5 @@ export function registerAllGames(): void {
   registerGame(wortbombeGame)
   registerGame(werWuerdeEherGame)
   registerGame(schuetzenopolyGame)
+  registerGame(kniffelGame)
 }
