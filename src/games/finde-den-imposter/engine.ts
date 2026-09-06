@@ -21,7 +21,7 @@ import type {
   ImposterPhase,
   ImposterRoundConfig,
 } from './types'
-import { defaultImposterCount, rulesOf, CHAOS_RULES, modeOf } from './modes'
+import { defaultImposterCount, rulesOf } from './modes'
 import { categoryLabel } from './data/categories'
 import { pickSecretAndHelper } from './pickWord'
 import { wordsForCategory } from './data/words'
@@ -46,10 +46,6 @@ function shuffleInPlace<T>(arr: T[], rng: () => number): void {
   }
 }
 
-/**
- * Geheimes Wort ziehen und dazu genau EIN Hilfswort für die Imposter.
- * Bevorzugt dasselbe Themen-Cluster (nah am Geheimwort).
- */
 function pickWord(
   pool: string[],
   rng: () => number,
@@ -76,11 +72,6 @@ function normalizeNames(names: string[]): string[] {
   return cleaned
 }
 
-/**
- * Rollen verteilen. Im Duell zuerst in zwei Teams aufteilen und dann in jedem
- * Team genau einen Imposter ziehen -- sonst säßen beide in derselben Hälfte
- * und ein Team hätte nichts zu suchen.
- */
 function buildPlayers(
   names: string[],
   config: ImposterRoundConfig,
@@ -99,9 +90,7 @@ function buildPlayers(
   const order = players.map((_, i) => i)
   shuffleInPlace(order, rng)
 
-  const mode = modeOf(config.mode)
-  if (mode === 'duel') {
-    // Zwei Teams à (n/2), in jedem Team genau 1 Imposter
+  if (config.mode === 'duel') {
     const half = Math.ceil(players.length / 2)
     for (let i = 0; i < players.length; i++) {
       const p = players[order[i]!]!
@@ -120,7 +109,6 @@ function buildPlayers(
     for (let i = 0; i < count; i++) {
       const p = players[order[i]!]!
       p.isImposter = true
-      // Modus steuert, was der Imposter sieht
       const rules = rulesOf(config.mode)
       if (rules.imposterSees === 'helper') p.word = config.helperWord
       else if (rules.imposterSees === 'category') p.word = config.categoryLabel
@@ -129,7 +117,6 @@ function buildPlayers(
     }
   }
 
-  // Chaos: ein zufälliger Civilian bekommt auch das Hilfswort
   if (config.mode === 'chaos') {
     const civilians = players.filter((p) => !p.isImposter)
     if (civilians.length > 0) {
@@ -156,21 +143,26 @@ function freshRoundConfig(
 ): ImposterRoundConfig {
   const pool = poolFor(opts.categoryId, opts.customWords)
   const { word, helperWord } = pickWord(pool, rng, opts.categoryId)
+  const rules = rulesOf(opts.mode)
   return {
     categoryId: opts.categoryId,
     categoryLabel: opts.categoryLabel || categoryLabel(opts.categoryId),
     mode: opts.mode,
     secretWord: word,
     helperWord,
+    playerCount: opts.playerCount,
     imposterCount: opts.imposterCount,
     roundIndex: opts.roundIndex,
     totalRounds: opts.totalRounds,
+    imposterSees: rules.imposterSees,
+    showCategory: rules.showCategory,
+    timerSeconds: rules.timerSeconds,
+    specialRule: null,
   }
 }
 
-/** Startet ein neues Match (Setup → erste Runde Geheimnisse). */
 export function createMatch(opts: CreateMatchOptions): ImposterMatchState {
-  const names = normalizeNames(opts.playerNames)
+  const names = normalizeNames(opts.names)
   const seed = opts.seed ?? (Date.now() ^ (Math.random() * 0x100000000))
   const rng = createRng(seed)
   const mode = opts.mode ?? 'classic'
@@ -183,7 +175,7 @@ export function createMatch(opts: CreateMatchOptions): ImposterMatchState {
   const config = freshRoundConfig(
     {
       categoryId,
-      categoryLabel: categoryLabel(categoryId),
+      categoryLabel: opts.customCategoryLabel || categoryLabel(categoryId),
       mode,
       playerCount: names.length,
       imposterCount,
@@ -216,7 +208,6 @@ export function createMatch(opts: CreateMatchOptions): ImposterMatchState {
   }
 }
 
-/** Nächster Spieler sieht sein Geheimnis (Cover aufklappen). */
 export function revealSecret(state: ImposterMatchState): ImposterMatchState {
   if (state.phase !== 'secret_handoff' && state.phase !== 'secret_reveal') {
     return state
@@ -224,12 +215,10 @@ export function revealSecret(state: ImposterMatchState): ImposterMatchState {
   return { ...state, phase: 'secret_reveal', handoffCover: false }
 }
 
-/** Cover wieder zu, Gerät weiterreichen. */
 export function nextHandoff(state: ImposterMatchState): ImposterMatchState {
   if (state.phase !== 'secret_reveal') return state
   const next = state.activePlayerIndex + 1
   if (next >= state.players.length) {
-    // Alle haben gesehen → Diskussion
     return {
       ...state,
       phase: 'discussion',
@@ -245,7 +234,6 @@ export function nextHandoff(state: ImposterMatchState): ImposterMatchState {
   }
 }
 
-/** Diskussion beenden → Anklage. */
 export function goToAccuse(state: ImposterMatchState): ImposterMatchState {
   if (state.phase !== 'discussion') return state
   return {
@@ -256,7 +244,21 @@ export function goToAccuse(state: ImposterMatchState): ImposterMatchState {
   }
 }
 
-/** Ein Name wird angeklagt (Klassik / Mehrfach). */
+/** UI-Alias: Geheimnis aufdecken. */
+export function openSecret(state: ImposterMatchState): ImposterMatchState {
+  return revealSecret(state)
+}
+
+/** UI-Alias: Gerät weiterreichen. */
+export function confirmSecret(state: ImposterMatchState): ImposterMatchState {
+  return nextHandoff(state)
+}
+
+/** UI-Alias: Diskussion beenden → Anklage. */
+export function endDiscussion(state: ImposterMatchState): ImposterMatchState {
+  return goToAccuse(state)
+}
+
 export function accuse(
   state: ImposterMatchState,
   playerId: string,
@@ -265,9 +267,7 @@ export function accuse(
   const target = state.players.find((p) => p.id === playerId)
   if (!target) return state
 
-  const mode = modeOf(state.config.mode)
-  if (mode === 'duel') {
-    // Im Duell: Team entscheidet selbst, wen es aus den eigenen Reihen nimmt
+  if (state.config.mode === 'duel') {
     return state
   }
 
@@ -286,7 +286,6 @@ export function accuse(
   }
 }
 
-/** Duell: Team tippt einen eigenen Spieler. */
 export function accuseTeam(
   state: ImposterMatchState,
   team: 1 | 2,
@@ -296,10 +295,12 @@ export function accuseTeam(
   const target = state.players.find((p) => p.id === playerId && p.team === team)
   if (!target) return state
 
-  const teamAccused: [string | null, string | null] = [...state.teamAccused]
+  const teamAccused: [string | null, string | null] = [
+    state.teamAccused[0] ?? null,
+    state.teamAccused[1] ?? null,
+  ]
   teamAccused[team - 1] = playerId
 
-  // Beide Teams haben getippt?
   if (teamAccused[0] && teamAccused[1]) {
     const caught = teamAccused.filter((id) => {
       const p = state.players.find((x) => x.id === id)
@@ -319,13 +320,18 @@ export function accuseTeam(
   return { ...state, teamAccused }
 }
 
-/** Imposter rät das Geheimwort (letzte Chance). */
+/** Letzte Chance – 2 Args (state, guess) oder 3 Args (state, playerId, guess). */
 export function submitLastChance(
   state: ImposterMatchState,
-  playerId: string,
-  guess: string,
+  playerIdOrGuess: string,
+  maybeGuess?: string,
 ): ImposterMatchState {
   if (state.phase !== 'last_chance') return state
+  const playerId =
+    maybeGuess !== undefined
+      ? playerIdOrGuess
+      : (state.lastChanceQueue[0] ?? '')
+  const guess = maybeGuess !== undefined ? maybeGuess : playerIdOrGuess
   const idx = state.lastChanceQueue.indexOf(playerId)
   if (idx < 0) return state
 
@@ -359,7 +365,6 @@ export function submitLastChance(
   }
 }
 
-/** Nächste Runde starten (oder Match beenden). */
 export function nextRound(state: ImposterMatchState): ImposterMatchState {
   if (state.phase !== 'round_result') return state
   const nextIndex = state.config.roundIndex + 1
@@ -408,7 +413,6 @@ export function activePlayer(state: ImposterMatchState): ImposterPlayer {
   return state.players[state.activePlayerIndex]!
 }
 
-/** Wer die Runde eröffnet. */
 export function starterPlayer(state: ImposterMatchState): ImposterPlayer {
   return state.players[state.starterIndex] ?? state.players[0]!
 }
@@ -422,12 +426,10 @@ export function imposters(state: ImposterMatchState): ImposterPlayer[] {
   return state.players.filter((p) => p.isImposter)
 }
 
-/** Die Mitglieder eines Duell-Teams, in Sitzreihenfolge. */
 export function teamMembers(state: ImposterMatchState, team: 1 | 2): ImposterPlayer[] {
   return state.players.filter((p) => p.team === team)
 }
 
-/** Hat das Team seinen eigenen Imposter erwischt? Null, solange es nicht getippt hat. */
 export function teamCaught(state: ImposterMatchState, team: 1 | 2): boolean | null {
   const id = state.teamAccused[team - 1]
   if (!id) return null
