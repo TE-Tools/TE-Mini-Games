@@ -28,6 +28,10 @@ import { supabase, isSupabaseConfigured } from '@/database/supabase'
 import { getCurrentUser } from '@/auth/authService'
 import { GAST_NAME, getOrCreateGuestProfile, setDisplayName } from '@/offline'
 
+/** Kürzer ist kein Name, länger passt in keine Spaltenüberschrift. */
+export const NAME_MIN = 2
+export const NAME_MAX = 16
+
 /** Ist das ein Name oder nur der unangetastete Vorgabewert? */
 export function istEchterName(name: string | null | undefined): boolean {
   const sauber = name?.trim()
@@ -94,4 +98,61 @@ export async function ermittleSpielerName(): Promise<string> {
 export async function spielerNameOderDu(): Promise<string> {
   const name = await ermittleSpielerName()
   return istEchterName(name) ? name : 'Du'
+}
+
+/* --------------------------------------------------- Selbst benennen */
+
+/**
+ * Prüft einen von Hand eingegebenen Namen.
+ * Gibt null zurück, wenn er in Ordnung ist, sonst den Grund.
+ */
+export function pruefeName(eingabe: string): string | null {
+  const name = eingabe.trim()
+  if (name.length < NAME_MIN) return `Mindestens ${NAME_MIN} Zeichen.`
+  if (name.length > NAME_MAX) return `Höchstens ${NAME_MAX} Zeichen.`
+  if (name === GAST_NAME) {
+    return `„${GAST_NAME}" ist der Platzhalter – nimm bitte einen eigenen Namen.`
+  }
+  return null
+}
+
+/**
+ * Den Namen von Hand setzen.
+ *
+ * Er wird lokal festgehalten und -- wenn jemand angemeldet ist -- auch in
+ * die Profilzeile geschrieben, damit er auf anderen Geräten mitkommt.
+ * Klappt das Zweite nicht (kein Netz), gilt trotzdem der lokale Name:
+ * Wer seinen Namen ändert, will ihn sofort sehen, nicht wenn das Netz
+ * wieder da ist.
+ */
+export async function setzeSpielerName(eingabe: string): Promise<string> {
+  const fehler = pruefeName(eingabe)
+  if (fehler) throw new Error(fehler)
+  const name = eingabe.trim()
+
+  await setDisplayName(name)
+
+  const user = await getCurrentUser().catch(() => null)
+  if (user && isSupabaseConfigured && supabase) {
+    try {
+      await supabase
+        .from('profiles')
+        .update({ display_name: name, updated_at: new Date().toISOString() })
+        .eq('id', user.id)
+    } catch {
+      // Nur die Übertragung auf andere Geräte fehlt -- hier stimmt er.
+    }
+  }
+  return name
+}
+
+/**
+ * Den eigenen Namen verwerfen und wieder den aus dem Konto nehmen.
+ *
+ * Umgesetzt, indem lokal der Platzhalter gesetzt wird -- genau daran
+ * erkennt die Auflösung oben, dass sie beim Konto nachsehen darf.
+ */
+export async function nameVomKontoUebernehmen(): Promise<string> {
+  await setDisplayName(GAST_NAME).catch(() => undefined)
+  return ermittleSpielerName()
 }

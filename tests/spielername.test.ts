@@ -21,25 +21,38 @@ const getCurrentUser = vi.fn()
 vi.mock('@/auth/authService', () => ({ getCurrentUser: () => getCurrentUser() }))
 
 const maybeSingle = vi.fn()
+const update = vi.fn()
 vi.mock('@/database/supabase', () => ({
   isSupabaseConfigured: true,
   supabase: {
     from: () => ({
       select: () => ({ eq: () => ({ maybeSingle: () => maybeSingle() }) }),
+      update: (werte: unknown) => {
+        update(werte)
+        return { eq: () => Promise.resolve({ error: null }) }
+      },
     }),
   },
 }))
 
 const { db } = await import('@/offline/db')
 const { GAST_NAME } = await import('@/offline')
-const { ermittleSpielerName, spielerNameOderDu, istEchterName } = await import(
-  '@/services/spielername'
-)
+const {
+  ermittleSpielerName,
+  spielerNameOderDu,
+  istEchterName,
+  pruefeName,
+  setzeSpielerName,
+  nameVomKontoUebernehmen,
+  NAME_MIN,
+  NAME_MAX,
+} = await import('@/services/spielername')
 
 beforeEach(async () => {
   await db.profiles.clear()
   getCurrentUser.mockReset()
   maybeSingle.mockReset()
+  update.mockReset()
   maybeSingle.mockResolvedValue({ data: null })
 })
 
@@ -138,5 +151,66 @@ describe('Anzeige in einer Runde', () => {
   it('sagt den Kontonamen, sobald es einen gibt', async () => {
     getCurrentUser.mockResolvedValue({ id: 'u1', user_metadata: { display_name: 'Thomas' } })
     expect(await spielerNameOderDu()).toBe('Thomas')
+  })
+})
+
+describe('Namen von Hand setzen', () => {
+  it('weist zu kurze und zu lange Namen zurück', () => {
+    expect(pruefeName('a')).toMatch(new RegExp(`${NAME_MIN}`))
+    expect(pruefeName('x'.repeat(NAME_MAX + 1))).toMatch(new RegExp(`${NAME_MAX}`))
+  })
+
+  it('lässt den Platzhalter nicht als Namen zu', () => {
+    expect(pruefeName(GAST_NAME)).toMatch(/Platzhalter/)
+  })
+
+  it('nimmt einen normalen Namen an', () => {
+    expect(pruefeName('Thomas')).toBeNull()
+    expect(pruefeName('  Thomas  ')).toBeNull()
+  })
+
+  it('speichert den Namen lokal und gibt ihn beschnitten zurück', async () => {
+    getCurrentUser.mockResolvedValue(null)
+    expect(await setzeSpielerName('  Tommy  ')).toBe('Tommy')
+    expect((await db.profiles.get('guest'))?.displayName).toBe('Tommy')
+  })
+
+  it('schreibt ihn angemeldet auch ins Konto – für die anderen Geräte', async () => {
+    getCurrentUser.mockResolvedValue({ id: 'u1', user_metadata: {} })
+    await setzeSpielerName('Tommy')
+    expect(update).toHaveBeenCalledWith(expect.objectContaining({ display_name: 'Tommy' }))
+  })
+
+  it('fasst das Konto nicht an, wenn niemand angemeldet ist', async () => {
+    getCurrentUser.mockResolvedValue(null)
+    await setzeSpielerName('Tommy')
+    expect(update).not.toHaveBeenCalled()
+  })
+
+  it('lehnt einen ungültigen Namen ab, ohne etwas zu speichern', async () => {
+    getCurrentUser.mockResolvedValue(null)
+    await expect(setzeSpielerName('a')).rejects.toThrow()
+    expect(await db.profiles.get('guest')).toBeUndefined()
+  })
+
+  it('schlägt den selbst gesetzten Namen danach über den Kontonamen', async () => {
+    getCurrentUser.mockResolvedValue({ id: 'u1', user_metadata: { display_name: 'Thomas' } })
+    await setzeSpielerName('Tommy')
+    expect(await ermittleSpielerName()).toBe('Tommy')
+  })
+})
+
+describe('Wieder den Namen aus dem Konto nehmen', () => {
+  it('verwirft den eigenen und holt den vom Konto', async () => {
+    getCurrentUser.mockResolvedValue({ id: 'u1', user_metadata: { display_name: 'Thomas' } })
+    await setzeSpielerName('Tommy')
+    expect(await nameVomKontoUebernehmen()).toBe('Thomas')
+    expect(await ermittleSpielerName()).toBe('Thomas')
+  })
+
+  it('landet bei "Gast", wenn im Konto keiner steht', async () => {
+    getCurrentUser.mockResolvedValue(null)
+    await setzeSpielerName('Tommy')
+    expect(await nameVomKontoUebernehmen()).toBe(GAST_NAME)
   })
 })
