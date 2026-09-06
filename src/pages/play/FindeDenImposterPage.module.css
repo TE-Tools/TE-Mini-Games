@@ -1,3 +1,20 @@
+/*
+ * Finde den Imposter -- Am-einen-Geraet, Online-Lobby und Kategorie-Editor
+ * teilen sich diese Datei.
+ *
+ * Warum sie am 06.09.2026 umgebaut wurde: Flaechen und Eingabefelder waren
+ * hier ueber die Systemfarben `Canvas` und `CanvasText` gebaut. Die richten
+ * sich nicht nach der App, sondern nach dem, was `color-scheme` sagt -- und
+ * das stand seit dem alten Nachtdesign noch auf "dark". Ergebnis: Die Karte
+ * wurde fast schwarz gezeichnet, waehrend die Schrift darauf das dunkle
+ * Blauviolett der App behielt. Thomas sah in der Uebersicht ein "schwarzes
+ * Feld" und darauf nichts mehr.
+ *
+ * Deshalb steht hier jetzt kein `Canvas` mehr, sondern dieselben Tokens wie
+ * im Rest der App (src/styles/tokens.css). Wer die Palette dreht, dreht
+ * diese Seite mit.
+ */
+
 .page {
   min-height: 100dvh;
   padding: 1rem 1.25rem 2rem;
@@ -9,14 +26,14 @@
 }
 
 .back {
-  opacity: 0.7;
-  color: inherit;
+  color: var(--color-text-muted);
   text-decoration: none;
   font-size: 0.95rem;
+  font-weight: 700;
 }
 
 .back:hover {
-  opacity: 1;
+  color: var(--color-text);
 }
 
 .title {
@@ -27,19 +44,20 @@
 
 .subtitle {
   margin: 0;
-  opacity: 0.75;
+  color: var(--color-text-muted);
   font-size: 0.95rem;
   line-height: 1.4;
 }
 
 .card {
-  background: color-mix(in srgb, Canvas 92%, CanvasText 8%);
-  border: 1px solid color-mix(in srgb, CanvasText 12%, transparent);
+  background: var(--grad-surface);
+  border: 1px solid var(--color-border);
   border-radius: 1rem;
   padding: 1.1rem 1.15rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  box-shadow: var(--shadow-sm);
 }
 
 .cardTitle {
@@ -52,7 +70,8 @@
   flex-direction: column;
   gap: 0.35rem;
   font-size: 0.9rem;
-  opacity: 0.9;
+  font-weight: 700;
+  color: var(--color-text);
 }
 
 .input,
@@ -61,9 +80,9 @@
   font: inherit;
   padding: 0.65rem 0.75rem;
   border-radius: 0.65rem;
-  border: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
-  background: Canvas;
-  color: CanvasText;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
   width: 100%;
   box-sizing: border-box;
 }
@@ -106,22 +125,27 @@
   font: inherit;
   padding: 0.75rem 1rem;
   border-radius: 0.75rem;
-  border: none;
+  border: 1px solid var(--color-border-strong);
   cursor: pointer;
-  background: color-mix(in srgb, CanvasText 12%, Canvas);
-  color: CanvasText;
+  background: var(--grad-surface);
+  color: var(--color-text);
+  box-shadow: var(--btn-shadow);
   font-weight: 600;
   text-align: center;
+}
+
+.btnSecondary:active {
+  box-shadow: var(--btn-shadow-active);
 }
 
 .btnDanger {
   font: inherit;
   padding: 0.75rem 1rem;
   border-radius: 0.75rem;
-  border: none;
+  border: 1px solid var(--color-danger);
   cursor: pointer;
-  background: color-mix(in srgb, #dc2626 88%, black);
-  color: white;
+  background: var(--color-danger);
+  color: #ffffff;
   font-weight: 600;
   text-align: center;
 }
@@ -138,6 +162,7 @@
 .coverName {
   font-size: 1.6rem;
   font-weight: 700;
+  color: var(--color-text);
 }
 
 /* Der Satz unter dem Namen: "jetzt redet miteinander". */
@@ -155,13 +180,13 @@
 }
 
 .roleImposter {
-  color: #dc2626;
+  color: var(--color-danger);
   font-weight: 700;
   font-size: 1.25rem;
 }
 
 .roleCitizen {
-  color: #16a34a;
+  color: var(--color-success);
   font-weight: 700;
   font-size: 1.25rem;
 }
@@ -171,11 +196,12 @@
   font-weight: 800;
   letter-spacing: 0.02em;
   margin: 0.5rem 0;
+  color: var(--color-text);
 }
 
 .meta {
   font-size: 0.85rem;
-  opacity: 0.7;
+  color: var(--color-text-muted);
 }
 
 .hintList {
@@ -193,8 +219,11 @@
   gap: 0.75rem;
   padding: 0.45rem 0.55rem;
   border-radius: 0.5rem;
-  background: color-mix(in srgb, CanvasText 6%, Canvas);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
   font-size: 0.95rem;
+  text-align: left;
 }
 
 .voteGrid {
@@ -207,12 +236,17 @@
   font: inherit;
   padding: 0.75rem 1rem;
   border-radius: 0.75rem;
-  border: none;
+  border: 1px solid var(--color-border-strong);
   cursor: pointer;
-  background: color-mix(in srgb, CanvasText 12%, Canvas);
-  color: CanvasText;
-  font-weight: 500;
+  background: var(--grad-surface);
+  color: var(--color-text);
+  font-weight: 600;
   text-align: left;
+  box-shadow: var(--btn-shadow);
+}
+
+.voteBtn:active {
+  box-shadow: var(--btn-shadow-active);
 }
 
 .rankList {
@@ -231,26 +265,32 @@
   align-items: center;
   padding: 0.5rem 0.55rem;
   border-radius: 0.5rem;
-  background: color-mix(in srgb, CanvasText 6%, Canvas);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 .error {
-  color: #dc2626;
+  color: var(--color-danger);
   font-size: 0.9rem;
+  font-weight: 700;
   margin: 0;
 }
 
 .badge {
   display: inline-block;
+  align-self: center;
   font-size: 0.75rem;
-  padding: 0.15rem 0.45rem;
+  font-weight: 800;
+  padding: 0.15rem 0.6rem;
   border-radius: 999px;
-  background: color-mix(in srgb, CanvasText 10%, Canvas);
-  opacity: 0.85;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 .decoyList {
   font-size: 0.85rem;
-  opacity: 0.75;
+  color: var(--color-text-muted);
   margin: 0.25rem 0 0;
 }
