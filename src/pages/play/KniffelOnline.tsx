@@ -9,6 +9,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { getCurrentUser } from '@/auth/authService'
 import { WUERFE_JE_ZUG, leererBlock, type Block, type KategorieId } from '@/games/kniffel'
 import {
   createKniffelMatch,
@@ -48,6 +49,9 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
   const [fehler, setFehler] = useState<string | null>(null)
   const [laeuft, setLaeuft] = useState(false)
   const [rollt, setRollt] = useState(false)
+  // null = noch nicht nachgesehen. Ohne Konto geht online gar nichts:
+  // Der Server weiss sonst nicht, wer würfelt.
+  const [angemeldet, setAngemeldet] = useState<boolean | null>(null)
   const letzteWurfNummer = useRef(0)
 
   const laden = useCallback(async (id: string) => {
@@ -60,11 +64,28 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
     }
   }, [])
 
-  /* Offene Runden beim Öffnen zeigen -- man verliert sonst leicht den Faden. */
+  /*
+   * Erst nachsehen, ob jemand angemeldet ist. Ohne Konto den Knopf
+   * anzubieten und dann eine Fehlermeldung zu zeigen, wäre die schlechtere
+   * Reihenfolge -- die anderen Online-Spiele fragen ebenfalls vorher.
+   */
   useEffect(() => {
-    void fetchMyKniffelMatches()
-      .then(setOffene)
-      .catch(() => setOffene([]))
+    let abbruch = false
+    void (async () => {
+      const user = await getCurrentUser()
+      if (abbruch) return
+      setAngemeldet(Boolean(user))
+      if (!user) return
+      try {
+        const meine = await fetchMyKniffelMatches()
+        if (!abbruch) setOffene(meine)
+      } catch {
+        /* Die Liste ist nur Komfort. */
+      }
+    })()
+    return () => {
+      abbruch = true
+    }
   }, [])
 
   /* Am Raum horchen. */
@@ -148,6 +169,28 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
           <span aria-hidden="true" />
         </header>
 
+        {angemeldet === null && (
+          <section className={styles.lobby}>
+            <p className={styles.einleitung}>Einen Moment…</p>
+          </section>
+        )}
+
+        {angemeldet === false && (
+          <section className={styles.lobby}>
+            <p className={styles.einleitung}>
+              Online spielst du mit deinem Konto – nur so weiß der Server, wer gerade
+              würfelt, und niemand kann sich seine Augen selbst aussuchen.
+            </p>
+            <Link to="/auth" className={styles.start} style={{ textAlign: 'center' }}>
+              Anmelden
+            </Link>
+            <button type="button" className={styles.wuerfelKnopf} onClick={onZurueck}>
+              Lieber gegen den Rechner
+            </button>
+          </section>
+        )}
+
+        {angemeldet === true && (
         <section className={styles.lobby}>
           <p className={styles.einleitung}>
             Einer eröffnet den Raum und gibt den Code weiter. Gewürfelt wird auf dem
@@ -218,6 +261,7 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
             Zum Menü
           </Link>
         </section>
+        )}
       </main>
     )
   }
