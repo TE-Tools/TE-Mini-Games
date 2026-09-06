@@ -10,7 +10,7 @@
   text-align: center;
   padding: var(--space-6) var(--space-4);
   border-color: var(--party-rand);
-  box-shadow: 0 10px 24px rgb(0 0 0 / 0.45), 0 0 30px -6px var(--party-rand);
+  box-shadow: 0 10px 24px rgb(26 31 49 / 0.126), 0 0 30px -6px var(--party-rand);
 }
 
 .silbe {
@@ -38,7 +38,7 @@
   align-items: center;
   text-align: center;
   border-color: var(--color-danger);
-  box-shadow: 0 10px 24px rgb(0 0 0 / 0.45), 0 0 30px -6px var(--color-danger);
+  box-shadow: 0 10px 24px rgb(26 31 49 / 0.126), 0 0 30px -6px var(--color-danger);
 }
 
 .boom {

@@ -1,42 +1,60 @@
 :root {
   /*
-   * Dunkles Indigo mit Gold und Violett -- nach Thomas' Entwurf vom
-   * 02.09.2026 (die linke Seite der Vorlage). Vorher war die App
-   * cremefarben; alle Farben stecken hier, damit ein Umbau nicht wieder
-   * durch zwanzig Dateien wandern muss.
+   * Heller, ruhiger Auftritt -- Thomas am 06.09.2026: "mach Design etwas
+   * heller und professioneller insgesamt bei der app".
+   *
+   * Vorher: dunkles Indigo, und jede Kachel in einer eigenen kraeftigen
+   * Farbe. Elf gesaettigte Flaechen nebeneinander sind das, was am meisten
+   * nach Kinderzimmer aussah. Die Farbe ist deshalb nicht verschwunden,
+   * sondern umgezogen: Sie sitzt jetzt im kleinen Kreis hinter dem Symbol,
+   * die Kachel selbst ist weiss. Jedes Spiel bleibt an seiner Farbe
+   * erkennbar, das Raster wird trotzdem ruhig.
+   *
+   * Das Grau ist leicht ins Blauviolette gezogen, zur Grundfarbe hin --
+   * ein neutrales Grau wirkt daneben schmutzig.
+   *
+   * Alle Farben stecken hier, damit ein Umbau nicht wieder durch zwanzig
+   * Dateien wandern muss. Das hat sich jetzt zum zweiten Mal ausgezahlt.
    */
-  --color-bg: #0d0a1e;
-  --color-bg-elevated: #1a1435;
-  --color-surface: #221a45;
-  --color-border: #322a5e;
-  --color-border-strong: #4b3f86;
-  --color-text: #f4f1ff;
-  --color-text-muted: #a79ccb;
-  --color-primary: #8b5cf6;
-  --color-primary-hover: #a78bfa;
+  --color-bg: #f4f5fa;
+  --color-bg-elevated: #ffffff;
+  --color-surface: #eef0f7;
+  --color-border: #e0e4ee;
+  --color-border-strong: #c6cddd;
+  --color-text: #1a1f31;
+  --color-text-muted: #5d6478;
+  --color-primary: #5a3ce0;
+  --color-primary-hover: #4a2fc8;
   --color-primary-text: #ffffff;
-  --color-success: #34d399;
-  --color-warning: #f0c84a;
-  --color-danger: #fb7185;
-  --color-accent: #2dd4bf;
-  --color-streak: #fb923c;
-  --color-game-a: #f0c84a;
-  --color-game-a-soft: #3a2f10;
-  --color-game-b: #2dd4bf;
-  --color-game-b-soft: #10312e;
-  --color-daily: #818cf8;
-  --color-family: #c084fc;
-  --color-gold: #f0c84a;
-  --color-gold-light: #ffe9a8;
-  --color-gold-deep: #c4920f;
+  --color-success: #0f7a52;
+  --color-warning: #a8620a;
+  --color-danger: #c02b48;
+  --color-accent: #0d7a72;
+  --color-streak: #c2410c;
+  --color-game-a: #a67c0a;
+  --color-game-a-soft: #fdf6e3;
+  --color-game-b: #0d7a72;
+  --color-game-b-soft: #e4f4f2;
+  --color-daily: #4f57c4;
+  --color-family: #8b46c4;
+  --color-gold: #a67c0a;
+  --color-gold-light: #d4a017;
+  --color-gold-deep: #7d5b06;
+
+  /* Haarlinien und Schleier. Auf dunklem Grund waren das weisse Auflagen --
+     auf hellem Grund sind sie unsichtbar, deshalb liegen sie jetzt als
+     Tokens hier und sind dunkel. */
+  --hairline: rgb(26 31 49 / 0.09);
+  --hairline-strong: rgb(26 31 49 / 0.16);
+  --schleier: rgb(26 31 49 / 0.04);
 
   /* Wiederkehrende Verlaeufe -- frueher stand jeder davon zehnmal im Code. */
-  --grad-surface: linear-gradient(180deg, #241c4c, #191233);
-  --grad-surface-hover: linear-gradient(180deg, #2c2359, #1e1740);
-  --grad-primary: linear-gradient(180deg, #a78bfa, #7c3aed);
-  --grad-primary-soft: linear-gradient(180deg, #2b2158, #1d1740);
-  --grad-gold: linear-gradient(180deg, #ffe9a8, #f0c84a 55%, #c4920f);
-  --grad-danger-soft: linear-gradient(180deg, #3d1a2c, #2a1220);
+  --grad-surface: linear-gradient(180deg, #ffffff, #f2f4fa);
+  --grad-surface-hover: linear-gradient(180deg, #ffffff, #e9edf7);
+  --grad-primary: linear-gradient(180deg, #6d4ae8, #5227cf);
+  --grad-primary-soft: linear-gradient(180deg, #ffffff, #f3f1fd);
+  --grad-gold: linear-gradient(180deg, #e8b93a, #c99512 55%, #a67c0a);
+  --grad-danger-soft: linear-gradient(180deg, #fff5f7, #ffe9ee);
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -66,27 +84,30 @@
   --text-3xl: 1.875rem;
   --text-4xl: 2.25rem;
 
+  /* Der Knopf behaelt seine Kante -- es sind Spiele --, aber flacher: statt
+     6 px hartem Sockel nur noch 3 px, und der Schatten faerbt ins Blaue
+     statt ins Schwarze. */
   --btn-shadow:
-    0 1px 0 rgb(255 255 255 / 0.10) inset,
-    0 -3px 0 rgb(0 0 0 / 0.35) inset,
-    0 6px 0 rgb(0 0 0 / 0.28),
-    0 10px 22px rgb(0 0 0 / 0.45);
+    0 1px 0 rgb(255 255 255 / 0.30) inset,
+    0 -2px 0 rgb(26 31 49 / 0.16) inset,
+    0 3px 0 rgb(26 31 49 / 0.12),
+    0 6px 14px rgb(26 31 49 / 0.13);
   --btn-shadow-hover:
-    0 1px 0 rgb(255 255 255 / 0.16) inset,
-    0 -3px 0 rgb(0 0 0 / 0.32) inset,
-    0 8px 0 rgb(0 0 0 / 0.3),
-    0 14px 30px rgb(0 0 0 / 0.5);
+    0 1px 0 rgb(255 255 255 / 0.35) inset,
+    0 -2px 0 rgb(26 31 49 / 0.16) inset,
+    0 4px 0 rgb(26 31 49 / 0.13),
+    0 9px 20px rgb(26 31 49 / 0.17);
   --btn-shadow-active:
-    0 2px 6px rgb(0 0 0 / 0.5) inset,
-    0 2px 0 rgb(0 0 0 / 0.2),
-    0 4px 10px rgb(0 0 0 / 0.35);
+    0 2px 5px rgb(26 31 49 / 0.22) inset,
+    0 1px 0 rgb(26 31 49 / 0.10);
 
-  --shadow-sm: 0 2px 10px rgb(0 0 0 / 0.4);
-  --shadow-md: 0 8px 26px rgb(0 0 0 / 0.5);
-  --shadow-lg: 0 16px 44px rgb(0 0 0 / 0.55);
-  --shadow-game: 0 10px 28px rgb(0 0 0 / 0.5);
-  /* Der violette Schimmer, der in der Vorlage unter den Kacheln liegt. */
-  --glow-primary: 0 0 24px rgb(139 92 246 / 0.35);
+  --shadow-sm: 0 1px 2px rgb(26 31 49 / 0.05), 0 2px 8px rgb(26 31 49 / 0.05);
+  --shadow-md: 0 2px 4px rgb(26 31 49 / 0.05), 0 8px 22px rgb(26 31 49 / 0.09);
+  --shadow-lg: 0 4px 8px rgb(26 31 49 / 0.06), 0 16px 40px rgb(26 31 49 / 0.13);
+  --shadow-game: 0 2px 4px rgb(26 31 49 / 0.05), 0 10px 24px rgb(26 31 49 / 0.10);
+  /* Frueher ein violetter Schimmer im Dunkeln; auf Hell traegt ein zarter
+     farbiger Rand dieselbe Rolle, ohne zu leuchten. */
+  --glow-primary: 0 0 0 1px rgb(90 60 224 / 0.14);
 
   --touch-min: 48px;
   --transition-fast: 150ms ease;
