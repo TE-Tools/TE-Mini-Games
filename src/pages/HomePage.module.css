@@ -391,3 +391,18 @@
   color: var(--color-text-muted);
   opacity: 0.75;
 }
+
+.rechtliches {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.rechtliches a {
+  color: var(--color-text-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.rechtliches a:hover { color: var(--color-gold); }
+.rechtliches a:focus-visible { outline: 2px solid var(--color-gold); outline-offset: 2px; }

@@ -1,0 +1,76 @@
+/* Gemeinsames Gerüst für Impressum und Datenschutz.
+   Bewusst ruhig und lesbar statt spielerisch: Diese beiden Seiten liest man
+   nicht zum Vergnügen, sondern um etwas nachzuschlagen. */
+
+.page {
+  min-height: 100dvh;
+  padding: var(--space-4) var(--space-4) var(--space-10);
+  max-width: 46rem;
+  margin: 0 auto;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: var(--space-5);
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--radius-full);
+  background: var(--grad-surface);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  color: var(--color-text);
+  text-decoration: none;
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.back:hover { background: var(--grad-surface-hover); }
+.back:focus-visible { outline: 2px solid var(--color-gold); outline-offset: 2px; }
+
+.title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-2xl);
+  line-height: 1.2;
+  color: var(--color-gold);
+}
+
+.stand {
+  margin: 0 0 var(--space-6);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.text { color: var(--color-text); font-size: var(--text-sm); line-height: 1.65; }
+.text h2 {
+  margin: var(--space-6) 0 var(--space-2);
+  font-size: var(--text-lg);
+  line-height: 1.3;
+  color: var(--color-text);
+}
+.text h3 {
+  margin: var(--space-4) 0 var(--space-1);
+  font-size: var(--text-base);
+  color: var(--color-gold-light);
+}
+.text p { margin: 0 0 var(--space-3); }
+.text ul { margin: 0 0 var(--space-3); padding-left: 1.2rem; }
+.text li { margin: 0 0 var(--space-1); }
+.text a { color: var(--color-gold); }
+.text strong { color: var(--color-text); }
+
+.kasten {
+  margin: var(--space-4) 0;
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--grad-primary-soft);
+  border: 1px solid rgb(255 255 255 / 0.09);
+}
+.kasten p:last-child { margin-bottom: 0; }
+
+.fuss {
+  margin-top: var(--space-8);
+  padding-top: var(--space-4);
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+  font-size: var(--text-sm);
+}
+.fuss a { color: var(--color-gold); }

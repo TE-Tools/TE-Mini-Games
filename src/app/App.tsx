@@ -2,6 +2,8 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { HomePage } from '@/pages/HomePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
+import { ImpressumPage } from '@/pages/recht/ImpressumPage'
+import { DatenschutzPage } from '@/pages/recht/DatenschutzPage'
 import { PerfectSecondPage } from '@/pages/play/PerfectSecondPage'
 import { WhatIsMissingPage } from '@/pages/play/WhatIsMissingPage'
 import { SchuetzenrundePage } from '@/pages/play/SchuetzenrundePage'
@@ -142,6 +144,8 @@ export function App() {
           <Route path="/achievements" element={<AchievementsPage />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/impressum" element={<ImpressumPage />} />
+          <Route path="/datenschutz" element={<DatenschutzPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </AuthGate>
