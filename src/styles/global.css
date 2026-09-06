@@ -19,23 +19,17 @@ body {
   font-family: var(--font-sans);
   background-color: var(--color-bg);
   /*
-   * Nachthimmel: zwei weiche Lichter oben, eines unten, dazu ein paar
-   * Sterne. Genau der Grund aus Thomas' Entwurf -- ohne die Lichter wirkt
-   * das Indigo wie eine tote Flaeche.
+   * Frueher lag hier ein Nachthimmel: violette Lichter und ein paar Sterne.
+   * Der trug den dunklen Grund -- ohne ihn wirkte das Indigo wie eine tote
+   * Flaeche. Auf hellem Grund wird daraus ein bunter Schleier, der aussieht,
+   * als sei der Druck verrutscht (06.09.2026).
+   *
+   * Geblieben ist ein einziger, sehr zarter Verlauf nach oben: Er nimmt der
+   * Flaeche das Klinische, ohne dass man ihn als Farbe wahrnimmt.
    */
   background-image:
-    radial-gradient(ellipse 90% 55% at 50% -10%, rgb(124 58 237 / 0.38), transparent 60%),
-    radial-gradient(ellipse 60% 45% at 100% 8%, rgb(56 189 248 / 0.12), transparent 55%),
-    radial-gradient(ellipse 70% 45% at 0% 100%, rgb(192 132 252 / 0.16), transparent 55%),
-    radial-gradient(ellipse 40% 30% at 85% 92%, rgb(240 200 74 / 0.1), transparent 50%),
-    radial-gradient(circle 1.4px at 12% 22%, rgb(255 255 255 / 0.85), transparent 2px),
-    radial-gradient(circle 1px at 78% 35%, rgb(255 240 180 / 0.8), transparent 2px),
-    radial-gradient(circle 1.4px at 35% 70%, rgb(255 255 255 / 0.6), transparent 2px),
-    radial-gradient(circle 1px at 90% 75%, rgb(255 230 150 / 0.7), transparent 2px),
-    radial-gradient(circle 1px at 55% 18%, rgb(255 255 255 / 0.6), transparent 2px),
-    radial-gradient(circle 1.4px at 8% 88%, rgb(255 240 200 / 0.55), transparent 2px),
-    radial-gradient(circle 1px at 66% 58%, rgb(255 255 255 / 0.45), transparent 2px),
-    radial-gradient(circle 1.2px at 24% 48%, rgb(214 188 255 / 0.6), transparent 2px);
+    linear-gradient(180deg, #ffffff 0%, var(--color-bg) 46%);
+  background-repeat: no-repeat;
   background-attachment: fixed;
   color: var(--color-text);
   line-height: 1.5;

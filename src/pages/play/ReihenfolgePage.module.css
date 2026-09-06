@@ -19,7 +19,7 @@
 .pad {
   aspect-ratio: 1;
   border-radius: var(--radius-xl);
-  border: 3px solid rgb(0 0 0 / 0.18);
+  border: 3px solid rgb(26 31 49 / 0.05);
   box-shadow: var(--btn-shadow);
   background: var(--pad-color);
   filter: saturate(0.55) brightness(0.82);
