@@ -27,10 +27,11 @@ import {
   type KniffelZustand,
   type SpielerEinrichtung,
 } from '@/games/kniffel'
-import { GAST_NAME, addXp, getOrCreateGuestProfile, saveGameResult } from '@/offline'
+import { addXp, saveGameResult } from '@/offline'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
 import { isKniffelOnlineAvailable } from '@/services/kniffelOnline'
+import { spielerNameOderDu } from '@/services/spielername'
 import { spiele, setzeTon, tonAn, vibriere } from '@/services/sound'
 import { Wuerfelreihe } from './kniffel/Wuerfelreihe'
 import { Kniffelblock, type BlockSpalte } from './kniffel/Kniffelblock'
@@ -64,11 +65,11 @@ export function KniffelPage() {
 
   useEffect(() => {
     let abbruch = false
-    void getOrCreateGuestProfile()
-      .then((p) => {
-        // "Gast" ist der Vorgabewert, kein Name -- dann lieber "Du".
-        const name = p?.displayName?.trim()
-        if (!abbruch && name && name !== GAST_NAME) setSpielerName(name)
+    // Holt den Namen aus dem Konto, wenn lokal noch keiner steht -- und
+    // merkt ihn sich dabei. Ohne Konto bleibt es bei "Du".
+    void spielerNameOderDu()
+      .then((name) => {
+        if (!abbruch) setSpielerName(name)
       })
       .catch(() => undefined)
     return () => {

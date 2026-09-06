@@ -55,9 +55,10 @@ import {
   type SpielZustand,
   type SpielerEinrichtung,
 } from '@/games/schuetzenopoly'
-import { GAST_NAME, addXp, getOrCreateGuestProfile, saveGameResult } from '@/offline'
+import { addXp, saveGameResult } from '@/offline'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
+import { spielerNameOderDu } from '@/services/spielername'
 import { spiele, setzeTon, tonAn, vibriere } from '@/services/sound'
 import { Brett } from './schuetzenopoly/Brett'
 import { FeldKarte } from './schuetzenopoly/FeldKarte'
@@ -94,14 +95,12 @@ export function SchuetzenopolyPage() {
   useEffect(() => {
     let abbruch = false
     void (async () => {
-      const [gespeichert, profil] = await Promise.all([
+      const [gespeichert, name] = await Promise.all([
         ladePartie(),
-        getOrCreateGuestProfile().catch(() => null),
+        spielerNameOderDu().catch(() => 'Du'),
       ])
       if (abbruch) return
-      // "Gast" ist der Vorgabewert, kein Name -- dann lieber "Du".
-      const name = profil?.displayName?.trim()
-      if (name && name !== GAST_NAME) setSpielerName(name)
+      setSpielerName(name)
       setFortsetzbar(gespeichert)
       setAnsicht('menue')
     })()
