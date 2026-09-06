@@ -1,5 +1,15 @@
 /* Der Schießstand. Alles innerhalb einer festen Bühne, damit die Treffer
-   auf jedem Bildschirm dieselbe Bedeutung haben. */
+   auf jedem Bildschirm dieselbe Bedeutung haben.
+
+   Die Bühne ist wie das Brett ein Gegenstand und bleibt dunkelgrün, auch
+   seit die App hell ist. Was auf ihr steht, bekommt deshalb eigene helle
+   Farben -- die Text-Tokens sind inzwischen dunkel und wären hier nicht
+   zu lesen. */
+
+.rahmen {
+  --auf-buehne: #d8e4da;
+  --auf-buehne-gold: #ffd75e;
+}
 
 .rahmen {
   display: flex;
@@ -79,7 +89,7 @@
   right: 0;
   bottom: 6px;
   font-size: var(--text-xs);
-  color: var(--color-text-muted);
+  color: var(--auf-buehne);
   text-align: center;
 }
 
@@ -127,7 +137,7 @@
   right: 12px;
   font-size: var(--text-lg);
   font-weight: 700;
-  color: var(--color-gold);
+  color: var(--auf-buehne-gold);
   font-variant-numeric: tabular-nums;
 }
 

@@ -2,7 +2,20 @@
  * Die Spielseite. Alles muss auf ein Handy passen: oben die Mitspieler,
  * in der Mitte das Brett, unten die Knöpfe. Gescrollt wird nur, wenn es
  * sich nicht vermeiden lässt.
+ *
+ * Zur Schrift auf dem Brett: Das Brett ist ein Gegenstand, kein Teil der
+ * Bedienoberfläche -- dunkelgrün mit cremefarbenen Feldern, wie eines,
+ * das auf dem Tisch liegt. Es folgt deshalb nicht dem App-Design. Alles,
+ * was darauf steht, braucht darum eigene helle Farben statt der
+ * Text-Tokens. Als die App am 06.09.2026 auf hellen Grund umgestellt
+ * wurde, sind genau diese Zeilen unlesbar geworden: dunkler Text auf
+ * dunklem Brett.
  */
+
+.spielflaeche {
+  --auf-brett: #f4f1ff;
+  --auf-brett-leise: #b9c9bd;
+}
 
 .willkommen {
   margin: 0;
@@ -84,7 +97,7 @@
   margin: 0;
   font-size: clamp(0.75rem, 3.4vw, 1rem);
   font-weight: 800;
-  color: var(--color-gold-light);
+  color: #ffe9a8;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -106,14 +119,14 @@
 .mitteGeld {
   margin: 0;
   font-size: clamp(0.7rem, 3vw, 0.95rem);
-  color: var(--color-text);
+  color: var(--auf-brett);
   font-variant-numeric: tabular-nums;
 }
 
 .mitteRunde {
   margin: 0;
   font-size: clamp(0.55rem, 2.4vw, 0.75rem);
-  color: var(--color-text-muted);
+  color: var(--auf-brett-leise);
 }
 
 /* --- Protokoll --- */
