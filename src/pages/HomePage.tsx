@@ -238,6 +238,26 @@ export function HomePage() {
         </Link>
 
       </nav>
+
+      {/* Unter den Kacheln, nicht dazwischen: Das Spiel soll zuerst ein Spiel
+          sein. Bewusst ein schlichter Verweis statt eines PayPal-Skripts --
+          eingebundene Zahlungs-Widgets bringen fremdes Nachverfolgen mit, und
+          fuer paypal.me braucht es nichts davon. */}
+      <footer className={styles.spende}>
+        <p className={styles.spendeText}>
+          TE-Mini Games ist kostenlos und ohne Werbung. Wenn es dir Freude macht,
+          kannst du einen Kaffee ausgeben.
+        </p>
+        <a
+          className={styles.spendeKnopf}
+          href="https://paypal.me/ThomasElsen"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <span aria-hidden="true">☕</span> Spenden über PayPal
+        </a>
+        <p className={styles.spendeKlein}>Öffnet PayPal in einem neuen Fenster.</p>
+      </footer>
     </main>
   )
 }

@@ -334,3 +334,60 @@
   box-shadow: 0 0 12px rgb(139 92 246 / 0.6);
   transition: width var(--transition-normal);
 }
+
+/* ---- Spenden ----
+   Ruhig gehalten und ganz unten: Wer spielen will, soll spielen. Gold wie die
+   Marke, aber als Umriss statt als Flaeche -- eine volle Goldflaeche haette
+   mehr Gewicht als jede Spielkachel und das Verhaeltnis verdreht. */
+
+.spende {
+  margin: var(--space-8) auto 0;
+  max-width: 28rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-4) var(--space-2);
+  border-top: 1px solid rgb(255 255 255 / 0.07);
+  text-align: center;
+}
+
+.spendeText {
+  margin: 0;
+  max-width: 24rem;
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--color-text-muted);
+}
+
+.spendeKnopf {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-gold-deep);
+  color: var(--color-gold);
+  background: rgb(240 200 74 / 0.08);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  text-decoration: none;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.spendeKnopf:hover {
+  background: rgb(240 200 74 / 0.16);
+  border-color: var(--color-gold);
+}
+
+.spendeKnopf:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 3px;
+}
+
+.spendeKlein {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  opacity: 0.75;
+}
