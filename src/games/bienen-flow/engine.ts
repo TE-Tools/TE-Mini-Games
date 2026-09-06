@@ -2,12 +2,9 @@
  * Bienen-Flow – reine Spiellogik.
  *
  * - Brett: farbige Zellen, 0 = leer
- * - Unten: Tray (Stapel antippen → Farbe in freien Slot)
- * - Slots: begrenzte Warteplätze
- * - Bienen räumen alle *erreichbaren* Zellen der Slot-Farben ab
- *   (Erreichbarkeit = angrenzend an „offenen“ Raum von oben/leer)
- * - Slot wird frei, wenn keine Zelle dieser Farbe mehr auf dem Brett ist
- * - Sieg: Brett leer · Niederlage: alle Slots voll und keine erreichbare Slot-Farbe
+ * - Tray antippen → Farbe in freien Slot
+ * - Bienen räumen erreichbare Zellen der Slot-Farben
+ * - Events für die Animationsschicht (Zellen in Räum-Reihenfolge)
  */
 
 import type { BienenLevel, BienenState, CellColor } from './types'
@@ -16,7 +13,6 @@ function idx(row: number, col: number, cols: number): number {
   return row * cols + col
 }
 
-/** Offene Zellen: Flood von oben durch leere Zellen. */
 export function openMask(board: CellColor[], rows: number, cols: number): boolean[] {
   const open = new Array(board.length).fill(false)
   const q: number[] = []
@@ -68,7 +64,6 @@ export function openMask(board: CellColor[], rows: number, cols: number): boolea
   return open
 }
 
-/** Farbe ist erreichbar, wenn mind. eine Zelle an offenen Raum grenzt. */
 export function reachableColors(
   board: CellColor[],
   rows: number,
@@ -98,8 +93,7 @@ export function reachableColors(
         if (nr < 0) out.add(color)
         continue
       }
-      const ni = idx(nr, nc, cols)
-      if (open[ni]) {
+      if (open[idx(nr, nc, cols)]) {
         out.add(color)
         break
       }
@@ -114,23 +108,23 @@ function countColor(board: CellColor[], color: CellColor): number {
   return n
 }
 
-function clearReachableOf(
+/** Indices der erreichbaren Zellen einer Farbe (oben→unten, links→rechts). */
+function reachableCellIndices(
   board: CellColor[],
   rows: number,
   cols: number,
   color: CellColor,
-): { board: CellColor[]; cleared: number } {
+): number[] {
   const open = openMask(board, rows, cols)
-  const next = board.slice()
-  let cleared = 0
   const dirs = [
     [-1, 0],
     [1, 0],
     [0, -1],
     [0, 1],
   ]
-  for (let i = 0; i < next.length; i++) {
-    if (next[i] !== color) continue
+  const found: number[] = []
+  for (let i = 0; i < board.length; i++) {
+    if (board[i] !== color) continue
     const r = Math.floor(i / cols)
     const c = i % cols
     let ok = r === 0
@@ -149,44 +143,59 @@ function clearReachableOf(
         }
       }
     }
-    if (ok) {
-      next[i] = 0
-      cleared++
-    }
+    if (ok) found.push(i)
   }
-  return { board: next, cleared }
+  return found
 }
 
-/** Nach Slot-Änderung: so lange räumen, bis nichts mehr geht; Spots freigeben. */
-function resolve(state: BienenState): BienenState {
+/** Ein Räum-Schritt für die Animation. */
+export interface ClearWave {
+  color: CellColor
+  /** Slot-Index, der diese Farbe hält */
+  slotIndex: number
+  /** Zellen-Indizes (board flat), die in diesem Schritt verschwinden */
+  cells: number[]
+}
+
+export interface TapResult {
+  state: BienenState
+  /** Wellen in der Reihenfolge, in der Bienen arbeiten */
+  waves: ClearWave[]
+  /** Slot, in den die Tray-Farbe gelegt wurde */
+  deployedSlot: number
+  deployedColor: CellColor
+}
+
+function resolveWithWaves(state: BienenState): { state: BienenState; waves: ClearWave[] } {
   let board = state.board.slice()
   let slots = state.slots.slice()
-  let changed = true
-  while (changed) {
-    changed = false
+  const waves: ClearWave[] = []
+  let guard = 0
+  while (guard++ < 200) {
     const reach = reachableColors(board, state.rows, state.cols)
+    let any = false
     for (let s = 0; s < slots.length; s++) {
       const color = slots[s]
       if (color == null) continue
       if (!reach.has(color)) continue
-      const { board: nb, cleared } = clearReachableOf(board, state.rows, state.cols, color)
-      if (cleared > 0) {
-        board = nb
-        changed = true
-      }
+      const cells = reachableCellIndices(board, state.rows, state.cols, color)
+      if (cells.length === 0) continue
+      for (const i of cells) board[i] = 0
+      waves.push({ color, slotIndex: s, cells })
+      any = true
     }
     for (let s = 0; s < slots.length; s++) {
       const color = slots[s]
       if (color != null && countColor(board, color) === 0) {
         slots[s] = null
-        changed = true
       }
     }
+    if (!any) break
   }
 
   const empty = board.every((c) => c === 0)
   if (empty) {
-    return { ...state, board, slots, phase: 'won' }
+    return { state: { ...state, board, slots, phase: 'won' }, waves }
   }
 
   const free = slots.some((s) => s == null)
@@ -194,11 +203,11 @@ function resolve(state: BienenState): BienenState {
     const reach = reachableColors(board, state.rows, state.cols)
     const anyUseful = slots.some((c) => c != null && reach.has(c))
     if (!anyUseful) {
-      return { ...state, board, slots, phase: 'lost' }
+      return { state: { ...state, board, slots, phase: 'lost' }, waves }
     }
   }
 
-  return { ...state, board, slots, phase: 'play' }
+  return { state: { ...state, board, slots, phase: 'play' }, waves }
 }
 
 export function createMatch(level: BienenLevel): BienenState {
@@ -216,12 +225,12 @@ export function createMatch(level: BienenLevel): BienenState {
   }
 }
 
-/** Tray-Stapel antippen → Farbe in freien Slot, dann auflösen. */
-export function tapTray(state: BienenState, trayIndex: number): BienenState {
-  if (state.phase !== 'play') return state
-  if (trayIndex < 0 || trayIndex >= state.tray.length) return state
+/** Tray antippen – liefert Endzustand + Animationswellen. */
+export function tapTrayDetailed(state: BienenState, trayIndex: number): TapResult | null {
+  if (state.phase !== 'play') return null
+  if (trayIndex < 0 || trayIndex >= state.tray.length) return null
   const freeIdx = state.slots.findIndex((s) => s == null)
-  if (freeIdx < 0) return state
+  if (freeIdx < 0) return null
 
   const color = state.tray[trayIndex]!
   const tray = state.tray.slice()
@@ -229,12 +238,24 @@ export function tapTray(state: BienenState, trayIndex: number): BienenState {
   const slots = state.slots.slice()
   slots[freeIdx] = color
 
-  return resolve({
+  const mid: BienenState = {
     ...state,
     tray,
     slots,
     moves: state.moves + 1,
-  })
+  }
+  const { state: final, waves } = resolveWithWaves(mid)
+  return {
+    state: final,
+    waves,
+    deployedSlot: freeIdx,
+    deployedColor: color,
+  }
+}
+
+/** Kompatibel: nur Zustand. */
+export function tapTray(state: BienenState, trayIndex: number): BienenState {
+  return tapTrayDetailed(state, trayIndex)?.state ?? state
 }
 
 export function remainingCells(state: BienenState): number {
