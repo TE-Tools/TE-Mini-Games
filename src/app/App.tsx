@@ -25,6 +25,7 @@ import { AuthPage } from '@/auth/AuthPage'
 import { ProfilePage } from '@/pages/profile/ProfilePage'
 import { registerAllGames } from '@/games/register'
 import { initRemoteSync, syncFullNow } from '@/services/remoteSync'
+import { ermittleSpielerName } from '@/services/spielername'
 import { onAuthStateChange, getSession } from '@/auth/authService'
 import { getPlayMode, setPlayMode, type PlayMode } from '@/auth/sessionMode'
 
@@ -45,6 +46,9 @@ function AuthGate({ children }: { children: ReactNode }) {
       if (session?.user) {
         setPlayMode('account')
         setGate({ status: 'ready', mode: 'account' })
+        // Einmal den Namen aus dem Konto uebernehmen, falls lokal noch
+        // "Gast" steht. Sonst haengt er daran, dass ein Abgleich laeuft.
+        void ermittleSpielerName()
         void syncFullNow()
         return
       }
@@ -60,6 +64,7 @@ function AuthGate({ children }: { children: ReactNode }) {
       if (user) {
         setPlayMode('account')
         setGate({ status: 'ready', mode: 'account' })
+        void ermittleSpielerName()
         void syncFullNow()
       } else {
         const mode = getPlayMode()

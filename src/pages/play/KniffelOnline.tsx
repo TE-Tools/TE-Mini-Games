@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getCurrentUser } from '@/auth/authService'
+import { ermittleSpielerName, istEchterName } from '@/services/spielername'
 import { WUERFE_JE_ZUG, leererBlock, type Block, type KategorieId } from '@/games/kniffel'
 import {
   createKniffelMatch,
@@ -136,15 +137,26 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
     }
   }
 
+  /*
+   * Den Namen erst hier holen, nicht aus dem Zustand von vorhin: Online
+   * ist man angemeldet, also gibt es einen Kontonamen -- und der soll am
+   * Tisch stehen, nicht das "Du" aus dem Solomodus. Genau das war die
+   * Beschwerde: "Wenn ich einen Raum starte, steht da immer noch Gast Du."
+   */
+  async function nameFuerDieRunde(): Promise<string> {
+    const name = await ermittleSpielerName().catch(() => null)
+    return istEchterName(name) ? (name as string) : eigenerName
+  }
+
   const eroeffnen = () =>
     versuche(async () => {
-      const { match_id } = await createKniffelMatch(eigenerName)
+      const { match_id } = await createKniffelMatch(await nameFuerDieRunde())
       setMatchId(match_id)
     })
 
   const beitreten = () =>
     versuche(async () => {
-      const id = await joinKniffelMatch(code, eigenerName)
+      const id = await joinKniffelMatch(code, await nameFuerDieRunde())
       setMatchId(id)
     })
 
