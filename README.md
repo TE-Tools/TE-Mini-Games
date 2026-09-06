@@ -23,6 +23,10 @@ Progressive Web App with short skill, memory, reaction and logic games.
 - **Wortbombe** – one syllable, the phone travels; whoever holds the bomb loses a life
 - **Wer würde eher?** – vote in secret, reveal together: "who would most likely…"
   and "would you rather…" 
+- **Schützenopoly** – the big Schützenfest board game: 40 fields, 22 real German
+  Schützenfeste, 2–4 players against rule-based AI on three levels, trading,
+  building and three shooting-range minigames (see
+  `docs/design/schuetzenopoly/`)
 - Level map 1–500 across five biomes (jungle → volcanic → rock desert → ice age → glacier peak)
 - Installable as an app (PWA) – "App installieren" on the home screen
 - Offline-first (IndexedDB)
@@ -44,6 +48,7 @@ Progressive Web App with short skill, memory, reaction and logic games.
 ## Dokumentation
 
 - [Design-Spezifikationen](docs/design/) – u. a. die Levelkarte 1–500 („Zeitreise“)
+  und [Schützenopoly](docs/design/schuetzenopoly/) (Architektur, Balancing, Faktencheck)
 - [Ideen / Backlog](docs/ideas/)
 - [Supabase-Setup](docs/supabase-setup.md)
 - [Die App in den Store bringen](docs/app-store.md) – TWA für Google Play,

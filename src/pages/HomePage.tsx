@@ -209,6 +209,13 @@ export function HomePage() {
           <span className={styles.tileName}>Wer würde eher?</span>
         </Link>
 
+        <Link to="/play/schuetzenopoly" className={styles.tile} data-game="schuetzenopoly">
+          <span className={styles.tileIcon} aria-hidden="true">
+            🎲
+          </span>
+          <span className={styles.tileName}>Schützenopoly</span>
+        </Link>
+
         <Link to="/daily" className={styles.tile} data-tile="daily">
           <span className={styles.tileIcon} aria-hidden="true">
             📅

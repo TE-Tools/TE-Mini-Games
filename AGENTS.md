@@ -23,6 +23,13 @@ See the full product specification for requirements.
 Binding design specs live in `docs/design/`. Follow them when implementing the
 corresponding feature; do not invent a competing design.
 
+- **Schützenopoly:** `docs/design/schuetzenopoly/` – Architektur, Datenmodell,
+  Brettreihenfolge und Balancing des Brettspiels. Regeln gehören ausschließlich
+  nach `src/games/schuetzenopoly/`, Balancingwerte ausschließlich in dessen
+  `config.ts`. Die 22 Grundstücke stehen für reale Veranstaltungen; jede Aussage
+  darüber ist in `docs/design/schuetzenopoly/grundstuecke.md` belegt. Wer die
+  Liste ändert, führt den Beleg mit – erfundene Angaben über echte Feste sind
+  hier ein Fehler, kein Detail.
 - **Level map 1–500 („Zeitreise“):** `docs/design/level-map-500/` – five biomes of
   100 levels each (jungle → volcanic → rock desert → ice age → glacier peak),
   one winding vertical path, level 500 as the final ice palace.

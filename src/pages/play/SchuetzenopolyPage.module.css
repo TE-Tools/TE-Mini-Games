@@ -1,0 +1,355 @@
+/*
+ * Die Spielseite. Alles muss auf ein Handy passen: oben die Mitspieler,
+ * in der Mitte das Brett, unten die Knöpfe. Gescrollt wird nur, wenn es
+ * sich nicht vermeiden lässt.
+ */
+
+.willkommen {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+
+.spielflaeche {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  padding-bottom: var(--space-6);
+}
+
+/* --- Mitspielerleiste --- */
+
+.spielerLeiste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(78px, 1fr));
+  gap: var(--space-2);
+}
+
+.spielerKachel {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  border-left-width: 4px;
+  background: var(--grad-surface);
+  font-size: var(--text-xs);
+  min-width: 0;
+}
+
+.amZug {
+  background: var(--grad-primary-soft);
+  box-shadow: var(--glow-primary);
+}
+
+.raus {
+  opacity: 0.45;
+}
+
+.spielerKopf {
+  font-weight: 700;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kiMarke {
+  margin-left: 2px;
+  font-size: 0.7em;
+}
+
+.spielerGeld {
+  color: var(--color-gold);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.spielerBesitz {
+  color: var(--color-text-muted);
+}
+
+/* --- Brettmitte --- */
+
+.mitteName {
+  margin: 0;
+  font-size: clamp(0.75rem, 3.4vw, 1rem);
+  font-weight: 800;
+  color: var(--color-gold-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.wuerfelPaar {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.wuerfel {
+  font-size: clamp(1.6rem, 9vw, 3rem);
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 2px 8px rgb(0 0 0 / 0.6);
+}
+
+.mitteGeld {
+  margin: 0;
+  font-size: clamp(0.7rem, 3vw, 0.95rem);
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.mitteRunde {
+  margin: 0;
+  font-size: clamp(0.55rem, 2.4vw, 0.75rem);
+  color: var(--color-text-muted);
+}
+
+/* --- Protokoll --- */
+
+.protokoll {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 3.6em;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+}
+
+.logZeile {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: 1.35;
+  color: var(--color-text-muted);
+}
+
+.logZeile:last-child {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+/* --- Handlungsleiste --- */
+
+.leiste {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.wartet {
+  margin: 0;
+  padding: var(--space-4);
+  text-align: center;
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+}
+
+.hinweisZeile {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+.hauptKnopf {
+  flex: 2;
+  min-height: 56px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--grad-gold);
+  color: #24180a;
+  font-size: var(--text-lg);
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: var(--btn-shadow);
+}
+
+.hauptKnopf:active {
+  box-shadow: var(--btn-shadow-active);
+}
+
+.hauptKnopf:disabled {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  box-shadow: none;
+  cursor: default;
+}
+
+.nebenKnoepfe {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.nebenKnopf {
+  flex: 1;
+  min-width: 110px;
+  min-height: var(--touch-min);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-strong);
+  background: var(--grad-surface);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.nebenKnopf:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.textKnopf {
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-family: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: var(--space-2);
+}
+
+/* --- Karte --- */
+
+.karte {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--grad-surface);
+  border: 1px solid var(--color-gold-deep);
+  border-left: 4px solid var(--color-gold);
+  animation: kartenDreh 260ms ease-out;
+}
+
+@keyframes kartenDreh {
+  from {
+    transform: perspective(600px) rotateX(-70deg);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .karte {
+    animation: none;
+  }
+}
+
+.karteTitel {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 800;
+  color: var(--color-gold);
+}
+
+.karteText {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--color-text);
+}
+
+.rollenZeile {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.aufgeben {
+  align-self: center;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-family: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: var(--space-2);
+}
+
+.tonKnopf {
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--grad-surface);
+  font-size: var(--text-lg);
+  cursor: pointer;
+}
+
+/* --- Minispiel im Vollbild --- */
+
+.vollbild {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  overflow-y: auto;
+  background: var(--color-bg);
+}
+
+/* --- Endstand --- */
+
+.endstand {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.endEintrag {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--grad-surface);
+  border: 1px solid var(--color-border);
+}
+
+.endEintrag:first-child {
+  border-color: var(--color-gold);
+  background: var(--grad-primary-soft);
+}
+
+.endPlatz {
+  font-size: var(--text-lg);
+  font-weight: 800;
+  color: var(--color-gold);
+  min-width: 1.6em;
+}
+
+.endName {
+  flex: 1;
+  font-size: var(--text-base);
+  color: var(--color-text);
+}
+
+.endWert {
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
