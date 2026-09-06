@@ -22,6 +22,7 @@ export const SPIELE_KACHELN: readonly KachelEintrag[] = [
   { id: 'what-is-missing', name: 'Was fehlt?', pfad: '/play/what-is-missing', icon: '👀', art: 'Wahrnehmung' },
   { id: 'reihenfolge', name: 'Reihenfolge merken', pfad: '/play/reihenfolge', icon: '🧠', art: 'Gedächtnis' },
   { id: 'kopfrechnen', name: 'Kopfrechnen', pfad: '/play/kopfrechnen', icon: '🔢', art: 'Rechnen' },
+  { id: 'bienen-flow', name: 'Bienen-Flow', pfad: '/play/bienen-flow', icon: '🐝', art: 'Puzzle' },
   { id: 'kniffel', name: 'Kniffel', pfad: '/play/kniffel', icon: '🎲', art: 'Würfeln' },
   { id: 'schuetzenopoly', name: 'Schützenopoly', pfad: '/play/schuetzenopoly', icon: '🎲', art: 'Brettspiel' },
   { id: 'schuetzenrunde', name: 'Schützenrunde', pfad: '/play/schuetzenrunde', icon: '🎯', art: 'Bluffen' },
