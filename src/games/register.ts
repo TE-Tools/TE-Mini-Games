@@ -10,6 +10,7 @@ import { stadtLandFlussGame } from './stadt-land-fluss'
 import { scharadeGame } from './scharade'
 import { wortbombeGame } from './wortbombe'
 import { werWuerdeEherGame } from './wer-wuerde-eher'
+import { schuetzenopolyGame } from './schuetzenopoly'
 
 /** Register all built-in games. Call once at app startup. */
 export function registerAllGames(): void {
@@ -24,4 +25,5 @@ export function registerAllGames(): void {
   registerGame(scharadeGame)
   registerGame(wortbombeGame)
   registerGame(werWuerdeEherGame)
+  registerGame(schuetzenopolyGame)
 }

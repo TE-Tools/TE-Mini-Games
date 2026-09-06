@@ -1,0 +1,174 @@
+.aufbau {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 460px;
+  margin: 0 auto;
+}
+
+.ueberschrift {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-xl);
+  color: var(--color-gold);
+}
+
+.liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.reihe {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--grad-surface);
+  border: 1px solid var(--color-border);
+}
+
+.reiheKopf {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.name {
+  flex: 1;
+  min-height: var(--touch-min);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+  font-size: var(--text-base);
+  font-family: inherit;
+}
+
+.weg {
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-strong);
+  background: var(--grad-danger-soft);
+  color: var(--color-danger);
+  font-size: var(--text-base);
+  cursor: pointer;
+}
+
+.schalter,
+.stufen {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.schalterAn,
+.schalterAus,
+.stufeAn,
+.stufeAus {
+  flex: 1;
+  min-height: 40px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-strong);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.schalterAn,
+.stufeAn {
+  background: var(--grad-primary);
+  color: var(--color-primary-text);
+  font-weight: 700;
+  border-color: var(--color-primary);
+}
+
+.schalterAus,
+.stufeAus {
+  background: var(--color-bg-elevated);
+  color: var(--color-text-muted);
+}
+
+.plus {
+  min-height: var(--touch-min);
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--color-border-strong);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.dauer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--grad-surface);
+  border: 1px solid var(--color-border);
+  font-size: var(--text-sm);
+}
+
+.dauer input {
+  width: 100%;
+  accent-color: var(--color-gold);
+}
+
+.dauerHinweis {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.hinweis {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.fehler {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--grad-danger-soft);
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+.start {
+  min-height: 56px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--grad-gold);
+  color: #24180a;
+  font-size: var(--text-lg);
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: var(--btn-shadow);
+}
+
+.start:active {
+  box-shadow: var(--btn-shadow-active);
+}
+
+.zurueck {
+  min-height: var(--touch-min);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-strong);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  cursor: pointer;
+}

@@ -102,6 +102,18 @@ export interface LocalDailyAttempt {
   completedAt: string
 }
 
+/**
+ * Ein laufender Brettspiel-Spielstand (Schützenopoly). Der Zustand liegt
+ * als JSON-Text, weil ihn nur das Spiel selbst deuten muss -- Dexie soll
+ * ihn nur aufbewahren, nicht verstehen.
+ */
+export interface LocalBoardSave {
+  id: string
+  gameId: string
+  zustand: string
+  updatedAt: string
+}
+
 export class MiniChallengeDB extends Dexie {
   profiles!: EntityTable<LocalProfile, 'id'>
   gameProgress!: EntityTable<LocalGameProgress, 'id'>
@@ -112,6 +124,7 @@ export class MiniChallengeDB extends Dexie {
   familySessions!: EntityTable<LocalFamilySession, 'id'>
   familyResults!: EntityTable<LocalFamilyResult, 'id'>
   dailyAttempts!: EntityTable<LocalDailyAttempt, 'id'>
+  boardSaves!: EntityTable<LocalBoardSave, 'id'>
 
   constructor() {
     super('mini-challenge')
@@ -143,6 +156,18 @@ export class MiniChallengeDB extends Dexie {
       familySessions: 'id, status, createdAt',
       familyResults: 'id, sessionId, playerIndex',
       dailyAttempts: 'id, dateKey, gameId',
+    })
+    this.version(4).stores({
+      profiles: 'id, updatedAt',
+      gameProgress: 'id, userId, gameId, updatedAt',
+      gameResults: 'id, userId, gameId, createdAt, synced',
+      personalRecords: 'id, userId, gameId, level',
+      achievements: 'id, userId, achievementId, synced',
+      syncOutbox: 'id, type, createdAt',
+      familySessions: 'id, status, createdAt',
+      familyResults: 'id, sessionId, playerIndex',
+      dailyAttempts: 'id, dateKey, gameId',
+      boardSaves: 'id, gameId, updatedAt',
     })
   }
 }

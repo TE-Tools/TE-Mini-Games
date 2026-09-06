@@ -258,6 +258,17 @@
   --kachel-farbe: #4338ca;
 }
 
+.tile[data-game='schuetzenopoly'] {
+  /* Olivgruen. Das Brett selbst ist dunkles Flaschengruen mit Gold, aber
+     beides ist hier schon vergeben: Gruen bei der Schuetzenrunde und bei
+     Stadt-Land-Fluss, Gold bei der Rangliste. Als 13-Prozent-Ton im
+     Symbolkreis waeren zwei benachbarte Gruens nicht zu unterscheiden --
+     Oliv ist die naechstgelegene freie Stelle und passt zur Festwiese. */
+  --kachel-ton: color-mix(in srgb, #4d7c0f 13%, #ffffff);
+  --kachel-rahmen: color-mix(in srgb, #4d7c0f 30%, transparent);
+  --kachel-farbe: #4d7c0f;
+}
+
 .tile[data-tile='daily'] {
   --kachel-ton: color-mix(in srgb, #4f46e5 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #4f46e5 30%, transparent);

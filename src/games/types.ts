@@ -16,6 +16,7 @@ export type GameId =
   | 'scharade'
   | 'wortbombe'
   | 'wer-wuerde-eher'
+  | 'schuetzenopoly'
 
 export interface GameLevelConfig {
   level: number
