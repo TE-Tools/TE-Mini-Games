@@ -227,7 +227,7 @@
   gap: 0.15rem;
   padding: var(--space-3);
   border-radius: var(--radius-lg);
-  background: rgb(0 0 0 / 0.04);
+  background: rgb(26 31 49 / 0.04);
 }
 
 .logEntry {
@@ -286,7 +286,7 @@
   flex-direction: column;
   gap: 0.25rem;
   border-radius: var(--radius-lg);
-  background: rgb(0 0 0 / 0.04);
+  background: rgb(26 31 49 / 0.04);
 }
 
 .talkLine {
@@ -379,7 +379,7 @@
   padding: var(--space-2);
   border-radius: var(--radius-lg);
   border: 2px dashed var(--color-border);
-  background: rgb(255 255 255 / 0.6);
+  background: var(--hairline-strong);
 }
 
 .codeBox strong {

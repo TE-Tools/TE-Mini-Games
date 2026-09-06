@@ -17,7 +17,7 @@
   padding: 0.4rem 0.85rem;
   border-radius: var(--radius-full);
   background: var(--grad-surface);
-  border: 1px solid rgb(255 255 255 / 0.1);
+  border: 1px solid var(--hairline);
   color: var(--color-text);
   text-decoration: none;
   font-size: var(--text-sm);
@@ -63,14 +63,14 @@
   padding: var(--space-4);
   border-radius: var(--radius-lg);
   background: var(--grad-primary-soft);
-  border: 1px solid rgb(255 255 255 / 0.09);
+  border: 1px solid var(--hairline);
 }
 .kasten p:last-child { margin-bottom: 0; }
 
 .fuss {
   margin-top: var(--space-8);
   padding-top: var(--space-4);
-  border-top: 1px solid rgb(255 255 255 / 0.08);
+  border-top: 1px solid var(--hairline);
   font-size: var(--text-sm);
 }
 .fuss a { color: var(--color-gold); }
