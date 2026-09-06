@@ -1,257 +1,203 @@
-import { useEffect, useState } from 'react'
+/**
+ * Die Startseite.
+ *
+ * Aufbau nach Thomas' Entwurf vom 06.09.2026 (Nachmittag): oben die Marke
+ * mit Menü und Avatar, darunter die Begrüßung, dann der Spielstand als
+ * eine zusammenhängende Leiste, vier Reiter, und ganz unten die Spiele.
+ *
+ * Die Reiter sind keine Verzierung: Rangliste, Erfolge und Tagesziel waren
+ * vorher Kacheln zwischen den Spielen. Jetzt zeigen sie hier direkt das
+ * Wichtigste und verweisen für den Rest auf ihre Seite -- die Kachelfläche
+ * bleibt den Spielen vorbehalten, wie im Entwurf.
+ */
+
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import styles from './HomePage.module.css'
-import { getOrCreateGuestProfile, type LocalProfile } from '@/offline'
-import { xpProgressInLevel } from '@/progression'
+import { getOrCreateGuestProfile, getRecentResults, type LocalProfile } from '@/offline'
+import { getUnlockedAchievements } from '@/offline/achievements'
+import { xpProgressInLevel, ACHIEVEMENTS, getDailyChallenge } from '@/progression'
 import { InstallButton } from '@/components/install/InstallButton'
 import { getAvatar } from '@/profile/avatars'
 import { LogoMark } from '@/components/brand/LogoMark'
 import { DATA_PULLED_EVENT } from '@/services/remotePull'
+import { getRemoteOverall, gameLabel, type OverallEntry } from '@/services/leaderboard'
+import { SPIELE_KACHELN, kachelFuer } from './spiele-katalog'
+
+type Reiter = 'spiele' | 'rangliste' | 'erfolge' | 'tagesziel'
+
+const REITER: { id: Reiter; label: string }[] = [
+  { id: 'spiele', label: 'Spiele' },
+  { id: 'rangliste', label: 'Rangliste' },
+  { id: 'erfolge', label: 'Erfolge' },
+  { id: 'tagesziel', label: 'Tagesziel' },
+]
 
 export function HomePage() {
   const [profile, setProfile] = useState<LocalProfile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [reiter, setReiter] = useState<Reiter>('spiele')
+  const [menueOffen, setMenueOffen] = useState(false)
+
+  const ladeProfil = useCallback(async () => {
+    try {
+      return await getOrCreateGuestProfile()
+    } catch (err) {
+      console.error('[HomePage] failed to load profile', err)
+      const jetzt = new Date().toISOString()
+      return {
+        id: 'guest',
+        displayName: 'Gast',
+        avatar: null,
+        totalXp: 0,
+        playerLevel: 1,
+        streakDays: 0,
+        lastPlayedAt: null,
+        createdAt: jetzt,
+        updatedAt: jetzt,
+      } satisfies LocalProfile
+    }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
-    ;(async () => {
-      try {
-        const p = await getOrCreateGuestProfile()
-        if (!cancelled) setProfile(p)
-      } catch (err) {
-        console.error('[HomePage] failed to load profile', err)
-        if (!cancelled) {
-          setProfile({
-            id: 'guest',
-            displayName: 'Gast',
-            avatar: null,
-            totalXp: 0,
-            playerLevel: 1,
-            streakDays: 0,
-            lastPlayedAt: null,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          })
-        }
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    })()
+    void ladeProfil().then((p) => {
+      if (cancelled) return
+      setProfile(p)
+      setLoading(false)
+    })
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [ladeProfil])
 
-  // XP and level can change when a sync pulls the account state down.
+  // XP und Level ändern sich, wenn ein Abgleich den Kontostand nachzieht.
   useEffect(() => {
     const onPulled = () => {
-      void getOrCreateGuestProfile().then(setProfile)
+      void ladeProfil().then(setProfile)
     }
     window.addEventListener(DATA_PULLED_EVENT, onPulled)
     return () => window.removeEventListener(DATA_PULLED_EVENT, onPulled)
-  }, [])
+  }, [ladeProfil])
 
   const playerLevel = profile?.playerLevel ?? 1
   const totalXp = profile?.totalXp ?? 0
   const streakDays = profile?.streakDays ?? 0
   const xpProgress = xpProgressInLevel(totalXp)
+  const fehlend = Math.max(0, xpProgress.needed - xpProgress.current)
+  const anteil = Math.max(2, Math.min(100, (xpProgress.current / Math.max(1, xpProgress.needed)) * 100))
 
   return (
     <main className={styles.page}>
-      {/* Kopfzeile wie in Thomas' Entwurf: die Marke in der Mitte, der Avatar
-          rechts. Er fuehrt ins Profil-Menue -- dort wird das Gesicht
-          gewaehlt, und von dort geht es weiter zu den Konto-Einstellungen
-          (02.09.2026). Die Kachel "Avatar" ist dafuer entfallen: zwei Wege
-          zur selben Seite waeren nur Ballast. Das leere Feld links haelt die
-          Marke optisch mittig. */}
-      <header className={styles.header}>
-        <span aria-hidden="true" />
-        <span className={styles.logo}>
-          <LogoMark size={62} />
-        </span>
-        <Link to="/profile" className={styles.avatarButton} aria-label="Profil">
-          <span className={styles.avatarFace} aria-hidden="true">
+      <header className={styles.kopf}>
+        <button
+          type="button"
+          className={styles.menueKnopf}
+          onClick={() => setMenueOffen(true)}
+          aria-label="Menü öffnen"
+        >
+          <span aria-hidden="true">⋮</span>
+        </button>
+
+        <div className={styles.marke}>
+          <span className={styles.logo}>
+            <LogoMark size={44} />
+          </span>
+          <h1 className={styles.markenName}>
+            <span className={styles.markenTe}>TE</span> MINI GAMES
+          </h1>
+          <p className={styles.markenSpruch}>Spielen · wachsen · vergleichen</p>
+        </div>
+
+        <Link to="/profile" className={styles.avatarKnopf} aria-label="Profil">
+          <span className={styles.avatarGesicht} aria-hidden="true">
             {getAvatar(profile?.avatar).emoji}
           </span>
         </Link>
       </header>
 
-      <div className={styles.headerText}>
-        <h1 className={styles.title}>
-          <span className={styles.titleTe}>TE</span> MINI GAMES
-        </h1>
-        <p className={styles.tagline}>Nur noch eine Runde. ✨</p>
+      <div className={styles.willkommen}>
+        <h2 className={styles.willkommenTitel}>Deine Spielewelt</h2>
+        <p className={styles.willkommenText}>Eine kleine Herausforderung für jeden Moment.</p>
       </div>
 
-      <section className={styles.stats} aria-label="Spielerfortschritt" aria-busy={loading}>
-        <div className={styles.stat}>
-          <span className={styles.statLabel}>Level</span>
-          <span className={styles.statValue}>
-            <span aria-hidden="true">⭐</span> {loading ? '…' : playerLevel}
+      <section className={styles.standLeiste} aria-label="Spielerfortschritt" aria-busy={loading}>
+        <div className={styles.standTeil}>
+          <span className={styles.standLabel}>Level</span>
+          <span className={styles.standWert}>{loading ? '…' : playerLevel}</span>
+        </div>
+        <div className={styles.standTeil}>
+          <span className={styles.standLabel}>XP</span>
+          <span className={styles.standWert}>{loading ? '…' : totalXp.toLocaleString('de-DE')}</span>
+        </div>
+        <div className={styles.standTeil}>
+          <span className={styles.standLabel}>Serie</span>
+          <span className={styles.standWert}>
+            {loading ? '…' : streakDays > 0 ? `${streakDays} Tage` : '—'}
           </span>
         </div>
-        <div className={styles.stat}>
-          <span className={styles.statLabel}>XP</span>
-          <span className={styles.statValue}>
-            <span aria-hidden="true">💎</span>{' '}
-            {loading ? '…' : totalXp.toLocaleString('de-DE')}
-          </span>
-        </div>
-        <div className={styles.stat}>
-          <span className={styles.statLabel}>Streak</span>
-          <span className={styles.statValue}>
-            {loading ? '…' : streakDays > 0 ? <><span aria-hidden="true">🔥</span> {streakDays}</> : '—'}
-          </span>
-        </div>
+
+        {!loading && (
+          <div className={styles.fortschritt}>
+            <p className={styles.fortschrittText}>
+              Noch <strong>{fehlend.toLocaleString('de-DE')}</strong> XP bis Level{' '}
+              {xpProgress.level + 1}
+            </p>
+            <div
+              className={styles.spur}
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={xpProgress.needed}
+              aria-valuenow={xpProgress.current}
+              aria-label={`Fortschritt zu Level ${xpProgress.level + 1}`}
+            >
+              <span className={styles.fuellung} style={{ width: `${anteil}%` }} />
+            </div>
+          </div>
+        )}
       </section>
 
-      {!loading && (
-        <div className={styles.xpBlock}>
-          <p className={styles.xpHint}>
-            Noch <strong>{(xpProgress.needed - xpProgress.current).toLocaleString('de-DE')}</strong>{' '}
-            XP bis Spieler-Level {xpProgress.level + 1}
-          </p>
-          <div
-            className={styles.xpTrack}
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={xpProgress.needed}
-            aria-valuenow={xpProgress.current}
-            aria-label={`Fortschritt zu Spieler-Level ${xpProgress.level + 1}`}
+      <nav className={styles.reiter} aria-label="Bereiche">
+        {REITER.map((r) => (
+          <button
+            key={r.id}
+            type="button"
+            className={reiter === r.id ? styles.reiterAn : styles.reiterAus}
+            onClick={() => setReiter(r.id)}
+            aria-current={reiter === r.id ? 'true' : undefined}
           >
-            <span
-              className={styles.xpFill}
-              style={{
-                width: `${Math.max(2, Math.min(100, (xpProgress.current / Math.max(1, xpProgress.needed)) * 100))}%`,
-              }}
-            />
-          </div>
-        </div>
-      )}
+            {r.label}
+          </button>
+        ))}
+      </nav>
+
+      {reiter === 'spiele' && <ZuletztGespielt />}
+      {reiter === 'rangliste' && <RanglisteKurz />}
+      {reiter === 'erfolge' && <ErfolgeKurz />}
+      {reiter === 'tagesziel' && <TageszielKurz />}
 
       <InstallButton />
 
-      <nav className={styles.actions} aria-label="Spiele und Funktionen">
-        <Link to="/play/perfect-second" className={styles.tile} data-game="perfect-second">
-          <span className={styles.tileIcon} aria-hidden="true">
-            ⏱️
-          </span>
-          <span className={styles.tileName}>Die perfekte Sekunde</span>
-        </Link>
+      <section className={styles.spiele}>
+        <h2 className={styles.abschnittTitel}>Spiele entdecken</h2>
+        <p className={styles.abschnittText}>Wähle eine Herausforderung.</p>
 
-        <Link to="/play/what-is-missing" className={styles.tile} data-game="what-is-missing">
-          <span className={styles.tileIcon} aria-hidden="true">
-            👀
-          </span>
-          <span className={styles.tileName}>Was fehlt?</span>
-        </Link>
-
-        <Link to="/play/schuetzenrunde" className={styles.tile} data-game="schuetzenrunde">
-          <span className={styles.tileIcon} aria-hidden="true">
-            🎯
-          </span>
-          <span className={styles.tileName}>Schützenrunde</span>
-        </Link>
-
-        <Link to="/play/finde-den-imposter" className={styles.tile} data-game="finde-den-imposter">
-          <span className={styles.tileIcon} aria-hidden="true">
-            😈
-          </span>
-          <span className={styles.tileName}>Finde den Imposter</span>
-        </Link>
-
-        <Link to="/play/reihenfolge" className={styles.tile} data-game="reihenfolge">
-          <span className={styles.tileIcon} aria-hidden="true">
-            🧠
-          </span>
-          <span className={styles.tileName}>Reihenfolge merken</span>
-        </Link>
-
-        <Link to="/play/kopfrechnen" className={styles.tile} data-game="kopfrechnen">
-          <span className={styles.tileIcon} aria-hidden="true">
-            🔢
-          </span>
-          <span className={styles.tileName}>Kopfrechnen</span>
-        </Link>
-
-        <Link to="/play/wer-bin-ich" className={styles.tile} data-game="wer-bin-ich">
-          <span className={styles.tileIcon} aria-hidden="true">
-            🤔
-          </span>
-          <span className={styles.tileName}>Wer bin ich?</span>
-        </Link>
-
-        <Link to="/play/stadt-land-fluss" className={styles.tile} data-game="stadt-land-fluss">
-          <span className={styles.tileIcon} aria-hidden="true">
-            ✏️
-          </span>
-          <span className={styles.tileName}>Stadt-Land-Fluss</span>
-        </Link>
-
-        <Link to="/play/scharade" className={styles.tile} data-game="scharade">
-          <span className={styles.tileIcon} aria-hidden="true">
-            🎭
-          </span>
-          <span className={styles.tileName}>Scharade</span>
-        </Link>
-
-        <Link to="/play/wortbombe" className={styles.tile} data-game="wortbombe">
-          <span className={styles.tileIcon} aria-hidden="true">
-            💣
-          </span>
-          <span className={styles.tileName}>Wortbombe</span>
-        </Link>
-
-        <Link to="/play/wer-wuerde-eher" className={styles.tile} data-game="wer-wuerde-eher">
-          <span className={styles.tileIcon} aria-hidden="true">
-            🗳️
-          </span>
-          <span className={styles.tileName}>Wer würde eher?</span>
-        </Link>
-
-        <Link to="/play/schuetzenopoly" className={styles.tile} data-game="schuetzenopoly">
-          <span className={styles.tileIcon} aria-hidden="true">
-            🎲
-          </span>
-          <span className={styles.tileName}>Schützenopoly</span>
-        </Link>
-
-        <Link to="/play/kniffel" className={styles.tile} data-game="kniffel">
-          <span className={styles.tileIcon} aria-hidden="true">
-            🎲
-          </span>
-          <span className={styles.tileName}>Kniffel</span>
-        </Link>
-
-        <Link to="/daily" className={styles.tile} data-tile="daily">
-          <span className={styles.tileIcon} aria-hidden="true">
-            📅
-          </span>
-          <span className={styles.tileName}>Daily</span>
-        </Link>
-
-        <Link to="/family" className={styles.tile} data-tile="family">
-          <span className={styles.tileIcon} aria-hidden="true">
-            👨‍👩‍👧
-          </span>
-          <span className={styles.tileName}>Familie</span>
-        </Link>
-
-        <Link to="/leaderboard" className={styles.tile} data-tile="leaderboard">
-          <span className={styles.tileIcon} aria-hidden="true">
-            🏆
-          </span>
-          <span className={styles.tileName}>Rangliste</span>
-        </Link>
-
-        <Link to="/achievements" className={styles.tile} data-tile="achievements">
-          <span className={styles.tileIcon} aria-hidden="true">
-            🏅
-          </span>
-          <span className={styles.tileName}>Abzeichen</span>
-        </Link>
-
-      </nav>
+        <nav className={styles.kacheln} aria-label="Spiele">
+          {SPIELE_KACHELN.map((k) => (
+            <article key={k.id} className={styles.kachel} data-game={k.id}>
+              <span className={styles.kachelIcon} aria-hidden="true">
+                {k.icon}
+              </span>
+              <h3 className={styles.kachelName}>{k.name}</h3>
+              <p className={styles.kachelArt}>{k.art}</p>
+              <Link to={k.pfad} className={styles.kachelKnopf}>
+                Spielen
+                <span className={styles.kachelZiel}> – {k.name}</span>
+              </Link>
+            </article>
+          ))}
+        </nav>
+      </section>
 
       {/* Unter den Kacheln, nicht dazwischen: Das Spiel soll zuerst ein Spiel
           sein. Bewusst ein schlichter Verweis statt eines PayPal-Skripts --
@@ -280,6 +226,234 @@ export function HomePage() {
           <Link to="/datenschutz">Datenschutz</Link>
         </p>
       </footer>
+
+      {menueOffen && <Menue onSchliessen={() => setMenueOffen(false)} />}
     </main>
+  )
+}
+
+/* --------------------------------------------------------------- Menü */
+
+function Menue({ onSchliessen }: { onSchliessen: () => void }) {
+  const eintraege = [
+    { pfad: '/profile', icon: '👤', name: 'Profil und Konto' },
+    { pfad: '/family', icon: '👨‍👩‍👧', name: 'Familienrunde' },
+    { pfad: '/daily', icon: '📅', name: 'Daily Challenge' },
+    { pfad: '/leaderboard', icon: '🏆', name: 'Rangliste' },
+    { pfad: '/achievements', icon: '🏅', name: 'Abzeichen' },
+  ]
+  return (
+    <div className={styles.menueHintergrund} onClick={onSchliessen} role="presentation">
+      <div
+        className={styles.menueTafel}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-label="Menü"
+      >
+        <ul className={styles.menueListe}>
+          {eintraege.map((e) => (
+            <li key={e.pfad}>
+              <Link to={e.pfad} onClick={onSchliessen}>
+                <span aria-hidden="true">{e.icon}</span> {e.name}
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <button type="button" className={styles.menueZu} onClick={onSchliessen}>
+          Schließen
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------- Reiterinhalte */
+
+function Tafel({
+  titel,
+  hinweis,
+  mehr,
+  children,
+}: {
+  titel: string
+  hinweis: string
+  mehr?: { pfad: string; text: string }
+  children: React.ReactNode
+}) {
+  return (
+    <section className={styles.tafel}>
+      <div className={styles.tafelKopf}>
+        <div>
+          <h2 className={styles.abschnittTitel}>{titel}</h2>
+          <p className={styles.abschnittText}>{hinweis}</p>
+        </div>
+        {mehr && (
+          <Link to={mehr.pfad} className={styles.mehrLink}>
+            {mehr.text}
+          </Link>
+        )}
+      </div>
+      <div className={styles.tafelInhalt}>{children}</div>
+    </section>
+  )
+}
+
+function ZuletztGespielt() {
+  const [zeilen, setZeilen] = useState<{ id: string; spiel: string; punkte: number }[] | null>(null)
+
+  useEffect(() => {
+    let abbruch = false
+    void getRecentResults(undefined, undefined, 3)
+      .then((r) => {
+        if (abbruch) return
+        setZeilen(
+          r.map((e) => ({
+            id: e.id,
+            spiel: kachelFuer(e.gameId)?.name ?? gameLabel(e.gameId),
+            punkte: e.score,
+          })),
+        )
+      })
+      .catch(() => setZeilen([]))
+    return () => {
+      abbruch = true
+    }
+  }, [])
+
+  return (
+    <Tafel titel="Zuletzt gespielt" hinweis="Da warst du gerade unterwegs.">
+      {zeilen === null && <p className={styles.leiseZeile}>Laden…</p>}
+      {zeilen?.length === 0 && (
+        <p className={styles.leiseZeile}>Noch nichts gespielt – such dir unten etwas aus.</p>
+      )}
+      {zeilen && zeilen.length > 0 && (
+        <ul className={styles.liste}>
+          {zeilen.map((z) => (
+            <li key={z.id} className={styles.listenZeile}>
+              <span className={styles.zeileName}>{z.spiel}</span>
+              <span className={styles.zeileWert}>{z.punkte.toLocaleString('de-DE')}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Tafel>
+  )
+}
+
+const PLATZ_FARBEN = ['var(--color-gold)', 'var(--color-primary)', 'var(--color-accent)']
+
+function RanglisteKurz() {
+  const [oben, setOben] = useState<OverallEntry[] | null>(null)
+
+  useEffect(() => {
+    let abbruch = false
+    void getRemoteOverall(3)
+      .then((e) => {
+        if (!abbruch) setOben(e)
+      })
+      .catch(() => setOben([]))
+    return () => {
+      abbruch = true
+    }
+  }, [])
+
+  return (
+    <Tafel
+      titel="Rangliste"
+      hinweis="Wer diese Woche vorne liegt."
+      mehr={{ pfad: '/leaderboard', text: 'Alle ansehen' }}
+    >
+      {oben === null && <p className={styles.leiseZeile}>Laden…</p>}
+      {oben?.length === 0 && (
+        <p className={styles.leiseZeile}>
+          Dafür braucht es ein Konto und einen Benutzernamen – dann siehst du hier, wo die
+          anderen stehen.
+        </p>
+      )}
+      {oben && oben.length > 0 && (
+        <ol className={styles.podest}>
+          {oben.map((e, i) => (
+            <li key={e.username} className={styles.podestPlatz}>
+              <span className={styles.podestNummer} style={{ color: PLATZ_FARBEN[i] }}>
+                {i + 1}
+              </span>
+              <span className={styles.podestName}>{e.username}</span>
+              <span className={styles.podestXp}>{e.totalXp.toLocaleString('de-DE')} XP</span>
+            </li>
+          ))}
+        </ol>
+      )}
+    </Tafel>
+  )
+}
+
+function ErfolgeKurz() {
+  const [anzahl, setAnzahl] = useState<number | null>(null)
+  const [letzte, setLetzte] = useState<{ id: string; name: string; icon: string }[]>([])
+
+  useEffect(() => {
+    let abbruch = false
+    void getUnlockedAchievements()
+      .then((offen) => {
+        if (abbruch) return
+        setAnzahl(offen.length)
+        const nachId = new Map(ACHIEVEMENTS.map((a) => [a.id, a]))
+        setLetzte(
+          offen
+            .slice(-3)
+            .reverse()
+            .map((e) => nachId.get(e.achievementId as (typeof ACHIEVEMENTS)[number]['id']))
+            .filter((a): a is NonNullable<typeof a> => Boolean(a))
+            .map((a) => ({ id: a.id, name: a.name, icon: a.icon })),
+        )
+      })
+      .catch(() => setAnzahl(0))
+    return () => {
+      abbruch = true
+    }
+  }, [])
+
+  return (
+    <Tafel
+      titel="Erfolge"
+      hinweis={
+        anzahl === null
+          ? 'Laden…'
+          : `${anzahl} von ${ACHIEVEMENTS.length} Abzeichen freigeschaltet.`
+      }
+      mehr={{ pfad: '/achievements', text: 'Alle ansehen' }}
+    >
+      {anzahl === 0 && (
+        <p className={styles.leiseZeile}>Noch keins – das erste kommt schneller als du denkst.</p>
+      )}
+      {letzte.length > 0 && (
+        <ul className={styles.abzeichen}>
+          {letzte.map((a) => (
+            <li key={a.id} className={styles.abzeichenEintrag}>
+              <span aria-hidden="true">{a.icon}</span>
+              {a.name}
+            </li>
+          ))}
+        </ul>
+      )}
+    </Tafel>
+  )
+}
+
+function TageszielKurz() {
+  const heute = getDailyChallenge()
+  const spiel = kachelFuer(heute.gameId)
+  return (
+    <Tafel
+      titel="Tagesziel"
+      hinweis="Jeden Tag ein Spiel, für alle dasselbe."
+      mehr={{ pfad: '/daily', text: 'Loslegen' }}
+    >
+      <p className={styles.tagesSpiel}>
+        <span aria-hidden="true">{spiel?.icon ?? '📅'}</span>{' '}
+        <strong>{spiel?.name ?? gameLabel(heute.gameId)}</strong>
+        <span className={styles.leiseZeile}> · Level {heute.level}</span>
+      </p>
+    </Tafel>
   )
 }

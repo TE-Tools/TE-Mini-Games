@@ -50,109 +50,122 @@ export function Kniffelblock({
   onEintragen,
 }: KniffelblockProps) {
   const gewuerfelt = wuerfel.some((w) => w > 0)
+  const zeilenProps = { spalten, wuerfel, gewuerfelt, eintragbar, onEintragen }
 
+  /*
+   * Zwei Tabellen statt einer -- so, wie ein Kniffelblock auf Papier auch
+   * aufgebaut ist: oben die Zahlen, unten die Kombinationen. Auf breiten
+   * Schirmen stehen sie nebeneinander, auf dem Handy untereinander. Als
+   * eine einzige Tabelle liesse sich das nicht aufteilen.
+   */
   return (
-    <div className={styles.huelle}>
-      <table className={styles.block}>
-        <thead>
-          <tr>
-            <th scope="col" className={styles.ecke}>
-              Block
-            </th>
-            {spalten.map((s) => (
-              <th
-                key={s.id}
-                scope="col"
-                className={`${styles.kopf} ${s.amZug ? styles.kopfAmZug : ''}`}
-              >
-                {s.name}
-              </th>
-            ))}
-          </tr>
-        </thead>
+    /*
+     * Wie viele Mitspieler in den Tabellen stehen, entscheidet mit, ab
+     * wann die beiden Hälften nebeneinander passen: Bei vier Spalten
+     * braucht jede Hälfte fast doppelt so viel Platz wie bei einer.
+     * Ohne das wurde die letzte Spalte abgeschnitten.
+     */
+    <div className={styles.rahmen} data-spalten={Math.min(spalten.length, 4)}>
+      <div className={styles.haelfte}>
+        <div className={styles.huelle}>
+          <table className={styles.block}>
+            <caption className={styles.blockTitel}>Oberer Block</caption>
+            <Kopfzeile spalten={spalten} />
+            <tbody>
+              {KATEGORIEN.filter((k) => k.teil === 'oben').map((k) => (
+                <Zeile key={k.id} feld={k.id} name={k.name} kurz={k.kurz} {...zeilenProps} />
+              ))}
 
-        <tbody>
-          {KATEGORIEN.filter((k) => k.teil === 'oben').map((k) => (
-            <Zeile
-              key={k.id}
-              feld={k.id}
-              name={k.name}
-              kurz={k.kurz}
-              spalten={spalten}
-              wuerfel={wuerfel}
-              gewuerfelt={gewuerfelt}
-              eintragbar={eintragbar}
-              onEintragen={onEintragen}
-            />
+              <tr className={styles.summeZeile}>
+                <th scope="row" className={styles.summeName}>
+                  Zwischensumme
+                </th>
+                {spalten.map((sp) => (
+                  <td key={sp.id} className={styles.summeWert}>
+                    {obenSumme(sp.block)}
+                  </td>
+                ))}
+              </tr>
+
+              <tr className={styles.bonusZeile}>
+                <th scope="row" className={styles.summeName}>
+                  Bonus ab {BONUS_GRENZE}
+                  <span className={styles.kurz}>{BONUS_PUNKTE} Punkte</span>
+                </th>
+                {spalten.map((sp) => (
+                  <td key={sp.id} className={styles.summeWert}>
+                    {bonusErreicht(sp.block) ? (
+                      <strong className={styles.bonusDa}>+{BONUS_PUNKTE}</strong>
+                    ) : (
+                      <span className={styles.bonusFehlt}>noch {bisZumBonus(sp.block)}</span>
+                    )}
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className={styles.haelfte}>
+        <div className={styles.huelle}>
+          <table className={styles.block}>
+            <caption className={styles.blockTitel}>Unterer Block</caption>
+            <Kopfzeile spalten={spalten} />
+            <tbody>
+              {KATEGORIEN.filter((k) => k.teil === 'unten').map((k) => (
+                <Zeile key={k.id} feld={k.id} name={k.name} kurz={k.kurz} {...zeilenProps} />
+              ))}
+
+              <tr className={styles.summeZeile}>
+                <th scope="row" className={styles.summeName}>
+                  Zwischensumme
+                </th>
+                {spalten.map((sp) => (
+                  <td key={sp.id} className={styles.summeWert}>
+                    {untenSumme(sp.block)}
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Die Endsumme steht unter beiden Haelften -- sie gehoert zu keiner. */}
+      <div className={styles.gesamt}>
+        <span className={styles.gesamtName}>Gesamt</span>
+        <div className={styles.gesamtWerte}>
+          {spalten.map((sp) => (
+            <span key={sp.id} className={styles.gesamtWert}>
+              <span className={styles.gesamtSpieler}>{sp.name}</span>
+              {gesamtpunkte(sp.block)}
+            </span>
           ))}
-
-          <tr className={styles.summeZeile}>
-            <th scope="row" className={styles.summeName}>
-              Zwischensumme
-            </th>
-            {spalten.map((s) => (
-              <td key={s.id} className={styles.summeWert}>
-                {obenSumme(s.block)}
-              </td>
-            ))}
-          </tr>
-
-          <tr className={styles.bonusZeile}>
-            <th scope="row" className={styles.summeName}>
-              Bonus ab {BONUS_GRENZE}
-              <span className={styles.kurz}>{BONUS_PUNKTE} Punkte</span>
-            </th>
-            {spalten.map((s) => (
-              <td key={s.id} className={styles.summeWert}>
-                {bonusErreicht(s.block) ? (
-                  <strong className={styles.bonusDa}>+{BONUS_PUNKTE}</strong>
-                ) : (
-                  <span className={styles.bonusFehlt}>noch {bisZumBonus(s.block)}</span>
-                )}
-              </td>
-            ))}
-          </tr>
-
-          {KATEGORIEN.filter((k) => k.teil === 'unten').map((k) => (
-            <Zeile
-              key={k.id}
-              feld={k.id}
-              name={k.name}
-              kurz={k.kurz}
-              spalten={spalten}
-              wuerfel={wuerfel}
-              gewuerfelt={gewuerfelt}
-              eintragbar={eintragbar}
-              onEintragen={onEintragen}
-            />
-          ))}
-
-          <tr className={styles.summeZeile}>
-            <th scope="row" className={styles.summeName}>
-              Unterer Block
-            </th>
-            {spalten.map((s) => (
-              <td key={s.id} className={styles.summeWert}>
-                {untenSumme(s.block)}
-              </td>
-            ))}
-          </tr>
-        </tbody>
-
-        <tfoot>
-          <tr className={styles.gesamtZeile}>
-            <th scope="row" className={styles.summeName}>
-              Gesamt
-            </th>
-            {spalten.map((s) => (
-              <td key={s.id} className={styles.gesamtWert}>
-                {gesamtpunkte(s.block)}
-              </td>
-            ))}
-          </tr>
-        </tfoot>
-      </table>
+        </div>
+      </div>
     </div>
+  )
+}
+
+function Kopfzeile({ spalten }: { spalten: BlockSpalte[] }) {
+  return (
+    <thead>
+      <tr>
+        <th scope="col" className={styles.ecke}>
+          Feld
+        </th>
+        {spalten.map((sp) => (
+          <th
+            key={sp.id}
+            scope="col"
+            className={`${styles.kopf} ${sp.amZug ? styles.kopfAmZug : ''}`}
+          >
+            {sp.name}
+          </th>
+        ))}
+      </tr>
+    </thead>
   )
 }
 

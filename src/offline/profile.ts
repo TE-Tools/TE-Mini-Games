@@ -26,13 +26,22 @@ function nowIso(): string {
   return new Date().toISOString()
 }
 
+/**
+ * Der Name, unter dem jemand spielt, solange er sich keinen gegeben hat.
+ *
+ * Steht hier als Konstante, weil der Geraeteabgleich ihn braucht: Er
+ * erkennt daran, dass noch kein eigener Name gesetzt ist, und laesst dann
+ * den Namen vom Konto durch.
+ */
+export const GAST_NAME = 'Gast'
+
 export async function getOrCreateGuestProfile(): Promise<LocalProfile> {
   const existing = await db.profiles.get(GUEST_USER_ID)
   if (existing) return existing
 
   const profile: LocalProfile = {
     id: GUEST_USER_ID,
-    displayName: 'Gast',
+    displayName: GAST_NAME,
     avatar: null,
     totalXp: 0,
     playerLevel: 1,

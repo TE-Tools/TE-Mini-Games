@@ -27,7 +27,7 @@ import {
   type KniffelZustand,
   type SpielerEinrichtung,
 } from '@/games/kniffel'
-import { addXp, getOrCreateGuestProfile, saveGameResult } from '@/offline'
+import { GAST_NAME, addXp, getOrCreateGuestProfile, saveGameResult } from '@/offline'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
 import { isKniffelOnlineAvailable } from '@/services/kniffelOnline'
@@ -66,7 +66,9 @@ export function KniffelPage() {
     let abbruch = false
     void getOrCreateGuestProfile()
       .then((p) => {
-        if (!abbruch && p?.displayName) setSpielerName(p.displayName)
+        // "Gast" ist der Vorgabewert, kein Name -- dann lieber "Du".
+        const name = p?.displayName?.trim()
+        if (!abbruch && name && name !== GAST_NAME) setSpielerName(name)
       })
       .catch(() => undefined)
     return () => {
@@ -173,7 +175,7 @@ export function KniffelPage() {
 
   if (ansicht === 'menue') {
     return (
-      <main className={shell.page}>
+      <main className={`${shell.page} ${styles.breiteSeite}`}>
         <Kopf onZurueck={() => navigate('/')} ton={ton} onTon={tonUmschalten} />
         <section className={styles.menue}>
           <p className={styles.einleitung}>
@@ -216,7 +218,7 @@ export function KniffelPage() {
 
   if (ansicht === 'aufbau') {
     return (
-      <main className={shell.page}>
+      <main className={`${shell.page} ${styles.breiteSeite}`}>
         <Kopf onZurueck={() => setAnsicht('menue')} ton={ton} onTon={tonUmschalten} />
         <section className={styles.aufbau}>
           <h2 className={styles.ueberschrift}>Gegen den Rechner</h2>
@@ -292,7 +294,7 @@ export function KniffelPage() {
     const menschSpieler = zustand.spieler.find((s) => s.typ === 'mensch')
     const gewonnen = menschSpieler ? zustand.siegerId === menschSpieler.id : false
     return (
-      <main className={shell.page}>
+      <main className={`${shell.page} ${styles.breiteSeite}`}>
         <Kopf onZurueck={() => setAnsicht('menue')} ton={ton} onTon={tonUmschalten} />
         <section className={shell.section}>
           <p className={gewonnen ? shell.correct : shell.wrong}>
@@ -325,10 +327,14 @@ export function KniffelPage() {
   }
 
   return (
-    <main className={shell.page}>
+    <main className={`${shell.page} ${styles.breiteSeite}`}>
       <Kopf onZurueck={() => setAnsicht('menue')} ton={ton} onTon={tonUmschalten} />
 
       <section className={styles.tisch}>
+        {/* Würfel und Wurfknopf bleiben oben stehen; darunter scrollt der
+            Block weg. Auf dem Handy sonst der Dauerzustand: Man tippt ein
+            Feld an und muss zum Würfeln wieder hochscrollen. */}
+        <div className={styles.oben}>
         <p className={styles.amZug} aria-live="polite">
           {mensch ? 'Du bist dran' : `${aktiv.name} würfelt…`}
           <span className={styles.wurfZaehler}>
@@ -375,6 +381,8 @@ export function KniffelPage() {
                 : 'Jetzt eintragen'}
           </button>
         )}
+
+        </div>
 
         {mensch && zustand.wurfNummer > 0 && (
           <p className={styles.eintragHinweis}>

@@ -18,6 +18,27 @@
   padding-bottom: var(--space-8);
 }
 
+/*
+ * Ab hier liegen die beiden Blockhälften nebeneinander -- dann braucht die
+ * Seite mehr Breite, sonst wird jede Hälfte so schmal, dass die letzte
+ * Mitspielerspalte aus dem Bild läuft. Genau das war beim ersten Versuch
+ * zu sehen: zwei Blöcke nebeneinander, aber nur noch eine Spalte sichtbar.
+ *
+ * PlayShell deckelt jede Spielseite bei 32 rem. Das gilt weiter für alle
+ * anderen Spiele -- nur diese Seite meldet sich davon ab, und nur dort, wo
+ * sie die Breite auch braucht. Der doppelte Klassenname hebt die
+ * Gewichtung an, damit die Reihenfolge im Stylesheet nicht entscheidet.
+ */
+@media (min-width: 52rem) {
+  .breiteSeite.breiteSeite {
+    max-width: 64rem;
+  }
+
+  .tisch {
+    max-width: 62rem;
+  }
+}
+
 .einleitung {
   margin: 0;
   text-align: center;
@@ -193,6 +214,48 @@
 }
 
 /* --- Der Tisch --- */
+
+/*
+ * Würfel und Wurfknopf bleiben oben stehen, der Block scrollt darunter weg.
+ *
+ * Anlass (06.09.2026, Thomas): Auf dem Handy passen dreizehn Felder und
+ * fünf Würfel nicht zusammen auf den Schirm. Ohne das tippt man ein Feld
+ * an und muss zum Würfeln wieder hochscrollen -- bei dreizehn Zügen
+ * sechsundzwanzigmal.
+ *
+ * Ab der Breite, in der beide Blockhälften nebeneinander passen, ist das
+ * nicht mehr nötig: Dann steht ohnehin alles gleichzeitig da.
+ */
+.oben {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  /* Deckend, sonst scheint der Block durch. */
+  background: var(--color-bg);
+  /* Etwas breiter als der Inhalt, damit an den Rändern nichts vorbeiläuft. */
+  margin-inline: calc(var(--space-4) * -1);
+  padding-inline: var(--space-4);
+  box-shadow: 0 8px 12px -10px var(--hairline-strong);
+}
+
+@media (min-width: 52rem) {
+  .oben {
+    position: static;
+    box-shadow: none;
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .oben {
+    transition: box-shadow var(--transition-fast);
+  }
+}
 
 .amZug {
   margin: 0;

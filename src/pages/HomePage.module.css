@@ -1,264 +1,547 @@
+/*
+ * Die Startseite, nach Thomas' Entwurf vom 06.09.2026 (Nachmittag).
+ *
+ * Der Aufbau folgt dem Blick: Marke, Begrüßung, Spielstand als eine
+ * Leiste, Reiter, dann die Spiele. Alles auf warmem Grund, damit die
+ * weissen Karten wie Papier wirken und nicht wie Fenster.
+ *
+ * Der Entwurf ist eine breite Ansicht; hier steht die schmale zuerst und
+ * wächst nach oben. Umgekehrt wäre es ein Rückbau, und die App wird auf
+ * dem Handy gespielt.
+ */
+
 .page {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: var(--space-6) var(--space-4) var(--space-10);
-  max-width: 28rem;
+  padding: var(--space-4) var(--space-4) var(--space-10);
+  max-width: 30rem;
   margin: 0 auto;
-  /* Auf Tablet/Desktop breiter, damit vier Kacheln nebeneinander Platz haben. */
   width: 100%;
-  gap: var(--space-6);
+  gap: var(--space-5);
 }
 
-.header {
+/* ------------------------------------------------------------- Kopf */
+
+.kopf {
   display: grid;
-  grid-template-columns: 3.5rem 1fr 3.5rem;
+  grid-template-columns: 2.75rem 1fr 2.75rem;
   align-items: center;
+  gap: var(--space-2);
   width: 100%;
-  padding-top: var(--space-4);
+}
+
+.menueKnopf,
+.avatarKnopf {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+  cursor: pointer;
+  font-size: var(--text-xl);
+  color: var(--color-text);
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.menueKnopf:hover,
+.avatarKnopf:hover {
+  border-color: var(--color-border-strong);
+}
+
+.menueKnopf:active,
+.avatarKnopf:active {
+  transform: scale(0.94);
+}
+
+.avatarKnopf {
+  justify-self: end;
+  border-color: var(--color-primary);
+}
+
+.avatarGesicht {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.marke {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
 }
 
 .logo {
   display: flex;
   justify-content: center;
-  filter: drop-shadow(0 2px 4px rgb(26 31 49 / 0.12));
 }
 
-.headerText {
-  min-width: 0;
+.markenName {
+  margin: 0;
+  font-size: clamp(1rem, 4.6vw, 1.35rem);
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.markenTe {
+  color: var(--color-gold);
+}
+
+.markenSpruch {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* -------------------------------------------------------- Begrüßung */
+
+.willkommen {
   text-align: center;
 }
 
-/* Avatar oben = Eingang zu den Konto-Einstellungen. */
-.avatarButton {
-  justify-self: end;
-  width: 3.5rem;
-  height: 3.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-full);
-  background: var(--grad-surface);
-  border: 2px solid var(--color-primary);
-  box-shadow: var(--btn-shadow), var(--glow-primary);
-  text-decoration: none;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-}
-
-.avatarButton:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--btn-shadow-hover);
-}
-
-.avatarButton:active {
-  transform: translateY(2px);
-  box-shadow: var(--btn-shadow-active);
-}
-
-.avatarFace {
-  font-size: 1.9rem;
-  line-height: 1;
-}
-
-/* „TE" in Gold, der Rest weiss -- so steht es in Thomas' Entwurf. */
-.title {
-  font-size: clamp(1.7rem, 6.5vw, 2.2rem);
+.willkommenTitel {
+  margin: 0;
+  font-size: clamp(1.6rem, 7.5vw, 2.2rem);
   font-weight: 800;
-  letter-spacing: 0.02em;
+  letter-spacing: -0.01em;
   color: var(--color-text);
-  line-height: 1.15;
 }
 
-.titleTe {
-  background: var(--grad-gold);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.tagline {
-  margin-top: var(--space-2);
-  font-size: var(--text-base);
-  color: var(--color-gold);
-  font-weight: 600;
-}
-
-.stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-3);
-  width: 100%;
-}
-
-.stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-4) var(--space-2);
-  background: var(--color-bg-elevated);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--color-border);
-}
-
-.statLabel {
-  font-size: var(--text-xs);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+.willkommenText {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
 
-.statValue {
+/* ------------------------------------------------------ Standleiste */
+
+.standLeiste {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  width: 100%;
+  border-radius: var(--radius-2xl);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.standTeil {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-3);
+  /* Trennstriche wie im Entwurf, aber nur zwischen den Feldern. */
+  border-right: 1px solid var(--color-border);
+}
+
+.standTeil:nth-child(3) {
+  border-right: none;
+}
+
+.standLabel {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-gold);
+}
+
+.standWert {
+  font-size: var(--text-lg);
+  font-weight: 800;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.fortschritt {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.fortschrittText {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.spur {
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.fuellung {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, #d9a520, var(--color-gold));
+  transition: width var(--transition-normal);
+}
+
+/* ----------------------------------------------------------- Reiter */
+
+.reiter {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.reiterAn,
+.reiterAus {
+  min-height: 2.75rem;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-full);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.reiterAn {
+  background: var(--color-navy);
+  color: #ffffff;
+  border: 1px solid var(--color-navy);
+  font-weight: 700;
+}
+
+.reiterAus {
+  background: var(--color-bg-elevated);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+.reiterAus:hover {
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+
+/* -------------------------------------------------------- Reiterinhalt */
+
+.tafel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.tafelKopf {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.abschnittTitel {
+  margin: 0;
   font-size: var(--text-xl);
   font-weight: 800;
   color: var(--color-text);
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
 }
 
-/* Ein einziges Raster für ALLE Menü-Einträge -- Spiele und Funktionen sehen
-   gleich aus und sind gleich groß (02.09.2026, Thomas' Wunsch). Zwei Kacheln
-   nebeneinander auf dem Handy, vier ab Tablet-Breite. */
-.actions {
+.abschnittText {
+  margin: 2px 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.mehrLink {
+  flex-shrink: 0;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--color-primary);
+  text-decoration: none;
+  padding: var(--space-2);
+}
+
+.mehrLink:hover {
+  text-decoration: underline;
+}
+
+.tafelInhalt {
+  padding: var(--space-4);
+  border-radius: var(--radius-2xl);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.leiseZeile {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.liste,
+.podest,
+.abzeichen {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.listenZeile {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+.zeileName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zeileWert {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.podestPlatz {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.podestNummer {
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  min-width: 1.2em;
+  font-variant-numeric: tabular-nums;
+}
+
+.podestName {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.podestXp {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.abzeichen {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.abzeichenEintrag {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  font-size: var(--text-xs);
+  color: var(--color-text);
+}
+
+.tagesSpiel {
+  margin: 0;
+  font-size: var(--text-base);
+  color: var(--color-text);
+}
+
+/* ----------------------------------------------------------- Spiele */
+
+.spiele {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.kacheln {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--space-3);
   width: 100%;
+  margin-top: var(--space-3);
 }
 
-/*
- * Kacheln nach Thomas' Entwurf: dunkle, satte Flaeche, ein leuchtender Rand
- * in der Spielfarbe und ein Schimmer darunter. Die Farbe je Spiel steht
- * weiter unten -- hier nur, was fuer alle gilt.
- */
-.tile {
+.kachel {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: var(--space-2);
-  /* Quadratisch, aber nie so hoch, dass zwei Reihen nicht mehr aufs Bild passen. */
-  aspect-ratio: 1 / 1;
-  min-height: 7rem;
-  max-height: 11rem;
-  padding: var(--space-3);
+  padding: var(--space-4) var(--space-3);
   border-radius: var(--radius-2xl);
-  font-weight: 700;
-  font-size: var(--text-sm);
-  color: var(--color-text);
-  text-align: center;
-  text-decoration: none;
-  border: 1px solid var(--color-border);
   background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
   box-shadow: var(--shadow-sm);
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast),
-    border-color var(--transition-fast);
+  text-align: center;
+  transition: transform var(--transition-fast), border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
-.tile:hover {
+.kachel:hover {
   transform: translateY(-2px);
   border-color: var(--kachel-farbe, var(--color-border-strong));
   box-shadow: var(--shadow-md);
 }
 
-.tile:active {
-  transform: translateY(0);
-  box-shadow: var(--shadow-sm);
-}
-
-.tileIcon {
-  font-size: 1.7rem;
-  line-height: 1;
-  width: 2.9rem;
-  height: 2.9rem;
+.kachelIcon {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 3.1rem;
+  height: 3.1rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
   /* Hier sitzt die Farbe des Spiels -- als zarter Ton, nicht als Flaeche. */
   background: var(--kachel-ton, var(--color-surface));
-  border-radius: var(--radius-full);
   box-shadow: inset 0 0 0 1px var(--kachel-rahmen, var(--hairline));
-  flex-shrink: 0;
+  font-size: 1.55rem;
+  line-height: 1;
 }
 
-.tileName {
+.kachelName {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 700;
   line-height: 1.25;
+  color: var(--color-text);
 }
 
-/* Eine Farbe je Eintrag. Sie sitzt im Symbolkreis, nicht in der Flaeche:
-   elf gesaettigte Kacheln nebeneinander waren das, was am meisten nach
-   Kinderzimmer aussah. Erkennbar bleibt jedes Spiel trotzdem. */
-.tile[data-game='perfect-second'] {
+.kachelArt {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.kachelKnopf {
+  margin-top: auto;
+  padding-top: var(--space-1);
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.25rem;
+  border-radius: var(--radius-full);
+  background: var(--color-navy);
+  color: #ffffff;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-decoration: none;
+  padding: var(--space-2);
+  transition: background var(--transition-fast);
+}
+
+.kachelKnopf:hover {
+  background: var(--color-navy-hover);
+}
+
+/* Der Spielname steht schon darüber -- für Vorlesegeräte gehört er
+   trotzdem in den Knopf, sonst heissen dreizehn Knöpfe alle "Spielen". */
+.kachelZiel {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.kachel[data-game='perfect-second'] {
   --kachel-ton: color-mix(in srgb, #6d4ae8 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #6d4ae8 30%, transparent);
   --kachel-farbe: #6d4ae8;
 }
 
-.tile[data-game='what-is-missing'] {
+.kachel[data-game='what-is-missing'] {
   --kachel-ton: color-mix(in srgb, #0d7a72 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #0d7a72 30%, transparent);
   --kachel-farbe: #0d7a72;
 }
 
-.tile[data-game='schuetzenrunde'] {
+.kachel[data-game='schuetzenrunde'] {
   --kachel-ton: color-mix(in srgb, #15803d 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #15803d 30%, transparent);
   --kachel-farbe: #15803d;
 }
 
-.tile[data-game='finde-den-imposter'] {
+.kachel[data-game='finde-den-imposter'] {
   --kachel-ton: color-mix(in srgb, #be123c 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #be123c 30%, transparent);
   --kachel-farbe: #be123c;
 }
 
-.tile[data-game='reihenfolge'] {
+.kachel[data-game='reihenfolge'] {
   --kachel-ton: color-mix(in srgb, #1d4ed8 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #1d4ed8 30%, transparent);
   --kachel-farbe: #1d4ed8;
 }
 
-.tile[data-game='kopfrechnen'] {
+.kachel[data-game='kopfrechnen'] {
   --kachel-ton: color-mix(in srgb, #c2410c 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #c2410c 30%, transparent);
   --kachel-farbe: #c2410c;
 }
 
-.tile[data-game='wer-bin-ich'] {
+.kachel[data-game='wer-bin-ich'] {
   --kachel-ton: color-mix(in srgb, #7e22ce 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #7e22ce 30%, transparent);
   --kachel-farbe: #7e22ce;
 }
 
-.tile[data-game='stadt-land-fluss'] {
+.kachel[data-game='stadt-land-fluss'] {
   --kachel-ton: color-mix(in srgb, #047857 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #047857 30%, transparent);
   --kachel-farbe: #047857;
 }
 
-.tile[data-game='scharade'] {
+.kachel[data-game='scharade'] {
   --kachel-ton: color-mix(in srgb, #be185d 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #be185d 30%, transparent);
   --kachel-farbe: #be185d;
 }
 
-.tile[data-game='wortbombe'] {
+.kachel[data-game='wortbombe'] {
   --kachel-ton: color-mix(in srgb, #b45309 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #b45309 30%, transparent);
   --kachel-farbe: #b45309;
 }
 
-.tile[data-game='wer-wuerde-eher'] {
+.kachel[data-game='wer-wuerde-eher'] {
   --kachel-ton: color-mix(in srgb, #4338ca 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #4338ca 30%, transparent);
   --kachel-farbe: #4338ca;
 }
 
-.tile[data-game='schuetzenopoly'] {
+.kachel[data-game='schuetzenopoly'] {
   /* Olivgruen. Das Brett selbst ist dunkles Flaschengruen mit Gold, aber
      beides ist hier schon vergeben: Gruen bei der Schuetzenrunde und bei
      Stadt-Land-Fluss, Gold bei der Rangliste. Als 13-Prozent-Ton im
@@ -269,7 +552,7 @@
   --kachel-farbe: #4d7c0f;
 }
 
-.tile[data-game='kniffel'] {
+.kachel[data-game='kniffel'] {
   /* Tiefes Blau -- die Wuerfel sind weiss, das passt, und Blau ist im
      Raster nur einmal vergeben (Reihenfolge merken, deutlich heller). */
   --kachel-ton: color-mix(in srgb, #1e3a8a 13%, #ffffff);
@@ -277,159 +560,150 @@
   --kachel-farbe: #1e3a8a;
 }
 
-.tile[data-tile='daily'] {
-  --kachel-ton: color-mix(in srgb, #4f46e5 13%, #ffffff);
-  --kachel-rahmen: color-mix(in srgb, #4f46e5 30%, transparent);
-  --kachel-farbe: #4f46e5;
+/* ------------------------------------------------------------- Menü */
+
+.menueHintergrund {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: var(--space-3);
+  background: rgb(31 34 51 / 0.45);
 }
 
-.tile[data-tile='family'] {
-  --kachel-ton: color-mix(in srgb, #8b46c4 13%, #ffffff);
-  --kachel-rahmen: color-mix(in srgb, #8b46c4 30%, transparent);
-  --kachel-farbe: #8b46c4;
-}
-
-.tile[data-tile='leaderboard'] {
-  --kachel-ton: color-mix(in srgb, #a67c0a 13%, #ffffff);
-  --kachel-rahmen: color-mix(in srgb, #a67c0a 30%, transparent);
-  --kachel-farbe: #a67c0a;
-}
-
-.tile[data-tile='achievements'] {
-  --kachel-ton: color-mix(in srgb, #b45309 13%, #ffffff);
-  --kachel-rahmen: color-mix(in srgb, #b45309 30%, transparent);
-  --kachel-farbe: #b45309;
-}
-
-/* Ab Tablet: vier nebeneinander, dafür darf die Seite breiter werden. */
-@media (min-width: 40rem) {
-  .page {
-    max-width: 56rem;
-  }
-
-  .actions {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  .tileIcon {
-    font-size: 2.4rem;
-    width: 3.6rem;
-    height: 3.6rem;
-  }
-
-  .tileName {
-    font-size: var(--text-base);
-  }
-}
-
-.xpBlock {
+.menueTafel {
   width: 100%;
+  max-width: 26rem;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  margin-top: calc(-1 * var(--space-3));
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-2xl);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
 }
 
-.xpHint {
+.menueListe {
+  list-style: none;
   margin: 0;
-  text-align: center;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--color-text-muted);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
 }
 
-.xpHint strong {
-  color: var(--color-gold);
+.menueListe a {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--touch-min);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  text-decoration: none;
+  font-size: var(--text-base);
 }
 
-/* Der Fortschrittsbalken aus dem Entwurf: Violett laeuft nach Gold aus. */
-.xpTrack {
-  width: 100%;
-  height: 8px;
-  border-radius: var(--radius-full);
-  background: var(--color-border);
-  overflow: hidden;
+.menueListe a:hover {
+  background: var(--color-surface);
 }
 
-.xpFill {
-  display: block;
-  height: 100%;
-  border-radius: var(--radius-full);
-  /* Ein Farbton statt Verlauf plus Leuchten: Auf hellem Grund liest sich
-     der Fortschritt so eindeutiger -- vorher lief er in ein helles Gold
-     aus und man sah nicht, wo er endet. */
-  background: var(--color-primary);
-  transition: width var(--transition-normal);
+.menueZu {
+  min-height: var(--touch-min);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--text-base);
+  cursor: pointer;
 }
 
-/* ---- Spenden ----
-   Ruhig gehalten und ganz unten: Wer spielen will, soll spielen. Gold wie die
-   Marke, aber als Umriss statt als Flaeche -- eine volle Goldflaeche haette
-   mehr Gewicht als jede Spielkachel und das Verhaeltnis verdreht. */
+/* ---------------------------------------------------------- Spenden */
 
 .spende {
-  margin: var(--space-8) auto 0;
-  max-width: 28rem;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-5) var(--space-4) var(--space-2);
-  border-top: 1px solid var(--hairline);
+  padding: var(--space-5) var(--space-4);
+  border-radius: var(--radius-2xl);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
   text-align: center;
 }
 
 .spendeText {
   margin: 0;
-  max-width: 24rem;
   font-size: var(--text-sm);
-  line-height: 1.55;
+  line-height: 1.6;
   color: var(--color-text-muted);
 }
 
 .spendeKnopf {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1.25rem;
+  gap: var(--space-2);
+  min-height: var(--touch-min);
+  padding: 0 var(--space-5);
   border-radius: var(--radius-full);
-  border: 1px solid var(--color-gold-deep);
-  color: var(--color-gold);
-  background: rgb(240 200 74 / 0.08);
-  font-weight: 600;
+  background: var(--grad-gold);
+  color: #24180a;
   font-size: var(--text-sm);
+  font-weight: 700;
   text-decoration: none;
-  transition: background var(--transition-fast), border-color var(--transition-fast);
-}
-
-.spendeKnopf:hover {
-  background: rgb(240 200 74 / 0.16);
-  border-color: var(--color-gold);
-}
-
-.spendeKnopf:focus-visible {
-  outline: 2px solid var(--color-gold);
-  outline-offset: 3px;
 }
 
 .spendeKlein {
   margin: 0;
   font-size: var(--text-xs);
   color: var(--color-text-muted);
-  opacity: 0.75;
 }
 
 .rechtliches {
-  margin: var(--space-2) 0 0;
+  margin: 0;
   font-size: var(--text-xs);
   color: var(--color-text-muted);
 }
 
 .rechtliches a {
   color: var(--color-text-muted);
-  text-decoration: underline;
-  text-underline-offset: 2px;
 }
 
-.rechtliches a:hover { color: var(--color-gold); }
-.rechtliches a:focus-visible { outline: 2px solid var(--color-gold); outline-offset: 2px; }
+/* ------------------------- Ab Tablet: mehr Platz, mehr nebeneinander */
+
+@media (min-width: 40rem) {
+  .page {
+    max-width: 60rem;
+    gap: var(--space-6);
+  }
+
+  .kacheln {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  /* Wie im Entwurf: Stand und Fortschritt in einer Zeile. */
+  .standLeiste {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) 2fr;
+  }
+
+  .fortschritt {
+    grid-column: auto;
+    border-top: none;
+    border-left: 1px solid var(--color-border);
+    justify-content: center;
+  }
+
+  .reiter {
+    grid-template-columns: repeat(4, minmax(0, 9rem));
+    justify-content: center;
+  }
+
+  .willkommenTitel {
+    font-size: 2.6rem;
+  }
+}

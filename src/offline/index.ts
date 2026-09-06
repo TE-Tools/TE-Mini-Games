@@ -10,6 +10,7 @@ export type {
 } from './db'
 
 export {
+  GAST_NAME,
   getOrCreateGuestProfile,
   setAvatar,
   setDisplayName,
