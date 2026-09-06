@@ -42,3 +42,4 @@ export {
   MIN_WORDS,
 } from './customCategories'
 export type { CustomCategory, ImportResult } from './customCategories'
+export { HELPER_CLUSTERS, helperCandidates } from './data/helperClusters'
