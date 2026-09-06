@@ -23,6 +23,11 @@ See the full product specification for requirements.
 Binding design specs live in `docs/design/`. Follow them when implementing the
 corresponding feature; do not invent a competing design.
 
+- **Kniffel:** Regeln und Wertung liegen in `src/games/kniffel/regeln.ts`.
+  Die Online-Wertung in `supabase/migrations/017_kniffel.sql` ist eine zweite
+  Fassung derselben Regeln -- notwendig, weil beim Kniffel der Würfel das
+  Spiel ist und ein Client, der selbst würfelt, sich alles schreiben könnte.
+  Wer eine Regel ändert, ändert beide Seiten.
 - **Schützenopoly:** `docs/design/schuetzenopoly/` – Architektur, Datenmodell,
   Brettreihenfolge und Balancing des Brettspiels. Regeln gehören ausschließlich
   nach `src/games/schuetzenopoly/`, Balancingwerte ausschließlich in dessen

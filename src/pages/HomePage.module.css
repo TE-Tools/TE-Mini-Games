@@ -269,6 +269,14 @@
   --kachel-farbe: #4d7c0f;
 }
 
+.tile[data-game='kniffel'] {
+  /* Tiefes Blau -- die Wuerfel sind weiss, das passt, und Blau ist im
+     Raster nur einmal vergeben (Reihenfolge merken, deutlich heller). */
+  --kachel-ton: color-mix(in srgb, #1e3a8a 13%, #ffffff);
+  --kachel-rahmen: color-mix(in srgb, #1e3a8a 30%, transparent);
+  --kachel-farbe: #1e3a8a;
+}
+
 .tile[data-tile='daily'] {
   --kachel-ton: color-mix(in srgb, #4f46e5 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #4f46e5 30%, transparent);

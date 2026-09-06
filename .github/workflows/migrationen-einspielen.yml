@@ -65,7 +65,8 @@ jobs:
             select t.name || ': ' || case when c.oid is null then 'FEHLT' else 'da' end
               from (values
                 ('fdi_state'), ('fdi_words'), ('fdi_custom_categories'),
-                ('wbi_state'), ('slf_state'), ('level_stand'), ('spieler_stand')
+                ('wbi_state'), ('slf_state'), ('kniffel_state'),
+                ('level_stand'), ('spieler_stand')
               ) as t(name)
               left join pg_class c
                 on c.relname = t.name
@@ -91,7 +92,8 @@ jobs:
             select t.name || ': ' || case when c.oid is null then 'FEHLT' else 'da' end
               from (values
                 ('fdi_state'), ('fdi_words'), ('fdi_custom_categories'),
-                ('wbi_state'), ('slf_state'), ('level_stand'), ('spieler_stand')
+                ('wbi_state'), ('slf_state'), ('kniffel_state'),
+                ('level_stand'), ('spieler_stand')
               ) as t(name)
               left join pg_class c
                 on c.relname = t.name
