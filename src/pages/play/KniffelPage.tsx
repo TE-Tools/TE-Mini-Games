@@ -336,8 +336,18 @@ export function KniffelPage() {
             Block weg. Auf dem Handy sonst der Dauerzustand: Man tippt ein
             Feld an und muss zum Würfeln wieder hochscrollen. */}
         <div className={styles.oben}>
-        <p className={styles.amZug} aria-live="polite">
-          {mensch ? 'Du bist dran' : `${aktiv.name} würfelt…`}
+        <p
+          className={`${styles.amZug} ${mensch ? styles.amZugIch : styles.amZugAndere}`}
+          aria-live="polite"
+        >
+          <span className={styles.amZugPunkt} aria-hidden="true" />
+          {mensch ? (
+            'Du bist dran'
+          ) : (
+            <>
+              <strong className={styles.amZugName}>{aktiv.name}</strong> ist dran
+            </>
+          )}
           <span className={styles.wurfZaehler}>
             {zustand.wurfNummer === 0
               ? 'noch nicht gewürfelt'

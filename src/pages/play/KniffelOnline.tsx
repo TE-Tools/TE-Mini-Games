@@ -283,6 +283,9 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
   const { match, me, players } = state
   const ichBinDran = match.am_zug === me.seat && match.phase === 'spiel'
   const amZugSpieler = players.find((p) => p.seat === match.am_zug)
+  // Wer dran ist, steht bei jedem Hinweis dabei -- "warte, bis du dran
+  // bist" laesst offen, auf wen man wartet (06.09.2026, Thomas).
+  const amZugName = amZugSpieler?.name ?? 'Jemand'
 
   const spalten: BlockSpalte[] = players.map((p) => ({
     id: String(p.seat),
@@ -420,8 +423,18 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
       <section className={styles.tisch}>
         {/* Wie im Solospiel: oben bleibt stehen, der Block scrollt. */}
         <div className={styles.oben}>
-        <p className={styles.amZug} aria-live="polite">
-          {ichBinDran ? 'Du bist dran' : `${amZugSpieler?.name ?? 'Jemand'} ist dran`}
+        <p
+          className={`${styles.amZug} ${ichBinDran ? styles.amZugIch : styles.amZugAndere}`}
+          aria-live="polite"
+        >
+          <span className={styles.amZugPunkt} aria-hidden="true" />
+          {ichBinDran ? (
+            'Du bist dran'
+          ) : (
+            <>
+              <strong className={styles.amZugName}>{amZugName}</strong> ist dran
+            </>
+          )}
           <span className={styles.wurfZaehler}>
             {match.wurf_nummer === 0
               ? 'noch nicht gewürfelt'
@@ -456,7 +469,13 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
           </button>
         )}
 
-        {!ichBinDran && <p className={styles.warten}>Warte, bis du dran bist…</p>}
+        {!ichBinDran && (
+          <p className={styles.warten}>
+            <strong>{amZugName}</strong>{' '}
+            {match.wurf_nummer === 0 ? 'ist am Zug.' : 'würfelt gerade.'} Du kommst
+            danach dran.
+          </p>
+        )}
         </div>
 
         {fehler && (

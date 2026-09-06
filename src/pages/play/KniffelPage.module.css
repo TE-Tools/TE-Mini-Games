@@ -257,12 +257,73 @@
   }
 }
 
+/*
+ * Wer dran ist -- die wichtigste Zeile auf dem Schirm, deshalb ganz oben
+ * und mit Punkt davor. Der Punkt sagt auf einen Blick, ob man selbst
+ * gemeint ist; der Name sagt es noch einmal ausgeschrieben, denn Farbe
+ * allein reicht nicht (06.09.2026, Thomas: "nicht nur warte, bis du dran
+ * bist, sondern warte, der und der Spieler ist dran").
+ */
 .amZug {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
   margin: 0;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
   text-align: center;
   font-size: var(--text-lg);
   font-weight: 800;
   color: var(--color-text);
+}
+
+.amZugIch {
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 32%, transparent);
+}
+
+.amZugAndere {
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+}
+
+.amZugPunkt {
+  width: 0.62rem;
+  height: 0.62rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-text-muted);
+}
+
+.amZugIch .amZugPunkt {
+  background: var(--color-primary);
+  /* Nur bei einem selbst: Es soll auffallen, wenn man gemeint ist. */
+  animation: pochen 1.4s ease-in-out infinite;
+}
+
+@keyframes pochen {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 0.6;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .amZugIch .amZugPunkt {
+    animation: none;
+  }
+}
+
+.amZugName {
+  font-weight: 800;
+  color: var(--color-primary);
 }
 
 .wurfZaehler {
@@ -275,7 +336,8 @@
 
 .halteHinweis,
 .eintragHinweis,
-.warten {
+.warten,
+.wartet {
   margin: 0;
   text-align: center;
   font-size: var(--text-xs);
@@ -283,9 +345,15 @@
   line-height: 1.5;
 }
 
-.warten {
+.warten,
+.wartet {
   padding: var(--space-4);
   font-size: var(--text-sm);
+}
+
+.warten strong,
+.wartet strong {
+  color: var(--color-text);
 }
 
 .wuerfelKnopf {
