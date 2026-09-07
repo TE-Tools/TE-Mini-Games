@@ -14,6 +14,9 @@ import { describe, it, expect } from 'vitest'
 import {
   createMatch,
   tapSpalte,
+  tick,
+  arbeiteAus,
+  arbeitMoeglich,
   kannTippen,
   passtNoch,
   obersterBlock,
@@ -60,6 +63,21 @@ function level(
   }
 }
 
+/** Block hochschieben und die Bienen arbeiten lassen, bis nichts mehr geht. */
+function schiebe(state: BienenState, spalte: number): BienenState {
+  const r = tapSpalte(state, spalte)
+  if (!r) throw new Error(`Spalte ${spalte} lässt sich nicht antippen`)
+  return arbeiteAus(r.state).state
+}
+
+/** Wie `schiebe`, gibt aber auch die Handgriffe der Bienen zurück. */
+function schiebeMitSchritten(state: BienenState, spalte: number) {
+  const r = tapSpalte(state, spalte)
+  if (!r) throw new Error(`Spalte ${spalte} lässt sich nicht antippen`)
+  const aus = arbeiteAus(r.state)
+  return { state: aus.state, schritte: aus.schritte, slot: r.slot }
+}
+
 /**
  * Ein Ring aus Rot mit einem blauen Kern:
  *   1 1 1
@@ -84,7 +102,7 @@ describe('Zugänglich', () => {
   it('legt den Kern frei, sobald ringsum abgetragen ist', () => {
     const s = createMatch(level(RING, 3, [[{ color: 1, amount: 8 }]]))
     expect(zugaenglicheFarben(s)).toEqual(new Set([1]))
-    const r = tapSpalte(s, 0)!
+    const r = schiebeMitSchritten(s, 0)
     expect(restPixel(r.state)).toBe(1)
     expect(zugaenglicheFarben(r.state)).toEqual(new Set([2]))
   })
@@ -93,7 +111,7 @@ describe('Zugänglich', () => {
 describe('Sammeln', () => {
   it('holt Pixel der Farbe und zählt den Block herunter', () => {
     const s = createMatch(level(RING, 3, [[{ color: 1, amount: 3 }]]))
-    const r = tapSpalte(s, 0)!
+    const r = schiebeMitSchritten(s, 0)
     expect(r.schritte).toHaveLength(3)
     expect(r.schritte.every((x) => x.farbe === 1)).toBe(true)
     expect(restPixel(r.state)).toBe(6) // 9 minus 3 geholte
@@ -102,7 +120,7 @@ describe('Sammeln', () => {
 
   it('lässt einen Block warten, dessen Farbe verdeckt ist', () => {
     const s = createMatch(level(RING, 3, [[{ color: 2, amount: 1 }]]))
-    const r = tapSpalte(s, 0)!
+    const r = schiebeMitSchritten(s, 0)
     expect(r.schritte).toHaveLength(0)
     expect(r.state.slots[0]).toMatchObject({ color: 2, amount: 1 })
     expect(r.state.phase).toBe('play')
@@ -112,10 +130,10 @@ describe('Sammeln', () => {
     let s = createMatch(
       level(RING, 3, [[{ color: 2, amount: 1 }], [{ color: 1, amount: 8 }]]),
     )
-    s = tapSpalte(s, 0)!.state // Blau wartet
+    s = schiebe(s, 0) // Blau wartet
     expect(s.slots[0]).not.toBeNull()
 
-    const r = tapSpalte(s, 1)! // Rot räumt den Ring ab …
+    const r = schiebeMitSchritten(s, 1) // Rot räumt den Ring ab …
     // … und im selben Zug holt der wartende blaue Block seinen Kern.
     expect(r.state.phase).toBe('won')
     expect(restPixel(r.state)).toBe(0)
@@ -133,17 +151,62 @@ describe('Sammeln', () => {
         [{ color: 2, amount: 8 }],
       ]),
     )
-    s = tapSpalte(s, 0)!.state // der große rote Block wartet
-    s = tapSpalte(s, 1)!.state // der kleine auch
+    s = schiebe(s, 0) // der große rote Block wartet
+    s = schiebe(s, 1) // der kleine auch
     expect(s.slots[0]).toMatchObject({ amount: 5 })
     expect(s.slots[1]).toMatchObject({ amount: 1 })
 
-    const r = tapSpalte(s, 2)! // Blau trägt den Ring ab
+    const r = schiebeMitSchritten(s, 2) // Blau trägt den Ring ab
     const rot = r.schritte.filter((x) => x.farbe === 1)
     expect(rot).toHaveLength(1)
     expect(rot[0]!.slot).toBe(1) // der Block mit der 1 war dran
     expect(r.state.slots[1]).toBeNull() // voll und weg
     expect(r.state.slots[0]).toMatchObject({ amount: 5 }) // der große bleibt liegen
+  })
+})
+
+describe('Der Takt', () => {
+  it('holt je Runde einen Pixel pro arbeitendem Block', () => {
+    const s = createMatch(level(RING, 3, [[{ color: 1, amount: 8 }]]))
+    const r = tick(tapSpalte(s, 0)!.state)
+    expect(r.schritte).toHaveLength(1)
+    expect(r.state.slots[0]).toMatchObject({ amount: 7 })
+    expect(restPixel(r.state)).toBe(8)
+  })
+
+  it('lässt zwei Blöcke gleichzeitig arbeiten – jeder holt einen je Runde', () => {
+    let s = createMatch(
+      level(RING, 3, [[{ color: 1, amount: 4 }], [{ color: 1, amount: 4 }]]),
+    )
+    s = tapSpalte(s, 0)!.state
+    s = tapSpalte(s, 1)!.state
+    const r = tick(s)
+    expect(r.schritte).toHaveLength(2)
+    expect(r.state.slots[0]).toMatchObject({ amount: 3 })
+    expect(r.state.slots[1]).toMatchObject({ amount: 3 })
+  })
+
+  it('legt den zweiten Block auf den zweiten Platz, solange der erste arbeitet', () => {
+    // Thomas: "wenn ich 2 anklicke, soll der 2. in die 2. Wabe springen."
+    // Genau deshalb arbeitet ein Tipp nicht sofort alles ab.
+    const s = createMatch(
+      level(RING, 3, [[{ color: 1, amount: 4 }], [{ color: 1, amount: 4 }]]),
+    )
+    const erster = tapSpalte(s, 0)!
+    expect(erster.slot).toBe(0)
+    const zweiter = tapSpalte(erster.state, 1)!
+    expect(zweiter.slot).toBe(1)
+    expect(zweiter.state.slots.filter((x) => x != null)).toHaveLength(2)
+  })
+
+  it('sagt, ob überhaupt noch eine Biene fliegen kann', () => {
+    const leerlauf = createMatch(level(RING, 3, [[{ color: 1, amount: 1 }]]))
+    expect(arbeitMoeglich(leerlauf)).toBe(false) // nichts auf den Plätzen
+    expect(arbeitMoeglich(tapSpalte(leerlauf, 0)!.state)).toBe(true)
+
+    // Blau steckt im Kern fest: der Block kann nicht arbeiten.
+    const wartet = createMatch(level(RING, 3, [[{ color: 2, amount: 1 }]]))
+    expect(arbeitMoeglich(tapSpalte(wartet, 0)!.state)).toBe(false)
   })
 })
 
@@ -153,7 +216,7 @@ describe('Der Nachschub', () => {
       level(RING, 3, [[{ color: 1, amount: 2 }, { color: 2, amount: 1 }]]),
     )
     expect(obersterBlock(s, 0)).toMatchObject({ color: 1, amount: 2 })
-    expect(obersterBlock(tapSpalte(s, 0)!.state, 0)).toMatchObject({ color: 2, amount: 1 })
+    expect(obersterBlock(schiebe(s, 0), 0)).toMatchObject({ color: 2, amount: 1 })
   })
 
   it('zeigt nur drei Reihen – der Rest rückt nach', () => {
@@ -176,7 +239,7 @@ describe('Der Nachschub', () => {
     let s = createMatch(
       level(RING, 3, [[{ color: 1, amount: 5 }], [{ color: 1, amount: 5 }]]),
     )
-    s = tapSpalte(s, 0)!.state // fünf der acht roten sind weg
+    s = schiebe(s, 0) // fünf der acht roten sind weg
     expect(passtNoch(s, obersterBlock(s, 1))).toBe(false) // fünf weitere passen nicht
   })
 
@@ -213,9 +276,9 @@ describe('Gewonnen und verloren', () => {
     const s = createMatch(
       level(RING, 3, [[{ color: 1, amount: 8 }], [{ color: 2, amount: 1 }]]),
     )
-    const nachRot = tapSpalte(s, 0)!.state
+    const nachRot = schiebe(s, 0)
     expect(nachRot.phase).toBe('play')
-    expect(tapSpalte(nachRot, 1)!.state.phase).toBe('won')
+    expect(schiebe(nachRot, 1).phase).toBe('won')
   })
 
   it('ist verloren, wenn alle Plätze auf Farben warten, an die niemand kommt', () => {
@@ -246,11 +309,11 @@ describe('Gewonnen und verloren', () => {
         [{ color: 2, amount: 1 }],
       ]),
     )
-    s = tapSpalte(s, 0)!.state
-    s = tapSpalte(s, 1)!.state
+    s = schiebe(s, 0)
+    s = schiebe(s, 1)
     expect(pixelDerFarbe(s, 1)).toBe(0)
     expect(s.tote).toBe(1)
-    expect(tapSpalte(s, 2)!.state.phase).toBe('won')
+    expect(schiebe(s, 2).phase).toBe('won')
   })
 
   it('nimmt nach dem Ende keine Tipps mehr an', () => {
@@ -261,8 +324,8 @@ describe('Gewonnen und verloren', () => {
         [{ color: 1, amount: 3 }],
       ]),
     )
-    s = tapSpalte(s, 0)!.state
-    s = tapSpalte(s, 1)!.state
+    s = schiebe(s, 0)
+    s = schiebe(s, 1)
     expect(s.phase).toBe('won')
     expect(tapSpalte(s, 2)).toBeNull()
   })
@@ -343,14 +406,17 @@ function loesbar(level: number): boolean {
     for (let i = 0; i < s.spalten.length; i++) {
       const r = tapSpalte(s, i)
       if (!r) continue
-      if (r.state.phase === 'won') return true
-      if (r.state.phase === 'lost') continue
+      // Der Löser wartet nach jedem Zug ab, bis die Bienen fertig sind --
+      // das kann ein Mensch auch, also genügt es für die Lösbarkeit.
+      const danach = arbeiteAus(r.state).state
+      if (danach.phase === 'won') return true
+      if (danach.phase === 'lost') continue
       const key =
-        `${r.state.spalten.map((sp) => sp.length).join(',')}|${r.state.board.join('')}|` +
-        r.state.slots.map((x) => (x ? `${x.color}:${x.amount}` : '-')).join(',')
+        `${danach.spalten.map((sp) => sp.length).join(',')}|${danach.board.join('')}|` +
+        danach.slots.map((x) => (x ? `${x.color}:${x.amount}` : '-')).join(',')
       if (gesehen.has(key)) continue
       gesehen.add(key)
-      stapel.push(r.state)
+      stapel.push(danach)
     }
   }
   return false
@@ -372,7 +438,7 @@ describe('Lösbarkeit', () => {
       while (s.phase === 'play' && n++ < 200) {
         const spalte = s.spalten.findIndex((sp) => sp.length > 0)
         if (spalte < 0 || freieSlots(s) === 0) break
-        s = tapSpalte(s, spalte)!.state
+        s = schiebe(s, spalte)
       }
       expect(`Level ${level}: ${s.phase}`).toBe(`Level ${level}: won`)
     }

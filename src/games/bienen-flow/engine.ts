@@ -103,55 +103,86 @@ export interface Schritt {
 }
 
 /**
- * Die Bienen arbeiten, bis nichts mehr geht.
+ * Eine Runde Bienenarbeit.
  *
- * In jeder Runde holt jeder arbeitsfähige Block genau einen Pixel, und zwar
- * in der Reihenfolge kleinste Restzahl zuerst -- Thomas' Regel: "wenn nur
- * einer geht, hat immer der mit der kleinsten Zahl als erstes weg gehend".
- * Das Tröpfeln ist damit nachrechenbar, statt von der Anzeige abzuhängen.
+ * Jeder arbeitsfähige Block holt genau einen Pixel, in der Reihenfolge
+ * kleinste Restzahl zuerst -- Thomas' Regel: "wenn nur einer geht, hat immer
+ * der mit der kleinsten Zahl als erstes weg gehend".
+ *
+ * Warum das in Runden läuft und nicht in einem Rutsch (07.09.2026): Vorher
+ * arbeitete ein Block sofort komplett ab, und sein Platz war beim nächsten
+ * Tipp längst wieder frei. Thomas: "wenn ich 2 anklicke, soll der 2. in die
+ * 2. Wabe springen" -- genau das geht nur, wenn die Arbeit Zeit braucht und
+ * die Blöcke solange auf ihren Plätzen liegen bleiben. Die Anzeige ruft
+ * deshalb `tick` im Takt auf; jeder Tipp dazwischen legt seinen Block auf den
+ * nächsten freien Platz.
  */
-function arbeiten(state: BienenState): { state: BienenState; schritte: Schritt[] } {
+export function tick(state: BienenState): { state: BienenState; schritte: Schritt[] } {
+  if (state.phase !== 'play') return { state, schritte: [] }
+
   const board = state.board.slice()
   const slots = state.slots.slice()
   const schritte: Schritt[] = []
+  const frei = zugaenglich(board, state.rows, state.cols)
 
-  for (let runde = 0; runde < 10_000; runde++) {
-    const frei = zugaenglich(board, state.rows, state.cols)
-    const reihenfolge = slots
-      .map((b, i) => ({ b, i }))
-      .filter((x): x is { b: BienenBlock; i: number } => x.b != null)
-      .sort((x, y) => x.b.amount - y.b.amount || x.i - y.i)
+  const reihenfolge = slots
+    .map((b, i) => ({ b, i }))
+    .filter((x): x is { b: BienenBlock; i: number } => x.b != null)
+    .sort((x, y) => x.b.amount - y.b.amount || x.i - y.i)
 
-    let etwasGetan = false
-    for (const { b, i } of reihenfolge) {
-      const zelle = frei.findIndex((f, z) => f && board[z] === b.color)
-      if (zelle < 0) continue
-      board[zelle] = 0
-      frei[zelle] = false
-      const rest = b.amount - 1
-      schritte.push({ zelle, slot: i, farbe: b.color })
-      slots[i] = rest > 0 ? { ...b, amount: rest } : null
-      etwasGetan = true
-    }
-    if (!etwasGetan) break
+  for (const { b, i } of reihenfolge) {
+    const zelle = frei.findIndex((f, z) => f && board[z] === b.color)
+    if (zelle < 0) continue
+    board[zelle] = 0
+    frei[zelle] = false
+    const rest = b.amount - 1
+    schritte.push({ zelle, slot: i, farbe: b.color })
+    slots[i] = rest > 0 ? { ...b, amount: rest } : null
   }
 
-  const leer = board.every((c) => c === 0)
-  const belegt = slots.reduce((n, s) => n + (s == null ? 0 : 1), 0)
-  const zwischen: BienenState = { ...state, board, slots }
-  const tote = slots.reduce(
-    (n, s) => n + (s != null && pixelDerFarbe(zwischen, s.color) === 0 ? 1 : 0),
+  return { state: bewerte({ ...state, board, slots }), schritte }
+}
+
+/** Ob überhaupt noch eine Biene fliegen kann. */
+export function arbeitMoeglich(state: BienenState): boolean {
+  const frei = zugaenglich(state.board, state.rows, state.cols)
+  for (const b of state.slots) {
+    if (!b) continue
+    if (frei.some((f, z) => f && state.board[z] === b.color)) return true
+  }
+  return false
+}
+
+/**
+ * Phase und Zähler nachziehen.
+ *
+ * Verloren ist es, wenn alle Plätze belegt sind und keiner davon noch etwas
+ * holen kann -- dann ändert sich nie wieder etwas, denn abtragen können nur
+ * Blöcke auf Plätzen.
+ */
+function bewerte(state: BienenState): BienenState {
+  const leer = state.board.every((c) => c === 0)
+  const belegt = state.slots.reduce((n, s) => n + (s == null ? 0 : 1), 0)
+  const tote = state.slots.reduce(
+    (n, s) => n + (s != null && pixelDerFarbe(state, s.color) === 0 ? 1 : 0),
     0,
   )
+  const klemmt = belegt >= state.slotCount && !arbeitMoeglich(state)
+  return { ...state, tote, phase: leer ? 'won' : klemmt ? 'lost' : 'play' }
+}
 
-  return {
-    state: {
-      ...zwischen,
-      tote,
-      phase: leer ? 'won' : belegt >= state.slotCount ? 'lost' : 'play',
-    },
-    schritte,
+/** Arbeiten lassen, bis nichts mehr geht -- für Tests und den Löser. */
+export function arbeiteAus(state: BienenState): { state: BienenState; schritte: Schritt[] } {
+  let s = state
+  const alle: Schritt[] = []
+  for (let runde = 0; runde < 10_000; runde++) {
+    const r = tick(s)
+    if (r.schritte.length === 0) return { state: r.state, schritte: alle }
+    alle.push(...r.schritte)
+    s = r.state
+    if (s.phase !== 'play') break
   }
+  return { state: s, schritte: alle }
 }
 
 export function createMatch(level: BienenLevel): BienenState {
@@ -206,11 +237,14 @@ export interface TapResult {
   state: BienenState
   slot: number
   block: BienenBlock
-  /** Die Handgriffe der Bienen in ihrer Reihenfolge. */
-  schritte: Schritt[]
 }
 
-/** Obersten Block einer Spalte auf einen freien Platz schieben. */
+/**
+ * Obersten Block einer Spalte auf den nächsten freien Platz schieben.
+ *
+ * Gearbeitet wird hier NICHT -- das übernimmt `tick`. So bleibt der Block
+ * sichtbar auf seinem Platz liegen, und der nächste Tipp landet daneben.
+ */
 export function tapSpalte(state: BienenState, spalte: number): TapResult | null {
   if (!kannTippen(state, spalte)) return null
   const spalten = state.spalten.map((s) => s.map((b) => ({ ...b })))
@@ -219,13 +253,11 @@ export function tapSpalte(state: BienenState, spalte: number): TapResult | null 
   const platz = slots.findIndex((s) => s == null)
   slots[platz] = block
 
-  const { state: danach, schritte } = arbeiten({
-    ...state,
-    spalten,
-    slots,
-    moves: state.moves + 1,
-  })
-  return { state: danach, slot: platz, block, schritte }
+  return {
+    state: bewerte({ ...state, spalten, slots, moves: state.moves + 1 }),
+    slot: platz,
+    block,
+  }
 }
 
 /** Was die Anzeige zeigen darf: die obersten drei Reihen. */

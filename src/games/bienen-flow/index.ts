@@ -4,6 +4,9 @@ export { MOTIVE, REICHE_MOTIVE, motivRaster, bedarfJeFarbe } from './motive'
 export {
   createMatch,
   tapSpalte,
+  tick,
+  arbeiteAus,
+  arbeitMoeglich,
   kannTippen,
   passtNoch,
   obersterBlock,
