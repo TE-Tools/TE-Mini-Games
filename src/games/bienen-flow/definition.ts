@@ -3,19 +3,18 @@ import { BIENEN_MAX_LEVEL } from './types'
 import { createBienenLevel } from './level'
 
 /**
- * Die Wertung rechnet mit den verstopften Plätzen.
+ * Die Wertung rechnet mit den toten Blöcken.
  *
- * Warum nicht mit Zügen: Wer gewinnt, hat ungefähr gleich viele Blöcke
- * hochgeschickt, egal wie gut er gespielt hat. Verstopfte Plätze messen
- * dagegen genau das, worum es geht -- jeder davon ist ein Block, der nicht
- * aufging. Wer sauber rechnet, kommt mit null durch und steht bei fünf
- * Sternen; wer sich viermal verzählt, gewinnt gerade noch.
+ * Tot ist ein Block, dessen Farbe es im Bild nicht mehr gibt -- er kann nie
+ * voll werden und belegt seinen Platz bis zum Schluss. Genau das ist der
+ * Fehler, den das Spiel bestraft. Die Zahl der Züge taugt als Maß nicht:
+ * Wer gewinnt, schiebt ungefähr gleich viele Blöcke hoch.
  */
 export const bienenFlowGame: GameDefinition = {
   id: 'bienen-flow',
   name: 'Bienen-Flow',
   description:
-    'Schicke Pollenblöcke los, bis das Bild voll ist. Es muss genau aufgehen – jeder Block zu viel verstopft einen Platz.',
+    'Schieb Blöcke auf die Plätze, die Bienen holen die Pixel. Nur was von außen zugänglich ist – und es muss genau aufgehen.',
   icon: '🐝',
   maxLevel: BIENEN_MAX_LEVEL,
   createLevel: (level, seed) => {
@@ -32,10 +31,10 @@ export const bienenFlowGame: GameDefinition = {
     }
   },
   calculateScore: (level, rawResult) => {
-    const raw = rawResult as { won?: boolean; verstopft?: number; slotCount?: number }
+    const raw = rawResult as { won?: boolean; tote?: number; slotCount?: number }
     if (!raw.won) return 0
     const plaetze = raw.slotCount ?? 5
-    const sauber = Math.max(0, plaetze - 1 - (raw.verstopft ?? plaetze - 1))
+    const sauber = Math.max(0, plaetze - 1 - (raw.tote ?? plaetze - 1))
     return 400 + level * 8 + sauber * 70
   },
   calculateXP: (level, score) => {

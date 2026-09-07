@@ -1,27 +1,24 @@
 /**
- * Bienen-Flow – 100 Level, Abschnitte à 20 mit Tor.
+ * Bienen-Flow – die Level.
  *
- * Ein Level besteht aus zwei Teilen: dem Motiv (daraus ergibt sich, wie viele
- * Pollen jede Farbe braucht) und dem Nachschub (Blöcke mit Farbe und Anzahl,
- * in vier Spalten gestapelt).
+ * Vorerst zehn Stück zum Anspielen; der Erzeuger rechnet aber schon mit
+ * einer Steigerung, damit daraus später hundert werden können, ohne dass
+ * sich die Regeln ändern.
  *
- * Die eigentliche Aufgabe des Erzeugers ist, dass es aufgeht UND wehtut:
+ * Ein Level besteht aus dem Motiv (daraus ergibt sich, wie viele Pixel jede
+ * Farbe hat) und dem Nachschub. Zwei Dinge muss der Erzeuger garantieren:
  *
- *  - Zu jeder Farbe gibt es Blöcke, die zusammen genau ihren Bedarf ergeben.
- *    Ohne die wäre das Level unlösbar.
- *  - Dazu kommt Überschuss: einzelne Blöcke zu viel. Wer sie hochschickt,
- *    liefert nur noch, was das Bild braucht -- der Rest bleibt im Block
- *    liegen und der Platz ist für den Rest des Levels verloren. Fünf solcher
- *    Plätze beenden das Level.
- *  - Weil immer nur der oberste Block einer Spalte antippbar ist, muss man
- *    manchmal durch einen Überschussblock hindurch, um an den darunter zu
- *    kommen. Genau da liegt die Entscheidung.
+ *  1. Die Blöcke einer Farbe fassen zusammen genau so viele Pixel, wie die
+ *     Farbe im Bild hat. Sonst bliebe am Ende ein Block übrig, der nie voll
+ *     wird -- oder schlimmer: Pixel, die niemand mehr holen kann.
+ *  2. Es muss eine Reihenfolge geben, die aufgeht. Das prüft der Löser in
+ *     tests/bienen-flow.test.ts für jedes einzelne Level.
  *
- * Die Zahlen unten sind am Löser eingestellt, nicht geraten (siehe
- * tests/bienen-flow.test.ts: dort wird jedes der 100 Level durchgerechnet).
+ * Die Schwierigkeit kommt aus drei Richtungen: wie viele Farben im Spiel
+ * sind, wie tief eine Farbe im Bild vergraben liegt (ein Block dafür belegt
+ * lange einen Platz), und wie viele Blöcke zu viel im Nachschub liegen.
  */
 
-import { SEGMENT_SIZE, isSegmentGate, segmentIndexForLevel } from '@/progression/zones'
 import { MOTIVE, REICHE_MOTIVE, motivRaster, bedarfJeFarbe } from './motive'
 import {
   BIENEN_MAX_LEVEL,
@@ -54,14 +51,6 @@ function mische<T>(arr: T[], rng: () => number): void {
   }
 }
 
-/** 0.35 = ganz leicht … 1.35 = Tor. */
-function waveFactor(posInSeg: number): number {
-  if (posInSeg >= 19) return 1.35
-  if (posInSeg <= 6) return 0.35 + (posInSeg / 6) * 0.25
-  if (posInSeg <= 13) return 0.6 + ((posInSeg - 7) / 6) * 0.45
-  return 0.55 + ((posInSeg - 14) / 4) * 0.2
-}
-
 /** Eine Zahl in `teile` Summanden zerlegen, keiner kleiner als `min`. */
 function zerlege(summe: number, teile: number, min: number, rng: () => number): number[] {
   const n = clamp(teile, 1, Math.max(1, Math.floor(summe / min)))
@@ -78,68 +67,55 @@ function zerlege(summe: number, teile: number, min: number, rng: () => number): 
 
 export function createBienenLevel(level: number): BienenLevel {
   const L = clamp(Math.floor(level), 1, BIENEN_MAX_LEVEL)
-  const segment = segmentIndexForLevel(L)
-  const pos = (L - 1) % SEGMENT_SIZE
-  const wave = waveFactor(pos)
-  const gate = isSegmentGate(L)
   const rng = mulberry(L * 9973 + 42)
+  /** 0 (erstes Level) bis 1 (letztes). */
+  const stufe = (L - 1) / Math.max(1, BIENEN_MAX_LEVEL - 1)
 
-  // Früh die einfachen Motive, später die farbigen -- und am Tor immer ein
-  // farbiges, ein einfarbiges Herz wäre als Abschluss eine Enttäuschung.
-  const auswahl = segment >= 3 || gate ? REICHE_MOTIVE : MOTIVE
+  // Erst die schlichten Motive, ab der Hälfte die farbigen.
+  const auswahl = stufe >= 0.3 ? REICHE_MOTIVE : MOTIVE
   const motiv = auswahl[(L - 1) % auswahl.length]!
-  const skala = segment >= 4 ? 2 : 1
+  // Ab der Hälfte doppelte Kantenlänge: Das vervierfacht die Pixel je Farbe
+  // und bringt die Zahlen auf den Blöcken in den Bereich, den das Original
+  // zeigt (rund 18 bis 40) statt lauter Dreien.
+  const skala = stufe >= 0.5 ? 2 : 1
   const { rows, cols, bild } = motivRaster(motiv, skala)
-  const bedarf = bedarfJeFarbe(bild)
-  const farben = bedarf.map((n, i) => (n > 0 ? i : 0)).filter((i) => i > 0)
+  const pixel = bedarfJeFarbe(bild)
+  const farben = pixel.map((n, i) => (n > 0 ? i : 0)).filter((i) => i > 0)
   const colorCount = Math.max(...farben)
 
-  // Blöcke, die genau aufgehen: jede Farbe wird in Stücke zerlegt.
-  const teile = 2 + Math.round(wave * 0.8)
-  const minStueck = skala === 2 ? 8 : 4
+  // Blöcke, die genau aufgehen. Wie fein zerlegt wird, hängt an der Größe
+  // der Farbe: Eine Farbe mit sechs Pixeln in drei Blöcke zu schneiden ergibt
+  // nur Dreien, und damit hat man nichts zu entscheiden.
+  const proBlock = skala === 2 ? 14 : 7
+  const minStueck = 3
   const bloecke: BienenBlock[] = []
   let lfd = 0
   for (const farbe of farben) {
-    for (const menge of zerlege(bedarf[farbe]!, teile, minStueck, rng)) {
+    const teile = clamp(Math.round(pixel[farbe]! / proBlock), 1, 5)
+    for (const menge of zerlege(pixel[farbe]!, teile, minStueck, rng)) {
       bloecke.push({ id: `b${lfd++}`, color: farbe, amount: menge })
     }
   }
-  // Überschuss: Blöcke, die nicht mehr hineinpassen. Sie sind die Gefahr --
-  // wer sie hochschickt, verliert den Platz für immer.
-  const ueberschuss = clamp(
-    Math.round(wave * 4) + (segment - 1) * 2 + (gate ? 3 : 0) - 1,
-    0,
-    9,
-  )
+
+  // Blöcke zu viel: Sie können nie voll werden und kosten einen Platz.
+  // Erst ab der zweiten Hälfte, und nie so viele, dass kein Weg mehr bliebe.
+  const zuvielAnzahl = clamp(Math.round(stufe * 5) - 1, 0, 4)
   const zuviel: BienenBlock[] = []
-  for (let u = 0; u < ueberschuss; u++) {
+  for (let u = 0; u < zuvielAnzahl; u++) {
     const farbe = farben[Math.floor(rng() * farben.length)]!
-    const grund = Math.max(minStueck, Math.round(bedarf[farbe]! / teile))
-    const menge = clamp(grund + Math.floor(rng() * grund), minStueck, 60)
+    const menge = clamp(Math.round(pixel[farbe]! / 3) + 2, minStueck, 40)
     zuviel.push({ id: `u${u}`, color: farbe, amount: menge })
   }
 
-  // Verteilen. Die gebrauchten Blöcke liegen oben, der Überschuss darunter --
-  // so ist er vermeidbar, wenn man mitzählt, und tödlich, wenn nicht.
+  // Verteilen: die gebrauchten Blöcke oben, die überzähligen darunter. Wer
+  // mitzählt, lässt sie liegen; wer drauflostippt, verliert Plätze.
   mische(bloecke, rng)
   mische(zuviel, rng)
   const spalten: BienenBlock[][] = Array.from({ length: SPALTEN }, () => [])
   bloecke.forEach((b, i) => spalten[i % SPALTEN]!.push(b))
   zuviel.forEach((b, i) => spalten[i % SPALTEN]!.push(b))
 
-  // Ein paar Störer wandern nach oben: Durch die muss man hindurch, um an
-  // das zu kommen, was darunter gebraucht wird. Höchstens vier -- beim
-  // fünften wäre auch bei fehlerfreiem Spiel Schluss.
-  const stoerer = clamp(Math.round(wave * 3) - 1 + (gate ? 1 : 0), 0, 4)
-  for (let k = 0; k < stoerer && k < zuviel.length; k++) {
-    const spalte = spalten[k % SPALTEN]!
-    const idx = spalte.findIndex((b) => b.id.startsWith('u'))
-    if (idx <= 0) continue
-    const [b] = spalte.splice(idx, 1)
-    spalte.splice(Math.max(0, Math.floor(rng() * Math.min(idx, 2))), 0, b!)
-  }
-
-  const label = gate ? 'Tor' : wave >= 0.9 ? 'Knifflig' : wave >= 0.6 ? 'Mittel' : 'Locker'
+  const label = stufe >= 0.8 ? 'Knifflig' : stufe >= 0.4 ? 'Mittel' : 'Locker'
 
   return {
     level: L,
@@ -150,16 +126,13 @@ export function createBienenLevel(level: number): BienenLevel {
     spalten,
     slotCount: SLOT_COUNT,
     colorCount,
-    isGate: gate,
+    isGate: false,
     label,
   }
 }
 
-/** Nur für Anzeige und Tests: wie viele echte und wie viele Überschussblöcke. */
-export function blockZahlen(level: BienenLevel): { gesamt: number; pollen: number } {
+/** Für Anzeige und Tests. */
+export function blockZahlen(level: BienenLevel): { gesamt: number; kapazitaet: number } {
   const alle = level.spalten.flat()
-  return {
-    gesamt: alle.length,
-    pollen: alle.reduce((n, b) => n + b.amount, 0),
-  }
+  return { gesamt: alle.length, kapazitaet: alle.reduce((n, b) => n + b.amount, 0) }
 }

@@ -69,7 +69,7 @@
   gap: 0.5rem;
 }
 
-/* Das Bild: gefüllte Pixel leuchten, offene sind blasses Raster. */
+/* Das Bild: was noch da ist, leuchtet; Abgetragenes bleibt als blasse Spur. */
 .bild {
   display: grid;
   gap: 1px;
@@ -82,29 +82,19 @@
 
 .pixel {
   border-radius: 2px;
-  background: rgba(120, 100, 60, 0.13);
-  transition: background 0.18s ease;
+  transition:
+    opacity 0.15s ease,
+    filter 0.15s ease;
 }
 
-.pixelLeer {
-  background: transparent;
+/* Abgetragen: nur noch ein Hauch, damit man das Motiv weiter erkennt. */
+.pixelWeg {
+  background: rgba(120, 100, 60, 0.07);
 }
 
-.pixelNeu {
-  animation: pixelAn 0.42s ease-out backwards;
-}
-
-@keyframes pixelAn {
-  0% {
-    transform: scale(0.2);
-    filter: brightness(1.8);
-  }
-  60% {
-    transform: scale(1.25);
-  }
-  100% {
-    transform: scale(1);
-  }
+/* Noch verdeckt -- da kommt gerade keine Biene heran. */
+.pixelVerdeckt {
+  filter: saturate(0.45) brightness(1.12);
 }
 
 .wegzeichen {
@@ -142,7 +132,7 @@
   color: var(--color-text-muted, #66655f);
 }
 
-.slotVerstopft {
+.slotBelegt {
   border-style: solid;
   border-color: rgba(0, 0, 0, 0.25);
   box-shadow:
