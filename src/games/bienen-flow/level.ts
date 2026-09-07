@@ -20,7 +20,7 @@
  */
 
 import { SEGMENT_SIZE, isSegmentGate, segmentIndexForLevel } from '@/progression/zones'
-import { MOTIVE, REICHE_MOTIVE, motivRaster, bedarfJeFarbe } from './motive'
+import { MOTIVE, REICHE_MOTIVE, SCHICHT_MOTIVE, motivRaster, bedarfJeFarbe } from './motive'
 import {
   BIENEN_MAX_LEVEL,
   SLOT_COUNT,
@@ -41,6 +41,17 @@ function mulberry(seed: number): () => number {
 
 function clamp(n: number, a: number, b: number): number {
   return Math.max(a, Math.min(b, n))
+}
+
+/** Motivnummer eines Levels -- nie dieselbe wie im Level davor. */
+function motivIndex(L: number, anzahl: number): number {
+  const zieh = (n: number) => {
+    const r = mulberry(n * 2654435761 + 17)
+    r()
+    return Math.floor(r() * anzahl)
+  }
+  const i = zieh(L)
+  return L > 1 && i === zieh(L - 1) ? (i + 1) % anzahl : i
 }
 
 function mische<T>(arr: T[], rng: () => number): void {
@@ -84,11 +95,27 @@ export function createBienenLevel(level: number): BienenLevel {
   // Motive: erst die schlichten, ab Abschnitt 3 die farbigen, am Tor immer
   // ein farbiges. Damit sich über 300 Level nicht alles wiederholt, wandert
   // die Auswahl mit jedem Abschnitt weiter.
-  const auswahl = segment >= 3 || gate ? REICHE_MOTIVE : MOTIVE
-  // Streuen statt reihum: (L * 7 + segment) ergab bei sechs Motiven immer
-  // dieselben zwei an den Toren. Der Zufallsgenerator des Levels mischt
-  // gleichmäßig und bleibt trotzdem für jedes Level derselbe.
-  const motiv = auswahl[Math.floor(rng() * auswahl.length)]!
+  /*
+   * Welche Sorte Bild: Am Anfang die geschichteten (Stern, Herz, Wabe) --
+   * an ihnen sieht man sofort, dass von außen nach innen abgetragen wird,
+   * genau wie in Level 1 des Originals. Später kommen die gemalten Motive
+   * dazu, und am Tor steht immer ein farbiges.
+   */
+  const auswahl = gate
+    ? REICHE_MOTIVE
+    : segment <= 2
+      ? SCHICHT_MOTIVE
+      : segment <= 5
+        ? [...SCHICHT_MOTIVE, ...MOTIVE]
+        : [...SCHICHT_MOTIVE, ...REICHE_MOTIVE]
+  // Streuen statt reihum: feste Schritte ergaben an den Toren immer dieselben
+  // zwei Motive. Der Zufallsgenerator des Levels mischt gleichmäßig und
+  // bleibt trotzdem für jedes Level derselbe.
+  // Zwei Level hintereinander sollen nicht dasselbe Bild zeigen. Der Index
+  // kommt aus einem eigenen Startwert (aus dem Level-Zufall genommen kamen
+  // benachbarte Level auf dasselbe Motiv) und weicht aus, wenn er auf das
+  // vorige trifft.
+  const motiv = auswahl[motivIndex(L, auswahl.length)]!
   // Größe: kleine Bilder am Anfang, später die doppelte, ganz spät die
   // dreifache Kantenlänge -- damit ein Level auch länger dauert.
   const skala = segment >= 10 ? 3 : segment >= 4 || (gate && segment >= 2) ? 2 : 1
