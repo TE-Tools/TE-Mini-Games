@@ -2,11 +2,21 @@ import type { GameDefinition } from '@/games/types'
 import { BIENEN_MAX_LEVEL } from './types'
 import { createBienenLevel } from './level'
 
+/**
+ * Die Wertung rechnet mit der vollsten Leiste, nicht mit den Zügen.
+ *
+ * Warum: Jeder Pollen muss genau einmal angetippt werden -- wer gewinnt,
+ * braucht also immer gleich viele Züge, egal wie gut er spielt. Die Zahl
+ * taugt als Maß nicht. Wie voll die Wabenleiste im schlimmsten Moment war,
+ * sagt dagegen genau das, worum das Spiel geht: Wer Dreier sofort schließt,
+ * kommt nie über zwei belegte Plätze; wer sich verzettelt, steht kurz vor
+ * dem Verlieren.
+ */
 export const bienenFlowGame: GameDefinition = {
   id: 'bienen-flow',
   name: 'Bienen-Flow',
   description:
-    'Schicke Bienen aus, die farbige Pollen-Würfel zur Wabe tragen. Plane die Reihenfolge – die Slots sind begrenzt.',
+    'Tippe freiliegende Pollen an – die Biene trägt sie in die Wabe. Drei gleiche verschmelzen. Ist die Wabe voll, ist Schluss.',
   icon: '🐝',
   maxLevel: BIENEN_MAX_LEVEL,
   createLevel: (level, seed) => {
@@ -23,22 +33,24 @@ export const bienenFlowGame: GameDefinition = {
     }
   },
   calculateScore: (level, rawResult) => {
-    const raw = rawResult as { won?: boolean; moves?: number; cells?: number }
+    const raw = rawResult as { won?: boolean; peakSlots?: number; slotCount?: number }
     if (!raw.won) return 0
-    const base = 500 + level * 8
-    const moveBonus = Math.max(0, 200 - (raw.moves ?? 20) * 5)
-    return base + moveBonus
+    const plaetze = raw.slotCount ?? 7
+    const spitze = raw.peakSlots ?? plaetze - 1
+    const sauber = Math.max(0, plaetze - 1 - spitze)
+    return 400 + level * 8 + sauber * 70
   },
   calculateXP: (level, score) => {
     if (score <= 0) return 0
     return 15 + Math.floor(level / 5) + Math.floor(score / 100)
   },
-  calculateStars: (_level, score) => {
-    if (score >= 800) return 5
-    if (score >= 650) return 4
-    if (score >= 500) return 3
-    if (score >= 300) return 2
-    if (score >= 1) return 1
-    return 0
+  calculateStars: (level, score) => {
+    if (score <= 0) return 0
+    const grund = 400 + level * 8
+    if (score >= grund + 240) return 5
+    if (score >= grund + 170) return 4
+    if (score >= grund + 100) return 3
+    if (score >= grund + 40) return 2
+    return 1
   },
 }
