@@ -75,21 +75,37 @@
   gap: 1px;
   padding: 0.5rem;
   border-radius: 12px;
-  background: var(--color-bg-elevated, #faf9f5);
-  border: 1px solid var(--color-border, #e2ded1);
+  /* Etwas wärmer und dunkler als die Seite: Auf diesem Grund heben sich auch
+     helle Pollen ab. */
+  background: #efe6d6;
+  border: 1px solid #ddd0b8;
   box-shadow: var(--shadow-sm);
 }
 
+/*
+ * Ein Pollen ist ein kleiner Würfel, kein Farbfleck: heller Rand oben, dunkle
+ * Kante unten. Ohne diese Plastik verschwand der helle Farbton fast im Grund
+ * -- Thomas: "das Weiß und Hintergrund ist schwer unterscheidbar".
+ */
 .pixel {
-  border-radius: 2px;
+  border-radius: 3px;
   transition:
     opacity 0.15s ease,
     filter 0.15s ease;
 }
 
-/* Abgetragen: nur noch ein Hauch, damit man das Motiv weiter erkennt. */
+.pixelVoll {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.16),
+    0 0 0 1px rgba(70, 55, 30, 0.22);
+}
+
+/* Abgetragen: eine eingelassene Mulde, damit der Unterschied zu einem hellen
+   Pollen auch dann taugt, wenn beide fast weiß sind. */
 .pixelWeg {
-  background: rgba(120, 100, 60, 0.07);
+  background: rgba(120, 100, 60, 0.11);
+  box-shadow: inset 0 1px 2px rgba(70, 55, 30, 0.16);
 }
 
 /* Noch verdeckt -- da kommt gerade keine Biene heran. */
@@ -174,27 +190,74 @@
   }
 }
 
+/*
+ * Der Flug einer Biene: vom Platz hoch zum Pollen, kurz zugreifen, mit der
+ * Fracht zurück. Vorher flog sie nur einmal abwärts und trug nichts -- im
+ * Original holen die Ameisen sichtbar etwas ab.
+ */
 .biene {
   position: absolute;
   left: 0;
   top: 0;
   z-index: 5;
-  font-size: 1.2rem;
+  font-size: 1.15rem;
+  line-height: 1;
   pointer-events: none;
-  animation: flug var(--dur, 320ms) ease-in-out forwards;
+  animation: flug var(--dur, 720ms) ease-in-out forwards;
 }
 
 @keyframes flug {
   0% {
-    transform: translate(calc(var(--from-x) - 10px), calc(var(--from-y) - 10px)) scale(0.7);
+    transform: translate(calc(var(--von-x) - 9px), calc(var(--von-y) - 9px)) scale(0.75);
     opacity: 0;
   }
-  20% {
+  12% {
+    opacity: 1;
+  }
+  46% {
+    transform: translate(calc(var(--ziel-x) - 9px), calc(var(--ziel-y) - 9px)) scale(1);
+  }
+  56% {
+    transform: translate(calc(var(--ziel-x) - 9px), calc(var(--ziel-y) - 9px)) scale(1.15);
+  }
+  96% {
     opacity: 1;
   }
   100% {
-    transform: translate(calc(var(--to-x) - 10px), calc(var(--to-y) - 10px)) scale(1.05);
+    transform: translate(calc(var(--von-x) - 9px), calc(var(--von-y) - 9px)) scale(0.85);
     opacity: 0;
+  }
+}
+
+/* Der Pollen, den sie trägt -- erst ab dem Zugriff sichtbar. */
+.fracht {
+  position: absolute;
+  left: 50%;
+  top: 78%;
+  width: 9px;
+  height: 9px;
+  margin-left: -4.5px;
+  border-radius: 2px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 1px 2px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  animation: fracht var(--dur, 720ms) linear forwards;
+}
+
+@keyframes fracht {
+  0%,
+  52% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  58% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 

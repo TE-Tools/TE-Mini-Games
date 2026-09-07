@@ -103,5 +103,5 @@ export const COLOR_HEX: readonly string[] = [
   '#1abc9c', // türkis
   '#ec7fa9', // rosa
   '#4a4458', // dunkel
-  '#f5f2e8', // hell
+  '#dfe7ee', // hell (kühl, damit es sich vom warmen Grund abhebt)
 ]

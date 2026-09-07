@@ -35,14 +35,22 @@ type Phase = 'map' | 'play' | 'won' | 'lost'
 interface Biene {
   id: string
   color: number
-  fromX: number
-  fromY: number
-  toX: number
-  toY: number
+  /** Start und Ziel: Die Biene fliegt vom Platz hoch und wieder zurück. */
+  vonX: number
+  vonY: number
+  zielX: number
+  zielY: number
 }
 
-/** So lange fliegt eine Biene von der Zelle zum Platz. */
-const FLUG_MS = 620
+/**
+ * Ein ganzer Bienenflug: hoch zum Pollen, aufnehmen, zurück zum Platz.
+ *
+ * Er dauert länger als ein Takt -- so sind immer mehrere Bienen gleichzeitig
+ * unterwegs, und daraus wird die Straße, die man im Original sieht. Thomas:
+ * "die Bienen holen nicht ab wie im Video, sondern fliegen einfach nur
+ * runter."
+ */
+const FLUG_MS = 720
 /** Das Ende darf kurz nachwirken, bevor die Karte darüberklappt. */
 const ENDE_MS = 900
 /**
@@ -77,6 +85,11 @@ export function BienenFlowPage() {
   const [sterne, setSterne] = useState(0)
   const [loading, setLoading] = useState(true)
   const [bienen, setBienen] = useState<Biene[]>([])
+  /**
+   * Pollen, die schon abgerechnet sind, aber noch liegen: Sie verschwinden
+   * erst, wenn die Biene oben angekommen ist und zugreift.
+   */
+  const [imFlug, setImFlug] = useState<Map<number, number>>(new Map())
 
   const bildRef = useRef<HTMLDivElement>(null)
   const slotsRef = useRef<HTMLDivElement>(null)
@@ -119,6 +132,7 @@ export function BienenFlowPage() {
     setXpGained(0)
     setSterne(0)
     setBienen([])
+    setImFlug(new Map())
   }, [])
 
   const onSelectLevel = useCallback(
@@ -182,23 +196,40 @@ export function BienenFlowPage() {
 
         // Für jeden Handgriff eine Biene -- pro Schlag sind das höchstens
         // fünf, also nie ein Schwarm.
-        const flug: Biene[] = r.schritte.map((sch: { zelle: number; slot: number; farbe: number }, k: number) => {
-          const von = mitte(bildRef.current?.children[sch.zelle])
-          const nach = mitte(slotsRef.current?.children[sch.slot])
-          return {
-            id: `f-${gen}-${alt.moves}-${sch.zelle}-${k}`,
-            color: sch.farbe,
-            fromX: von.x,
-            fromY: von.y,
-            toX: nach.x,
-            toY: nach.y,
-          }
-        })
+        const flug: Biene[] = r.schritte.map(
+          (sch: { zelle: number; slot: number; farbe: number }, k: number) => {
+            const oben = mitte(bildRef.current?.children[sch.zelle])
+            const unten = mitte(slotsRef.current?.children[sch.slot])
+            return {
+              id: `f-${gen}-${alt.moves}-${sch.zelle}-${k}`,
+              color: sch.farbe,
+              vonX: unten.x,
+              vonY: unten.y,
+              zielX: oben.x,
+              zielY: oben.y,
+            }
+          },
+        )
         setBienen((prev) => [...prev, ...flug])
         window.setTimeout(
           () => setBienen((prev) => prev.filter((b) => !flug.some((f) => f.id === b.id))),
           FLUG_MS,
         )
+
+        // Der Pollen bleibt liegen, bis die Biene oben ist und zugreift.
+        setImFlug((prev) => {
+          const neu = new Map(prev)
+          for (const sch of r.schritte) neu.set(sch.zelle, sch.farbe)
+          return neu
+        })
+        window.setTimeout(() => {
+          setImFlug((prev) => {
+            const neu = new Map(prev)
+            for (const sch of r.schritte) neu.delete(sch.zelle)
+            return neu
+          })
+        }, FLUG_MS * 0.5)
+
         return r.state
       })
     }, TAKT_MS)
@@ -303,15 +334,19 @@ export function BienenFlowPage() {
           }}
           aria-label={`Bild: ${cfg.motiv}`}
         >
-          {state.board.map((c, i) => (
-            <span
-              key={i}
-              className={`${styles.pixel} ${c === 0 ? styles.pixelWeg : ''} ${
-                c !== 0 && !frei[i] ? styles.pixelVerdeckt : ''
-              }`}
-              style={c !== 0 ? { background: COLOR_HEX[c] ?? '#888' } : undefined}
-            />
-          ))}
+          {state.board.map((echt, i) => {
+            // Was gerade abgeholt wird, liegt noch da, bis die Biene zugreift.
+            const c = echt !== 0 ? echt : (imFlug.get(i) ?? 0)
+            return (
+              <span
+                key={i}
+                className={`${styles.pixel} ${
+                  c === 0 ? styles.pixelWeg : styles.pixelVoll
+                } ${c !== 0 && echt !== 0 && !frei[i] ? styles.pixelVerdeckt : ''}`}
+                style={c !== 0 ? { background: COLOR_HEX[c] ?? '#888' } : undefined}
+              />
+            )
+          })}
         </div>
 
         <div className={styles.nest} aria-hidden="true">
@@ -343,16 +378,20 @@ export function BienenFlowPage() {
             className={styles.biene}
             style={
               {
-                '--from-x': `${b.fromX}px`,
-                '--from-y': `${b.fromY}px`,
-                '--to-x': `${b.toX}px`,
-                '--to-y': `${b.toY}px`,
+                '--von-x': `${b.vonX}px`,
+                '--von-y': `${b.vonY}px`,
+                '--ziel-x': `${b.zielX}px`,
+                '--ziel-y': `${b.zielY}px`,
                 '--dur': `${FLUG_MS}ms`,
               } as CSSProperties
             }
             aria-hidden="true"
           >
             🐝
+            <i
+              className={styles.fracht}
+              style={{ background: COLOR_HEX[b.color] ?? '#888' }}
+            />
           </span>
         ))}
       </div>
