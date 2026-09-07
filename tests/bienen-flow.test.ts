@@ -31,7 +31,13 @@ import {
 } from '@/games/bienen-flow/engine'
 import { createBienenLevel, blockZahlen } from '@/games/bienen-flow/level'
 import { bienenFlowGame } from '@/games/bienen-flow/definition'
-import { MOTIVE, REICHE_MOTIVE, motivRaster, bedarfJeFarbe } from '@/games/bienen-flow/motive'
+import {
+  MOTIVE,
+  REICHE_MOTIVE,
+  SCHICHT_MOTIVE,
+  motivRaster,
+  bedarfJeFarbe,
+} from '@/games/bienen-flow/motive'
 import {
   BIENEN_MAX_LEVEL,
   SLOT_COUNT,
@@ -340,8 +346,36 @@ describe('Motive', () => {
     expect(bedarfJeFarbe(bild)[1]).toBe(3)
   })
 
+  it('legt die geschichteten Motive als Ringe an – außen eine Farbe, innen die nächste', () => {
+    // Wie Level 1 des Originals: ein Stern aus drei sauberen Ringen. Daran
+    // sieht man, dass von außen nach innen abgetragen wird.
+    for (const m of SCHICHT_MOTIVE) {
+      const { rows, cols, bild } = motivRaster(m)
+      // Jedes Randfeld des Motivs trägt dieselbe Farbe wie die anderen Randfelder.
+      const randFarben = new Set<number>()
+      for (let i = 0; i < bild.length; i++) {
+        if (bild[i] === 0) continue
+        const r = Math.floor(i / cols)
+        const c = i % cols
+        const amRand = [
+          [r - 1, c],
+          [r + 1, c],
+          [r, c - 1],
+          [r, c + 1],
+        ].some(([nr, nc]) => {
+          if (nr! < 0 || nr! >= rows || nc! < 0 || nc! >= cols) return true
+          return bild[nr! * cols + nc!] === 0
+        })
+        if (amRand) randFarben.add(bild[i]!)
+      }
+      expect(`${m.name}: ${randFarben.size} Randfarbe(n)`).toBe(`${m.name}: 1 Randfarbe(n)`)
+      // Und mindestens zwei Schichten, sonst wäre es kein geschichtetes Motiv.
+      expect(new Set(bild.filter((c) => c > 0)).size).toBeGreaterThanOrEqual(2)
+    }
+  })
+
   it('hat lauter erkennbare Motive', () => {
-    for (const m of [...MOTIVE, ...REICHE_MOTIVE]) {
+    for (const m of [...MOTIVE, ...REICHE_MOTIVE, ...SCHICHT_MOTIVE]) {
       expect(m.zeilen.length).toBeGreaterThan(2)
       const pixel = m.zeilen.join('').split('').filter((c) => c !== '.' && c !== ' ').length
       expect(pixel).toBeGreaterThan(10)

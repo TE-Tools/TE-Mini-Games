@@ -280,6 +280,196 @@ export const REICHE_MOTIVE: Motiv[] = [
   },
 ]
 
+
+/**
+ * Geschichtete Motive – die Bauart, die das Original für die frühen Level
+ * benutzt.
+ *
+ * Thomas' Video zeigt in Level 1 einen Stern in drei sauberen Ringen: außen
+ * orange, darunter gelb, im Kern weiß. Dadurch sieht man das Abtragen von
+ * außen nach innen sofort -- bei einem gemalten Motiv (Biene, Torte) liegen
+ * die Schichten nur zufällig übereinander.
+ *
+ * Erzeugt werden sie aus einer Form: Für jedes Feld wird gezählt, wie viele
+ * Schritte es bis nach draußen sind. Aus dieser Tiefe wird die Farbe -- Tiefe
+ * 1 ist der äußere Ring, Tiefe 2 der nächste, alles Tiefere der Kern.
+ */
+function schichten(name: string, form: string[], farben: string[]): Motiv {
+  const hoehe = form.length
+  const breite = Math.max(...form.map((z) => z.length))
+  const drin = (r: number, c: number) =>
+    r >= 0 && r < hoehe && c >= 0 && c < breite && (form[r]?.[c] ?? '.') !== '.'
+
+  // Tiefe je Feld: Vielquellen-Suche von außen nach innen.
+  const tiefe = new Array(hoehe * breite).fill(0)
+  let rand: number[] = []
+  for (let r = 0; r < hoehe; r++) {
+    for (let c = 0; c < breite; c++) {
+      if (!drin(r, c)) continue
+      const amRand =
+        !drin(r - 1, c) || !drin(r + 1, c) || !drin(r, c - 1) || !drin(r, c + 1)
+      if (amRand) {
+        tiefe[r * breite + c] = 1
+        rand.push(r * breite + c)
+      }
+    }
+  }
+  let stufe = 1
+  while (rand.length > 0) {
+    const naechste: number[] = []
+    for (const i of rand) {
+      const r = Math.floor(i / breite)
+      const c = i % breite
+      for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]] as const) {
+        const nr = r + dr
+        const nc = c + dc
+        if (!drin(nr, nc)) continue
+        const ni = nr * breite + nc
+        if (tiefe[ni] !== 0) continue
+        tiefe[ni] = stufe + 1
+        naechste.push(ni)
+      }
+    }
+    rand = naechste
+    stufe++
+  }
+
+  const zeilen: string[] = []
+  for (let r = 0; r < hoehe; r++) {
+    let zeile = ''
+    for (let c = 0; c < breite; c++) {
+      const t = tiefe[r * breite + c]!
+      zeile += t === 0 ? '.' : farben[Math.min(t - 1, farben.length - 1)]!
+    }
+    zeilen.push(zeile)
+  }
+  return { name, zeilen }
+}
+
+export const SCHICHT_MOTIVE: Motiv[] = [
+  schichten(
+    'Stern',
+    [
+      '.....#.....',
+      '.....#.....',
+      '....###....',
+      '###########',
+      '.#########.',
+      '..#######..',
+      '..#######..',
+      '.###...###.',
+      '.##.....##.',
+      '.#.......#.',
+    ],
+    ['O', 'G', 'H'],
+  ),
+  schichten(
+    'Herz',
+    [
+      '..###.###..',
+      '.#########.',
+      '###########',
+      '###########',
+      '.#########.',
+      '..#######..',
+      '...#####...',
+      '....###....',
+      '.....#.....',
+    ],
+    ['R', 'P', 'H'],
+  ),
+  schichten(
+    'Wabe',
+    [
+      '...#####...',
+      '..#######..',
+      '.#########.',
+      '###########',
+      '###########',
+      '###########',
+      '.#########.',
+      '..#######..',
+      '...#####...',
+    ],
+    ['D', 'G', 'O', 'H'],
+  ),
+  schichten(
+    'Raute',
+    [
+      '.....#.....',
+      '....###....',
+      '...#####...',
+      '..#######..',
+      '.#########.',
+      '..#######..',
+      '...#####...',
+      '....###....',
+      '.....#.....',
+    ],
+    ['B', 'T', 'H'],
+  ),
+  schichten(
+    'Kreis',
+    [
+      '...#####...',
+      '.#########.',
+      '.#########.',
+      '###########',
+      '###########',
+      '###########',
+      '.#########.',
+      '.#########.',
+      '...#####...',
+    ],
+    ['N', 'G', 'R'],
+  ),
+  schichten(
+    'Kreuz',
+    [
+      '...#####...',
+      '...#####...',
+      '...#####...',
+      '###########',
+      '###########',
+      '###########',
+      '...#####...',
+      '...#####...',
+      '...#####...',
+    ],
+    ['L', 'B', 'H'],
+  ),
+  schichten(
+    'Blüte',
+    [
+      '..##...##..',
+      '.####.####.',
+      '.#########.',
+      '..#######..',
+      '###########',
+      '..#######..',
+      '.#########.',
+      '.####.####.',
+      '..##...##..',
+    ],
+    ['P', 'G', 'O'],
+  ),
+  schichten(
+    'Turm',
+    [
+      '#.#.#.#.#.#',
+      '###########',
+      '###########',
+      '.#########.',
+      '.#########.',
+      '.#########.',
+      '.#########.',
+      '###########',
+      '###########',
+    ],
+    ['D', 'H', 'B', 'G'],
+  ),
+]
+
 /** Motiv in ein Raster übersetzen, bei Bedarf vergrößert. */
 export function motivRaster(
   motiv: Motiv,
