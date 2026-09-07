@@ -110,6 +110,23 @@
   box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.5);
 }
 
+/* Das Nest, aus dem die Bienen kommen -- im Original führt von hier die
+   Straße zum Bild hinauf. */
+.nest {
+  display: flex;
+  justify-content: center;
+}
+
+.loch {
+  width: 38px;
+  height: 13px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 35%, #7a5528, #3a2713);
+  box-shadow:
+    inset 0 2px 3px rgba(0, 0, 0, 0.55),
+    0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
 /* Die fünf Plätze der Kolonie. */
 .slots {
   display: flex;

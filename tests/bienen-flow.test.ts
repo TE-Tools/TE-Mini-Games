@@ -366,11 +366,15 @@ describe('Die Level', () => {
     }
   })
 
-  it('verteilt den Nachschub auf vier Spalten und lässt fünf Plätze', () => {
+  it('verteilt den Nachschub auf drei bis vier Spalten und lässt fünf Plätze', () => {
+    // Im Original ist Level 1 dreispaltig, spätere Level sind vierspaltig.
     for (const l of alle) {
-      expect(l.spalten).toHaveLength(SPALTEN)
+      expect(l.spalten.length).toBeGreaterThanOrEqual(SPALTEN - 1)
+      expect(l.spalten.length).toBeLessThanOrEqual(SPALTEN)
       expect(l.slotCount).toBe(SLOT_COUNT)
     }
+    expect(alle[0]!.spalten).toHaveLength(SPALTEN - 1)
+    expect(alle[299]!.spalten).toHaveLength(SPALTEN)
   })
 
   it('ist immer gleich aufgebaut – gleiches Level, gleiches Bild', () => {

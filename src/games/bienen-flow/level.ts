@@ -124,18 +124,22 @@ export function createBienenLevel(level: number): BienenLevel {
     zuviel.push({ id: `u${u}`, color: farbe, amount: menge })
   }
 
+  // Wie breit der Nachschub ist: drei Spalten am Anfang, später vier. Im
+  // Original ist Level 1 dreispaltig, spätere Level sind vierspaltig.
+  const breite = segment >= 3 ? SPALTEN : SPALTEN - 1
+
   mische(bloecke, rng)
   mische(zuviel, rng)
-  const spalten: BienenBlock[][] = Array.from({ length: SPALTEN }, () => [])
-  bloecke.forEach((b, i) => spalten[i % SPALTEN]!.push(b))
-  zuviel.forEach((b, i) => spalten[i % SPALTEN]!.push(b))
+  const spalten: BienenBlock[][] = Array.from({ length: breite }, () => [])
+  bloecke.forEach((b, i) => spalten[i % breite]!.push(b))
+  zuviel.forEach((b, i) => spalten[i % breite]!.push(b))
 
   // Ein paar Störer wandern nach oben: Durch die muss man hindurch, um an
   // das zu kommen, was darunter gebraucht wird. Höchstens drei, sonst bliebe
   // auch bei fehlerfreiem Spiel kein Weg.
   const stoerer = clamp(Math.round(stufe * 2 + welle) - 1, 0, skala === 3 ? 1 : 2)
   for (let k = 0; k < stoerer && k < zuviel.length; k++) {
-    const spalte = spalten[k % SPALTEN]!
+    const spalte = spalten[k % breite]!
     const idx = spalte.findIndex((b) => b.id.startsWith('u'))
     if (idx <= 0) continue
     const [b] = spalte.splice(idx, 1)
