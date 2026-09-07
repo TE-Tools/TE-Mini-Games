@@ -75,8 +75,13 @@ export interface BienenState {
   tote: number
 }
 
-/** Vorerst zehn Level zum Anspielen -- der Erzeuger kann mehr. */
-export const BIENEN_MAX_LEVEL = 10
+/**
+ * 300 Level, in 15 Abschnitten zu je 20 (jeder zwanzigste ist ein Tor).
+ *
+ * Angefangen hatte es mit zehn zum Anspielen; nachdem die Mechanik stimmte,
+ * hat Thomas am 07.09.2026 auf 300 aufgestockt.
+ */
+export const BIENEN_MAX_LEVEL = 300
 
 /** So viele Plätze hat die Kolonie. Im Original sind es fünf. */
 export const SLOT_COUNT = 5

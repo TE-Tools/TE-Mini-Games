@@ -42,17 +42,18 @@ interface Biene {
 }
 
 /** So lange fliegt eine Biene von der Zelle zum Platz. */
-const FLUG_MS = 560
+const FLUG_MS = 620
 /** Das Ende darf kurz nachwirken, bevor die Karte darüberklappt. */
 const ENDE_MS = 900
 /**
  * Der Takt der Bienen: So oft holt jeder arbeitende Block einen Pixel.
  *
- * Thomas am 07.09.2026: "das Losfliegen soll etwas langsamer sein, damit man
- * bisschen was überlegen kann, nicht einfach nur durchfliegen -- halbe
- * Geschwindigkeit." Vorher lag ein Zug bei rund 55 ms je Pixel.
+ * Thomas am 07.09.2026: erst "halbe Geschwindigkeit" (aus rund 55 wurden
+ * 130 ms), dann "nochmal bisschen langsamer" -- daher jetzt 180 ms. Ein
+ * Block mit 15 Pollen braucht damit knapp drei Sekunden, wenn er allein
+ * arbeitet; mit fünf Plätzen gleichzeitig geht es entsprechend schneller.
  */
-const TAKT_MS = 130
+const TAKT_MS = 180
 
 /** Auf hellen Blöcken muss die Zahl dunkel stehen, sonst liest sie niemand. */
 function schriftFarbe(hex: string): string {
