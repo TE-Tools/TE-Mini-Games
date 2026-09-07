@@ -42,17 +42,20 @@ interface Biene {
 }
 
 /** So lange fliegt eine Biene von der Zelle zum Platz. */
-const FLUG_MS = 560
+const FLUG_MS = 620
 /** Das Ende darf kurz nachwirken, bevor die Karte darüberklappt. */
 const ENDE_MS = 900
 /**
  * Der Takt der Bienen: So oft holt jeder arbeitende Block einen Pixel.
  *
- * Thomas am 07.09.2026: "das Losfliegen soll etwas langsamer sein, damit man
- * bisschen was überlegen kann, nicht einfach nur durchfliegen -- halbe
- * Geschwindigkeit." Vorher lag ein Zug bei rund 55 ms je Pixel.
+ * Eingestellt am Original: Thomas hat ein Video von Level 1 geschickt, dort
+ * zählt ein Block von 14 in 3,5 Sekunden auf 1 -- also rund 270 ms je
+ * Pollen. Vorher hatte ich 55, dann 130, dann 180 ms geraten; jetzt sind es
+ * 260 und damit praktisch dasselbe Tempo wie im Original. Ein Block mit 15
+ * braucht allein knapp vier Sekunden, mit mehreren Plätzen entsprechend
+ * weniger.
  */
-const TAKT_MS = 130
+const TAKT_MS = 260
 
 /** Auf hellen Blöcken muss die Zahl dunkel stehen, sonst liest sie niemand. */
 function schriftFarbe(hex: string): string {
@@ -311,6 +314,10 @@ export function BienenFlowPage() {
           ))}
         </div>
 
+        <div className={styles.nest} aria-hidden="true">
+          <span className={styles.loch} />
+        </div>
+
         <div className={styles.slots} ref={slotsRef} aria-label="Plätze der Kolonie">
           {state.slots.map((b, i) => (
             <div
@@ -350,7 +357,11 @@ export function BienenFlowPage() {
         ))}
       </div>
 
-      <div className={styles.spalten} aria-label="Nachschub">
+      <div
+        className={styles.spalten}
+        style={{ gridTemplateColumns: `repeat(${sichtbar.length}, 1fr)` }}
+        aria-label="Nachschub"
+      >
         {sichtbar.map((spalte, si) => (
           <div key={si} className={styles.spalte}>
             {spalte.map((b, bi) => {

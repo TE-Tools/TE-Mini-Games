@@ -40,6 +40,7 @@ import {
   type BienenLevel,
   type BienenState,
 } from '@/games/bienen-flow/types'
+import { isSegmentGate, SEGMENT_SIZE } from '@/progression/zones'
 
 /** Ein Level von Hand. */
 function level(
@@ -365,11 +366,15 @@ describe('Die Level', () => {
     }
   })
 
-  it('verteilt den Nachschub auf vier Spalten und lässt fünf Plätze', () => {
+  it('verteilt den Nachschub auf drei bis vier Spalten und lässt fünf Plätze', () => {
+    // Im Original ist Level 1 dreispaltig, spätere Level sind vierspaltig.
     for (const l of alle) {
-      expect(l.spalten).toHaveLength(SPALTEN)
+      expect(l.spalten.length).toBeGreaterThanOrEqual(SPALTEN - 1)
+      expect(l.spalten.length).toBeLessThanOrEqual(SPALTEN)
       expect(l.slotCount).toBe(SLOT_COUNT)
     }
+    expect(alle[0]!.spalten).toHaveLength(SPALTEN - 1)
+    expect(alle[299]!.spalten).toHaveLength(SPALTEN)
   })
 
   it('ist immer gleich aufgebaut – gleiches Level, gleiches Bild', () => {
@@ -383,10 +388,25 @@ describe('Die Level', () => {
     }
   })
 
-  it('wird über die zehn Level hinweg größer', () => {
+  it('wird über die 300 Level hinweg größer', () => {
     const pixel = (l: BienenLevel) => l.bild.filter((c) => c > 0).length
-    expect(pixel(alle[0]!)).toBeLessThan(pixel(alle[9]!))
-    expect(blockZahlen(alle[0]!).gesamt).toBeLessThan(blockZahlen(alle[9]!).gesamt)
+    expect(pixel(alle[0]!)).toBeLessThan(pixel(alle[299]!))
+    expect(blockZahlen(alle[0]!).gesamt).toBeLessThan(blockZahlen(alle[299]!).gesamt)
+  })
+
+  it('setzt alle zwanzig Level ein Tor', () => {
+    for (const l of alle) expect(l.isGate).toBe(isSegmentGate(l.level))
+    expect(alle.filter((l) => l.isGate)).toHaveLength(15)
+    expect(SEGMENT_SIZE).toBe(20)
+  })
+
+  it('nimmt nicht immer dasselbe Motiv – auch nicht an den Toren', () => {
+    // Erst wanderte die Auswahl in festen Schritten durch die Liste, und an
+    // den Toren kamen dadurch immer nur zwei Motive vor.
+    const tore = new Set(alle.filter((l) => l.isGate).map((l) => l.motiv))
+    expect(tore.size).toBeGreaterThanOrEqual(4)
+    const alleMotive = new Set(alle.map((l) => l.motiv))
+    expect(alleMotive.size).toBeGreaterThanOrEqual(10)
   })
 
   it('bleibt außerhalb seiner Grenzen stehen', () => {
@@ -395,41 +415,118 @@ describe('Die Level', () => {
   })
 })
 
-/** Löser: Suche über die Zugfolgen, mit Gedächtnis für schon gesehene Stände. */
-function loesbar(level: number): boolean {
-  const start = createMatch(createBienenLevel(level))
-  const gesehen = new Set<string>()
-  const stapel: BienenState[] = [start]
-  let schritte = 0
-  while (stapel.length > 0 && schritte++ < 300_000) {
-    const s = stapel.pop()!
-    for (let i = 0; i < s.spalten.length; i++) {
-      const r = tapSpalte(s, i)
-      if (!r) continue
-      // Der Löser wartet nach jedem Zug ab, bis die Bienen fertig sind --
-      // das kann ein Mensch auch, also genügt es für die Lösbarkeit.
-      const danach = arbeiteAus(r.state).state
-      if (danach.phase === 'won') return true
-      if (danach.phase === 'lost') continue
-      const key =
-        `${danach.spalten.map((sp) => sp.length).join(',')}|${danach.board.join('')}|` +
-        danach.slots.map((x) => (x ? `${x.color}:${x.amount}` : '-')).join(',')
-      if (gesehen.has(key)) continue
-      gesehen.add(key)
-      stapel.push(danach)
+/**
+ * Der Löser, zweistufig.
+ *
+ * Stufe 1 ist die sichere Strategie: immer einen Platz frei halten, nur
+ * Blöcke nehmen, die noch aufgehen, und lieber abwarten als graben. Was die
+ * gewinnt, gewinnt auch ein aufmerksamer Mensch.
+ *
+ * Stufe 2 ist eine Strahlensuche mit etwas Vorausblick -- für die wenigen
+ * Level, bei denen die einfache Strategie sich verrennt. Zusammen weisen sie
+ * nach, dass jedes der 300 Level zu gewinnen ist, und zwar schnell genug für
+ * jeden Testlauf.
+ */
+function sichererZug(s: BienenState): number | null {
+  const reserve = freieSlots(s)
+  if (reserve === 0) return null
+  const frei = zugaenglich(s.board, s.rows, s.cols)
+  const offen = (farbe: number) => frei.some((f, z) => f && s.board[z] === farbe)
+  const oben = s.spalten
+    .map((sp, i) => ({ b: sp[0], i }))
+    .filter((x): x is { b: NonNullable<typeof x.b>; i: number } => Boolean(x.b))
+
+  const sofort = oben.filter((x) => passtNoch(s, x.b) && offen(x.b.color))
+  if (sofort.length > 0) return sofort.reduce((a, b) => (a.b.amount <= b.b.amount ? a : b)).i
+
+  const wartend = oben.filter((x) => passtNoch(s, x.b))
+  if (wartend.length > 0 && reserve >= 2) {
+    return wartend.reduce((a, b) => (a.b.amount <= b.b.amount ? a : b)).i
+  }
+  if (arbeitMoeglich(s)) return null
+  if (reserve >= 2 && oben.length > 0) {
+    return oben.reduce((a, b) =>
+      a.b.amount - pixelDerFarbe(s, a.b.color) <= b.b.amount - pixelDerFarbe(s, b.b.color) ? a : b,
+    ).i
+  }
+  return null
+}
+
+function mitSichererStrategie(level: number): boolean {
+  let s = createMatch(createBienenLevel(level))
+  for (let n = 0; n < 900 && s.phase === 'play'; n++) {
+    let i = sichererZug(s)
+    if (i === null) {
+      const r = arbeiteAus(s)
+      if (r.schritte.length > 0) {
+        s = r.state
+        continue
+      }
+      const oben = s.spalten.map((sp, k) => ({ b: sp[0], k })).filter((x) => x.b)
+      if (oben.length === 0 || freieSlots(s) === 0) break
+      i = oben.reduce((a, b) =>
+        a.b!.amount - pixelDerFarbe(s, a.b!.color) <= b.b!.amount - pixelDerFarbe(s, b.b!.color)
+          ? a
+          : b,
+      ).k
     }
+    const t = tapSpalte(s, i)
+    if (!t) break
+    s = arbeiteAus(t.state).state
+  }
+  return s.phase === 'won'
+}
+
+function mitVorausblick(level: number, breite = 40): boolean {
+  let strahl: BienenState[] = [createMatch(createBienenLevel(level))]
+  const gesehen = new Set<string>()
+  for (let tiefe = 0; tiefe < 400; tiefe++) {
+    const naechste: BienenState[] = []
+    for (const s of strahl) {
+      for (let i = 0; i < s.spalten.length; i++) {
+        const t = tapSpalte(s, i)
+        if (!t) continue
+        const danach = arbeiteAus(t.state).state
+        if (danach.phase === 'won') return true
+        if (danach.phase === 'lost') continue
+        const key =
+          `${danach.spalten.map((sp) => sp.length).join(',')}|` +
+          danach.slots.map((x) => (x ? `${x.color}:${x.amount}` : '-')).join(',')
+        if (gesehen.has(key)) continue
+        gesehen.add(key)
+        naechste.push(danach)
+      }
+    }
+    if (naechste.length === 0) return false
+    naechste.sort((a, b) => {
+      const totA = a.slots.filter((x) => x && !passtNoch(a, x)).length
+      const totB = b.slots.filter((x) => x && !passtNoch(b, x)).length
+      return totA - totB || restPixel(a) - restPixel(b)
+    })
+    strahl = naechste.slice(0, breite)
   }
   return false
 }
 
 describe('Lösbarkeit', () => {
-  it('lässt jedes Level gewinnen', () => {
+  it('lässt jedes der 300 Level gewinnen', () => {
     const gescheitert: number[] = []
     for (let level = 1; level <= BIENEN_MAX_LEVEL; level++) {
-      if (!loesbar(level)) gescheitert.push(level)
+      if (mitSichererStrategie(level)) continue
+      if (!mitVorausblick(level)) gescheitert.push(level)
     }
     expect(gescheitert).toEqual([])
-  }, 60_000)
+  }, 120_000)
+
+  it('gewinnt die allermeisten Level schon mit der einfachen Strategie', () => {
+    // Wenn hier plötzlich viele durchfallen, ist die Steigerung zu steil
+    // geworden -- dann muss man nachrechnen, nicht nur nachsehen.
+    let ok = 0
+    for (let level = 1; level <= BIENEN_MAX_LEVEL; level++) {
+      if (mitSichererStrategie(level)) ok++
+    }
+    expect(ok).toBeGreaterThanOrEqual(285)
+  }, 120_000)
 
   it('lässt die ersten Level auch ohne Nachdenken durchgehen', () => {
     for (let level = 1; level <= 3; level++) {

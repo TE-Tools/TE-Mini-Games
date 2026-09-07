@@ -131,7 +131,7 @@ export function tick(state: BienenState): { state: BienenState; schritte: Schrit
     .sort((x, y) => x.b.amount - y.b.amount || x.i - y.i)
 
   for (const { b, i } of reihenfolge) {
-    const zelle = frei.findIndex((f, z) => f && board[z] === b.color)
+    const zelle = naechsteZelle(frei, board, state.rows, state.cols, b.color)
     if (zelle < 0) continue
     board[zelle] = 0
     frei[zelle] = false
@@ -141,6 +141,39 @@ export function tick(state: BienenState): { state: BienenState; schritte: Schrit
   }
 
   return { state: bewerte({ ...state, board, slots }), schritte }
+}
+
+/**
+ * Welchen Pollen eine Biene als Nächstes holt: den, der dem Nest am nächsten
+ * liegt -- also unten in der Mitte, wo die Ameisenstraße hinführt.
+ *
+ * Im Original (Video von Thomas, 07.09.2026) frisst sich die Kolonie von der
+ * unteren Kante nach oben durch. Vorher nahm ich schlicht den ersten in
+ * Leserichtung, und das Bild löste sich von oben links auf -- gegen die
+ * Richtung, aus der die Bienen kommen.
+ */
+function naechsteZelle(
+  frei: boolean[],
+  board: CellColor[],
+  rows: number,
+  cols: number,
+  farbe: CellColor,
+): number {
+  let beste = -1
+  let besteEntfernung = Infinity
+  const nestZeile = rows + 1.5
+  const nestSpalte = (cols - 1) / 2
+  for (let i = 0; i < board.length; i++) {
+    if (!frei[i] || board[i] !== farbe) continue
+    const r = Math.floor(i / cols)
+    const c = i % cols
+    const d = (nestZeile - r) ** 2 + (nestSpalte - c) ** 2
+    if (d < besteEntfernung) {
+      besteEntfernung = d
+      beste = i
+    }
+  }
+  return beste
 }
 
 /** Ob überhaupt noch eine Biene fliegen kann. */
