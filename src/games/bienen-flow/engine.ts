@@ -1,223 +1,159 @@
 /**
  * Bienen-Flow – reine Spiellogik (kein React, kein DOM).
  *
- * Ablauf (06.09.2026, nach dem Umbau auf die Mechanik des Originals):
- *   1. Auf dem Brett liegen Pollen. Antippen darf man nur, was frei liegt --
- *      die Oberfläche des Haufens, nicht das, was darunter steckt.
- *   2. Eine Biene trägt genau diesen einen Pollen in die Wabenleiste.
- *   3. Drei gleiche Farben in der Leiste verschmelzen zu Honig und geben
- *      ihre Plätze wieder frei.
- *   4. Volle Leiste ohne Dreier: verloren. Leeres Brett: gewonnen.
+ * Der Ablauf in einem Satz: Oberster Block einer Nachschub-Spalte antippen,
+ * er wandert auf einen freien Platz, die Bienen tragen so viele Pollen ins
+ * Bild, wie diese Farbe noch braucht -- geht es genau auf, verschwindet der
+ * Block und der Platz ist wieder frei; bleibt etwas übrig, ist der Platz
+ * verloren. Fünf verlorene Plätze beenden das Level.
  *
- * Die Spannung kommt allein aus der Leiste: Jede Farbe, die man anfängt und
- * nicht zu dritt bekommt, blockiert einen Platz bis zum Schluss.
+ * Warum die Lieferung sofort passiert statt in Echtzeit mitzuzählen: So ist
+ * jeder Zug ein abgeschlossener Schritt, den man prüfen und mit einem Löser
+ * durchrechnen kann. Die Anzeige zählt die Zahl trotzdem sichtbar herunter --
+ * das ist Schau, nicht Regel.
  */
 
-import { MERGE_COUNT, type BienenLevel, type BienenState, type CellColor } from './types'
-
-function idx(row: number, col: number, cols: number): number {
-  return row * cols + col
-}
-
-const DIRS: readonly [number, number][] = [
-  [-1, 0],
-  [1, 0],
-  [0, -1],
-  [0, 1],
-]
-
-/**
- * Leere Felder, die mit dem Rand zusammenhängen -- also Luft, durch die eine
- * Biene an einen Pollen herankommt. Eine eingeschlossene Lücke mitten im
- * Haufen zählt nicht.
- */
-export function openMask(board: CellColor[], rows: number, cols: number): boolean[] {
-  const open: boolean[] = new Array(board.length).fill(false)
-  const q: number[] = []
-
-  const start = (i: number) => {
-    if (board[i] === 0 && !open[i]) {
-      open[i] = true
-      q.push(i)
-    }
-  }
-  for (let c = 0; c < cols; c++) {
-    start(idx(0, c, cols))
-    start(idx(rows - 1, c, cols))
-  }
-  for (let r = 0; r < rows; r++) {
-    start(idx(r, 0, cols))
-    start(idx(r, cols - 1, cols))
-  }
-
-  while (q.length) {
-    const i = q.pop()!
-    const r = Math.floor(i / cols)
-    const c = i % cols
-    for (const [dr, dc] of DIRS) {
-      const nr = r + dr
-      const nc = c + dc
-      if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue
-      start(idx(nr, nc, cols))
-    }
-  }
-  return open
-}
-
-/**
- * Welche Pollen frei liegen: alles, was an offene Luft grenzt oder in der
- * obersten Reihe liegt. Der Haufen wird also von oben und von den Lücken her
- * abgetragen -- deshalb ist die Reihenfolge überhaupt eine Entscheidung.
- */
-export function reachableMask(board: CellColor[], rows: number, cols: number): boolean[] {
-  const open = openMask(board, rows, cols)
-  const frei: boolean[] = new Array(board.length).fill(false)
-  for (let i = 0; i < board.length; i++) {
-    if (board[i] === 0) continue
-    const r = Math.floor(i / cols)
-    const c = i % cols
-    if (r === 0) {
-      frei[i] = true
-      continue
-    }
-    for (const [dr, dc] of DIRS) {
-      const nr = r + dr
-      const nc = c + dc
-      if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue
-      if (open[idx(nr, nc, cols)]) {
-        frei[i] = true
-        break
-      }
-    }
-  }
-  return frei
-}
-
-/** Farben, die gerade frei liegen -- für das Ausgrauen in der Anzeige. */
-export function reachableColors(
-  board: CellColor[],
-  rows: number,
-  cols: number,
-): Set<CellColor> {
-  const frei = reachableMask(board, rows, cols)
-  const out = new Set<CellColor>()
-  for (let i = 0; i < board.length; i++) if (frei[i]) out.add(board[i]!)
-  return out
-}
-
-/** Indizes aller frei liegenden Pollen (oben→unten, links→rechts). */
-export function reachableCells(state: BienenState): number[] {
-  const frei = reachableMask(state.board, state.rows, state.cols)
-  const out: number[] = []
-  for (let i = 0; i < frei.length; i++) if (frei[i]) out.push(i)
-  return out
-}
-
-export function canTap(state: BienenState, cellIndex: number): boolean {
-  if (state.phase !== 'play') return false
-  if (cellIndex < 0 || cellIndex >= state.board.length) return false
-  if (state.board[cellIndex] === 0) return false
-  if (belegteSlots(state.slots) >= state.slotCount) return false
-  return reachableMask(state.board, state.rows, state.cols)[cellIndex] === true
-}
-
-function belegteSlots(slots: (CellColor | null)[]): number {
-  let n = 0
-  for (const s of slots) if (s != null) n++
-  return n
-}
-
-/** Ein Zug für die Animationsschicht. */
-export interface TapResult {
-  state: BienenState
-  /** Der Flug: von dieser Zelle auf diesen Platz. */
-  flight: { cell: number; slot: number; color: CellColor }
-  /** Entstand ein Dreier, dann diese Plätze -- sonst null. */
-  merge: { color: CellColor; slots: number[] } | null
-}
-
-/**
- * Pollen einsortieren. Gleiche Farben liegen in der Leiste beieinander,
- * damit man den Dreier kommen sieht; alles Belegte rutscht nach links.
- */
-function einsortieren(
-  slots: (CellColor | null)[],
-  color: CellColor,
-  slotCount: number,
-): { slots: (CellColor | null)[]; position: number } {
-  const tiles = slots.filter((s): s is CellColor => s != null)
-  let pos = tiles.length
-  const letzte = tiles.lastIndexOf(color)
-  if (letzte >= 0) pos = letzte + 1
-  tiles.splice(pos, 0, color)
-  const neu: (CellColor | null)[] = Array.from({ length: slotCount }, (_, i) => tiles[i] ?? null)
-  return { slots: neu, position: pos }
-}
-
-/** Pollen antippen – liefert Endzustand, Flug und den Dreier, falls einer fällt. */
-export function tapCell(state: BienenState, cellIndex: number): TapResult | null {
-  if (!canTap(state, cellIndex)) return null
-  const color = state.board[cellIndex]!
-
-  const board = state.board.slice()
-  board[cellIndex] = 0
-
-  const { slots, position } = einsortieren(state.slots, color, state.slotCount)
-
-  // Drei gleiche verschmelzen. Es kann pro Zug nur einer entstehen -- es
-  // kommt ja nur ein Pollen dazu.
-  const gleiche: number[] = []
-  for (let i = 0; i < slots.length; i++) if (slots[i] === color) gleiche.push(i)
-
-  let merge: TapResult['merge'] = null
-  let nachMerge = slots
-  if (gleiche.length >= MERGE_COUNT) {
-    const weg = new Set(gleiche.slice(0, MERGE_COUNT))
-    const rest = slots.filter((s, i) => s != null && !weg.has(i)) as CellColor[]
-    nachMerge = Array.from({ length: state.slotCount }, (_, i) => rest[i] ?? null)
-    merge = { color, slots: gleiche.slice(0, MERGE_COUNT) }
-  }
-
-  const leer = board.every((c) => c === 0)
-  const belegt = belegteSlots(nachMerge)
-  const phase: BienenState['phase'] =
-    leer && belegt === 0 ? 'won' : belegt >= state.slotCount ? 'lost' : 'play'
-
-  return {
-    state: {
-      ...state,
-      board,
-      slots: nachMerge,
-      moves: state.moves + 1,
-      peakSlots: Math.max(state.peakSlots, belegt),
-      phase,
-    },
-    flight: { cell: cellIndex, slot: position, color },
-    merge,
-  }
-}
+import { SICHTBARE_REIHEN, type BienenBlock, type BienenLevel, type BienenState } from './types'
 
 export function createMatch(level: BienenLevel): BienenState {
+  const offen: number[] = []
+  for (const c of level.bild) {
+    if (c === 0) continue
+    offen[c] = (offen[c] ?? 0) + 1
+  }
+  for (let i = 0; i <= level.colorCount; i++) if (offen[i] === undefined) offen[i] = 0
+
   return {
     level: level.level,
     rows: level.rows,
     cols: level.cols,
-    board: level.board.slice(),
+    gefuellt: new Array(level.bild.length).fill(0),
+    bild: level.bild.slice(),
+    offen,
+    spalten: level.spalten.map((s) => s.map((b) => ({ ...b }))),
     slots: Array.from({ length: level.slotCount }, () => null),
     slotCount: level.slotCount,
     colorCount: level.colorCount,
     phase: 'play',
     moves: 0,
-    peakSlots: 0,
+    verstopft: 0,
   }
 }
 
-export function remainingCells(state: BienenState): number {
-  return state.board.reduce((n, c) => n + (c === 0 ? 0 : 1), 0)
+/**
+ * Was die Anzeige zeigen darf: die obersten drei Reihen. Was darunter liegt,
+ * weiß nur die Engine -- der Nachschub rückt nach, ohne sich vorher in die
+ * Karten schauen zu lassen.
+ */
+export function sichtbareSpalten(state: BienenState): BienenBlock[][] {
+  return state.spalten.map((s) => s.slice(0, SICHTBARE_REIHEN))
 }
 
-export function usedSlots(state: BienenState): number {
-  return belegteSlots(state.slots)
+/** Wie viele Blöcke unter der sichtbaren Tiefe noch warten. */
+export function verdeckteBloecke(state: BienenState): number {
+  return state.spalten.reduce((n, s) => n + Math.max(0, s.length - SICHTBARE_REIHEN), 0)
+}
+
+/** Der oberste Block einer Spalte -- nur der lässt sich antippen. */
+export function obersterBlock(state: BienenState, spalte: number): BienenBlock | null {
+  return state.spalten[spalte]?.[0] ?? null
+}
+
+export function freieSlots(state: BienenState): number {
+  let n = 0
+  for (const s of state.slots) if (s == null) n++
+  return n
+}
+
+export function kannTippen(state: BienenState, spalte: number): boolean {
+  if (state.phase !== 'play') return false
+  if (spalte < 0 || spalte >= state.spalten.length) return false
+  if (!obersterBlock(state, spalte)) return false
+  return freieSlots(state) > 0
+}
+
+/**
+ * Ob ein Block sauber aufgeht. Das Spiel zeigt das an -- ohne diesen Hinweis
+ * wäre jeder Zug ein Blindflug, und im Original gibt es ihn auch.
+ */
+export function gehtAuf(state: BienenState, block: BienenBlock | null): boolean {
+  if (!block) return false
+  return block.amount <= (state.offen[block.color] ?? 0)
+}
+
+/*
+ * Warum es hier KEINE Prüfung auf "geht das Bild überhaupt noch auf?" gibt:
+ * Ein Block liefert immer zuerst alles, was seine Farbe noch braucht, und
+ * behält nur den Rest. Eine Farbe kann dadurch nie zu wenig bekommen -- sie
+ * wird immer voll, sobald man alle ihre Blöcke hochschickt. Der Preis für
+ * einen Block zu viel ist ausschließlich der Platz, den sein Rest für immer
+ * belegt. Deshalb ist die einzige Niederlage: fünf verstopfte Plätze.
+ */
+
+export interface TapResult {
+  state: BienenState
+  /** Der Block, wie er auf dem Platz liegt (Rest, falls etwas übrig blieb). */
+  block: BienenBlock
+  slot: number
+  /** Wie viele Pollen ins Bild gegangen sind. */
+  geliefert: number
+  /** Die gefüllten Pixel in der Reihenfolge, in der sie gefüllt wurden. */
+  zellen: number[]
+  /** Blieb etwas übrig, ist dieser Platz für den Rest des Levels verloren. */
+  verstopft: boolean
+}
+
+export function tapSpalte(state: BienenState, spalte: number): TapResult | null {
+  if (!kannTippen(state, spalte)) return null
+  const spalten = state.spalten.map((s) => s.map((b) => ({ ...b })))
+  const block = spalten[spalte]!.shift()!
+
+  const offen = state.offen.slice()
+  const gefuellt = state.gefuellt.slice()
+  const geliefert = Math.min(block.amount, offen[block.color] ?? 0)
+
+  const zellen: number[] = []
+  if (geliefert > 0) {
+    for (let i = 0; i < gefuellt.length && zellen.length < geliefert; i++) {
+      if (state.bild[i] === block.color && gefuellt[i] === 0) {
+        gefuellt[i] = block.color
+        zellen.push(i)
+      }
+    }
+    offen[block.color] = (offen[block.color] ?? 0) - geliefert
+    block.amount -= geliefert
+  }
+
+  const slots = state.slots.slice()
+  const platz = slots.findIndex((s) => s == null)
+  const verstopft = block.amount > 0
+  if (verstopft) slots[platz] = block
+
+  const fertig = offen.every((n) => n === 0)
+  const belegt = slots.reduce((n, s) => n + (s == null ? 0 : 1), 0)
+
+  const neu: BienenState = {
+    ...state,
+    spalten,
+    slots,
+    offen,
+    gefuellt,
+    moves: state.moves + 1,
+    verstopft: belegt,
+    phase: fertig ? 'won' : belegt >= state.slotCount ? 'lost' : 'play',
+  }
+
+  return { state: neu, block, slot: platz, geliefert, zellen, verstopft }
+}
+
+/** Wie viele Pixel im Bild noch fehlen. */
+export function offenePixel(state: BienenState): number {
+  return state.offen.reduce((n, x) => n + x, 0)
+}
+
+/** Wie viele Pollen noch im Nachschub liegen. */
+export function pollenImNachschub(state: BienenState): number {
+  return state.spalten.reduce((n, s) => n + s.reduce((m, b) => m + b.amount, 0), 0)
 }
 
 export function isWon(state: BienenState): boolean {

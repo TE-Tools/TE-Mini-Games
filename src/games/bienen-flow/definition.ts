@@ -3,20 +3,19 @@ import { BIENEN_MAX_LEVEL } from './types'
 import { createBienenLevel } from './level'
 
 /**
- * Die Wertung rechnet mit der vollsten Leiste, nicht mit den Zügen.
+ * Die Wertung rechnet mit den verstopften Plätzen.
  *
- * Warum: Jeder Pollen muss genau einmal angetippt werden -- wer gewinnt,
- * braucht also immer gleich viele Züge, egal wie gut er spielt. Die Zahl
- * taugt als Maß nicht. Wie voll die Wabenleiste im schlimmsten Moment war,
- * sagt dagegen genau das, worum das Spiel geht: Wer Dreier sofort schließt,
- * kommt nie über zwei belegte Plätze; wer sich verzettelt, steht kurz vor
- * dem Verlieren.
+ * Warum nicht mit Zügen: Wer gewinnt, hat ungefähr gleich viele Blöcke
+ * hochgeschickt, egal wie gut er gespielt hat. Verstopfte Plätze messen
+ * dagegen genau das, worum es geht -- jeder davon ist ein Block, der nicht
+ * aufging. Wer sauber rechnet, kommt mit null durch und steht bei fünf
+ * Sternen; wer sich viermal verzählt, gewinnt gerade noch.
  */
 export const bienenFlowGame: GameDefinition = {
   id: 'bienen-flow',
   name: 'Bienen-Flow',
   description:
-    'Tippe freiliegende Pollen an – die Biene trägt sie in die Wabe. Drei gleiche verschmelzen. Ist die Wabe voll, ist Schluss.',
+    'Schicke Pollenblöcke los, bis das Bild voll ist. Es muss genau aufgehen – jeder Block zu viel verstopft einen Platz.',
   icon: '🐝',
   maxLevel: BIENEN_MAX_LEVEL,
   createLevel: (level, seed) => {
@@ -33,11 +32,10 @@ export const bienenFlowGame: GameDefinition = {
     }
   },
   calculateScore: (level, rawResult) => {
-    const raw = rawResult as { won?: boolean; peakSlots?: number; slotCount?: number }
+    const raw = rawResult as { won?: boolean; verstopft?: number; slotCount?: number }
     if (!raw.won) return 0
-    const plaetze = raw.slotCount ?? 7
-    const spitze = raw.peakSlots ?? plaetze - 1
-    const sauber = Math.max(0, plaetze - 1 - spitze)
+    const plaetze = raw.slotCount ?? 5
+    const sauber = Math.max(0, plaetze - 1 - (raw.verstopft ?? plaetze - 1))
     return 400 + level * 8 + sauber * 70
   },
   calculateXP: (level, score) => {

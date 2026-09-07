@@ -1,16 +1,17 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import {
   bienenFlowGame,
   createBienenLevel,
   createMatch,
-  tapCell,
-  reachableMask,
-  remainingCells,
-  usedSlots,
+  tapSpalte,
+  kannTippen,
+  gehtAuf,
+  sichtbareSpalten,
+  verdeckteBloecke,
+  offenePixel,
   COLOR_HEX,
   BIENEN_MAX_LEVEL,
-  MERGE_COUNT,
   type BienenState,
   type BienenLevel,
 } from '@/games/bienen-flow'
@@ -28,7 +29,7 @@ import styles from './BienenFlowPage.module.css'
 
 type Phase = 'map' | 'play' | 'won' | 'lost'
 
-interface FlyingBee {
+interface Biene {
   id: string
   color: number
   fromX: number
@@ -37,16 +38,23 @@ interface FlyingBee {
   toY: number
 }
 
-interface Particle {
-  id: string
-  x: number
-  y: number
-  color: string
+/**
+ * Auf hellen Blöcken muss die Zahl dunkel stehen. Der helle Farbton der
+ * Motive (#f5f2e8) trug weiße Schrift praktisch unsichtbar -- und man muss
+ * jede Zahl lesen können, das Spiel besteht aus Rechnen.
+ */
+function schriftFarbe(hex: string): string {
+  const n = parseInt(hex.slice(1), 16)
+  const helligkeit =
+    (0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) / 255
+  return helligkeit > 0.62 ? '#2b2a26' : '#ffffff'
 }
 
-const BEE_MS = 300
-/** So lange bleibt das Ende sichtbar, bevor die Karte darüberklappt. */
-const ENDE_MS = 480
+const FLUG_MS = 320
+/** So lange darf das Ende nachwirken, bevor die Karte darüberklappt. */
+const ENDE_MS = 700
+/** Abstand zwischen zwei Pixeln beim Füllen -- gedeckelt, sonst dauert es ewig. */
+const PIXEL_MS = 9
 
 export function BienenFlowPage() {
   const [level, setLevel] = useState(1)
@@ -59,14 +67,14 @@ export function BienenFlowPage() {
   const [xpGained, setXpGained] = useState(0)
   const [sterne, setSterne] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [bees, setBees] = useState<FlyingBee[]>([])
-  const [particles, setParticles] = useState<Particle[]>([])
-  const [slotPulse, setSlotPulse] = useState<number[]>([])
+  const [bienen, setBienen] = useState<Biene[]>([])
+  const [frisch, setFrisch] = useState<Map<number, number>>(new Map())
+  const [pulsPlatz, setPulsPlatz] = useState<number | null>(null)
 
-  const boardRef = useRef<HTMLDivElement>(null)
+  const bildRef = useRef<HTMLDivElement>(null)
   const slotsRef = useRef<HTMLDivElement>(null)
-  const layerRef = useRef<HTMLDivElement>(null)
-  /** Zählt hoch bei jedem Levelstart -- laufende Zeitgeber erkennen daran, dass sie zu spät kommen. */
+  const spaltenRef = useRef<HTMLDivElement>(null)
+  const buehneRef = useRef<HTMLDivElement>(null)
   const lauf = useRef(0)
 
   useEffect(() => {
@@ -102,9 +110,9 @@ export function BienenFlowPage() {
     setScore(0)
     setXpGained(0)
     setSterne(0)
-    setBees([])
-    setParticles([])
-    setSlotPulse([])
+    setBienen([])
+    setFrisch(new Map())
+    setPulsPlatz(null)
   }, [])
 
   const onSelectLevel = useCallback(
@@ -116,12 +124,7 @@ export function BienenFlowPage() {
   )
 
   const finishWon = useCallback(async (final: BienenState) => {
-    const raw = {
-      won: true,
-      peakSlots: final.peakSlots,
-      slotCount: final.slotCount,
-      moves: final.moves,
-    }
+    const raw = { won: true, verstopft: final.verstopft, slotCount: final.slotCount }
     const sc = bienenFlowGame.calculateScore(final.level, raw)
     const xp = bienenFlowGame.calculateXP(final.level, sc)
     const st = bienenFlowGame.calculateStars?.(final.level, sc) ?? 0
@@ -148,56 +151,61 @@ export function BienenFlowPage() {
     }
   }, [])
 
-  function mitte(el: Element | undefined): { x: number; y: number } {
-    const layer = layerRef.current
-    if (!layer || !el) return { x: 0, y: 0 }
-    const lr = layer.getBoundingClientRect()
+  function mitte(el: Element | null | undefined): { x: number; y: number } {
+    const buehne = buehneRef.current
+    if (!buehne || !el) return { x: 0, y: 0 }
+    const br = buehne.getBoundingClientRect()
     const er = el.getBoundingClientRect()
-    return { x: er.left + er.width / 2 - lr.left, y: er.top + er.height / 2 - lr.top }
+    return { x: er.left + er.width / 2 - br.left, y: er.top + er.height / 2 - br.top }
   }
 
   /**
-   * Ein Tipp wirkt sofort auf den Zustand; die Biene ist reine Deko, die
-   * hinterherfliegt. Vorher lag über der Animation eine Sperre, und wer
-   * schneller tippte, als die Biene flog, verlor seine Eingabe.
+   * Ein Tipp wirkt sofort auf den Zustand; die Bienen fliegen als Deko
+   * hinterher. So geht keine Eingabe verloren, auch wenn schnell getippt wird.
    */
-  const onTapCell = useCallback(
-    (i: number) => {
+  const onTapSpalte = useCallback(
+    (spalte: number) => {
       if (!state || state.phase !== 'play') return
-      const result = tapCell(state, i)
+      const result = tapSpalte(state, spalte)
       if (!result) return
 
       const gen = lauf.current
-      const von = mitte(boardRef.current?.children[i])
-      const nach = mitte(slotsRef.current?.children[result.flight.slot])
-      const id = `b-${gen}-${i}-${result.state.moves}`
-      setBees((prev) => [
-        ...prev,
-        { id, color: result.flight.color, fromX: von.x, fromY: von.y, toX: nach.x, toY: nach.y },
-      ])
-      window.setTimeout(() => setBees((prev) => prev.filter((b) => b.id !== id)), BEE_MS)
+      const von = mitte(spaltenRef.current?.children[spalte]?.firstElementChild)
 
-      setSlotPulse([result.flight.slot])
+      // Ein paar Bienen zum Bild -- eine pro Flug reicht als Zeichen.
+      const ziel = result.zellen[Math.floor(result.zellen.length / 2)] ?? 0
+      const nach = mitte(bildRef.current?.children[ziel])
+      const flug: Biene[] = []
+      const anzahl = Math.min(5, Math.max(1, Math.round(result.geliefert / 12)))
+      for (let k = 0; k < anzahl; k++) {
+        flug.push({
+          id: `f-${gen}-${result.state.moves}-${k}`,
+          color: result.block.color,
+          fromX: von.x + (k - anzahl / 2) * 6,
+          fromY: von.y,
+          toX: nach.x + (k - anzahl / 2) * 5,
+          toY: nach.y,
+        })
+      }
+      setBienen((prev) => [...prev, ...flug])
+      window.setTimeout(
+        () => setBienen((prev) => prev.filter((b) => !flug.some((f) => f.id === b.id))),
+        FLUG_MS + 120,
+      )
+
+      // Die neuen Pixel nacheinander aufblitzen lassen.
+      const takt = new Map<number, number>()
+      result.zellen.forEach((z, i) => takt.set(z, Math.min(i * PIXEL_MS, 520)))
+      setFrisch(takt)
       window.setTimeout(() => {
-        if (lauf.current === gen) setSlotPulse([])
-      }, BEE_MS)
+        if (lauf.current === gen) setFrisch(new Map())
+      }, 900)
 
-      if (result.merge) {
-        const farbe = COLOR_HEX[result.merge.color] ?? '#f1c40f'
-        const plaetze = result.merge.slots
+      if (result.verstopft) {
+        setPulsPlatz(result.slot)
         window.setTimeout(() => {
-          if (lauf.current !== gen) return
-          const funken = plaetze.map((s, k) => {
-            const p = mitte(slotsRef.current?.children[s])
-            return { id: `p-${id}-${k}`, x: p.x, y: p.y, color: farbe }
-          })
-          setParticles((prev) => [...prev, ...funken])
-          window.setTimeout(
-            () =>
-              setParticles((prev) => prev.filter((p) => !funken.some((f) => f.id === p.id))),
-            420,
-          )
-        }, BEE_MS * 0.8)
+          if (lauf.current === gen) setPulsPlatz(null)
+        }, 900)
       }
 
       setState(result.state)
@@ -214,11 +222,6 @@ export function BienenFlowPage() {
     },
     [state, finishWon],
   )
-
-  const frei = useMemo(() => {
-    if (!state) return [] as boolean[]
-    return reachableMask(state.board, state.rows, state.cols)
-  }, [state])
 
   if (loading) {
     return (
@@ -240,8 +243,9 @@ export function BienenFlowPage() {
           </h1>
         </header>
         <p className={styles.hint}>
-          Tippe Pollen an, die frei liegen – die Biene trägt sie in die Wabe. Drei gleiche
-          verschmelzen zu Honig. Ist die Wabe voll, ist Schluss. Alle 20 Level wartet ein Tor.
+          Schick Pollenblöcke zum Bild – die Bienen tragen sie hinauf. Es muss genau aufgehen:
+          Jeder Block zu viel bleibt liegen und verstopft einen Platz. Fünf verstopfte Plätze,
+          und die Kolonie steht. Alle 20 Level wartet ein Tor.
         </p>
         <LevelMap
           currentLevel={level}
@@ -257,16 +261,11 @@ export function BienenFlowPage() {
 
   if (!state) return null
 
-  // Auf kleinen Brettern dürfen die Pollen größer sein -- mit dem Daumen
-  // trifft man 46 px sicherer als 38. Abstände und Innenrand des Bretts
-  // müssen mitgerechnet werden, sonst schiebt ein 9-spaltiges Brett die
-  // Seite seitlich auf.
-  const BRETT_BREITE = 342
-  const LUECKE = 3
-  const INNEN = 22
-  const platz = Math.floor((BRETT_BREITE - INNEN - (state.cols - 1) * LUECKE) / state.cols)
-  const cellSize = Math.max(20, Math.min(46, platz))
-  const belegt = usedSlots(state)
+  // Kleine Motive dürfen große Pixel haben -- ein 8x6-Bild in 14 px wäre
+  // eine Briefmarke, obwohl der Platz da ist.
+  const pixelGroesse = Math.max(5, Math.min(26, Math.floor(330 / state.cols)))
+  const sichtbar = sichtbareSpalten(state)
+  const verdeckt = verdeckteBloecke(state)
 
   return (
     <main className={styles.page}>
@@ -284,60 +283,77 @@ export function BienenFlowPage() {
       </header>
 
       <div className={styles.meta}>
-        <span>{remainingCells(state)} Pollen</span>
-        <span>{cfg.label}</span>
-        <span className={belegt >= state.slotCount - 1 ? styles.metaEng : undefined}>
-          Wabe {belegt}/{state.slotCount}
+        <span>{cfg.motiv}</span>
+        <span>{offenePixel(state)} Pixel offen</span>
+        <span className={state.verstopft >= state.slotCount - 1 ? styles.metaEng : undefined}>
+          Verstopft {state.verstopft}/{state.slotCount}
         </span>
       </div>
 
-      <div className={styles.stage} ref={layerRef}>
-        <div className={styles.hiveGlow} aria-hidden="true" />
-
+      <div className={styles.buehne} ref={buehneRef}>
         <div
-          ref={boardRef}
-          className={styles.board}
+          ref={bildRef}
+          className={styles.bild}
           style={{
-            gridTemplateColumns: `repeat(${state.cols}, ${cellSize}px)`,
-            gridTemplateRows: `repeat(${state.rows}, ${cellSize}px)`,
+            gridTemplateColumns: `repeat(${state.cols}, ${pixelGroesse}px)`,
+            gridTemplateRows: `repeat(${state.rows}, ${pixelGroesse}px)`,
           }}
+          aria-label={`Bild: ${cfg.motiv}`}
         >
-          {state.board.map((c, i) => {
-            if (c === 0) {
-              return (
-                <span
-                  key={i}
-                  className={`${styles.cell} ${styles.cellEmpty}`}
-                  style={{ width: cellSize, height: cellSize }}
-                />
-              )
-            }
-            const tippbar = frei[i] === true && belegt < state.slotCount
+          {state.bild.map((ziel, i) => {
+            const gefuellt = state.gefuellt[i]!
+            const verzoegerung = frisch.get(i)
             return (
-              <button
+              <span
                 key={i}
-                type="button"
-                className={`${styles.cell} ${styles.cellBtn} ${frei[i] ? '' : styles.cellLocked}`}
-                style={{ background: COLOR_HEX[c] ?? '#888', width: cellSize, height: cellSize }}
-                onClick={() => onTapCell(i)}
-                disabled={!tippbar}
-                aria-label={`Pollen Farbe ${c}${frei[i] ? '' : ', verdeckt'}`}
+                className={`${styles.pixel} ${ziel === 0 ? styles.pixelLeer : ''} ${
+                  verzoegerung !== undefined ? styles.pixelNeu : ''
+                }`}
+                style={{
+                  background: gefuellt ? (COLOR_HEX[gefuellt] ?? '#888') : undefined,
+                  animationDelay: verzoegerung !== undefined ? `${verzoegerung}ms` : undefined,
+                }}
               />
             )
           })}
         </div>
 
-        {bees.map((b) => (
+        <div className={styles.wegzeichen} aria-hidden="true">
+          <span className={styles.loch} />
+        </div>
+
+        <div className={styles.slots} ref={slotsRef} aria-label="Plätze der Kolonie">
+          {state.slots.map((b, i) => (
+            <div
+              key={i}
+              className={`${styles.slot} ${b ? styles.slotVerstopft : ''} ${
+                pulsPlatz === i ? styles.slotPuls : ''
+              }`}
+              style={
+                b
+                  ? {
+                      background: COLOR_HEX[b.color] ?? '#888',
+                      color: schriftFarbe(COLOR_HEX[b.color] ?? '#888'),
+                    }
+                  : undefined
+              }
+            >
+              {b ? <span className={styles.slotZahl}>{b.amount}</span> : '⬡'}
+            </div>
+          ))}
+        </div>
+
+        {bienen.map((b) => (
           <span
             key={b.id}
-            className={styles.bee}
+            className={styles.biene}
             style={
               {
                 '--from-x': `${b.fromX}px`,
                 '--from-y': `${b.fromY}px`,
                 '--to-x': `${b.toX}px`,
                 '--to-y': `${b.toY}px`,
-                '--dur': `${BEE_MS}ms`,
+                '--dur': `${FLUG_MS}ms`,
                 color: COLOR_HEX[b.color],
               } as CSSProperties
             }
@@ -346,33 +362,46 @@ export function BienenFlowPage() {
             🐝
           </span>
         ))}
-        {particles.map((p) => (
-          <span
-            key={p.id}
-            className={styles.burst}
-            style={{ left: p.x, top: p.y, '--burst': p.color } as CSSProperties}
-            aria-hidden="true"
-          />
-        ))}
       </div>
 
-      <div className={styles.slots} ref={slotsRef} aria-label="Wabenleiste">
-        {state.slots.map((s, i) => (
-          <div
-            key={i}
-            className={`${styles.slot} ${slotPulse.includes(i) ? styles.slotActive : ''} ${s ? styles.slotFilled : ''}`}
-            style={{
-              background: s ? COLOR_HEX[s] : 'var(--color-surface, #f5f0e6)',
-              borderStyle: s ? 'solid' : 'dashed',
-            }}
-          >
-            {s ? '🍯' : '⬡'}
+      <div className={styles.spalten} ref={spaltenRef} aria-label="Nachschub">
+        {sichtbar.map((spalte, si) => (
+          <div key={si} className={styles.spalte}>
+            {spalte.map((b, bi) => {
+              const oben = bi === 0
+              const passt = oben && gehtAuf(state, b)
+              return (
+                <button
+                  key={b.id}
+                  type="button"
+                  className={`${styles.block} ${oben ? styles.blockOben : styles.blockTief} ${
+                    passt ? styles.blockPasst : ''
+                  }`}
+                  style={{
+                    background: COLOR_HEX[b.color] ?? '#888',
+                    color: schriftFarbe(COLOR_HEX[b.color] ?? '#888'),
+                  }}
+                  disabled={!oben || !kannTippen(state, si)}
+                  onClick={() => onTapSpalte(si)}
+                  aria-label={
+                    oben
+                      ? `${b.amount} Pollen abschicken${passt ? ', geht genau auf' : ''}`
+                      : `${b.amount} Pollen, wartet`
+                  }
+                >
+                  {b.amount}
+                </button>
+              )
+            })}
+            {spalte.length === 0 && <span className={styles.spalteLeer} aria-hidden="true" />}
           </div>
         ))}
       </div>
 
       <p className={styles.regelHinweis}>
-        {MERGE_COUNT} gleiche Pollen in der Wabe verschmelzen zu Honig.
+        {verdeckt > 0
+          ? `Noch ${verdeckt} Blöcke unter dem sichtbaren Stapel – halte einen Platz frei.`
+          : 'Alle Blöcke sind zu sehen.'}
       </p>
 
       {phase === 'won' && (
@@ -381,12 +410,14 @@ export function BienenFlowPage() {
             <div className={styles.confetti} aria-hidden="true">
               {'⭐'.repeat(Math.max(1, sterne))}
             </div>
-            <h2>Geschafft!</h2>
+            <h2>Bild fertig!</h2>
             <p>
               Level {state.level} · {score} Punkte · +{xpGained} XP
             </p>
             <p className={styles.muted}>
-              Vollste Wabe: {state.peakSlots} von {state.slotCount} Plätzen
+              {state.verstopft === 0
+                ? 'Kein einziger Platz verstopft – genau aufgegangen.'
+                : `${state.verstopft} verstopfte ${state.verstopft === 1 ? 'Platz' : 'Plätze'}`}
             </p>
             <div className={styles.actions}>
               <button type="button" onClick={() => setPhase('map')}>
@@ -409,10 +440,10 @@ export function BienenFlowPage() {
       {phase === 'lost' && (
         <div className={styles.overlay}>
           <div className={styles.card}>
-            <h2>Wabe voll</h2>
+            <h2>Die Kolonie steht</h2>
             <p>
-              Alle {state.slotCount} Plätze sind belegt und kein Dreier kommt mehr zustande. Fang
-              die Farben früher zu Ende – jede angefangene blockiert einen Platz.
+              Alle {state.slotCount} Plätze sind mit Resten verstopft. Schick nur Blöcke hoch,
+              deren Anzahl das Bild noch braucht – der Rest bleibt für immer liegen.
             </p>
             <div className={styles.actions}>
               <button type="button" onClick={() => setPhase('map')}>
