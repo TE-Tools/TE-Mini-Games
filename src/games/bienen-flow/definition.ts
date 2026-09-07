@@ -3,20 +3,18 @@ import { BIENEN_MAX_LEVEL } from './types'
 import { createBienenLevel } from './level'
 
 /**
- * Die Wertung rechnet mit der vollsten Leiste, nicht mit den Zügen.
+ * Die Wertung rechnet mit den toten Blöcken.
  *
- * Warum: Jeder Pollen muss genau einmal angetippt werden -- wer gewinnt,
- * braucht also immer gleich viele Züge, egal wie gut er spielt. Die Zahl
- * taugt als Maß nicht. Wie voll die Wabenleiste im schlimmsten Moment war,
- * sagt dagegen genau das, worum das Spiel geht: Wer Dreier sofort schließt,
- * kommt nie über zwei belegte Plätze; wer sich verzettelt, steht kurz vor
- * dem Verlieren.
+ * Tot ist ein Block, dessen Farbe es im Bild nicht mehr gibt -- er kann nie
+ * voll werden und belegt seinen Platz bis zum Schluss. Genau das ist der
+ * Fehler, den das Spiel bestraft. Die Zahl der Züge taugt als Maß nicht:
+ * Wer gewinnt, schiebt ungefähr gleich viele Blöcke hoch.
  */
 export const bienenFlowGame: GameDefinition = {
   id: 'bienen-flow',
   name: 'Bienen-Flow',
   description:
-    'Tippe freiliegende Pollen an – die Biene trägt sie in die Wabe. Drei gleiche verschmelzen. Ist die Wabe voll, ist Schluss.',
+    'Schieb Blöcke auf die Plätze, die Bienen holen die Pixel. Nur was von außen zugänglich ist – und es muss genau aufgehen.',
   icon: '🐝',
   maxLevel: BIENEN_MAX_LEVEL,
   createLevel: (level, seed) => {
@@ -33,11 +31,10 @@ export const bienenFlowGame: GameDefinition = {
     }
   },
   calculateScore: (level, rawResult) => {
-    const raw = rawResult as { won?: boolean; peakSlots?: number; slotCount?: number }
+    const raw = rawResult as { won?: boolean; tote?: number; slotCount?: number }
     if (!raw.won) return 0
-    const plaetze = raw.slotCount ?? 7
-    const spitze = raw.peakSlots ?? plaetze - 1
-    const sauber = Math.max(0, plaetze - 1 - spitze)
+    const plaetze = raw.slotCount ?? 5
+    const sauber = Math.max(0, plaetze - 1 - (raw.tote ?? plaetze - 1))
     return 400 + level * 8 + sauber * 70
   },
   calculateXP: (level, score) => {

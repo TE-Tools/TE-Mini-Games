@@ -1,23 +1,31 @@
 export { bienenFlowGame } from './definition'
-export { createBienenLevel } from './level'
+export { createBienenLevel, blockZahlen } from './level'
+export { MOTIVE, REICHE_MOTIVE, motivRaster, bedarfJeFarbe } from './motive'
 export {
   createMatch,
-  tapCell,
-  canTap,
-  reachableMask,
-  reachableCells,
-  reachableColors,
-  openMask,
-  remainingCells,
-  usedSlots,
+  tapSpalte,
+  kannTippen,
+  passtNoch,
+  obersterBlock,
+  freieSlots,
+  sichtbareSpalten,
+  verdeckteBloecke,
+  zugaenglich,
+  zugaenglicheFarben,
+  luftMaske,
+  pixelDerFarbe,
+  restPixel,
   isWon,
   isLost,
 } from './engine'
-export type { TapResult } from './engine'
+export type { TapResult, Schritt } from './engine'
 export {
   BIENEN_MAX_LEVEL,
-  MERGE_COUNT,
+  SLOT_COUNT,
+  SPALTEN,
+  SICHTBARE_REIHEN,
   COLOR_HEX,
+  type BienenBlock,
   type BienenLevel,
   type BienenState,
   type CellColor,

@@ -27,9 +27,13 @@ Progressive Web App with short skill, memory, reaction and logic games.
   computer opponent on three levels, or online against friends in a room with a
   five-letter code (`017_kniffel.sql`). Online the *server* rolls the dice –
   in Kniffel the dice are the whole game
-- **Bienen-Flow** – tap pollen that lies free, a bee carries it into the honeycomb
-  bar; three of a colour merge, a full bar ends the round. 100 levels in five
-  segments, every 20th a gate. Each level is proven solvable by a solver in
+- **Bienen-Flow** – a Colony-Flow clone: send pollen blocks up to fill a pixel
+  picture. Each block carries a colour *and* an amount, and the amounts must
+  come out exactly – whatever a block cannot deliver stays in it and blocks one
+  of the five colony slots for good. Five blocked slots end the level. Only the
+  top block of each of the four columns can be tapped and only three rows are
+  visible, so you cannot count the level out in advance. 100 levels in five
+  segments, every 20th a gate; each one is proven solvable by a solver in
   `tests/bienen-flow.test.ts`
 - **Schützenopoly** – the big Schützenfest board game: 40 fields, 22 real German
   Schützenfeste, 2–4 players against rule-based AI on three levels, trading,

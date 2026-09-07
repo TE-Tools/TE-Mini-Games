@@ -1,31 +1,32 @@
 /**
- * Bienen-Flow – 100 Level, Abschnitte à 20 mit Tor.
+ * Bienen-Flow – die Level.
  *
- * Wellen innerhalb eines Segments (pos 0…19):
- *   0–6   sehr leicht
- *   7–13  etwas schwerer
- *   14–18 wieder leichter (der „Dip", damit es nicht nur bergauf geht)
- *   19    Tor – deutlich schwerer
+ * Vorerst zehn Stück zum Anspielen; der Erzeuger rechnet aber schon mit
+ * einer Steigerung, damit daraus später hundert werden können, ohne dass
+ * sich die Regeln ändern.
  *
- * Über die Segmente hinweg steigt die Grundschwierigkeit.
+ * Ein Level besteht aus dem Motiv (daraus ergibt sich, wie viele Pixel jede
+ * Farbe hat) und dem Nachschub. Zwei Dinge muss der Erzeuger garantieren:
  *
- * Zwei Regeln, ohne die das Spiel nicht aufgeht (06.09.2026):
+ *  1. Die Blöcke einer Farbe fassen zusammen genau so viele Pixel, wie die
+ *     Farbe im Bild hat. Sonst bliebe am Ende ein Block übrig, der nie voll
+ *     wird -- oder schlimmer: Pixel, die niemand mehr holen kann.
+ *  2. Es muss eine Reihenfolge geben, die aufgeht. Das prüft der Löser in
+ *     tests/bienen-flow.test.ts für jedes einzelne Level.
  *
- * 1. Jede Farbe kommt in einem Vielfachen von drei vor. Sonst bliebe am Ende
- *    ein Rest übrig, der sich nie zu einem Dreier ergänzen lässt -- das Level
- *    wäre unlösbar, und zwar erst nach fünf Minuten sichtbar.
- * 2. Die Pollen liegen als Haufen von unten aufgeschichtet. Nur die
- *    Oberfläche liegt frei, deshalb ist die Reihenfolge eine Entscheidung.
- *
- * Die Schwierigkeit steckt in drei Schrauben: wie viele Farben gleichzeitig
- * im Spiel sind (jede angefangene belegt einen Platz), wie viele Plätze die
- * Leiste hat, und wie weit die Dreier auseinanderliegen. Die Zahlen unten
- * sind nicht geraten, sondern über einen Löser eingestellt (siehe
- * tests/bienen-flow.test.ts).
+ * Die Schwierigkeit kommt aus drei Richtungen: wie viele Farben im Spiel
+ * sind, wie tief eine Farbe im Bild vergraben liegt (ein Block dafür belegt
+ * lange einen Platz), und wie viele Blöcke zu viel im Nachschub liegen.
  */
 
-import { SEGMENT_SIZE, isSegmentGate, segmentIndexForLevel } from '@/progression/zones'
-import { BIENEN_MAX_LEVEL, MERGE_COUNT, type BienenLevel, type CellColor } from './types'
+import { MOTIVE, REICHE_MOTIVE, motivRaster, bedarfJeFarbe } from './motive'
+import {
+  BIENEN_MAX_LEVEL,
+  SLOT_COUNT,
+  SPALTEN,
+  type BienenBlock,
+  type BienenLevel,
+} from './types'
 
 function mulberry(seed: number): () => number {
   let t = seed >>> 0
@@ -41,91 +42,97 @@ function clamp(n: number, a: number, b: number): number {
   return Math.max(a, Math.min(b, n))
 }
 
-/** 0 = ganz leicht … 1.35 = Tor. */
-function waveFactor(posInSeg: number): number {
-  if (posInSeg >= 19) return 1.35
-  if (posInSeg <= 6) return 0.35 + (posInSeg / 6) * 0.25
-  if (posInSeg <= 13) return 0.6 + ((posInSeg - 7) / 6) * 0.45
-  return 0.55 + ((posInSeg - 14) / 4) * 0.2
+function mische<T>(arr: T[], rng: () => number): void {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1))
+    const tmp = arr[i]!
+    arr[i] = arr[j]!
+    arr[j] = tmp
+  }
+}
+
+/** Eine Zahl in `teile` Summanden zerlegen, keiner kleiner als `min`. */
+function zerlege(summe: number, teile: number, min: number, rng: () => number): number[] {
+  const n = clamp(teile, 1, Math.max(1, Math.floor(summe / min)))
+  const stuecke = new Array<number>(n).fill(min)
+  let rest = summe - n * min
+  while (rest > 0) {
+    const i = Math.floor(rng() * n)
+    const dazu = Math.min(rest, 1 + Math.floor(rng() * Math.max(1, Math.ceil(rest / n))))
+    stuecke[i]! += dazu
+    rest -= dazu
+  }
+  return stuecke
 }
 
 export function createBienenLevel(level: number): BienenLevel {
   const L = clamp(Math.floor(level), 1, BIENEN_MAX_LEVEL)
-  const segment = segmentIndexForLevel(L)
-  const pos = (L - 1) % SEGMENT_SIZE
-  const wave = waveFactor(pos)
-  const gate = isSegmentGate(L)
   const rng = mulberry(L * 9973 + 42)
+  /** 0 (erstes Level) bis 1 (letztes). */
+  const stufe = (L - 1) / Math.max(1, BIENEN_MAX_LEVEL - 1)
 
-  // Farben: die eigentliche Schraube. Mehr Farben als Plätze heißt, dass man
-  // sich verzetteln kann -- weniger heißt, dass fast alles aufgeht.
-  const maxFarben = gate ? 8 : segment >= 3 ? 7 : 6
-  const colorCount = clamp(Math.round(2.4 + segment * 0.75 + wave * 1.6 + (gate ? 1 : 0)), 3, maxFarben)
+  // Erst die schlichten Motive, ab der Hälfte die farbigen.
+  const auswahl = stufe >= 0.3 ? REICHE_MOTIVE : MOTIVE
+  const motiv = auswahl[(L - 1) % auswahl.length]!
+  // Ab der Hälfte doppelte Kantenlänge: Das vervierfacht die Pixel je Farbe
+  // und bringt die Zahlen auf den Blöcken in den Bereich, den das Original
+  // zeigt (rund 18 bis 40) statt lauter Dreien.
+  const skala = stufe >= 0.5 ? 2 : 1
+  const { rows, cols, bild } = motivRaster(motiv, skala)
+  const pixel = bedarfJeFarbe(bild)
+  const farben = pixel.map((n, i) => (n > 0 ? i : 0)).filter((i) => i > 0)
+  const colorCount = Math.max(...farben)
 
-  // Plätze: sieben ist die bequeme Leiste, am Tor wird sie enger.
-  const slotCount = gate ? 5 : segment >= 4 ? 6 : 7
-
-  const rows = clamp(Math.round(5 + segment * 0.8 + wave * 1.5), 5, 12)
-  const cols = clamp(Math.round(5 + segment * 0.5 + wave), 5, 9)
-
-  // Wie voll der Haufen ist -- bestimmt vor allem die Länge einer Partie.
-  const fillRatio = clamp(0.5 + wave * 0.18 + segment * 0.03, 0.45, 0.85)
-  // Auf ganze Dreier abrunden, aber mindestens einer je Farbe.
-  const tiles = Math.floor(rows * cols * fillRatio)
-  const triples = Math.max(colorCount, Math.floor(tiles / MERGE_COUNT))
-
-  // Jede Farbe bekommt mindestens einen Dreier, der Rest wird verteilt.
-  const proFarbe = new Array<number>(colorCount).fill(1)
-  for (let t = colorCount; t < triples; t++) {
-    proFarbe[Math.floor(rng() * colorCount)]! += 1
-  }
-
-  const pollen: CellColor[] = []
-  for (let c = 0; c < colorCount; c++) {
-    for (let k = 0; k < proFarbe[c]! * MERGE_COUNT; k++) pollen.push((c + 1) as CellColor)
-  }
-
-  // Die Dreier liegen zunächst beieinander -- so ist ein Level leicht. Je
-  // schwerer, desto mehr wird gemischt, bis sie über den ganzen Haufen
-  // verstreut sind und man Plätze belegen muss, ohne sie gleich zu schließen.
-  const bloecke: CellColor[][] = []
-  for (let i = 0; i < pollen.length; i += MERGE_COUNT) bloecke.push(pollen.slice(i, i + MERGE_COUNT))
-  for (let i = bloecke.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1))
-    const tmp = bloecke[i]!
-    bloecke[i] = bloecke[j]!
-    bloecke[j] = tmp
-  }
-  const folge = bloecke.flat()
-  const streuung = Math.round(folge.length * clamp(wave * 0.85, 0.1, 1))
-  for (let s = 0; s < streuung; s++) {
-    const a = Math.floor(rng() * folge.length)
-    const b = Math.floor(rng() * folge.length)
-    const tmp = folge[a]!
-    folge[a] = folge[b]!
-    folge[b] = tmp
-  }
-
-  // Der Haufen: von unten aufgeschichtet, mit ausgefranster Oberkante.
-  const plaetze: number[] = []
-  for (let r = rows - 1; r >= 0; r--) {
-    for (let c = 0; c < cols; c++) plaetze.push(r * cols + c)
-  }
-  for (let i = plaetze.length - 1; i > 0; i--) {
-    if (rng() < 0.3) {
-      const j = Math.max(0, i - 1 - Math.floor(rng() * cols))
-      const tmp = plaetze[i]!
-      plaetze[i] = plaetze[j]!
-      plaetze[j] = tmp
+  // Blöcke, die genau aufgehen. Wie fein zerlegt wird, hängt an der Größe
+  // der Farbe: Eine Farbe mit sechs Pixeln in drei Blöcke zu schneiden ergibt
+  // nur Dreien, und damit hat man nichts zu entscheiden.
+  const proBlock = skala === 2 ? 14 : 7
+  const minStueck = 3
+  const bloecke: BienenBlock[] = []
+  let lfd = 0
+  for (const farbe of farben) {
+    const teile = clamp(Math.round(pixel[farbe]! / proBlock), 1, 5)
+    for (const menge of zerlege(pixel[farbe]!, teile, minStueck, rng)) {
+      bloecke.push({ id: `b${lfd++}`, color: farbe, amount: menge })
     }
   }
 
-  const board: CellColor[] = new Array(rows * cols).fill(0)
-  for (let i = 0; i < folge.length && i < plaetze.length; i++) {
-    board[plaetze[i]!] = folge[i]!
+  // Blöcke zu viel: Sie können nie voll werden und kosten einen Platz.
+  // Erst ab der zweiten Hälfte, und nie so viele, dass kein Weg mehr bliebe.
+  const zuvielAnzahl = clamp(Math.round(stufe * 5) - 1, 0, 4)
+  const zuviel: BienenBlock[] = []
+  for (let u = 0; u < zuvielAnzahl; u++) {
+    const farbe = farben[Math.floor(rng() * farben.length)]!
+    const menge = clamp(Math.round(pixel[farbe]! / 3) + 2, minStueck, 40)
+    zuviel.push({ id: `u${u}`, color: farbe, amount: menge })
   }
 
-  const label = gate ? 'Tor' : wave >= 0.9 ? 'Knifflig' : wave >= 0.6 ? 'Mittel' : 'Locker'
+  // Verteilen: die gebrauchten Blöcke oben, die überzähligen darunter. Wer
+  // mitzählt, lässt sie liegen; wer drauflostippt, verliert Plätze.
+  mische(bloecke, rng)
+  mische(zuviel, rng)
+  const spalten: BienenBlock[][] = Array.from({ length: SPALTEN }, () => [])
+  bloecke.forEach((b, i) => spalten[i % SPALTEN]!.push(b))
+  zuviel.forEach((b, i) => spalten[i % SPALTEN]!.push(b))
 
-  return { level: L, rows, cols, board, slotCount, colorCount, isGate: gate, label }
+  const label = stufe >= 0.8 ? 'Knifflig' : stufe >= 0.4 ? 'Mittel' : 'Locker'
+
+  return {
+    level: L,
+    motiv: motiv.name,
+    rows,
+    cols,
+    bild,
+    spalten,
+    slotCount: SLOT_COUNT,
+    colorCount,
+    isGate: false,
+    label,
+  }
+}
+
+/** Für Anzeige und Tests. */
+export function blockZahlen(level: BienenLevel): { gesamt: number; kapazitaet: number } {
+  const alle = level.spalten.flat()
+  return { gesamt: alle.length, kapazitaet: alle.reduce((n, b) => n + b.amount, 0) }
 }

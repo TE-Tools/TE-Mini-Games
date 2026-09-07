@@ -1,28 +1,56 @@
 /**
  * Bienen-Flow – Colony-Flow-Klon mit Bienen statt Ameisen.
  *
- * Umgebaut am 06.09.2026: Vorher tippte man unten Pollen-Stapel an, und ein
- * Slot saugte damit eine ganze Farbe vom Brett. Nachgemessen war das kein
- * Spiel -- ein Löser gewann alle 100 Level, Level 1 in zwei, Level 100 in
- * acht Tipps, verlieren war praktisch unmöglich. Jetzt wie im Original:
- * Man tippt einen erreichbaren Pollen auf dem Brett an, die Biene trägt
- * genau diesen einen in die Wabenleiste, und drei gleiche Farben in der
- * Leiste verschmelzen. Volle Leiste ohne Dreier heißt verloren.
+ * Die Regeln, wie Thomas sie am Original abgelesen und am 07.09.2026
+ * bestätigt hat:
+ *
+ *   - Oben liegt ein Pixelbild, von Anfang an vollständig. Es wird
+ *     ABGETRAGEN, nicht gefüllt. Leer heißt gewonnen.
+ *   - Geholt werden kann nur, was zugänglich ist: Ein Pixel am Rand oder an
+ *     einer Stelle, die schon leer ist und mit dem Rand zusammenhängt.
+ *     Alles, was eingeschlossen liegt, ist verdeckt.
+ *   - Unten der Nachschub in vier Spalten. Nehmen kann man nur den obersten
+ *     Block jeder Spalte; von unten rückt nach, und sichtbar sind drei
+ *     Reihen -- darunter warten mehr, die man nicht sieht.
+ *   - Ein Block hat eine Farbe und eine Zahl: seine Restkapazität. Auf einen
+ *     der fünf Plätze geschoben, holen die Bienen tröpfchenweise zugängliche
+ *     Pixel dieser Farbe; jeder senkt die Zahl um eins. Bei null ist der
+ *     Block voll und gibt den Platz frei.
+ *   - Mehrere Blöcke derselben Farbe arbeiten gleichzeitig. Ist nur ein
+ *     Pixel zu holen, bekommt es der Block mit der kleinsten Zahl.
+ *   - Ein Block, dessen Farbe gerade nirgends zugänglich ist, wartet -- und
+ *     macht weiter, sobald ringsum abgetragen wurde.
+ *   - Verloren: alle fünf Plätze belegt und keine dieser Farben zugänglich.
+ *   - Es muss genau aufgehen: Die Blöcke einer Farbe fassen zusammen genau
+ *     so viele Pixel, wie das Bild von ihr hat. Ein Block zu viel wird nie
+ *     voll und belegt seinen Platz bis zum Schluss.
+ *
+ * Zwei Fassungen davor lagen daneben (ein Platz räumte eine ganze Farbe ab;
+ * dann Dreier-Verschmelzen; dann das Bild füllen statt abtragen). Deshalb
+ * steht die Herleitung hier und nicht nur im Commit.
  */
 
-export type CellColor = number // 0 = leer, 1..N Farben
+export type CellColor = number // 0 = abgetragen/kein Pixel, 1..N Farben
+
+/** Ein Block aus dem Nachschub: Farbe plus Restkapazität. */
+export interface BienenBlock {
+  id: string
+  color: CellColor
+  /** Wie viele Pixel er noch aufnehmen kann. Bei 0 ist er voll. */
+  amount: number
+}
 
 export interface BienenLevel {
   level: number
+  motiv: string
   rows: number
   cols: number
-  /** rows*cols flach, zeilenweise; 0 = leer */
-  board: CellColor[]
-  /** Plätze in der Wabenleiste */
+  /** rows*cols flach, zeilenweise; 0 = dort war nie ein Pixel. */
+  bild: CellColor[]
+  /** Nachschub als Spalten; Index 0 liegt oben und ist antippbar. */
+  spalten: BienenBlock[][]
   slotCount: number
-  /** Anzahl unterschiedlicher Farben (1-basiert max) */
   colorCount: number
-  /** true = Segment-Tor (20, 40, … 100) */
   isGate: boolean
   label: string
 }
@@ -33,31 +61,31 @@ export interface BienenState {
   level: number
   rows: number
   cols: number
+  /** Das Bild, wie es gerade aussieht; 0 = abgetragen. */
   board: CellColor[]
-  /**
-   * Wabenleiste. Belegte Plätze stehen links, nach Farbe gruppiert -- so
-   * liegen die Kandidaten für einen Dreier immer nebeneinander.
-   */
-  slots: (CellColor | null)[]
+  spalten: BienenBlock[][]
+  /** Fünf Plätze; null = frei. */
+  slots: (BienenBlock | null)[]
   slotCount: number
   colorCount: number
   phase: 'play' | 'won' | 'lost'
-  /** Getippte Pollen. Beim Sieg immer gleich der Zahl der Pollen. */
+  /** Wie oft ein Block hochgeschoben wurde. */
   moves: number
-  /**
-   * Wie voll die Leiste im schlimmsten Moment war (nach dem Verschmelzen).
-   * Das ist das eigentliche Maß für sauberes Spiel: Wer immer gleich Dreier
-   * schließt, kommt nie über zwei. Die Zahl der Züge taugt dafür nicht --
-   * jeder Pollen muss genau einmal angetippt werden, sie ist also für alle
-   * gleich.
-   */
-  peakSlots: number
+  /** Blöcke auf Plätzen, deren Farbe es im Bild nicht mehr gibt. */
+  tote: number
 }
 
-export const BIENEN_MAX_LEVEL = 100
+/** Vorerst zehn Level zum Anspielen -- der Erzeuger kann mehr. */
+export const BIENEN_MAX_LEVEL = 10
 
-/** So viele gleiche Pollen in der Leiste verschmelzen zu Honig. */
-export const MERGE_COUNT = 3
+/** So viele Plätze hat die Kolonie. Im Original sind es fünf. */
+export const SLOT_COUNT = 5
+
+/** So viele Spalten hat der Nachschub. */
+export const SPALTEN = 4
+
+/** So tief sieht man hinein -- darunter rückt Unbekanntes nach. */
+export const SICHTBARE_REIHEN = 3
 
 export const COLOR_HEX: readonly string[] = [
   '#000000', // 0 unbenutzt
@@ -68,5 +96,7 @@ export const COLOR_HEX: readonly string[] = [
   '#9b59b6', // lila
   '#e67e22', // orange
   '#1abc9c', // türkis
-  '#e91e63', // pink
+  '#ec7fa9', // rosa
+  '#4a4458', // dunkel
+  '#f5f2e8', // hell
 ]
