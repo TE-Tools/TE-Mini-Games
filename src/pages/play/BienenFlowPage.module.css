@@ -165,6 +165,13 @@
   color: var(--color-text-muted, #66655f);
 }
 
+/** Der sechste Platz aus zehn Fehlversuchen -- er soll sich abheben. */
+.slotBonus {
+  border-style: dashed;
+  border-color: var(--accent, #d99b1c);
+  box-shadow: 0 0 0 2px rgba(217, 155, 28, 0.22);
+}
+
 .slotBelegt {
   border-style: solid;
   border-color: rgba(0, 0, 0, 0.25);

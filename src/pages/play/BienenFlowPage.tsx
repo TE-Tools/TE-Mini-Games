@@ -12,6 +12,12 @@ import {
   verdeckteBloecke,
   zugaenglich,
   restPixel,
+  fehlversuche,
+  zaehleFehlversuch,
+  loescheFehlversuche,
+  plaetzeFuer,
+  BONUS_AB,
+  SLOT_COUNT,
   COLOR_HEX,
   BIENEN_MAX_LEVEL,
   SICHTBARE_REIHEN,
@@ -90,6 +96,8 @@ export function BienenFlowPage() {
    * erst, wenn die Biene oben angekommen ist und zugreift.
    */
   const [imFlug, setImFlug] = useState<Map<number, number>>(new Map())
+  /** Wie oft dieses Level schon schiefging -- ab zehn gibt es einen Platz mehr. */
+  const [pleiten, setPleiten] = useState(0)
 
   const bildRef = useRef<HTMLDivElement>(null)
   const slotsRef = useRef<HTMLDivElement>(null)
@@ -123,7 +131,9 @@ export function BienenFlowPage() {
   const startLevel = useCallback((L: number) => {
     lauf.current += 1
     const levelCfg = createBienenLevel(L)
-    const match = createMatch(levelCfg)
+    // Wer hier schon zehnmal hängengeblieben ist, bekommt den sechsten Platz.
+    const match = createMatch(levelCfg, plaetzeFuer(L) - levelCfg.slotCount)
+    setPleiten(fehlversuche(L))
     setCfg(levelCfg)
     setLevel(L)
     setState(match)
@@ -144,6 +154,9 @@ export function BienenFlowPage() {
   )
 
   const finishWon = useCallback(async (final: BienenState) => {
+    // Geschafft -- der Fehlversuchszähler dieses Levels darf weg.
+    loescheFehlversuche(final.level)
+    setPleiten(0)
     const raw = { won: true, tote: final.tote, slotCount: final.slotCount }
     const sc = bienenFlowGame.calculateScore(final.level, raw)
     const xp = bienenFlowGame.calculateXP(final.level, sc)
@@ -244,7 +257,10 @@ export function BienenFlowPage() {
     const t = window.setTimeout(() => {
       if (lauf.current !== gen) return
       if (state.phase === 'won') void finishWon(state)
-      else setPhase('lost')
+      else {
+        setPleiten(zaehleFehlversuch(state.level))
+        setPhase('lost')
+      }
     }, ENDE_MS)
     return () => window.clearTimeout(t)
   }, [state, phase, finishWon])
@@ -282,7 +298,10 @@ export function BienenFlowPage() {
           Schieb einen Block auf einen freien Platz – von dort holen die Bienen Pixel seiner Farbe
           aus dem Bild. Sie kommen nur an das heran, was von außen zugänglich ist. Der Block ist
           voll, wenn seine Zahl bei null ist; passt seine Farbe gerade nirgends, wartet er und
-          belegt den Platz. Fünf wartende Plätze, und die Kolonie steht.
+          belegt den Platz. Fünf wartende Plätze, und die Kolonie steht. Ab Level 21 wird es Stück
+          für Stück schwerer, dazwischen liegen leichtere Runden; alle zwanzig Level steht ein Tor,
+          das sich nur über eine bestimmte Reihenfolge öffnet. Wer an einem Level zehnmal scheitert,
+          bekommt dort einen sechsten Platz.
         </p>
         <LevelMap
           currentLevel={level}
@@ -303,6 +322,8 @@ export function BienenFlowPage() {
   const verdeckt = verdeckteBloecke(state, SICHTBARE_REIHEN)
   const frei = zugaenglich(state.board, state.rows, state.cols)
   const belegt = state.slots.filter((s) => s != null).length
+  /** Der sechste Platz aus zehn Fehlversuchen. */
+  const bonus = state.slotCount > SLOT_COUNT
 
   return (
     <main className={styles.page}>
@@ -317,10 +338,13 @@ export function BienenFlowPage() {
       </header>
 
       <div className={styles.meta}>
-        <span>{cfg.motiv}</span>
+        <span>
+          {cfg.motiv} · {cfg.label}
+        </span>
         <span>{restPixel(state)} Pixel</span>
         <span className={belegt >= state.slotCount - 1 ? styles.metaEng : undefined}>
           Plätze {belegt}/{state.slotCount}
+          {bonus ? ' ★' : ''}
         </span>
       </div>
 
@@ -357,7 +381,9 @@ export function BienenFlowPage() {
           {state.slots.map((b, i) => (
             <div
               key={i}
-              className={`${styles.slot} ${b ? styles.slotBelegt : ''}`}
+              className={`${styles.slot} ${b ? styles.slotBelegt : ''} ${
+                bonus && i === state.slotCount - 1 ? styles.slotBonus : ''
+              }`}
               style={
                 b
                   ? {
@@ -388,10 +414,7 @@ export function BienenFlowPage() {
             aria-hidden="true"
           >
             🐝
-            <i
-              className={styles.fracht}
-              style={{ background: COLOR_HEX[b.color] ?? '#888' }}
-            />
+            <i className={styles.fracht} style={{ background: COLOR_HEX[b.color] ?? '#888' }} />
           </span>
         ))}
       </div>
@@ -435,6 +458,7 @@ export function BienenFlowPage() {
       </div>
 
       <p className={styles.regelHinweis}>
+        {bonus && '★ Bonus-Platz aktiv. '}
         {verdeckt > 0
           ? `Noch ${verdeckt} Blöcke unter dem sichtbaren Stapel – halte einen Platz frei.`
           : 'Alle Blöcke sind zu sehen.'}
@@ -480,6 +504,13 @@ export function BienenFlowPage() {
             <p>
               Alle {state.slotCount} Plätze sind belegt, und keine dieser Farben liegt gerade frei.
               Damit kommt keine Biene mehr an ein Pixel heran.
+            </p>
+            <p className={styles.muted}>
+              {pleiten >= BONUS_AB
+                ? `${pleiten}. Versuch – du spielst mit einem sechsten Platz.`
+                : pleiten >= BONUS_AB - 3
+                  ? `${pleiten}. Versuch – nach ${BONUS_AB} gibt es einen sechsten Platz.`
+                  : `${pleiten}. Versuch`}
             </p>
             <div className={styles.actions}>
               <button type="button" onClick={() => setPhase('map')}>

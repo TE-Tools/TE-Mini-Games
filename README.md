@@ -36,9 +36,15 @@ Progressive Web App with short skill, memory, reaction and logic games.
   stays in it and blocks that slot for good. All five slots blocked with
   nothing accessible ends the level. Only the top block of each supply column
   can be tapped and only three rows are visible, so you cannot count the level
-  out in advance. 300 levels, every 20th a gate; the early ones use ring-shaped
-  motifs (star, heart, comb) that show the outside-in rule at a glance. Every
-  level is proven winnable by a solver in `tests/bienen-flow.test.ts`
+  out in advance. 300 levels, every 20th a gate. The first 20 are a learning
+  phase you can tap your way through; from 21 on the difficulty rises steadily,
+  with an easy round thrown in every few levels. Levels are picked for colours
+  *and* for depth – a rainbow with seven colours all along the rim needs no
+  thinking, so late levels use layered motifs where most colours sit inside.
+  Gates are locks: the supply is stacked so that only one or two orders get you
+  through. Lose a level ten times and you get a sixth slot for that level.
+  Every level is proven winnable by an exact solver in
+  `tests/bienen-flow.test.ts`, which also measures the difficulty curve
 - **Schützenopoly** – the big Schützenfest board game: 40 fields, 22 real German
   Schützenfeste, 2–4 players against rule-based AI on three levels, trading,
   building and three shooting-range minigames (see

@@ -1,5 +1,5 @@
 import type { GameDefinition } from '@/games/types'
-import { BIENEN_MAX_LEVEL } from './types'
+import { BIENEN_MAX_LEVEL, SLOT_COUNT } from './types'
 import { createBienenLevel } from './level'
 
 /**
@@ -33,7 +33,9 @@ export const bienenFlowGame: GameDefinition = {
   calculateScore: (level, rawResult) => {
     const raw = rawResult as { won?: boolean; tote?: number; slotCount?: number }
     if (!raw.won) return 0
-    const plaetze = raw.slotCount ?? 5
+    // Gerechnet wird höchstens mit den regulären fünf Plätzen: Der
+    // Bonus-Platz nach zehn Fehlversuchen soll helfen, nicht Punkte bringen.
+    const plaetze = Math.min(raw.slotCount ?? SLOT_COUNT, SLOT_COUNT)
     const sauber = Math.max(0, plaetze - 1 - (raw.tote ?? plaetze - 1))
     return 400 + level * 8 + sauber * 70
   },

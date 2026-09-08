@@ -29,14 +29,29 @@ import {
   pixelDerFarbe,
   restPixel,
 } from '@/games/bienen-flow/engine'
-import { createBienenLevel, blockZahlen } from '@/games/bienen-flow/level'
+import {
+  createBienenLevel,
+  createBienenLevelVariante,
+  blockZahlen,
+  schwierigkeit,
+  istAtempause,
+} from '@/games/bienen-flow/level'
 import { bienenFlowGame } from '@/games/bienen-flow/definition'
+import {
+  fehlversuche,
+  zaehleFehlversuch,
+  loescheFehlversuche,
+  plaetzeFuer,
+  BONUS_AB,
+} from '@/games/bienen-flow/fehlversuche'
 import {
   MOTIVE,
   REICHE_MOTIVE,
   SCHICHT_MOTIVE,
   motivRaster,
   bedarfJeFarbe,
+  farbanzahl,
+  warteFarben,
 } from '@/games/bienen-flow/motive'
 import {
   BIENEN_MAX_LEVEL,
@@ -134,9 +149,7 @@ describe('Sammeln', () => {
   })
 
   it('holt später nach, sobald die Farbe freiliegt – ohne neuen Tipp', () => {
-    let s = createMatch(
-      level(RING, 3, [[{ color: 2, amount: 1 }], [{ color: 1, amount: 8 }]]),
-    )
+    let s = createMatch(level(RING, 3, [[{ color: 2, amount: 1 }], [{ color: 1, amount: 8 }]]))
     s = schiebe(s, 0) // Blau wartet
     expect(s.slots[0]).not.toBeNull()
 
@@ -182,9 +195,7 @@ describe('Der Takt', () => {
   })
 
   it('lässt zwei Blöcke gleichzeitig arbeiten – jeder holt einen je Runde', () => {
-    let s = createMatch(
-      level(RING, 3, [[{ color: 1, amount: 4 }], [{ color: 1, amount: 4 }]]),
-    )
+    let s = createMatch(level(RING, 3, [[{ color: 1, amount: 4 }], [{ color: 1, amount: 4 }]]))
     s = tapSpalte(s, 0)!.state
     s = tapSpalte(s, 1)!.state
     const r = tick(s)
@@ -196,9 +207,7 @@ describe('Der Takt', () => {
   it('legt den zweiten Block auf den zweiten Platz, solange der erste arbeitet', () => {
     // Thomas: "wenn ich 2 anklicke, soll der 2. in die 2. Wabe springen."
     // Genau deshalb arbeitet ein Tipp nicht sofort alles ab.
-    const s = createMatch(
-      level(RING, 3, [[{ color: 1, amount: 4 }], [{ color: 1, amount: 4 }]]),
-    )
+    const s = createMatch(level(RING, 3, [[{ color: 1, amount: 4 }], [{ color: 1, amount: 4 }]]))
     const erster = tapSpalte(s, 0)!
     expect(erster.slot).toBe(0)
     const zweiter = tapSpalte(erster.state, 1)!
@@ -220,7 +229,12 @@ describe('Der Takt', () => {
 describe('Der Nachschub', () => {
   it('gibt immer nur den obersten Block einer Spalte her', () => {
     const s = createMatch(
-      level(RING, 3, [[{ color: 1, amount: 2 }, { color: 2, amount: 1 }]]),
+      level(RING, 3, [
+        [
+          { color: 1, amount: 2 },
+          { color: 2, amount: 1 },
+        ],
+      ]),
     )
     expect(obersterBlock(s, 0)).toMatchObject({ color: 1, amount: 2 })
     expect(obersterBlock(schiebe(s, 0), 0)).toMatchObject({ color: 2, amount: 1 })
@@ -234,18 +248,14 @@ describe('Der Nachschub', () => {
   })
 
   it('sagt vorher, ob ein Block noch voll werden kann', () => {
-    const s = createMatch(
-      level(RING, 3, [[{ color: 1, amount: 8 }], [{ color: 1, amount: 9 }]]),
-    )
+    const s = createMatch(level(RING, 3, [[{ color: 1, amount: 8 }], [{ color: 1, amount: 9 }]]))
     expect(passtNoch(s, obersterBlock(s, 0))).toBe(true) // acht rote Pixel gibt es
     expect(passtNoch(s, obersterBlock(s, 1))).toBe(false) // neun nicht
     expect(passtNoch(s, null)).toBe(false)
   })
 
   it('rechnet dabei mit, was schon auf den Plätzen bestellt ist', () => {
-    let s = createMatch(
-      level(RING, 3, [[{ color: 1, amount: 5 }], [{ color: 1, amount: 5 }]]),
-    )
+    let s = createMatch(level(RING, 3, [[{ color: 1, amount: 5 }], [{ color: 1, amount: 5 }]]))
     s = schiebe(s, 0) // fünf der acht roten sind weg
     expect(passtNoch(s, obersterBlock(s, 1))).toBe(false) // fünf weitere passen nicht
   })
@@ -280,9 +290,7 @@ describe('Der Nachschub', () => {
 
 describe('Gewonnen und verloren', () => {
   it('ist gewonnen, wenn das Bild leer ist', () => {
-    const s = createMatch(
-      level(RING, 3, [[{ color: 1, amount: 8 }], [{ color: 2, amount: 1 }]]),
-    )
+    const s = createMatch(level(RING, 3, [[{ color: 1, amount: 8 }], [{ color: 2, amount: 1 }]]))
     const nachRot = schiebe(s, 0)
     expect(nachRot.phase).toBe('play')
     expect(schiebe(nachRot, 1).phase).toBe('won')
@@ -377,9 +385,30 @@ describe('Motive', () => {
   it('hat lauter erkennbare Motive', () => {
     for (const m of [...MOTIVE, ...REICHE_MOTIVE, ...SCHICHT_MOTIVE]) {
       expect(m.zeilen.length).toBeGreaterThan(2)
-      const pixel = m.zeilen.join('').split('').filter((c) => c !== '.' && c !== ' ').length
+      const pixel = m.zeilen
+        .join('')
+        .split('')
+        .filter((c) => c !== '.' && c !== ' ').length
       expect(pixel).toBeGreaterThan(10)
     }
+  })
+
+  it('hat kein einfarbiges Motiv mehr', () => {
+    // Thomas am 08.09.2026: "das Bienenspiel ist teilweise nur eine Farbe
+    // und zu einfach". Ursache waren gemalte Motive mit einer oder zwei
+    // Farben -- bei einer Farbe gibt es nichts zu entscheiden.
+    for (const m of [...MOTIVE, ...REICHE_MOTIVE, ...SCHICHT_MOTIVE]) {
+      expect(`${m.name}: ${farbanzahl(m)} Farben`).toBe(
+        `${m.name}: ${Math.max(3, farbanzahl(m))} Farben`,
+      )
+    }
+  })
+
+  it('hat genug Bilder, bei denen Farben im Inneren liegen', () => {
+    // Nur eine Farbe im Inneren lässt einen Block warten -- ein Regenbogen
+    // mit sieben Farben am Rand ist in jeder Reihenfolge abzuräumen.
+    const tief = [...MOTIVE, ...REICHE_MOTIVE, ...SCHICHT_MOTIVE].filter((m) => warteFarben(m) >= 3)
+    expect(tief.length).toBeGreaterThanOrEqual(8)
   })
 })
 
@@ -447,19 +476,136 @@ describe('Die Level', () => {
     expect(createBienenLevel(0).level).toBe(1)
     expect(createBienenLevel(999).level).toBe(BIENEN_MAX_LEVEL)
   })
+
+  it('zeigt in jedem Level mindestens drei Farben', () => {
+    for (const l of alle) {
+      const farben = new Set(l.bild.filter((c) => c > 0)).size
+      expect(`Level ${l.level}: ${farben} Farben`).toBe(
+        `Level ${l.level}: ${Math.max(3, farben)} Farben`,
+      )
+    }
+  })
+
+  it('nimmt für die späten Level farbigere Bilder als für die frühen', () => {
+    const schnitt = (von: number, bis: number) => {
+      const werte = alle.slice(von - 1, bis).map((l) => new Set(l.bild.filter((c) => c > 0)).size)
+      return werte.reduce((a, b) => a + b, 0) / werte.length
+    }
+    expect(schnitt(201, 300)).toBeGreaterThan(schnitt(1, 20))
+  })
+
+  it('steigt ab Level 21 an, mit eingestreuten leichten Runden', () => {
+    // Thomas: "Ab Level 21 soll es immer schwerer werden, aber immer mal
+    // auch wieder leichte Level für den Anreiz."
+    const ohnePause = []
+    for (let L = 21; L <= BIENEN_MAX_LEVEL; L++) {
+      if (istAtempause(L) || isSegmentGate(L)) continue
+      ohnePause.push(schwierigkeit(L))
+    }
+    for (let i = 1; i < ohnePause.length; i++) {
+      expect(ohnePause[i]!).toBeGreaterThan(ohnePause[i - 1]!)
+    }
+    const pausen = []
+    for (let L = 21; L <= BIENEN_MAX_LEVEL; L++) if (istAtempause(L)) pausen.push(L)
+    expect(pausen.length).toBeGreaterThanOrEqual(40)
+    // und jede Atempause ist deutlich leichter als ihre Nachbarn
+    for (const L of pausen) {
+      expect(schwierigkeit(L)).toBeLessThan(schwierigkeit(L - 1) * 0.75)
+    }
+  })
+
+  it('hält die Lernphase flach – die ersten zwanzig Level bleiben harmlos', () => {
+    for (let L = 1; L <= 20; L++) {
+      if (isSegmentGate(L)) continue
+      expect(schwierigkeit(L)).toBeLessThanOrEqual(0.2)
+    }
+  })
+
+  it('bleibt in einer Runde spielbar lang', () => {
+    // Ein Bild von 500 Pixeln dauert bei rund vier Bienen eine halbe Minute.
+    for (const l of alle) {
+      expect(`Level ${l.level}: ${l.bild.filter((c) => c > 0).length} Pixel`).toBe(
+        `Level ${l.level}: ${Math.min(480, l.bild.filter((c) => c > 0).length)} Pixel`,
+      )
+    }
+  })
 })
 
 /**
- * Der Löser, zweistufig.
+ * Der Löser – jetzt exakt statt heuristisch.
  *
- * Stufe 1 ist die sichere Strategie: immer einen Platz frei halten, nur
- * Blöcke nehmen, die noch aufgehen, und lieber abwarten als graben. Was die
- * gewinnt, gewinnt auch ein aufmerksamer Mensch.
+ * Ein Zug ist: obersten Block einer Spalte auf einen Platz legen und die
+ * Bienen arbeiten lassen, bis nichts mehr geht. Warten kostet nichts, also
+ * ist diese Sicht vollständig -- wer früher tippt, erreicht nichts, was
+ * hiermit nicht auch erreichbar wäre.
  *
- * Stufe 2 ist eine Strahlensuche mit etwas Vorausblick -- für die wenigen
- * Level, bei denen die einfache Strategie sich verrennt. Zusammen weisen sie
- * nach, dass jedes der 300 Level zu gewinnen ist, und zwar schnell genug für
- * jeden Testlauf.
+ * Die Suche merkt sich jeden Zustand (Spaltenhöhen, Plätze, Bild) und
+ * braucht damit für ein Level Millisekunden statt Minuten. Vorher stand hier
+ * eine zweistufige Heuristik; sie hielt zwei lösbare Level für unlösbar,
+ * seit die Level enger gebaut sind (08.09.2026).
+ */
+function schluessel(s: BienenState): string {
+  return (
+    s.spalten.map((sp) => sp.length).join(',') +
+    '|' +
+    s.slots.map((x) => (x ? `${x.color}:${x.amount}` : '-')).join(',') +
+    '|' +
+    s.board.join('')
+  )
+}
+
+function loesbar(s: BienenState, memo = new Map<string, boolean>()): boolean {
+  if (s.phase === 'won') return true
+  if (s.phase === 'lost') return false
+  const k = schluessel(s)
+  const bekannt = memo.get(k)
+  if (bekannt !== undefined) return bekannt
+  // Vorbelegung gegen Kreise: Ein Zustand, der sich selbst erreicht, gewinnt
+  // nicht durch sich selbst.
+  memo.set(k, false)
+  let ok = false
+  for (let i = 0; i < s.spalten.length && !ok; i++) {
+    const t = tapSpalte(s, i)
+    if (!t) continue
+    if (loesbar(arbeiteAus(t.state).state, memo)) ok = true
+  }
+  memo.set(k, ok)
+  return ok
+}
+
+/** Welche Spalten am Zug noch zum Sieg führen. */
+function gewinnzuege(s: BienenState, memo: Map<string, boolean>): number[] {
+  const out: number[] = []
+  for (let i = 0; i < s.spalten.length; i++) {
+    const t = tapSpalte(s, i)
+    if (!t) continue
+    if (loesbar(arbeiteAus(t.state).state, memo)) out.push(i)
+  }
+  return out
+}
+
+function start(level: number): BienenState {
+  return arbeiteAus(createMatch(createBienenLevel(level))).state
+}
+
+/** Wer ohne nachzudenken alles hochschiebt, was er greifen kann. */
+function ohneNachdenken(level: number): boolean {
+  let s = createMatch(createBienenLevel(level))
+  for (let n = 0; n < 400 && s.phase === 'play'; n++) {
+    const i = s.spalten.findIndex((sp) => sp.length > 0)
+    if (i < 0 || freieSlots(s) === 0) {
+      s = arbeiteAus(s).state
+      break
+    }
+    s = arbeiteAus(tapSpalte(s, i)!.state).state
+  }
+  return s.phase === 'won'
+}
+
+/**
+ * Der aufmerksame Spieler ohne Vorausblick: nimmt am liebsten einen Block,
+ * dessen Farbe gerade freiliegt und der noch aufgeht, hält sonst einen Platz
+ * in Reserve und gräbt nur, wenn gar nichts mehr arbeitet.
  */
 function sichererZug(s: BienenState): number | null {
   const reserve = freieSlots(s)
@@ -489,20 +635,14 @@ function sichererZug(s: BienenState): number | null {
 function mitSichererStrategie(level: number): boolean {
   let s = createMatch(createBienenLevel(level))
   for (let n = 0; n < 900 && s.phase === 'play'; n++) {
-    let i = sichererZug(s)
+    const i = sichererZug(s)
     if (i === null) {
       const r = arbeiteAus(s)
       if (r.schritte.length > 0) {
         s = r.state
         continue
       }
-      const oben = s.spalten.map((sp, k) => ({ b: sp[0], k })).filter((x) => x.b)
-      if (oben.length === 0 || freieSlots(s) === 0) break
-      i = oben.reduce((a, b) =>
-        a.b!.amount - pixelDerFarbe(s, a.b!.color) <= b.b!.amount - pixelDerFarbe(s, b.b!.color)
-          ? a
-          : b,
-      ).k
+      break
     }
     const t = tapSpalte(s, i)
     if (!t) break
@@ -511,68 +651,168 @@ function mitSichererStrategie(level: number): boolean {
   return s.phase === 'won'
 }
 
-function mitVorausblick(level: number, breite = 40): boolean {
-  let strahl: BienenState[] = [createMatch(createBienenLevel(level))]
-  const gesehen = new Set<string>()
-  for (let tiefe = 0; tiefe < 400; tiefe++) {
-    const naechste: BienenState[] = []
-    for (const s of strahl) {
-      for (let i = 0; i < s.spalten.length; i++) {
-        const t = tapSpalte(s, i)
-        if (!t) continue
-        const danach = arbeiteAus(t.state).state
-        if (danach.phase === 'won') return true
-        if (danach.phase === 'lost') continue
-        const key =
-          `${danach.spalten.map((sp) => sp.length).join(',')}|` +
-          danach.slots.map((x) => (x ? `${x.color}:${x.amount}` : '-')).join(',')
-        if (gesehen.has(key)) continue
-        gesehen.add(key)
-        naechste.push(danach)
-      }
-    }
-    if (naechste.length === 0) return false
-    naechste.sort((a, b) => {
-      const totA = a.slots.filter((x) => x && !passtNoch(a, x)).length
-      const totB = b.slots.filter((x) => x && !passtNoch(b, x)).length
-      return totA - totB || restPixel(a) - restPixel(b)
-    })
-    strahl = naechste.slice(0, breite)
+/** Wie oft im Verlauf nur ein einziger Zug rettet. */
+function engstellen(level: BienenLevel): number {
+  const memo = new Map<string, boolean>()
+  let s = arbeiteAus(createMatch(level)).state
+  let eng = 0
+  for (let n = 0; s.phase === 'play' && n < 200; n++) {
+    const moeglich = s.spalten.map((_, i) => i).filter((i) => tapSpalte(s, i) !== null)
+    if (moeglich.length === 0) break
+    const gut = gewinnzuege(s, memo)
+    if (gut.length === 0) break
+    if (moeglich.length > 1 && gut.length === 1) eng++
+    s = arbeiteAus(tapSpalte(s, gut[0]!)!.state).state
   }
-  return false
+  return eng
 }
 
 describe('Lösbarkeit', () => {
   it('lässt jedes der 300 Level gewinnen', () => {
     const gescheitert: number[] = []
     for (let level = 1; level <= BIENEN_MAX_LEVEL; level++) {
-      if (mitSichererStrategie(level)) continue
-      if (!mitVorausblick(level)) gescheitert.push(level)
+      if (!loesbar(start(level))) gescheitert.push(level)
     }
     expect(gescheitert).toEqual([])
+  }, 180_000)
+
+  it('lässt die Lernphase auch ohne Nachdenken durchgehen', () => {
+    // Die ersten zwanzig Level sollen niemanden bestrafen: Wer einfach
+    // drauflostippt, kommt durch.
+    // Ohne das Tor am Ende: Level 20 ist die erste echte Prüfung.
+    const verloren: number[] = []
+    for (let level = 1; level < 20; level++) if (!ohneNachdenken(level)) verloren.push(level)
+    expect(verloren).toEqual([])
+  }, 60_000)
+
+  it('lässt auch die eingestreuten leichten Level durchgehen', () => {
+    // "immer mal auch wieder leichte Level für den Anreiz" -- die müssen
+    // wirklich leicht sein, sonst sind sie keine Atempause.
+    const pausen: number[] = []
+    for (let L = 21; L <= BIENEN_MAX_LEVEL; L++) if (istAtempause(L)) pausen.push(L)
+    const verloren = pausen.filter((L) => !ohneNachdenken(L))
+    expect(`${verloren.length} von ${pausen.length} Atempausen verloren`).toBe(
+      `${Math.min(verloren.length, 4)} von ${pausen.length} Atempausen verloren`,
+    )
   }, 120_000)
 
-  it('gewinnt die allermeisten Level schon mit der einfachen Strategie', () => {
-    // Wenn hier plötzlich viele durchfallen, ist die Steigerung zu steil
-    // geworden -- dann muss man nachrechnen, nicht nur nachsehen.
-    let ok = 0
-    for (let level = 1; level <= BIENEN_MAX_LEVEL; level++) {
-      if (mitSichererStrategie(level)) ok++
+  it('zwingt in den späten Leveln zum Überlegen', () => {
+    // Das ist die eigentliche Messung zu Thomas' "zu einfach": Wer einfach
+    // hochschiebt, darf hier nicht mehr durchkommen, und auch der
+    // aufmerksame Spieler ohne Vorausblick nicht immer.
+    let dumm = 0
+    let sicher = 0
+    let n = 0
+    for (let L = 201; L <= BIENEN_MAX_LEVEL; L++) {
+      if (isSegmentGate(L) || istAtempause(L)) continue
+      n++
+      if (ohneNachdenken(L)) dumm++
+      if (mitSichererStrategie(L)) sicher++
     }
-    expect(ok).toBeGreaterThanOrEqual(285)
-  }, 120_000)
+    expect(dumm / n).toBeLessThan(0.3)
+    expect(sicher / n).toBeLessThan(0.6)
+  }, 180_000)
 
-  it('lässt die ersten Level auch ohne Nachdenken durchgehen', () => {
-    for (let level = 1; level <= 3; level++) {
-      let s = createMatch(createBienenLevel(level))
+  it('bleibt in der Mitte dazwischen – die Kurve steigt', () => {
+    const quote = (von: number, bis: number) => {
+      let ok = 0
       let n = 0
-      while (s.phase === 'play' && n++ < 200) {
-        const spalte = s.spalten.findIndex((sp) => sp.length > 0)
-        if (spalte < 0 || freieSlots(s) === 0) break
-        s = schiebe(s, spalte)
+      for (let L = von; L <= bis; L++) {
+        if (isSegmentGate(L) || istAtempause(L)) continue
+        n++
+        if (ohneNachdenken(L)) ok++
       }
-      expect(`Level ${level}: ${s.phase}`).toBe(`Level ${level}: won`)
+      return ok / n
     }
+    const frueh = quote(21, 100)
+    const mitte = quote(101, 200)
+    const spaet = quote(201, 300)
+    expect(frueh).toBeGreaterThan(mitte)
+    expect(mitte).toBeGreaterThan(spaet)
+  }, 180_000)
+})
+
+describe('Die Tore', () => {
+  const tore: number[] = []
+  for (let L = SEGMENT_SIZE; L <= BIENEN_MAX_LEVEL; L += SEGMENT_SIZE) tore.push(L)
+
+  it('öffnet sich nur über einen schmalen Weg', () => {
+    // Thomas: "die Tor-Level zum Öffnen so, dass nur ein Weg möglich ist --
+    // dass man genau eine oder zwei Reihenfolgen braucht, um durchzukommen."
+    // Gemessen wird, an wie vielen Stellen im Verlauf von mehreren möglichen
+    // Zügen nur ein einziger nicht in die Sackgasse führt.
+    const zuWeit: string[] = []
+    for (const L of tore) {
+      const eng = engstellen(createBienenLevel(L))
+      if (eng < 3) zuWeit.push(`Tor ${L}: nur ${eng} Engstellen`)
+    }
+    expect(zuWeit).toEqual([])
+  }, 180_000)
+
+  it('braucht dafür genau die eingetragenen Startwerte', () => {
+    // Die Tabelle TOR_VARIANTE in level.ts ist offline gesucht worden. Wenn
+    // am Erzeuger etwas geändert wird, stimmt sie vielleicht nicht mehr --
+    // dann fällt dieser Test, und es muss neu gesucht werden.
+    for (const L of tore) {
+      const gewaehlt = createBienenLevel(L)
+      const roh = createBienenLevelVariante(L, 0)
+      const gleich = JSON.stringify(gewaehlt.spalten) === JSON.stringify(roh.spalten)
+      if (gleich) continue
+      // Eine abweichende Variante muss besser sein als die Null.
+      expect(engstellen(gewaehlt)).toBeGreaterThanOrEqual(3)
+    }
+  }, 180_000)
+
+  it('ist am Tor immer schwerer als kurz davor', () => {
+    for (const L of tore) {
+      if (L < 3) continue
+      expect(schwierigkeit(L)).toBeGreaterThan(schwierigkeit(L - 1))
+    }
+  })
+})
+
+describe('Der Bonus-Platz', () => {
+  it('gibt nach zehn Fehlversuchen einen sechsten Platz', () => {
+    // Thomas: "Sollte man 10 mal versagt haben an einem Level, soll ein
+    // Bonus-Platz kommen, also 6. Platz zum Reinlegen."
+    loescheFehlversuche(7)
+    expect(plaetzeFuer(7)).toBe(SLOT_COUNT)
+    for (let n = 1; n < BONUS_AB; n++) zaehleFehlversuch(7)
+    expect(fehlversuche(7)).toBe(BONUS_AB - 1)
+    expect(plaetzeFuer(7)).toBe(SLOT_COUNT)
+    zaehleFehlversuch(7)
+    expect(plaetzeFuer(7)).toBe(SLOT_COUNT + 1)
+    loescheFehlversuche(7)
+    expect(plaetzeFuer(7)).toBe(SLOT_COUNT)
+  })
+
+  it('zählt jedes Level für sich', () => {
+    loescheFehlversuche(11)
+    loescheFehlversuche(12)
+    for (let n = 0; n < BONUS_AB; n++) zaehleFehlversuch(11)
+    expect(plaetzeFuer(11)).toBe(SLOT_COUNT + 1)
+    expect(plaetzeFuer(12)).toBe(SLOT_COUNT)
+    loescheFehlversuche(11)
+  })
+
+  it('baut die Runde wirklich mit dem zusätzlichen Platz auf', () => {
+    const s = createMatch(createBienenLevel(3), 1)
+    expect(s.slots).toHaveLength(SLOT_COUNT + 1)
+    expect(s.slotCount).toBe(SLOT_COUNT + 1)
+  })
+
+  it('macht ein Level damit nachweislich lösbarer', () => {
+    // Der Sinn des Platzes: Man darf einen wartenden Block mehr parken.
+    const mitFuenf = createMatch(createBienenLevel(3))
+    const mitSechs = createMatch(createBienenLevel(3), 1)
+    expect(freieSlots(mitSechs)).toBe(freieSlots(mitFuenf) + 1)
+    expect(loesbar(arbeiteAus(mitSechs).state)).toBe(true)
+  })
+
+  it('bringt aber keine Punkte', () => {
+    const fuenf = bienenFlowGame.calculateScore(5, { won: true, tote: 0, slotCount: 5 })
+    const sechs = bienenFlowGame.calculateScore(5, { won: true, tote: 0, slotCount: 6 })
+    expect(sechs).toBe(fuenf)
   })
 })
 
