@@ -15,6 +15,7 @@
  * Das vervierfacht die Pollenzahl, ohne dass das Bild unkenntlich wird.
  */
 
+import { schichtJeFarbe } from './engine'
 import type { CellColor } from './types'
 
 const FARBEN: Record<string, CellColor> = {
@@ -38,14 +39,7 @@ export interface Motiv {
 export const MOTIVE: Motiv[] = [
   {
     name: 'Biene',
-    zeilen: [
-      '..DDDD..',
-      '.DGGGGD.',
-      'DGDDGGGD',
-      'DGGGGGGD',
-      '.DGDDGD.',
-      '..DDDD..',
-    ],
+    zeilen: ['..DDDD..', 'HDGGGGDH', 'HGDDGGGH', 'HGGGGGGH', '.DGDDGD.', '..DDDD..'],
   },
   {
     name: 'Blume',
@@ -62,27 +56,11 @@ export const MOTIVE: Motiv[] = [
   },
   {
     name: 'Wabe',
-    zeilen: [
-      '..GGGG..',
-      '.GGGGGG.',
-      'GGGDDGGG',
-      'GGDDDDGG',
-      'GGGDDGGG',
-      '.GGGGGG.',
-      '..GGGG..',
-    ],
+    zeilen: ['..GGGG..', '.GOOOOG.', 'GOODDOOG', 'GODDDDOG', 'GOODDOOG', '.GOOOOG.', '..GGGG..'],
   },
   {
     name: 'Marienkäfer',
-    zeilen: [
-      '..DDDD..',
-      '.RRDDRR.',
-      'RDRRRRDR',
-      'RRRDDRRR',
-      'RDRRRRDR',
-      '.RRDDRR.',
-      '..RRRR..',
-    ],
+    zeilen: ['..DDDD..', '.RHDDHR.', 'RDRRRRDR', 'RRRDDRRR', 'RDRRRRDR', '.RRDDRR.', '..RRRR..'],
   },
   {
     name: 'Sonne',
@@ -99,46 +77,23 @@ export const MOTIVE: Motiv[] = [
   },
   {
     name: 'Schmetterling',
-    zeilen: [
-      'LL.DD.LL',
-      'LLLDDLLL',
-      '.LLDDLL.',
-      '..LDDL..',
-      '.TTDDTT.',
-      'TTTDDTTT',
-      'TT.DD.TT',
-    ],
+    zeilen: ['LL.DD.LL', 'LLLDDLLL', '.LLDDLL.', '..LDDL..', '.TTDDTT.', 'TTTDDTTT', 'TT.DD.TT'],
   },
   {
     name: 'Pilz',
-    zeilen: [
-      '..RRRR..',
-      '.RRHRRR.',
-      'RRRRRHRR',
-      'RHRRRRRR',
-      '..HHHH..',
-      '..HDDH..',
-      '..HHHH..',
-    ],
+    zeilen: ['..RRRR..', '.RRHRRR.', 'RRRRRHRR', 'RHRRRRRR', '..HHHH..', '..HDDH..', '..HHHH..'],
   },
   {
     name: 'Herz',
-    zeilen: [
-      '.RR.RR.',
-      'RRRRRRR',
-      'RRRRRRR',
-      '.RRRRR.',
-      '..RRR..',
-      '...R...',
-    ],
+    zeilen: ['.RR.RR.', 'RHRRRRR', 'RHRRRRR', '.RRRRD.', '..RRD..', '...D...'],
   },
   {
     name: 'Baum',
     zeilen: [
       '..NNN..',
-      '.NNNNN.',
-      'NNNNNNN',
-      '.NNNNN.',
+      '.NGGGN.',
+      'NNGGGNN',
+      '.NGGGN.',
       '..NNN..',
       '...O...',
       '...O...',
@@ -147,39 +102,17 @@ export const MOTIVE: Motiv[] = [
   },
   {
     name: 'Krone',
-    zeilen: [
-      'G.G.G.G',
-      'GGGGGGG',
-      'GGBGBGG',
-      'GGGGGGG',
-      'OOOOOOO',
-    ],
+    zeilen: ['G.G.G.G', 'GGGGGGG', 'GGBGBGG', 'GGGGGGG', 'OOOOOOO'],
   },
   {
     name: 'Honigglas',
-    zeilen: [
-      '.DDDDD.',
-      '.HHHHH.',
-      'DGGGGGD',
-      'DGGDGGD',
-      'DGGGGGD',
-      'DGGGGGD',
-      '.DDDDD.',
-    ],
+    zeilen: ['.DDDDD.', '.HHHHH.', 'DGGGGGD', 'DGGDGGD', 'DGGGGGD', 'DGGGGGD', '.DDDDD.'],
   },
   {
     name: 'Regenschirm',
-    zeilen: [
-      '..BBBBB..',
-      '.BBRRRBB.',
-      'BBRRRRRBB',
-      '....D....',
-      '....D....',
-      '...DD....',
-    ],
+    zeilen: ['..BBBBB..', '.BBRRRBB.', 'BBRRRRRBB', '....D....', '....D....', '...DD....'],
   },
 ]
-
 
 /**
  * Reiche Motive für die späteren Abschnitte.
@@ -278,8 +211,52 @@ export const REICHE_MOTIVE: Motiv[] = [
       '..HHHHHHHH..',
     ],
   },
+  {
+    name: 'Papagei',
+    zeilen: [
+      '...NNNN...',
+      '..NNGGNN..',
+      '.NNGGGGNN.',
+      '.RRGGDGGR.',
+      '.RRRGGGRR.',
+      '..RRRRRR..',
+      '..OOTTOO..',
+      '..OOTTOO..',
+      '...LLLL...',
+      '....DD....',
+    ],
+  },
+  {
+    name: 'Ballon',
+    zeilen: [
+      '...RRRR...',
+      '..RGGGGR..',
+      '.RGGBBGGR.',
+      '.RGBBBBGR.',
+      '.RGGBBGGR.',
+      '..RGGGGR..',
+      '...RRRR...',
+      '....DD....',
+      '...PPPP...',
+      '...PHHP...',
+    ],
+  },
+  {
+    name: 'Eule',
+    zeilen: [
+      '..DDDDDD..',
+      '.DHHDDHHD.',
+      '.DHBHHBHD.',
+      '.DDHHHHDD.',
+      '.DOODDOOD.',
+      '.DRGGGGRD.',
+      '..RGGGGR..',
+      '..DDGGDD..',
+      '...D..D...',
+      '..OO..OO..',
+    ],
+  },
 ]
-
 
 /**
  * Geschichtete Motive – die Bauart, die das Original für die frühen Level
@@ -306,8 +283,7 @@ function schichten(name: string, form: string[], farben: string[]): Motiv {
   for (let r = 0; r < hoehe; r++) {
     for (let c = 0; c < breite; c++) {
       if (!drin(r, c)) continue
-      const amRand =
-        !drin(r - 1, c) || !drin(r + 1, c) || !drin(r, c - 1) || !drin(r, c + 1)
+      const amRand = !drin(r - 1, c) || !drin(r + 1, c) || !drin(r, c - 1) || !drin(r, c + 1)
       if (amRand) {
         tiefe[r * breite + c] = 1
         rand.push(r * breite + c)
@@ -320,7 +296,12 @@ function schichten(name: string, form: string[], farben: string[]): Motiv {
     for (const i of rand) {
       const r = Math.floor(i / breite)
       const c = i % breite
-      for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]] as const) {
+      for (const [dr, dc] of [
+        [-1, 0],
+        [1, 0],
+        [0, -1],
+        [0, 1],
+      ] as const) {
         const nr = r + dr
         const nc = c + dc
         if (!drin(nr, nc)) continue
@@ -468,7 +449,171 @@ export const SCHICHT_MOTIVE: Motiv[] = [
     ],
     ['D', 'H', 'B', 'G'],
   ),
+  schichten(
+    'Schild',
+    [
+      '###########',
+      '###########',
+      '###########',
+      '###########',
+      '.#########.',
+      '.#########.',
+      '..#######..',
+      '...#####...',
+      '....###....',
+      '.....#.....',
+    ],
+    ['D', 'R', 'G', 'H', 'B'],
+  ),
+  schichten(
+    'Zwiebel',
+    [
+      '....#####....',
+      '..#########..',
+      '.###########.',
+      '#############',
+      '#############',
+      '#############',
+      '#############',
+      '#############',
+      '.###########.',
+      '..#########..',
+      '....#####....',
+    ],
+    ['D', 'R', 'O', 'G', 'H', 'B'],
+  ),
+  schichten(
+    'Pyramide',
+    [
+      '......#......',
+      '.....###.....',
+      '....#####....',
+      '...#######...',
+      '..#########..',
+      '.###########.',
+      '#############',
+      '#############',
+      '#############',
+    ],
+    ['N', 'G', 'O', 'R', 'D'],
+  ),
+  schichten(
+    'Kristall',
+    [
+      '....###....',
+      '...#####...',
+      '..#######..',
+      '.#########.',
+      '###########',
+      '###########',
+      '###########',
+      '###########',
+      '.#########.',
+      '..#######..',
+      '...#####...',
+      '....###....',
+    ],
+    ['B', 'T', 'N', 'G', 'O', 'H'],
+  ),
+  schichten(
+    'Muschel',
+    [
+      '.....###.....',
+      '...#######...',
+      '..#########..',
+      '.###########.',
+      '#############',
+      '#############',
+      '.###########.',
+      '..#########..',
+      '...#######...',
+    ],
+    ['P', 'R', 'G', 'H', 'B'],
+  ),
+  schichten(
+    'Krug',
+    [
+      '..#######..',
+      '.#########.',
+      '###########',
+      '###########',
+      '###########',
+      '###########',
+      '###########',
+      '.#########.',
+      '..#######..',
+      '...#####...',
+      '....###....',
+    ],
+    ['O', 'G', 'R', 'D', 'H'],
+  ),
+  schichten(
+    'Ei',
+    [
+      '...###...',
+      '..#####..',
+      '.#######.',
+      '#########',
+      '#########',
+      '#########',
+      '#########',
+      '#########',
+      '.#######.',
+      '..#####..',
+      '...###...',
+    ],
+    ['H', 'G', 'O', 'R', 'D'],
+  ),
+  schichten(
+    'Blatt',
+    [
+      '.....##....',
+      '....####...',
+      '...######..',
+      '..########.',
+      '.##########',
+      '..########.',
+      '...######..',
+      '....####...',
+      '.....##....',
+    ],
+    ['N', 'G', 'O', 'H'],
+  ),
 ]
+
+/** Wie viele Farben ein Motiv mitbringt -- danach sucht das Level aus. */
+export function farbanzahl(motiv: Motiv): number {
+  const farben = new Set<CellColor>()
+  for (const zeile of motiv.zeilen) {
+    for (const z of zeile) {
+      const f = FARBEN[z]
+      if (f) farben.add(f)
+    }
+  }
+  return farben.size
+}
+
+/**
+ * Wie viele Farben eines Motivs beim Start NICHT zugänglich sind.
+ *
+ * Das ist das eigentliche Maß für die Schwierigkeit: Nur solche Farben
+ * lassen einen Block warten und einen Platz belegen. Ein Regenbogen hat
+ * sieben Farben, aber alle liegen am Rand -- da wartet nie jemand, und man
+ * kann drauflostippen. Ein Schild hat fünf, davon vier im Inneren.
+ *
+ * Gerechnet auf der kleinsten Stufe; größere Bilder haben eher mehr Tiefe,
+ * nie weniger.
+ */
+const warteCache = new Map<string, number>()
+export function warteFarben(motiv: Motiv): number {
+  const da = warteCache.get(motiv.name)
+  if (da !== undefined) return da
+  const { bild, rows, cols } = motivRaster(motiv, 1)
+  const tiefe = schichtJeFarbe(bild, rows, cols)
+  const n = [...tiefe.values()].filter((t) => t > 0).length
+  warteCache.set(motiv.name, n)
+  return n
+}
 
 /** Motiv in ein Raster übersetzen, bei Bedarf vergrößert. */
 export function motivRaster(

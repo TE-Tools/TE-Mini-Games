@@ -80,6 +80,34 @@ export function zugaenglich(board: CellColor[], rows: number, cols: number): boo
   return frei
 }
 
+/**
+ * In welcher Schälrunde eine Farbe zum ersten Mal zugänglich wird.
+ *
+ * Runde 0 heißt: liegt gleich zu Beginn frei. Je höher die Zahl, desto
+ * länger wartet ein Block dieser Farbe auf seinem Platz. Der Levelbau
+ * braucht das, um zu wissen, welche Blöcke den Weg versperren.
+ */
+export function schichtJeFarbe(
+  bild: CellColor[],
+  rows: number,
+  cols: number,
+): Map<CellColor, number> {
+  const tiefe = new Map<CellColor, number>()
+  const board = bild.slice()
+  for (let runde = 0; runde < 500; runde++) {
+    const frei = zugaenglich(board, rows, cols)
+    let etwas = false
+    for (let i = 0; i < board.length; i++) {
+      if (!frei[i]) continue
+      etwas = true
+      if (!tiefe.has(board[i]!)) tiefe.set(board[i]!, runde)
+    }
+    if (!etwas) break
+    for (let i = 0; i < board.length; i++) if (frei[i]) board[i] = 0
+  }
+  return tiefe
+}
+
 /** Farben, die gerade zugänglich sind. */
 export function zugaenglicheFarben(state: BienenState): Set<CellColor> {
   const frei = zugaenglich(state.board, state.rows, state.cols)
@@ -218,15 +246,23 @@ export function arbeiteAus(state: BienenState): { state: BienenState; schritte: 
   return { state: s, schritte: alle }
 }
 
-export function createMatch(level: BienenLevel): BienenState {
+/**
+ * Eine Runde aufsetzen.
+ *
+ * `zusatzPlaetze` ist der Bonus-Platz: Wer an einem Level zehnmal scheitert,
+ * bekommt einen sechsten Platz und damit genau den Puffer, an dem es
+ * gehakt hat. Die Regeln ändert er nicht -- nur die Zahl der Plätze.
+ */
+export function createMatch(level: BienenLevel, zusatzPlaetze = 0): BienenState {
+  const plaetze = level.slotCount + Math.max(0, Math.floor(zusatzPlaetze))
   return {
     level: level.level,
     rows: level.rows,
     cols: level.cols,
     board: level.bild.slice(),
     spalten: level.spalten.map((s) => s.map((b) => ({ ...b }))),
-    slots: Array.from({ length: level.slotCount }, () => null),
-    slotCount: level.slotCount,
+    slots: Array.from({ length: plaetze }, () => null),
+    slotCount: plaetze,
     colorCount: level.colorCount,
     phase: 'play',
     moves: 0,

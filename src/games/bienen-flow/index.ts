@@ -1,6 +1,27 @@
 export { bienenFlowGame } from './definition'
-export { createBienenLevel, blockZahlen } from './level'
-export { MOTIVE, REICHE_MOTIVE, motivRaster, bedarfJeFarbe } from './motive'
+export {
+  createBienenLevel,
+  createBienenLevelVariante,
+  blockZahlen,
+  schwierigkeit,
+  istAtempause,
+} from './level'
+export {
+  MOTIVE,
+  REICHE_MOTIVE,
+  SCHICHT_MOTIVE,
+  motivRaster,
+  bedarfJeFarbe,
+  farbanzahl,
+  warteFarben,
+} from './motive'
+export {
+  fehlversuche,
+  zaehleFehlversuch,
+  loescheFehlversuche,
+  plaetzeFuer,
+  BONUS_AB,
+} from './fehlversuche'
 export {
   createMatch,
   tapSpalte,
@@ -15,6 +36,7 @@ export {
   verdeckteBloecke,
   zugaenglich,
   zugaenglicheFarben,
+  schichtJeFarbe,
   luftMaske,
   pixelDerFarbe,
   restPixel,
