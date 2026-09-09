@@ -19,6 +19,7 @@ export type GameId =
   | 'schuetzenopoly'
   | 'kniffel'
   | 'bienen-flow'
+  | 'squishy-dumplings'
 
 export interface GameLevelConfig {
   level: number

@@ -13,6 +13,7 @@ import { werWuerdeEherGame } from './wer-wuerde-eher'
 import { schuetzenopolyGame } from './schuetzenopoly'
 import { kniffelGame } from './kniffel'
 import { bienenFlowGame } from './bienen-flow'
+import { squishyDumplingsGame } from './squishy-dumplings'
 
 /** Register all built-in games. Call once at app startup. */
 export function registerAllGames(): void {
@@ -30,4 +31,5 @@ export function registerAllGames(): void {
   registerGame(schuetzenopolyGame)
   registerGame(kniffelGame)
   registerGame(bienenFlowGame)
+  registerGame(squishyDumplingsGame)
 }

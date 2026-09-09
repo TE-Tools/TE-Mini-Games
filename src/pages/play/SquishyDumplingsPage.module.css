@@ -1,0 +1,394 @@
+.page {
+  min-height: 100dvh;
+  padding: 0.75rem 1rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.back,
+.retry {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  opacity: 0.85;
+  text-decoration: none;
+  padding: 0.25rem 0.4rem;
+}
+
+.title {
+  flex: 1;
+  font-size: 1.1rem;
+  margin: 0;
+  text-align: center;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.8;
+  line-height: 1.35;
+}
+
+/* Ziel und Uhr stehen nebeneinander -- beides muss man im Blick haben. */
+.leisten {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.zielLeiste {
+  position: relative;
+  flex: 1;
+  height: 1.7rem;
+  border-radius: 999px;
+  background: rgba(120, 100, 60, 0.14);
+  overflow: hidden;
+}
+
+.zielBalken {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, #f6a5c0, #ec7fa9);
+  transition: width 0.3s ease;
+}
+
+.zielText {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #4a3326;
+}
+
+.uhr {
+  min-width: 4.2rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  padding: 0.3rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(120, 100, 60, 0.14);
+}
+
+/* Die letzten zehn Sekunden sollen wehtun. */
+.uhrKnapp {
+  background: #b3261e;
+  color: #fff;
+  animation: pochen 0.7s ease-in-out infinite;
+}
+
+@keyframes pochen {
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.metaOffen {
+  color: #b3261e;
+  font-weight: 800;
+  opacity: 1;
+}
+
+.brett {
+  display: grid;
+  gap: 2px;
+  padding: 0.4rem;
+  border-radius: 16px;
+  background: linear-gradient(160deg, #4a2a5e, #2e1a3d);
+  box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+
+.zelle {
+  position: relative;
+  aspect-ratio: 1;
+  padding: 6%;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  display: block;
+  transition:
+    transform 0.12s ease,
+    background 0.15s ease;
+}
+
+.zelle:disabled {
+  cursor: default;
+}
+
+.zelleGewaehlt {
+  background: rgba(255, 255, 255, 0.28);
+  transform: scale(1.08);
+  box-shadow: 0 0 0 2px #f9c22e;
+}
+
+/* Was gleich verschwindet, blitzt kurz auf. */
+.zelleTrifft {
+  animation: platzen 0.22s ease-in forwards;
+}
+
+@keyframes platzen {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  40% {
+    transform: scale(1.22);
+    filter: brightness(1.7);
+  }
+  100% {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+}
+
+/* Ein Zug, der nichts bringt, wackelt und geht zurück. */
+.zelleWackelt {
+  animation: wackeln 0.26s ease-in-out;
+}
+
+@keyframes wackeln {
+  25% {
+    transform: translateX(-14%) rotate(-6deg);
+  }
+  75% {
+    transform: translateX(14%) rotate(6deg);
+  }
+}
+
+.regelHinweis {
+  text-align: center;
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.muted {
+  opacity: 0.65;
+  margin: 0;
+}
+
+/* Die Sammlung: aufklappbar, damit die Karte nicht nach unten rutscht. */
+.sammlung {
+  border-radius: 14px;
+  background: rgba(236, 127, 169, 0.12);
+  border: 1px solid rgba(236, 127, 169, 0.35);
+  overflow: hidden;
+}
+
+.sammlungKopf {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.8rem;
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sammlungKopf > span:nth-child(2) {
+  flex: 1;
+  font-size: 0.85rem;
+  line-height: 1.3;
+}
+
+.sammlungFigur {
+  width: 2.6rem;
+  height: 2.6rem;
+  flex: none;
+  display: block;
+}
+
+.regal {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(4.2rem, 1fr));
+  gap: 0.5rem;
+  padding: 0 0.8rem 0.8rem;
+}
+
+.regalPlatz {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.4rem 0.2rem;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.55);
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.regalAktiv {
+  border-color: #d99b1c;
+  box-shadow: 0 0 0 2px rgba(217, 155, 28, 0.3);
+}
+
+.regalZu {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.regalBild {
+  width: 2.6rem;
+  height: 2.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.schloss {
+  font-size: 1.3rem;
+}
+
+.regalName {
+  font-size: 0.65rem;
+  text-align: center;
+  line-height: 1.15;
+}
+
+/* Die Spielfigur auf der Levelkarte. */
+.kartenFigur {
+  display: block;
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+.belohnung {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  text-align: left;
+  margin-top: 0.8rem;
+  padding: 0.6rem;
+  border-radius: 12px;
+  background: rgba(249, 194, 46, 0.18);
+  font-size: 0.85rem;
+  line-height: 1.3;
+}
+
+.belohnungBild {
+  width: 3rem;
+  height: 3rem;
+  flex: none;
+  animation: huepfen 1.2s ease-in-out infinite;
+}
+
+@keyframes huepfen {
+  50% {
+    transform: translateY(-6px) rotate(-5deg);
+  }
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 20;
+  animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+}
+
+.card {
+  background: var(--color-bg-elevated, #fff);
+  color: inherit;
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  max-width: 340px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  animation: cardIn 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+.cardWin {
+  border: 2px solid #ec7fa9;
+}
+
+@keyframes cardIn {
+  from {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+}
+
+.confetti {
+  font-size: 1.4rem;
+  letter-spacing: 0.15em;
+  margin-bottom: 0.25rem;
+}
+
+.card h2 {
+  margin: 0 0 0.5rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.actions button {
+  padding: 0.55rem 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background: var(--color-surface, #f5f5f5);
+  font: inherit;
+  cursor: pointer;
+}
+
+.actions .primary {
+  background: #ec7fa9;
+  border-color: #c2557f;
+  color: #fff;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .uhrKnapp,
+  .belohnungBild,
+  .zelleTrifft,
+  .zelleWackelt {
+    animation: none;
+  }
+}

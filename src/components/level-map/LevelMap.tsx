@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { getAvatar } from '@/profile/avatars'
 import { isMilestoneLevel, milestoneKind } from '@/games/milestones'
 import {
@@ -24,6 +24,11 @@ export interface LevelMapProps {
   maxLevel?: number
   onSelectLevel: (level: number) => void
   gameLabel: string
+  /**
+   * Eine eigene Spielfigur statt des Emoji-Avatars. Squishy Dumplings setzt
+   * hier den gesammelten Knödel ein, den man als Avatar ausgewählt hat.
+   */
+  avatarFigur?: ReactNode
   /**
    * Wo die anderen stehen. Leer lassen, wenn es niemanden gibt oder das
    * Konto nicht verbunden ist -- die Karte sieht dann aus wie bisher.
@@ -123,6 +128,7 @@ export function LevelMap({
   currentLevel,
   highestLevel,
   avatarId,
+  avatarFigur,
   maxLevel = MAX_LEVEL,
   onSelectLevel,
   gameLabel,
@@ -185,9 +191,7 @@ export function LevelMap({
     const land = landRef.current
     if (!land) return
     const node = currentRef.current
-    land.scrollTop = node
-      ? Math.max(0, node.offsetTop - land.clientHeight / 2)
-      : land.scrollHeight
+    land.scrollTop = node ? Math.max(0, node.offsetTop - land.clientHeight / 2) : land.scrollHeight
   }, [currentLevel, unlocked, segmentIndex])
 
   const walkTo = useCallback(
@@ -228,11 +232,7 @@ export function LevelMap({
         className={[styles.land, styles[`zone_${segment.zone.id}`]].join(' ')}
         style={zoneStyle(segment.zone)}
       >
-        <div
-          key={segmentIndex}
-          className={styles.canvas}
-          style={{ height: `${canvasHeight}px` }}
-        >
+        <div key={segmentIndex} className={styles.canvas} style={{ height: `${canvasHeight}px` }}>
           <svg
             className={styles.road}
             viewBox={`0 0 100 ${canvasHeight}`}
@@ -378,7 +378,7 @@ export function LevelMap({
                   <span className={styles.nodeNumber}>{L}</span>
                   {isCurrent && (
                     <span className={styles.avatar} aria-hidden="true">
-                      {avatar.emoji}
+                      {avatarFigur ?? avatar.emoji}
                     </span>
                   )}
                   {!isCurrent && isZoneGateLevel && (

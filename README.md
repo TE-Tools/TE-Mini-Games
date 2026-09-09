@@ -22,16 +22,16 @@ Progressive Web App with short skill, memory, reaction and logic games.
 - **Scharade** – act out the term, the others guess, the clock runs
 - **Wortbombe** – one syllable, the phone travels; whoever holds the bomb loses a life
 - **Wer würde eher?** – vote in secret, reveal together: "who would most likely…"
-  and "would you rather…" 
+  and "would you rather…"
 - **Kniffel** – thirteen boxes, three rolls a turn. Solo against a rule-based
   computer opponent on three levels, or online against friends in a room with a
-  five-letter code (`017_kniffel.sql`). Online the *server* rolls the dice –
+  five-letter code (`017_kniffel.sql`). Online the _server_ rolls the dice –
   in Kniffel the dice are the whole game
-- **Bienen-Flow** – a Colony-Flow clone: a pixel picture is *carried away*, not
+- **Bienen-Flow** – a Colony-Flow clone: a pixel picture is _carried away_, not
   filled in. Push a block onto one of the five colony slots and the bees fetch
   pixels of its colour – but only what is accessible from the outside, so the
   picture erodes from the rim inwards and a block whose colour is still buried
-  waits on its slot. Each block carries a colour *and* an amount that counts
+  waits on its slot. Each block carries a colour _and_ an amount that counts
   down; the amounts must come out exactly, and whatever a block cannot collect
   stays in it and blocks that slot for good. All five slots blocked with
   nothing accessible ends the level. Only the top block of each supply column
@@ -39,12 +39,27 @@ Progressive Web App with short skill, memory, reaction and logic games.
   out in advance. 300 levels, every 20th a gate. The first 20 are a learning
   phase you can tap your way through; from 21 on the difficulty rises steadily,
   with an easy round thrown in every few levels. Levels are picked for colours
-  *and* for depth – a rainbow with seven colours all along the rim needs no
+  _and_ for depth – a rainbow with seven colours all along the rim needs no
   thinking, so late levels use layered motifs where most colours sit inside.
   Gates are locks: the supply is stacked so that only one or two orders get you
   through. Lose a level ten times and you get a sixth slot for that level.
   Every level is proven winnable by an exact solver in
   `tests/bienen-flow.test.ts`, which also measures the difficulty curve
+- **Squishy Dumplings** – a match-3 game with steamed buns. Swap two neighbours;
+  if that puts three of a kind in a row they pop, new ones fall in from above,
+  and whatever lines up while falling pops too. A swap that makes no line is
+  refused, so you have to look before you tap. Each level asks for a number of
+  dumplings within a time limit, and both screws turn at once: 4 colours become
+  6, the target grows from 30 to 138, and the pace you must hold rises from 0.7
+  to 2.6 dumplings per second. From level 12 there are cages: a caged dumpling
+  cannot be swapped and breaks every line through it – it springs open when
+  something pops right next to it, and all cages must be open to finish. 300
+  levels, every 20th a gate. Hard levels pay out **collectible dumplings** (15
+  of them, from the plain bao to the golden one) that you wear as your figure on
+  the level map. The time limits are not guessed: two bots play every level in
+  `tests/squishy-dumplings.test.ts` – a careful one that must always finish with
+  a quarter of the clock to spare, and a random one whose spare time has to
+  shrink from level to level
 - **Schützenopoly** – the big Schützenfest board game: 40 fields, 22 real German
   Schützenfeste, 2–4 players against rule-based AI on three levels, trading,
   building and three shooting-range minigames (see
@@ -112,11 +127,11 @@ Deployments – nicht in GitHub Actions.
 ### Der rote Check „Workers Builds: te-mini-games"
 
 Auf jedem Pull Request steht ein roter Check mit diesem Namen. **Er
-bedeutet nichts.** Ausgeliefert wird über Cloudflare *Pages*, und dessen
+bedeutet nichts.** Ausgeliefert wird über Cloudflare _Pages_, und dessen
 Check daneben ist grün.
 
 Dahinter steckt ein zweites Cloudflare-Projekt: Neben dem Pages-Projekt
-existiert im selben Konto ein *Worker* namens `te-mini-games` (angelegt am
+existiert im selben Konto ein _Worker_ namens `te-mini-games` (angelegt am
 29.08.2026, seither kein erfolgreicher Build). Er ist ebenfalls mit diesem
 Repo verbunden, findet aber keine Worker-Konfiguration – das Repo ist eine
 statische Seite, kein Worker. Deshalb bricht sein Build nach Sekunden ab,
