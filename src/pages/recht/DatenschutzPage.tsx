@@ -56,11 +56,11 @@ export function DatenschutzPage() {
         <p>
           Die App speichert im Browser deines Geräts (IndexedDB und localStorage): Spielstand und
           Level je Spiel, Ergebnisse, persönliche Rekorde, Abzeichen, gewähltes Gesicht (Avatar),
-          Streak, die Runden des Familien-Modus, eigene Wortlisten für „Finde den Imposter" sowie
-          die Zahl der Fehlversuche je Bienen-Flow-Level (daraus entsteht der Bonus-Platz). Dazu
-          kommt die Notiz, ob du als Gast oder mit Konto spielst. Diese Daten verlassen dein Gerät
-          nur, wenn du ein Konto anlegst (siehe b). Du löschst sie, indem du die Websitedaten im
-          Browser löschst.
+          Streak, die Runden des Familien-Modus, eigene Wortlisten für „Finde den Imposter", die
+          Zahl der Fehlversuche je Bienen-Flow-Level (daraus entsteht der Bonus-Platz) und den bei
+          Squishy Dumplings gewählten Knödel. Dazu kommt die Notiz, ob du als Gast oder mit Konto
+          spielst. Diese Daten verlassen dein Gerät nur, wenn du ein Konto anlegst (siehe b). Du
+          löschst sie, indem du die Websitedaten im Browser löschst.
         </p>
 
         <h3>b) Mit Konto (freiwillig)</h3>

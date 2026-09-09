@@ -18,6 +18,7 @@ import { WerWuerdeEherPage } from '@/pages/play/WerWuerdeEherPage'
 import { SchuetzenopolyPage } from '@/pages/play/SchuetzenopolyPage'
 import { KniffelPage } from '@/pages/play/KniffelPage'
 import { BienenFlowPage } from '@/pages/play/BienenFlowPage'
+import { SquishyDumplingsPage } from '@/pages/play/SquishyDumplingsPage'
 import { FamilyPage } from '@/pages/family/FamilyPage'
 import { DailyPage } from '@/pages/daily/DailyPage'
 import { LeaderboardPage } from '@/pages/leaderboard/LeaderboardPage'
@@ -30,10 +31,7 @@ import { ermittleSpielerName } from '@/services/spielername'
 import { onAuthStateChange, getSession } from '@/auth/authService'
 import { getPlayMode, setPlayMode, type PlayMode } from '@/auth/sessionMode'
 
-type GateState =
-  | { status: 'loading' }
-  | { status: 'gate' }
-  | { status: 'ready'; mode: PlayMode }
+type GateState = { status: 'loading' } | { status: 'gate' } | { status: 'ready'; mode: PlayMode }
 
 function AuthGate({ children }: { children: ReactNode }) {
   const [gate, setGate] = useState<GateState>({ status: 'loading' })
@@ -147,6 +145,7 @@ export function App() {
           <Route path="/play/schuetzenopoly" element={<SchuetzenopolyPage />} />
           <Route path="/play/kniffel" element={<KniffelPage />} />
           <Route path="/play/bienen-flow" element={<BienenFlowPage />} />
+          <Route path="/play/squishy-dumplings" element={<SquishyDumplingsPage />} />
           <Route path="/family" element={<FamilyPage />} />
           <Route path="/daily" element={<DailyPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
