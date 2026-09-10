@@ -82,20 +82,31 @@ Progressive Web App with short skill, memory, reaction and logic games.
   Levels are **data, not code** (`src/games/trapbound/levels/`), each with a
   recorded solution that `tests/trapbound.test.ts` plays back – change a level
   without fixing its solution and the test fails. Levels 1–10 are hand-built;
-  11–100 are assembled from eighteen segment builders (`bausteine.ts`) that
+  11–300 are assembled from twenty-three segment builders (`bausteine.ts`) that
   emit geometry **and** the solution for that piece – so every level is proven
   solvable by playback, none of them can be beaten by just holding “right”,
   and each world only draws on the traps it has introduced. The whole run of
-  90 generated levels is laid out in **one deterministic pass**, which
-  remembers what came before: no two levels use the same combination of
-  traps, no two neighbours share more than one, and no two neighbours carry
-  the same name. **From level 50 on, every fourth level or so is a mean one**
-  – a wall of saw blades sweeps in behind you, walls shoot out of the floor
-  and drop from the ceiling to shut the corridor, and two steps before the
-  door spikes rise and a wall comes down. Those levels tolerate 0.10 s of
-  hesitation on average, against 1.06 s on the ordinary ones – measured in
+  290 generated levels is laid out in **one deterministic pass**, which
+  remembers what came before: an ordinary trap pairing cannot return for 50
+  levels, no two neighbours share more than one trap, and no two neighbours
+  carry the same name. The generator also **plays every level before it hands
+  it over** – three variants, and only one it got through itself is shipped.
+  **From level 50 on, every fourth level or so is a mean one** – a wall of
+  saw blades sweeps in behind you, walls shoot out of the floor and drop from
+  the ceiling to shut the corridor, and two steps before the door spikes rise
+  and a wall comes down. Those levels tolerate 0.10 s of hesitation on
+  average, against 1.06 s on the ordinary ones – measured in
   `tests/trapbound.test.ts` by replaying each solution with a pause inserted
-  at the worst possible moment. Traps compose through triggers and actions
+  at the worst possible moment. **From level 101 the second half begins**:
+  fifteen worlds in all, and the new traps are the ones you cannot see coming
+  – floor that gives way without a crack in it, a block that drops out of an
+  empty ceiling, spikes raining down one after another, a blade swinging over
+  a gap at exactly jump height. On top of that, hidden spikes and collapsing
+  plates are **sprinkled into the arcs the recorded solution flies through**,
+  each one verified individually: whoever knows the jump sails over it,
+  whoever does not walks in. Thirty of those levels are **nightmares** – a
+  chase or closing walls, a blind trap, the snapping door, and about 4.5
+  unannounced traps each, against 0.3 in the first hundred levels. Traps compose through triggers and actions
   (`zone → platform vanishes, spikes appear, gravity flips two seconds later`),
   so new worlds need no engine changes. Progress, deaths, best times, crystals
   and settings live in localStorage

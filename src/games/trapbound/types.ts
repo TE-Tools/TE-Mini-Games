@@ -135,6 +135,16 @@ export interface Objekt extends Rechteck {
   versteckt?: boolean
   /** Fest, aber unsichtbar -- wird beim ersten Berühren sichtbar. */
   geheim?: boolean
+  /**
+   * Sieht aus wie ganz gewöhnlicher Boden bzw. wie gar nichts.
+   *
+   * Ein Bruchboden zeigt sonst Risse und ein Fallblock hängt sichtbar an der
+   * Decke -- beides absichtlich, damit man es beim zweiten Mal sehen kann.
+   * Ab Level 101 gibt es beides ohne diesen Hinweis: Der Boden gibt nach,
+   * ohne dass etwas darauf hindeutete. Fair bleibt das, weil der Neustart
+   * eine halbe Sekunde dauert und die Stelle immer dieselbe ist.
+   */
+  heimlich?: boolean
   /** Bewegung. */
   weg?: Weg
   /** Sekunden, bis eine Bruch- oder Fallplatte nachgibt. */

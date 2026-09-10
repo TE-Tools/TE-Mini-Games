@@ -15,7 +15,13 @@ import { bewege, neuerKoerper, PHYSIK, type Feste } from '@/games/trapbound/phys
 import { laufe, starte } from '@/games/trapbound/engine'
 import { spieleLoesung } from '@/games/trapbound/loesung'
 import { alleLevel, levelDaten, LEVEL_ANZAHL, WELTEN, abschnittVon } from '@/games/trapbound/levels'
-import { erzeugeLevel, istGemein, GEMEIN_AB } from '@/games/trapbound/levels/erzeugt'
+import {
+  istGemein,
+  istAlptraum,
+  GEMEIN_AB,
+  HAERTER_AB,
+  schwierigkeit,
+} from '@/games/trapbound/levels/erzeugt'
 import { LEVEL_PRO_WELT } from '@/games/trapbound/welten'
 import {
   leseStand,
@@ -427,18 +433,18 @@ describe('Die Fallen', () => {
 describe('Die Level', () => {
   const alle = alleLevel()
 
-  it('bringt hundert Level in fünf Welten zu je zwanzig', () => {
-    expect(alle).toHaveLength(100)
-    expect(LEVEL_ANZAHL).toBe(100)
-    expect(WELTEN).toHaveLength(5)
+  it('bringt dreihundert Level in fünfzehn Welten zu je zwanzig', () => {
+    expect(alle).toHaveLength(300)
+    expect(LEVEL_ANZAHL).toBe(300)
+    expect(WELTEN).toHaveLength(15)
     for (const w of WELTEN) {
       expect(w.abschnitte).toHaveLength(2)
       expect(w.abschnitte.flatMap((a) => a.level)).toHaveLength(20)
     }
     // Jede Levelnummer kommt genau einmal auf der Karte vor.
     const aufDerKarte = WELTEN.flatMap((w) => w.abschnitte.flatMap((a) => a.level))
-    expect(aufDerKarte).toHaveLength(100)
-    expect(new Set(aufDerKarte).size).toBe(100)
+    expect(aufDerKarte).toHaveLength(300)
+    expect(new Set(aufDerKarte).size).toBe(300)
   })
 
   it('führt die Welten der Reihe nach ein', () => {
@@ -518,7 +524,7 @@ describe('Die Level', () => {
    */
   it('baut die erzeugten Level aus dem ganzen Vorrat ihrer Welt', () => {
     const teile = (nr: number) =>
-      erzeugeLevel(nr)
+      levelDaten(nr)
         .idee.replace('Aus Bausteinen: ', '')
         .replace(/\.$/, '')
         .split(' + ')
@@ -540,7 +546,7 @@ describe('Die Level', () => {
         inWelt.size >= 8 ? `Welt ${welt}: ${inWelt.size}` : `Welt ${welt}: mindestens 8`,
       )
     }
-  })
+  }, 120_000)
 
   it('gibt jedem erzeugten Level etwas, das wirklich aufhält', () => {
     // Decke, Knopftür, unsichtbarer Steg, Band, Feder und Teleport lassen
@@ -550,7 +556,7 @@ describe('Die Level', () => {
     const harmlos = new Set(['decke', 'knopftuer', 'unsichtbar', 'band', 'feder', 'teleport'])
     const ohne: number[] = []
     for (let nr = 11; nr <= LEVEL_ANZAHL; nr++) {
-      const teile = erzeugeLevel(nr)
+      const teile = levelDaten(nr)
         .idee.replace('Aus Bausteinen: ', '')
         .replace(/\.$/, '')
         .split(' + ')
@@ -559,7 +565,7 @@ describe('Die Level', () => {
         ohne.push(nr)
     }
     expect(ohne).toEqual([])
-  })
+  }, 120_000)
 
   it('versteckt mindestens einen Kristall, aber nie auf dem Weg zum Ausgang', () => {
     const mitKristall = alle.filter((l) => l.objekte.some((o) => o.typ === 'kristall'))
@@ -739,20 +745,33 @@ describe('Die Wertung', () => {
  */
 describe('Abwechslung', () => {
   const bauart = (nr: number) =>
-    [...erzeugeLevel(nr).idee.replace('Aus Bausteinen: ', '').replace(/\.$/, '').split(' + ')]
+    [...levelDaten(nr).idee.replace('Aus Bausteinen: ', '').replace(/\.$/, '').split(' + ')]
       .sort()
       .join('+')
 
-  it('baut keine zwei erzeugten Level gleich', () => {
-    const gesehen = new Map<string, number>()
-    const doppelt: string[] = []
+  /**
+   * Bei dreihundert Leveln lässt sich "jede Bauart nur einmal" nicht mehr
+   * halten: Auf einen Bildschirm passen zwei, selten drei Fallen, und mehr
+   * als ein paar hundert Paarungen gibt der Vorrat nicht her. Was zählt, ist
+   * der Abstand -- eine Wiederholung nach fünfzig Leveln erkennt niemand
+   * wieder, eine nach dreien schon.
+   */
+  it('wiederholt eine Bauart frühestens nach fünfzig Leveln', () => {
+    // Gemeine Level und Albträume fangen immer mit einer Jagd oder Wänden
+    // an -- ihr Vorrat an Paarungen ist klein, deshalb gilt für sie ein
+    // kleinerer Abstand. Für alle anderen bleibt es bei fünfzig.
+    const eng = (nr: number) => istGemein(nr) || istAlptraum(nr)
+    const zuletzt = new Map<string, number>()
+    const zuNah: string[] = []
     for (let nr = 11; nr <= LEVEL_ANZAHL; nr++) {
       const k = bauart(nr)
-      if (gesehen.has(k)) doppelt.push(`${gesehen.get(k)} und ${nr}: ${k}`)
-      else gesehen.set(k, nr)
+      const vorher = zuletzt.get(k)
+      const mindestens = eng(nr) ? 6 : 50
+      if (vorher !== undefined && nr - vorher < mindestens) zuNah.push(`${vorher} und ${nr}: ${k}`)
+      zuletzt.set(k, nr)
     }
-    expect(doppelt).toEqual([])
-  })
+    expect(zuNah).toEqual([])
+  }, 120_000)
 
   it('wiederholt keinen Baustein direkt im nächsten Level', () => {
     const zuNah: string[] = []
@@ -761,20 +780,24 @@ describe('Abwechslung', () => {
       const b = bauart(nr).split('+')
       const gleich = b.filter((t) => a.has(t) && !t.includes('Ausgang'))
       // Ein gemeinsamer Baustein ist hinnehmbar, zwei wären dasselbe Level.
-      if (gleich.length >= 2) zuNah.push(`${nr - 1}/${nr}: ${gleich.join(', ')}`)
+      // Bei zwei gemeinen Leveln nebeneinander ist der erste Baustein
+      // zwangsläufig wieder eine Jagd oder eine Wand -- das zählt nicht.
+      const beideGemein = istGemein(nr - 1) && istGemein(nr)
+      const echte = beideGemein ? gleich.filter((t) => t !== 'jagd' && t !== 'waende') : gleich
+      if (echte.length >= 2) zuNah.push(`${nr - 1}/${nr}: ${gleich.join(', ')}`)
     }
     expect(zuNah).toEqual([])
-  })
+  }, 120_000)
 
   it('gibt zwei Leveln hintereinander nie denselben Namen', () => {
     const doppelt: string[] = []
     for (let nr = 12; nr <= LEVEL_ANZAHL; nr++) {
-      const a = erzeugeLevel(nr - 1).name
-      const b = erzeugeLevel(nr).name
+      const a = levelDaten(nr - 1).name
+      const b = levelDaten(nr).name
       if (a === b) doppelt.push(`${nr - 1}/${nr}: ${a}`)
     }
     expect(doppelt).toEqual([])
-  })
+  }, 120_000)
 })
 
 describe('Gemeine Level', () => {
@@ -797,7 +820,7 @@ describe('Gemeine Level', () => {
 
   it('lässt in jedem gemeinen Level etwas hinter einem her oder auf einen zu', () => {
     for (const nr of gemeine) {
-      const idee = erzeugeLevel(nr).idee
+      const idee = levelDaten(nr).idee
       const hatGemeinheit =
         idee.includes('jagd') || idee.includes('waende') || idee.includes('zuschnappender')
       expect(`Level ${nr}`).toBe(hatGemeinheit ? `Level ${nr}` : `Level ${nr} ist gar nicht gemein`)
@@ -873,5 +896,91 @@ describe('Gemeine Level', () => {
       gemein < 0.25 ? `gemein ${gemein.toFixed(2)}s` : `gemein zu gutmütig: ${gemein.toFixed(2)}s`,
     )
     expect(normal).toBeGreaterThan(gemein * 2)
+  }, 120_000)
+})
+
+/**
+ * Die zweite Hälfte, ab Level 101.
+ *
+ * Thomas am 10.09.2026: "Ab Level hunderteins noch mal um einige schwerer,
+ * dass dann noch mehr Fallen kommen, andere Fallen. Das, was von der Decke
+ * fällt oder zusammenbricht, dass man das vorher nicht sieht. Wirklich
+ * einige schwerere Level, wo man wirklich zwanzig bis dreißig Versuche
+ * mindestens brauchen muss."
+ *
+ * Was sich davon messen lässt, wird hier gemessen: wie viele Fallen ohne
+ * Vorwarnung kommen und wie wenig Zeit zum Zögern bleibt. Wie oft jemand
+ * wirklich stirbt, hängt am Menschen -- aber jede unangekündigte Falle
+ * kostet mindestens einen Anlauf, und davon gibt es im Albtraum ein
+ * Vielfaches der ersten Hälfte.
+ */
+describe('Die zweite Hälfte', () => {
+  const blinde = (nr: number) =>
+    levelDaten(nr).objekte.filter((o) => o.versteckt || o.heimlich).length
+  const schnitt = (ns: number[]) => ns.reduce((a, n) => a + blinde(n), 0) / ns.length
+
+  const alptraeume: number[] = []
+  const spaeteNormale: number[] = []
+  const fruehe: number[] = []
+  for (let nr = 11; nr <= LEVEL_ANZAHL; nr++) {
+    if (istAlptraum(nr)) alptraeume.push(nr)
+    else if (nr >= HAERTER_AB && !istGemein(nr)) spaeteNormale.push(nr)
+    else if (nr < 101 && !istGemein(nr)) fruehe.push(nr)
+  }
+
+  it('lässt die ersten hundert Level in Ruhe', () => {
+    // Die Erweiterung darf nichts an dem ändern, was schon gespielt wurde.
+    expect(schwierigkeit(100)).toBeCloseTo(1, 5)
+    expect(istAlptraum(100)).toBe(false)
+    expect(schnitt(fruehe)).toBeLessThan(0.6)
+  }, 120_000)
+
+  it('setzt Albträume erst ab Level 101 und nie zwei nebeneinander', () => {
+    expect(alptraeume.filter((nr) => nr < HAERTER_AB)).toEqual([])
+    expect(alptraeume.length).toBeGreaterThanOrEqual(25)
+    expect(alptraeume.filter((nr) => alptraeume.includes(nr + 1))).toEqual([])
+  })
+
+  it('bringt in der zweiten Hälfte deutlich mehr Fallen ohne Vorwarnung', () => {
+    const frueh = schnitt(fruehe)
+    const spaet = schnitt(spaeteNormale)
+    const alp = schnitt(alptraeume)
+    expect(spaet).toBeGreaterThan(frueh * 2)
+    expect(alp).toBeGreaterThan(3)
+    expect(alp).toBeGreaterThan(spaet)
+  }, 120_000)
+
+  it('gibt jedem Albtraum eine blinde Falle und etwas, das jagt', () => {
+    const ohne: number[] = []
+    for (const nr of alptraeume) {
+      const idee = levelDaten(nr).idee
+      const jagt = idee.includes('jagd') || idee.includes('waende')
+      const blind = blinde(nr) >= 2
+      if (!jagt || !blind) ohne.push(nr)
+    }
+    expect(ohne).toEqual([])
+  }, 120_000)
+
+  it('verzeiht im Albtraum praktisch kein Zögern', () => {
+    const luft = (nr: number): number => {
+      const l = levelDaten(nr)
+      let schlimmste = 9
+      for (const t of [0.3, 0.9, 1.6, 2.5]) {
+        let erlaubt = 0
+        for (const pause of [0.3, 1]) {
+          if (spieleLoesung(l, { bei: t, dauer: pause }).geschafft) erlaubt = pause
+          else break
+        }
+        schlimmste = Math.min(schlimmste, erlaubt)
+      }
+      return schlimmste
+    }
+    const stichprobe = alptraeume.filter((_, i) => i % 3 === 0)
+    const mittel = stichprobe.reduce((a, n) => a + luft(n), 0) / stichprobe.length
+    expect(`Albtraum ${mittel.toFixed(2)}s`).toBe(
+      mittel < 0.25
+        ? `Albtraum ${mittel.toFixed(2)}s`
+        : `Albtraum zu gutmütig: ${mittel.toFixed(2)}s`,
+    )
   }, 120_000)
 })

@@ -106,9 +106,10 @@ export function zeichne(
         ctx.fillRect(f.x + wackel, f.y, f.b, f.h)
         ctx.fillStyle = p.bodenKante
         ctx.fillRect(f.x + wackel, f.y, f.b, 3)
-        if (bruechig) {
+        if (bruechig && !o.heimlich) {
           // Risse als leiser Hinweis -- fair bleibt das Spiel nur, wenn man
-          // es beim zweiten Mal sehen kann.
+          // es beim zweiten Mal sehen kann. Ab Level 101 gibt es Platten
+          // ohne diesen Hinweis (`heimlich`); die sehen aus wie Boden.
           ctx.strokeStyle = p.hintergrund
           ctx.lineWidth = 1
           ctx.beginPath()

@@ -40,7 +40,10 @@ const ZONE_CURVES: Record<ZoneId, ZoneCurve> = {
 }
 
 function curveForLevel(level: number): ZoneCurve {
-  return ZONE_CURVES[zoneForLevel(level).id]
+  // `zoneForLevel` liefert die Zeitreise-Zone; deren Kennung ist immer eine
+  // der fünf. Der Umweg über den Zugriff mit Rückfall hält den Typ ehrlich,
+  // seit Levelkarten auch fremde Zonenkennungen tragen dürfen (Trapbound).
+  return ZONE_CURVES[zoneForLevel(level).id as ZoneId] ?? ZONE_CURVES.jungle
 }
 
 export interface WhatIsMissingLevel {

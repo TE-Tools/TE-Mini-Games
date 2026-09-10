@@ -16,6 +16,14 @@ import type { LevelDaten, LoesungsSchritt } from './types'
 /** Mit welcher Bildrate abgespielt wird -- 60 Hz wie im Browser. */
 const TAKT = 1 / 60
 
+/** Ein Bild aus dem Durchlauf: wo die Figur war und ob sie stand. */
+export interface SpurPunkt {
+  t: number
+  x: number
+  y: number
+  amBoden: boolean
+}
+
 export interface Abspielergebnis {
   stand: Spielstand
   /** Gebrauchte Spielzeit in Sekunden. */
@@ -23,6 +31,14 @@ export interface Abspielergebnis {
   geschafft: boolean
   /** Woran es scheiterte, falls es scheiterte. */
   grund: string
+  /**
+   * Der ganze Weg, Bild für Bild.
+   *
+   * Gebraucht, um blinde Fallen genau dort unterzubringen, wo die Lösung in
+   * der Luft ist: Dann übersteht sie die Falle, und wer den Sprung nicht
+   * kennt, läuft hinein.
+   */
+  spur: SpurPunkt[]
 }
 
 function bedingungErfuellt(s: Spielstand, schritt: LoesungsSchritt): boolean {
@@ -57,11 +73,18 @@ export interface Zoegern {
 
 export function spieleLoesung(level: LevelDaten, zoegern?: Zoegern): Abspielergebnis {
   if (!level.loesung || level.loesung.length === 0) {
-    return { stand: starte(level), zeit: 0, geschafft: false, grund: 'keine Lösung hinterlegt' }
+    return {
+      stand: starte(level),
+      zeit: 0,
+      geschafft: false,
+      grund: 'keine Lösung hinterlegt',
+      spur: [],
+    }
   }
   let s = starte(level)
   let zeit = 0
   let gezoegert = zoegern === undefined
+  const spur: SpurPunkt[] = []
   for (const schritt of level.loesung) {
     const eingabe = {
       links: Boolean(schritt.links),
@@ -85,13 +108,15 @@ export function spieleLoesung(level: LevelDaten, zoegern?: Zoegern): Abspielerge
       s = laufe(s, eingabe, dt)
       zeit += dt
       offen -= dt
-      if (s.phase === 'geschafft') return { stand: s, zeit, geschafft: true, grund: '' }
+      spur.push({ t: zeit, x: s.koerper.x, y: s.koerper.y, amBoden: s.koerper.amBoden })
+      if (s.phase === 'geschafft') return { stand: s, zeit, geschafft: true, grund: '', spur }
       if (s.phase === 'tot') {
         return {
           stand: s,
           zeit,
           geschafft: false,
           grund: `gestorben bei x=${Math.round(s.koerper.x)}, y=${Math.round(s.koerper.y)} nach ${zeit.toFixed(2)}s`,
+          spur,
         }
       }
       if (!ersterTakt && hatBedingung(schritt) && bedingungErfuellt(s, schritt)) break
@@ -103,12 +128,14 @@ export function spieleLoesung(level: LevelDaten, zoegern?: Zoegern): Abspielerge
   for (let n = 0; n < 120 && s.phase === 'laeuft'; n++) {
     s = laufe(s, { links: false, rechts: false, sprung: false }, TAKT)
     zeit += TAKT
+    spur.push({ t: zeit, x: s.koerper.x, y: s.koerper.y, amBoden: s.koerper.amBoden })
   }
-  if (s.phase === 'geschafft') return { stand: s, zeit, geschafft: true, grund: '' }
+  if (s.phase === 'geschafft') return { stand: s, zeit, geschafft: true, grund: '', spur }
   return {
     stand: s,
     zeit,
     geschafft: false,
+    spur,
     grund:
       s.phase === 'tot'
         ? `gestorben bei x=${Math.round(s.koerper.x)}, y=${Math.round(s.koerper.y)}`
