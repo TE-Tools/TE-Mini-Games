@@ -82,11 +82,20 @@ Progressive Web App with short skill, memory, reaction and logic games.
   Levels are **data, not code** (`src/games/trapbound/levels/`), each with a
   recorded solution that `tests/trapbound.test.ts` plays back – change a level
   without fixing its solution and the test fails. Levels 1–10 are hand-built;
-  11–100 are assembled from sixteen segment builders (`bausteine.ts`) that
-  emit geometry **and** the solution for that piece, seeded by the level
-  number – so level 47 looks the same on every device, every level is proven
+  11–100 are assembled from eighteen segment builders (`bausteine.ts`) that
+  emit geometry **and** the solution for that piece – so every level is proven
   solvable by playback, none of them can be beaten by just holding “right”,
-  and each world only draws on the traps it has introduced. Traps compose through triggers and actions
+  and each world only draws on the traps it has introduced. The whole run of
+  90 generated levels is laid out in **one deterministic pass**, which
+  remembers what came before: no two levels use the same combination of
+  traps, no two neighbours share more than one, and no two neighbours carry
+  the same name. **From level 50 on, every fourth level or so is a mean one**
+  – a wall of saw blades sweeps in behind you, walls shoot out of the floor
+  and drop from the ceiling to shut the corridor, and two steps before the
+  door spikes rise and a wall comes down. Those levels tolerate 0.10 s of
+  hesitation on average, against 1.06 s on the ordinary ones – measured in
+  `tests/trapbound.test.ts` by replaying each solution with a pause inserted
+  at the worst possible moment. Traps compose through triggers and actions
   (`zone → platform vanishes, spikes appear, gravity flips two seconds later`),
   so new worlds need no engine changes. Progress, deaths, best times, crystals
   and settings live in localStorage

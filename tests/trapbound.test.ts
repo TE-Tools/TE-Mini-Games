@@ -15,7 +15,7 @@ import { bewege, neuerKoerper, PHYSIK, type Feste } from '@/games/trapbound/phys
 import { laufe, starte } from '@/games/trapbound/engine'
 import { spieleLoesung } from '@/games/trapbound/loesung'
 import { alleLevel, levelDaten, LEVEL_ANZAHL, WELTEN, abschnittVon } from '@/games/trapbound/levels'
-import { erzeugeLevel } from '@/games/trapbound/levels/erzeugt'
+import { erzeugeLevel, istGemein, GEMEIN_AB } from '@/games/trapbound/levels/erzeugt'
 import { LEVEL_PRO_WELT } from '@/games/trapbound/welten'
 import {
   leseStand,
@@ -723,4 +723,155 @@ describe('Die Wertung', () => {
     expect(trapboundGame.maxLevel).toBe(LEVEL_ANZAHL)
     expect(trapboundGame.createLevel(4).name).toBe(levelDaten(4).name)
   })
+})
+
+/**
+ * Abwechslung und Gemeinheit.
+ *
+ * Thomas am 10.09.2026, nachdem er selbst gespielt hatte: "kontrolliere
+ * bitte, dass nicht zu viele gleiche Level sind. Ich hatte grade im
+ * Dreißigerbereich viele gleiche Level" -- und dazu der Wunsch nach
+ * gemeinen Leveln ab fünfzig, "dass man das nicht beim ersten Mal schafft".
+ *
+ * Nachgemessen war die Klage berechtigt: 90 Level, aber nur 72 verschiedene
+ * Bauarten; 29, 32 und 34 waren dreimal dasselbe. Beide Tests hier halten
+ * fest, dass das nicht zurückkommt.
+ */
+describe('Abwechslung', () => {
+  const bauart = (nr: number) =>
+    [...erzeugeLevel(nr).idee.replace('Aus Bausteinen: ', '').replace(/\.$/, '').split(' + ')]
+      .sort()
+      .join('+')
+
+  it('baut keine zwei erzeugten Level gleich', () => {
+    const gesehen = new Map<string, number>()
+    const doppelt: string[] = []
+    for (let nr = 11; nr <= LEVEL_ANZAHL; nr++) {
+      const k = bauart(nr)
+      if (gesehen.has(k)) doppelt.push(`${gesehen.get(k)} und ${nr}: ${k}`)
+      else gesehen.set(k, nr)
+    }
+    expect(doppelt).toEqual([])
+  })
+
+  it('wiederholt keinen Baustein direkt im nächsten Level', () => {
+    const zuNah: string[] = []
+    for (let nr = 12; nr <= LEVEL_ANZAHL; nr++) {
+      const a = new Set(bauart(nr - 1).split('+'))
+      const b = bauart(nr).split('+')
+      const gleich = b.filter((t) => a.has(t) && !t.includes('Ausgang'))
+      // Ein gemeinsamer Baustein ist hinnehmbar, zwei wären dasselbe Level.
+      if (gleich.length >= 2) zuNah.push(`${nr - 1}/${nr}: ${gleich.join(', ')}`)
+    }
+    expect(zuNah).toEqual([])
+  })
+
+  it('gibt zwei Leveln hintereinander nie denselben Namen', () => {
+    const doppelt: string[] = []
+    for (let nr = 12; nr <= LEVEL_ANZAHL; nr++) {
+      const a = erzeugeLevel(nr - 1).name
+      const b = erzeugeLevel(nr).name
+      if (a === b) doppelt.push(`${nr - 1}/${nr}: ${a}`)
+    }
+    expect(doppelt).toEqual([])
+  })
+})
+
+describe('Gemeine Level', () => {
+  const gemeine: number[] = []
+  const normale: number[] = []
+  for (let nr = 11; nr <= LEVEL_ANZAHL; nr++) (istGemein(nr) ? gemeine : normale).push(nr)
+
+  it('fängt erst ab Level fünfzig damit an', () => {
+    expect(gemeine.filter((nr) => nr < GEMEIN_AB)).toEqual([])
+    expect(gemeine.length).toBeGreaterThanOrEqual(10)
+  })
+
+  it('setzt sie einzeln, nie zwei hintereinander', () => {
+    const paare = gemeine.filter((nr) => gemeine.includes(nr + 1))
+    expect(paare).toEqual([])
+    // Und nicht zu selten: In den Leveln ab 50 mindestens jedes achte.
+    const ab50 = LEVEL_ANZAHL - GEMEIN_AB + 1
+    expect(gemeine.length / ab50).toBeGreaterThan(0.125)
+  })
+
+  it('lässt in jedem gemeinen Level etwas hinter einem her oder auf einen zu', () => {
+    for (const nr of gemeine) {
+      const idee = erzeugeLevel(nr).idee
+      const hatGemeinheit =
+        idee.includes('jagd') || idee.includes('waende') || idee.includes('zuschnappender')
+      expect(`Level ${nr}`).toBe(hatGemeinheit ? `Level ${nr}` : `Level ${nr} ist gar nicht gemein`)
+    }
+  })
+
+  /**
+   * Was kurz vor der Tür noch kommt.
+   *
+   * Zwei Dinge auf einmal: Stacheln fahren aus dem Boden, über die man
+   * springen muss, und gleich danach kommt eine Wand von der Decke. Beides
+   * wird hier gemessen -- wer nicht springt, kommt nicht durch, und wer
+   * einen Moment überlegt, dem geht die Tür zu.
+   */
+  it('lässt vor der Tür weder Trödeln noch Durchmarschieren zu', () => {
+    const letzterSprung = (l: LevelDaten) => {
+      const ls = l.loesung ?? []
+      for (let i = ls.length - 1; i >= 0; i--) if (ls[i]!.sprung) return i
+      return -1
+    }
+    for (const nr of gemeine) {
+      const l = levelDaten(nr)
+      const i = letzterSprung(l)
+      expect(`Level ${nr}`).toBe(i >= 0 ? `Level ${nr}` : `Level ${nr} hat gar keinen Sprung`)
+
+      // Ohne den Sprung: in die Stacheln.
+      const ohne = [...(l.loesung ?? [])]
+      ohne[i] = { ...ohne[i]!, sprung: false }
+      expect(`${nr} ohne Sprung`).toBe(
+        spieleLoesung({ ...l, loesung: ohne }).geschafft
+          ? `${nr} ohne Sprung kommt durch`
+          : `${nr} ohne Sprung`,
+      )
+
+      // Mit einer halben Sekunde Bedenkzeit: Wand zu.
+      const mit = [...(l.loesung ?? [])]
+      mit.splice(i, 0, { dauer: 0.6 })
+      expect(`${nr} mit Bedenkzeit`).toBe(
+        spieleLoesung({ ...l, loesung: mit }).geschafft
+          ? `${nr} mit Bedenkzeit kommt durch`
+          : `${nr} mit Bedenkzeit`,
+      )
+    }
+  }, 60_000)
+
+  /**
+   * Der eigentliche Beweis: Auf einem gemeinen Level darf man nicht zögern.
+   *
+   * Gemessen wird, wie lange die Figur an der ungünstigsten Stelle
+   * stehenbleiben darf und es trotzdem noch schafft. Auf normalen Leveln ist
+   * das reichlich (dort wartet meist eine Falle auf ihren Takt), auf
+   * gemeinen praktisch nichts -- da läuft etwas hinterher oder eine Wand
+   * geht zu.
+   */
+  it('verzeiht auf gemeinen Leveln kein Zögern, auf normalen schon', () => {
+    const luft = (nr: number): number => {
+      const l = levelDaten(nr)
+      let schlimmste = 9
+      for (const t of [0.3, 0.9, 1.6, 2.5]) {
+        let erlaubt = 0
+        for (const pause of [0.3, 1]) {
+          if (spieleLoesung(l, { bei: t, dauer: pause }).geschafft) erlaubt = pause
+          else break
+        }
+        schlimmste = Math.min(schlimmste, erlaubt)
+      }
+      return schlimmste
+    }
+    const mittel = (ns: number[]) => ns.reduce((a, n) => a + luft(n), 0) / ns.length
+    const gemein = mittel(gemeine)
+    const normal = mittel(normale.filter((n) => n % 7 === 0))
+    expect(`gemein ${gemein.toFixed(2)}s`).toBe(
+      gemein < 0.25 ? `gemein ${gemein.toFixed(2)}s` : `gemein zu gutmütig: ${gemein.toFixed(2)}s`,
+    )
+    expect(normal).toBeGreaterThan(gemein * 2)
+  }, 120_000)
 })
