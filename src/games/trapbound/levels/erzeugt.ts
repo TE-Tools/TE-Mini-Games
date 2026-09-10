@@ -30,6 +30,15 @@ const START_BREITE = 44
  */
 const SCHLUSS_BREITE = 120
 
+/**
+ * Der zuschnappende Ausgang braucht mehr Platz.
+ *
+ * Zwischen dem Auslöser und dem, was er hochfahren lässt, muss ein Bremsweg
+ * liegen -- sonst rennt man ins Messer, ohne eine Chance gehabt zu haben,
+ * und das wäre nicht gemein, sondern unfair.
+ */
+const SCHNAPP_BREITE = 150
+
 function mulberry(seed: number): () => number {
   let t = seed >>> 0
   return () => {
@@ -44,10 +53,53 @@ function mulberry(seed: number): () => number {
 const WELT_BAUSTEINE: string[][] = [
   ['weg', 'luecke', 'bruch', 'stacheln', 'stachelfalle', 'decke', 'unsichtbar', 'saege'],
   ['band', 'presse', 'knopftuer', 'aufzug'],
-  ['feder', 'teleport'],
+  // Ab Welt 3 (Level 41) gibt es die beiden gemeinen: die Jagd und die
+  // Wände. Eingesetzt werden sie aber erst ab Level 50, siehe `istGemein`.
+  ['feder', 'teleport', 'jagd', 'waende'],
   ['umkehr', 'schwachersprung'],
   [],
 ]
+
+/**
+ * Die beiden Bausteine, bei denen man nicht überlegen darf.
+ *
+ * Thomas am 10.09.2026: "ab Level fünfzig auch immer mal wieder gemeine
+ * Level, wo sich Wände verschieben, irgendwas hinter einem herläuft [...]
+ * dass man das nicht beim ersten Mal schafft."
+ */
+const GEMEIN = ['jagd', 'waende']
+
+/** Ab hier gibt es gemeine Level. */
+export const GEMEIN_AB = 50
+
+/**
+ * Wie schwer ein Level sein soll: 0 bis 1.
+ *
+ * Zwei Anteile: wie weit man insgesamt ist und wie weit in dieser Welt.
+ * Dadurch entsteht eine steigende Säge -- jede Welt fängt ruhiger an als sie
+ * aufhört, aber Welt 5 fängt trotzdem härter an als Welt 1 aufhört.
+ */
+export function schwierigkeit(nr: number): number {
+  const inWelt = ((nr - 1) % LEVEL_PRO_WELT) + 1
+  const gesamt = (nr - 1) / (TRAP_MAX_LEVEL - 1)
+  const inWeltAnteil = (inWelt - 1) / (LEVEL_PRO_WELT - 1)
+  return Math.min(1, 0.55 * gesamt + 0.45 * inWeltAnteil)
+}
+
+/**
+ * Welche Plätze in einer Welt gemein sind.
+ *
+ * Fünf von zwanzig, gleichmäßig verteilt und nie zwei hintereinander: Wenn
+ * jedes zweite Level einen jagt, ist es keine Ausnahme mehr, sondern der
+ * Normalzustand -- und dann hört der Schreck auf.
+ */
+const GEMEINE_PLAETZE = [3, 8, 12, 16, 19]
+
+export function istGemein(nr: number): boolean {
+  if (nr < GEMEIN_AB) return false
+  const inWelt = ((nr - 1) % LEVEL_PRO_WELT) + 1
+  return GEMEINE_PLAETZE.includes(inWelt)
+}
 
 function bausteinePool(welt: number): string[] {
   const out: string[] = []
@@ -93,14 +145,24 @@ function waehleBausteine(
   platz: number,
   hoechstens: number,
   rng: () => number,
+  /** Bausteine, die gerade erst dran waren -- die möglichst nicht. */
+  frisch: string[] = [],
+  /** Womit das Level anfangen muss (für gemeine Level). */
+  erzwungen?: string,
 ): { namen: string[]; breiten: number[] } {
   const namen: string[] = []
   let rest = platz
+  if (erzwungen && BAUSTEINE[erzwungen]!.min <= rest) {
+    namen.push(erzwungen)
+    rest -= BAUSTEINE[erzwungen]!.min
+  }
   while (namen.length < hoechstens) {
     const passt = pool.filter((n) => n !== 'weg' && !namen.includes(n) && BAUSTEINE[n]!.min <= rest)
     // Der erste muss einer sein, der wirklich aufhält.
-    const erste = namen.length === 0 ? passt.filter((n) => SPERREND.includes(n)) : []
-    const moeglich = erste.length > 0 ? erste : passt
+    const erste = namen.length === 0 ? passt.filter((n) => SPERREND.includes(n)) : passt
+    // Und möglichst keiner, den man gerade in den letzten Leveln hatte.
+    const neuartig = erste.filter((n) => !frisch.includes(n))
+    const moeglich = neuartig.length > 0 ? neuartig : erste
     if (moeglich.length === 0) break
     const name = moeglich[Math.floor(rng() * moeglich.length)]!
     namen.push(name)
@@ -117,8 +179,105 @@ function waehleBausteine(
   return { namen, breiten }
 }
 
-/** Der Ausgang eines Levels – drei Bauarten, eine gemeiner als die andere. */
-type SchlussArt = 'tuer' | 'flucht' | 'falsch'
+/**
+ * Der Bauplan für alle erzeugten Level auf einmal.
+ *
+ * Warum nicht jedes Level für sich: Weil jedes Level für sich nicht wissen
+ * kann, was in den Leveln davor stand. Genau daran hat es gekrankt -- am
+ * 10.09.2026 meldete Thomas "im Dreißigerbereich viele gleiche Level", und
+ * nachgemessen stimmte das: 29, 32 und 34 waren dreimal Stacheln + Knopftür,
+ * 22, 24 und 25 dreimal eine Lücke, und von 90 Leveln gab es nur 72
+ * verschiedene Bauarten.
+ *
+ * Deshalb entsteht der Plan in einem Durchgang von Level 11 bis 100. Er
+ * merkt sich, welche Paarungen es schon gab und was zuletzt dran war, und
+ * würfelt so lange neu, bis beides passt. Weil der Durchgang von einer
+ * einzigen festen Zahl ausgeht, kommt trotzdem auf jedem Gerät derselbe Plan
+ * heraus -- Level 47 sieht überall gleich aus.
+ */
+interface PlanEintrag {
+  namen: string[]
+  breiten: number[]
+  gemein: boolean
+  name: string
+}
+
+/** Wie viele Level zurück eine Paarung nicht wiederkommen darf. */
+const NICHT_WIEDER = 90
+/** Wie viele Level zurück ein einzelner Baustein gemieden wird. */
+const FRISCH_FENSTER = 3
+
+let planSpeicher: PlanEintrag[] | null = null
+
+function bauPlan(): PlanEintrag[] {
+  if (planSpeicher) return planSpeicher
+  const rng = mulberry(20260910)
+  const plan: PlanEintrag[] = []
+  const paare = new Map<string, number>()
+
+  for (let nr = 11; nr <= TRAP_MAX_LEVEL; nr++) {
+    const welt = weltNummer(nr)
+    const inWelt = ((nr - 1) % LEVEL_PRO_WELT) + 1
+    const schwer = schwierigkeit(nr)
+    const gemein = istGemein(nr)
+    const pool = bausteinePool(welt).filter((n) => gemein || !GEMEIN.includes(n))
+    const platz = BREITE - START_BREITE - schlussBreite(nr)
+    const hoechstens = schwer < 0.25 ? 2 : 3
+    const frisch = plan
+      .slice(-FRISCH_FENSTER)
+      .flatMap((p) => p.namen)
+      .filter((n) => !GEMEIN.includes(n))
+
+    let gewaehlt: { namen: string[]; breiten: number[] } | null = null
+    // Die Bedingungen weichen in dieser Reihenfolge: erst gilt beides, dann
+    // darf ein Baustein aus den letzten Leveln wieder vorkommen, und erst
+    // ganz zuletzt eine Paarung. Andersherum wäre es falsch -- ein
+    // wiederholter Baustein fällt viel weniger auf als ein Level, das genau
+    // so schon einmal dastand.
+    for (let versuch = 0; versuch < 90; versuch++) {
+      const meideFrisch = versuch < 30
+      const meideWiederholung = versuch < 70
+      const kandidat = waehleBausteine(
+        pool,
+        platz,
+        hoechstens,
+        rng,
+        meideFrisch ? frisch : [],
+        gemein ? GEMEIN[Math.floor(rng() * GEMEIN.length)]! : undefined,
+      )
+      const schluessel = [...kandidat.namen].sort().join('+')
+      const zuletzt = paare.get(schluessel)
+      if (meideWiederholung && zuletzt !== undefined && nr - zuletzt < NICHT_WIEDER) continue
+      gewaehlt = kandidat
+      paare.set(schluessel, nr)
+      break
+    }
+    const fertig = gewaehlt ?? waehleBausteine(pool, platz, hoechstens, rng)
+    plan.push({
+      ...fertig,
+      gemein,
+      name: levelName(nr, fertig.namen, inWelt === LEVEL_PRO_WELT, gemein, plan.at(-1)?.name),
+    })
+  }
+
+  planSpeicher = plan
+  return plan
+}
+
+/** Der Ausgang eines Levels – vier Bauarten, eine gemeiner als die andere. */
+type SchlussArt = 'tuer' | 'flucht' | 'falsch' | 'zuschnapp'
+
+const SCHLUSS_TEXT: Record<SchlussArt, string> = {
+  tuer: '',
+  flucht: ' + fliehender Ausgang',
+  falsch: ' + falscher Ausgang',
+  zuschnapp: ' + zuschnappender Ausgang',
+}
+
+/** Wie viel Platz der Ausgang eines Levels braucht. */
+function schlussBreite(nr: number): number {
+  return istGemein(nr) ? SCHNAPP_BREITE : SCHLUSS_BREITE
+}
 
 function baueSchluss(
   art: SchlussArt,
@@ -128,7 +287,13 @@ function baueSchluss(
 ): { objekte: Objekt[]; loesung: LoesungsSchritt[] } {
   const vor = (rest: Omit<LoesungsSchritt, 'links' | 'rechts'>): LoesungsSchritt =>
     umgedreht ? { ...rest, links: true } : { ...rest, rechts: true }
-  const boden: Objekt = { typ: 'block', x, y: BODEN_Y, b: SCHLUSS_BREITE, h: BODEN_H }
+  const boden: Objekt = {
+    typ: 'block',
+    x,
+    y: BODEN_Y,
+    b: art === 'zuschnapp' ? SCHNAPP_BREITE : SCHLUSS_BREITE,
+    h: BODEN_H,
+  }
 
   if (art === 'flucht') {
     const id = `fl${nr}`
@@ -189,6 +354,75 @@ function baueSchluss(
     }
   }
 
+  if (art === 'zuschnapp') {
+    const stachel = `zs${nr}`
+    const wand = `zw${nr}`
+    return {
+      objekte: [
+        boden,
+        // Die Tür ist zu sehen, der Weg sieht frei aus.
+        { typ: 'ziel', x: x + 120, y: BODEN_Y - 32, b: 22, h: 32 },
+        // Zwei Schritte vor der Tür: Stacheln aus dem Boden ...
+        { typ: 'stachel', id: stachel, x: x + 62, y: BODEN_Y - 12, b: 30, h: 12, versteckt: true },
+        // ... und eine Wand, die von der Decke bis auf den Boden kommt.
+        //
+        // Bis auf den Boden ist wörtlich gemeint: Beim ersten Anlauf blieb
+        // sie 34 Punkte darüber stehen, und die Figur spazierte einfach
+        // darunter durch. Gemessen daran, wie lange man vor der Tür
+        // stehenbleiben durfte, war der Ausgang gar keine Falle.
+        {
+          typ: 'beweger',
+          id: wand,
+          x: x + 104,
+          y: BODEN_Y - 210,
+          b: 14,
+          h: 78,
+          weg: { dx: 0, dy: 132, dauer: 0.95, einweg: true, wartetAufAusloeser: true },
+        },
+        // Unten dran Stacheln: Wer zu spät kommt, wird nicht ausgesperrt,
+        // sondern erwischt -- und ist gleich wieder im Spiel.
+        {
+          typ: 'stachel',
+          id: `${wand}s`,
+          x: x + 104,
+          y: BODEN_Y - 132,
+          b: 14,
+          h: 10,
+          weg: { dx: 0, dy: 132, dauer: 0.95, einweg: true, wartetAufAusloeser: true },
+        },
+        {
+          typ: 'zone',
+          x: x + 24,
+          y: BODEN_Y - 50,
+          b: 8,
+          h: 50,
+          einmal: true,
+          loest: [
+            { tu: 'zeigen', ziel: stachel },
+            // Erst anhalten und springen, dann kommt die Wand: Die
+            // Verzögerung ist so bemessen, dass es reicht, wenn man sofort
+            // handelt -- und nicht mehr, wenn man einen Moment überlegt.
+            { tu: 'los', ziel: wand, nach: 0.75 },
+            { tu: 'los', ziel: `${wand}s`, nach: 0.75 },
+            { tu: 'beben', wert: 0.4 },
+          ],
+        },
+      ],
+      loesung: [
+        vor({ bisBoden: true, dauer: 1 }),
+        // Bis in den Auslöser -- ab hier läuft die Uhr.
+        vor({ bisX: x + 26 }),
+        // Anhalten, sonst läuft man in die Stacheln, die gerade erschienen
+        // sind. Das ist der Moment, den beim ersten Mal niemand hat.
+        { dauer: 0.34 },
+        vor({ sprung: true, dauer: 0.34 }),
+        vor({ bisBoden: true }),
+        // Und jetzt zügig, bevor die Wand unten ist.
+        vor({ bisX: x + 122, dauer: 2 }),
+      ],
+    }
+  }
+
   return {
     objekte: [boden, { typ: 'ziel', x: x + 56, y: BODEN_Y - 32, b: 22, h: 32 }],
     loesung: [vor({ bisX: x + 58 })],
@@ -205,21 +439,13 @@ function baueSchluss(
 export function erzeugeLevel(nr: number): LevelDaten {
   const welt = weltNummer(nr)
   const inWelt = ((nr - 1) % LEVEL_PRO_WELT) + 1
-  // Zwei Anteile: wie weit man insgesamt ist und wie weit in dieser Welt.
-  // Dadurch entsteht eine steigende Säge -- jede Welt fängt ruhiger an als
-  // sie aufhört, aber Welt 5 fängt trotzdem härter an als Welt 1 aufhört.
-  const gesamt = (nr - 1) / (TRAP_MAX_LEVEL - 1)
-  const inWeltAnteil = (inWelt - 1) / (LEVEL_PRO_WELT - 1)
-  const schwer = Math.min(1, 0.55 * gesamt + 0.45 * inWeltAnteil)
+  const schwer = schwierigkeit(nr)
   const istTor = inWelt === LEVEL_PRO_WELT
+  const gemein = istGemein(nr)
   const rng = mulberry(nr * 2654435761 + 1013904223)
 
-  const pool = bausteinePool(welt)
-  const platz = BREITE - START_BREITE - SCHLUSS_BREITE
-  // Am Anfang einer Welt höchstens zwei Fallen -- erst kennenlernen, dann
-  // stapeln. Mehr als drei passen bei 480 Punkten Breite ohnehin nicht.
-  const hoechstens = schwer < 0.25 ? 2 : 3
-  const { namen, breiten } = waehleBausteine(pool, platz, hoechstens, rng)
+  const plan = bauPlan()[nr - 11]!
+  const { namen, breiten } = plan
 
   const objekte: Objekt[] = [{ typ: 'block', x: 0, y: BODEN_Y, b: START_BREITE, h: BODEN_H }]
   const loesung: LoesungsSchritt[] = []
@@ -255,13 +481,17 @@ export function erzeugeLevel(nr: number): LevelDaten {
     x += breiten[i]!
   }
 
-  const art: SchlussArt = istTor
-    ? 'falsch'
-    : schwer > 0.55 && rng() < 0.4
-      ? 'flucht'
-      : schwer > 0.75 && rng() < 0.3
-        ? 'falsch'
-        : 'tuer'
+  // Auf einem gemeinen Level schnappt der Ausgang zu: Genau davor kommt
+  // noch einmal etwas, womit man nicht gerechnet hat.
+  const art: SchlussArt = gemein
+    ? 'zuschnapp'
+    : istTor
+      ? 'falsch'
+      : schwer > 0.55 && rng() < 0.4
+        ? 'flucht'
+        : schwer > 0.75 && rng() < 0.3
+          ? 'falsch'
+          : 'tuer'
   const schluss = baueSchluss(art, x, nr, umgedreht)
   objekte.push(...schluss.objekte)
   loesung.push(...schluss.loesung)
@@ -270,8 +500,8 @@ export function erzeugeLevel(nr: number): LevelDaten {
     nr,
     welt,
     abschnitt: welt,
-    name: levelName(nr, benutzt, art, istTor),
-    idee: `Aus Bausteinen: ${benutzt.join(' + ')}${art === 'tuer' ? '' : ` + ${art === 'flucht' ? 'fliehender' : 'falscher'} Ausgang`}.`,
+    name: art === 'falsch' && !istTor ? `${plan.name}?` : plan.name,
+    idee: `Aus Bausteinen: ${benutzt.join(' + ')}${SCHLUSS_TEXT[art]}.`,
     start: { x: 18, y: STEH_Y },
     objekte,
     loesung,
@@ -280,32 +510,65 @@ export function erzeugeLevel(nr: number): LevelDaten {
 
 /** Namen aus dem, was drinsteckt -- damit die Karte nicht "Level 57" sagt. */
 const NAMEN: Record<string, string[]> = {
-  weg: ['Ruhige Bahn', 'Kurzer Weg'],
-  luecke: ['Über den Spalt', 'Lücke im Fels'],
-  bruch: ['Der Boden lügt wieder', 'Dünnes Eis'],
-  stacheln: ['Zahnreihe', 'Spitzen'],
-  stachelfalle: ['Zu spät gesehen', 'Aus dem Nichts'],
-  saege: ['Auf und ab', 'Schnittmuster'],
-  decke: ['Von oben', 'Kopf einziehen'],
-  aufzug: ['Ruf den Aufzug', 'Fahrstuhl'],
-  feder: ['Absprung', 'Über die Mauer'],
-  knopftuer: ['Knopf und Tür', 'Kurz offen'],
-  teleport: ['Kurzer Dienstweg', 'Durch die Wand'],
-  unsichtbar: ['Vertrauensfrage', 'Nicht alles ist Luft'],
-  band: ['Gegen den Strom', 'Laufband'],
-  presse: ['Pressluft', 'Nicht stehenbleiben'],
-  umkehr: ['Alles verkehrt', 'Andersrum'],
-  schwachersprung: ['Schwere Beine', 'Kein Schwung'],
+  weg: ['Ruhige Bahn', 'Kurzer Weg', 'Durchatmen', 'Fast geschenkt'],
+  luecke: ['Über den Spalt', 'Lücke im Fels', 'Nicht hinunterschauen', 'Ein Schritt zu viel'],
+  bruch: ['Der Boden lügt wieder', 'Dünnes Eis', 'Bloß nicht stehenbleiben', 'Knirsch'],
+  stacheln: ['Zahnreihe', 'Spitzen', 'Zackig', 'Barfuß wäre schlecht'],
+  stachelfalle: ['Zu spät gesehen', 'Aus dem Nichts', 'Überraschung von unten', 'Klick'],
+  saege: ['Auf und ab', 'Schnittmuster', 'Im Takt', 'Sägewerk'],
+  decke: ['Von oben', 'Kopf einziehen', 'Es donnert', 'Die Decke meint es ernst'],
+  aufzug: ['Ruf den Aufzug', 'Fahrstuhl', 'Mitfahrgelegenheit', 'Bitte einsteigen'],
+  feder: ['Absprung', 'Über die Mauer', 'Katapult', 'Hoch hinaus'],
+  knopftuer: ['Knopf und Tür', 'Kurz offen', 'Erst drücken', 'Türsteher'],
+  teleport: ['Kurzer Dienstweg', 'Durch die Wand', 'Ortswechsel', 'Nicht erschrecken'],
+  unsichtbar: ['Vertrauensfrage', 'Nicht alles ist Luft', 'Blindgang', 'Glaub es einfach'],
+  band: ['Gegen den Strom', 'Laufband', 'Rückwärts vorwärts', 'Zäher Boden'],
+  presse: ['Pressluft', 'Nicht stehenbleiben', 'Zwischendurch', 'Flach gemacht'],
+  umkehr: ['Alles verkehrt', 'Andersrum', 'Links ist das neue Rechts', 'Verdreht'],
+  schwachersprung: ['Schwere Beine', 'Kein Schwung', 'Bleierne Füße', 'Halbe Kraft'],
+  jagd: ['Es kommt näher', 'Nicht umdrehen', 'Im Nacken', 'Lauf!'],
+  waende: ['Die Wände kommen', 'Enger und enger', 'Zwischen den Wänden', 'Zuschieben'],
 }
 
-function levelName(nr: number, teile: string[], art: SchlussArt, istTor: boolean): string {
+/** Die Namen für die gemeinen Level -- die sollen schon vorher warnen. */
+const GEMEINE_NAMEN = [
+  'Kein Halten mehr',
+  'Ohne Vorwarnung',
+  'Das wird knapp',
+  'Beim ersten Mal nie',
+  'Gemein',
+]
+
+/**
+ * Ein Name, der zum Level passt -- und nicht schon beim Nachbarn stand.
+ *
+ * Der Name kam bisher allein vom letzten Baustein, und weil es nur zwei
+ * Namen je Baustein gab, hieß es dreimal hintereinander "Von oben". Jetzt
+ * entscheidet die ganze Bausteinfolge mit, es gibt vier Namen je Baustein,
+ * und wer denselben Namen wie das Level davor zöge, bekommt den nächsten.
+ */
+function levelName(
+  nr: number,
+  teile: string[],
+  istTor: boolean,
+  gemein: boolean,
+  davor: string | undefined,
+): string {
   if (istTor) return 'Prüfung'
-  const r = mulberry(nr * 7919 + 5)
+  if (gemein) {
+    const g = mulberry(nr * 104729 + 17)
+    g()
+    return GEMEINE_NAMEN[Math.floor(g() * GEMEINE_NAMEN.length)]!
+  }
+  const r = mulberry(nr * 7919 + teile.length * 131 + 5)
   r()
   const haupt = teile[teile.length - 1] ?? 'weg'
   const liste = NAMEN[haupt] ?? ['Weiter']
-  const gewaehlt = liste[Math.floor(r() * liste.length)]!
-  return art === 'falsch' ? `${gewaehlt}?` : gewaehlt
+  let gewaehlt = liste[Math.floor(r() * liste.length)]!
+  if (davor !== undefined && gewaehlt === davor) {
+    gewaehlt = liste[(liste.indexOf(gewaehlt) + 1) % liste.length]!
+  }
+  return gewaehlt
 }
 
 export function alleErzeugten(): LevelDaten[] {

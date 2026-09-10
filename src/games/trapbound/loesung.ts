@@ -42,12 +42,26 @@ function hatBedingung(schritt: LoesungsSchritt): boolean {
   )
 }
 
-export function spieleLoesung(level: LevelDaten): Abspielergebnis {
+/**
+ * Ein Mensch, der kurz zögert.
+ *
+ * Ab Sekunde `bei` bleibt die Figur `dauer` Sekunden stehen und macht dann
+ * mit der Lösung weiter. Damit lässt sich messen, wie viel Luft ein Level
+ * lässt -- und genau das ist der Unterschied zwischen einem Level, das man
+ * in Ruhe löst, und einem, bei dem etwas hinter einem herläuft.
+ */
+export interface Zoegern {
+  bei: number
+  dauer: number
+}
+
+export function spieleLoesung(level: LevelDaten, zoegern?: Zoegern): Abspielergebnis {
   if (!level.loesung || level.loesung.length === 0) {
     return { stand: starte(level), zeit: 0, geschafft: false, grund: 'keine Lösung hinterlegt' }
   }
   let s = starte(level)
   let zeit = 0
+  let gezoegert = zoegern === undefined
   for (const schritt of level.loesung) {
     const eingabe = {
       links: Boolean(schritt.links),
@@ -60,6 +74,13 @@ export function spieleLoesung(level: LevelDaten): Abspielergebnis {
     // "springen, bis du am Boden bist" schon im selben Augenblick erfüllt.
     let ersterTakt = true
     while (offen > 0) {
+      if (!gezoegert && zoegern !== undefined && zeit >= zoegern.bei) {
+        gezoegert = true
+        for (let n = 0; n < Math.round(zoegern.dauer / TAKT) && s.phase === 'laeuft'; n++) {
+          s = laufe(s, { links: false, rechts: false, sprung: false }, TAKT)
+          zeit += TAKT
+        }
+      }
       const dt = Math.min(TAKT, offen)
       s = laufe(s, eingabe, dt)
       zeit += dt

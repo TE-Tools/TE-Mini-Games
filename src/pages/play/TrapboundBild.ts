@@ -140,24 +140,38 @@ export function zeichne(
         break
       }
       case 'saege': {
-        const m = { x: f.x + f.b / 2, y: f.y + f.h / 2 }
-        ctx.save()
-        ctx.translate(m.x, m.y)
-        ctx.rotate(opt.uhr * 9)
-        ctx.fillStyle = p.gefahr
-        ctx.beginPath()
-        for (let k = 0; k < 8; k++) {
-          const w = (k / 8) * Math.PI * 2
-          const r = k % 2 === 0 ? f.b / 2 : f.b / 3.4
-          ctx.lineTo(Math.cos(w) * r, Math.sin(w) * r)
+        // Ein Blatt je Quadrat: Eine lange Säge -- die Jagd ist 74 Punkte
+        // hoch -- war sonst als einzelnes kleines Blatt gezeichnet, während
+        // sie über die ganze Höhe tödlich war. Man sah also nicht, was einen
+        // umbrachte, und das ist in diesem Spiel der einzige unfaire Fehler,
+        // den es gibt.
+        const kante = Math.min(f.b, f.h)
+        const anzahl = Math.max(1, Math.round(Math.max(f.b, f.h) / kante))
+        const langX = f.b >= f.h
+        for (let n = 0; n < anzahl; n++) {
+          const anteil = anzahl === 1 ? 0.5 : (n + 0.5) / anzahl
+          const m = {
+            x: f.x + (langX ? f.b * anteil : f.b / 2),
+            y: f.y + (langX ? f.h / 2 : f.h * anteil),
+          }
+          ctx.save()
+          ctx.translate(m.x, m.y)
+          ctx.rotate(opt.uhr * 9 + n)
+          ctx.fillStyle = p.gefahr
+          ctx.beginPath()
+          for (let k = 0; k < 8; k++) {
+            const w = (k / 8) * Math.PI * 2
+            const r = k % 2 === 0 ? kante / 2 : kante / 3.4
+            ctx.lineTo(Math.cos(w) * r, Math.sin(w) * r)
+          }
+          ctx.closePath()
+          ctx.fill()
+          ctx.fillStyle = p.hintergrund
+          ctx.beginPath()
+          ctx.arc(0, 0, kante / 6, 0, Math.PI * 2)
+          ctx.fill()
+          ctx.restore()
         }
-        ctx.closePath()
-        ctx.fill()
-        ctx.fillStyle = p.hintergrund
-        ctx.beginPath()
-        ctx.arc(0, 0, f.b / 6, 0, Math.PI * 2)
-        ctx.fill()
-        ctx.restore()
         break
       }
       case 'tuer': {

@@ -479,6 +479,165 @@ export const bSchwacherSprung: Baustein = (b) => {
   }
 }
 
+/**
+ * Etwas läuft hinter einem her.
+ *
+ * Eine Wand aus Sägeblättern, die den Abschnitt von links nach rechts
+ * durchfegt, sobald man ihn betritt. Sie ist langsamer als die Figur -- wer
+ * losläuft, kommt davon; wer stehenbleibt, um zu gucken, nicht. Genau das
+ * ist der Punkt: In diesem Abschnitt darf man nicht überlegen, man muss
+ * vorher überlegt haben.
+ *
+ * Sie hört kurz vor dem Ende auf. Sonst stünde sie später als tödliche
+ * Säule am Anfang des nächsten Abschnitts herum.
+ */
+export const bJagd: Baustein = (b) => {
+  const id = `jg${b.nr}`
+  const strecke = b.breite - 56
+  // 96 bis 118 Punkte je Sekunde -- die Figur läuft 138. Der Abstand ist
+  // knapp genug, dass es im Nacken sitzt, und weit genug, dass ein Sprung
+  // über die Lücke noch hineinpasst.
+  const tempo = 96 + b.schwer * 22
+  const spaltX = b.x + Math.round(b.breite * 0.55)
+  const spalt = 26 + Math.round(b.schwer * 8)
+  return {
+    objekte: [
+      boden(b.x, spaltX - b.x),
+      boden(spaltX + spalt, b.x + b.breite - spaltX - spalt),
+      {
+        // Versteckt, bis man an ihr vorbei ist: Stünde sie von Anfang an da,
+        // liefe die Figur schon beim Betreten des Abschnitts hinein. Sie
+        // taucht hinter einem auf -- so herum gehört sie sich auch.
+        typ: 'saege',
+        id,
+        x: b.x + 2,
+        y: BODEN_Y - 74,
+        b: 14,
+        h: 74,
+        versteckt: true,
+        weg: { dx: strecke, dy: 0, dauer: strecke / tempo, einweg: true, wartetAufAusloeser: true },
+      },
+      {
+        typ: 'zone',
+        x: b.x + 30,
+        y: BODEN_Y - 50,
+        b: 8,
+        h: 50,
+        einmal: true,
+        loest: [
+          { tu: 'zeigen', ziel: id },
+          { tu: 'los', ziel: id },
+          { tu: 'beben', wert: 0.35 },
+        ],
+      },
+    ],
+    loesung: [
+      // Kein Anhalten: durchlaufen, über die Lücke springen, weiterlaufen.
+      vor(b, { bisX: spaltX - 16 }),
+      vor(b, { sprung: true, dauer: 0.3 }),
+      vor(b, { bisBoden: true, dauer: 1.4 }),
+      vor(b, { bisX: b.x + b.breite - 14, dauer: 3 }),
+    ],
+  }
+}
+
+/**
+ * Wände, die sich verschieben.
+ *
+ * Zwei Blöcke: Der erste fährt aus dem Boden hoch, der zweite kommt von der
+ * Decke herunter -- beide, sobald man den Abschnitt betritt, und mit Versatz,
+ * sodass sich der Weg hinter einem schließt, während vorn schon der nächste
+ * zugeht. Wer beim ersten Mal schaut, was da passiert, steht drin.
+ */
+export const bWaende: Baustein = (b) => {
+  const a = `wa${b.nr}a`
+  const c = `wa${b.nr}c`
+  const zoneX = b.x + 14
+  const ersteX = b.x + Math.round(b.breite * 0.36)
+  const zweiteX = b.x + Math.round(b.breite * 0.72)
+  const dauer = 0.85 - b.schwer * 0.3
+
+  /**
+   * Wann eine Wand losgeht.
+   *
+   * Gerechnet, nicht geraten: der Weg von der Auslöserzone bis hinter die
+   * Wand, geteilt durch das Lauftempo, plus eine Handbreit Luft. Ohne die
+   * Rechnung stand die Wand schon oben, bevor überhaupt jemand loslaufen
+   * konnte -- der erste Anlauf war schlicht nicht zu schaffen.
+   */
+  const luft = 0.42 - b.schwer * 0.16
+  const losGeht = (wandX: number) => (wandX + 16 + 11 - (b.x + 3)) / 138 + luft
+
+  return {
+    objekte: [
+      boden(b.x, b.breite),
+      // Aus dem Boden hoch -- ganz im Boden versenkt, sonst steht schon vor
+      // dem Hochfahren eine Stufe im Weg.
+      {
+        typ: 'beweger',
+        id: a,
+        x: ersteX,
+        y: BODEN_Y + 12,
+        b: 16,
+        h: 90,
+        weg: { dx: 0, dy: -84, dauer, einweg: true, wartetAufAusloeser: true },
+      },
+      // Oben drauf Stacheln: Wer zu langsam ist, wird nicht eingesperrt,
+      // sondern erwischt -- und ist nach einer halben Sekunde wieder im
+      // Spiel. Feststecken ohne Ausweg wäre die schlechtere Strafe.
+      //
+      // Sie sitzen zwölf Punkte unter der Oberfläche, nicht bündig damit:
+      // Bündig standen sie schon vor dem Hochfahren scharf im Weg, und die
+      // Figur starb, bevor sich überhaupt etwas bewegt hatte.
+      {
+        typ: 'stachel',
+        id: `${a}s`,
+        x: ersteX,
+        y: BODEN_Y + 2,
+        b: 16,
+        h: 10,
+        weg: { dx: 0, dy: -84, dauer, einweg: true, wartetAufAusloeser: true },
+      },
+      // Und von der Decke herunter, mit Stacheln an der Unterkante.
+      {
+        typ: 'beweger',
+        id: c,
+        x: zweiteX,
+        y: BODEN_Y - 150,
+        b: 16,
+        h: 72,
+        weg: { dx: 0, dy: 78, dauer, einweg: true, wartetAufAusloeser: true },
+      },
+      {
+        typ: 'stachel',
+        id: `${c}s`,
+        x: zweiteX,
+        y: BODEN_Y - 88,
+        b: 16,
+        h: 10,
+        weg: { dx: 0, dy: 78, dauer, einweg: true, wartetAufAusloeser: true },
+      },
+      {
+        typ: 'zone',
+        x: zoneX,
+        y: BODEN_Y - 50,
+        b: 8,
+        h: 50,
+        einmal: true,
+        loest: [
+          { tu: 'los', ziel: a, nach: losGeht(ersteX) },
+          { tu: 'los', ziel: `${a}s`, nach: losGeht(ersteX) },
+          { tu: 'los', ziel: c, nach: losGeht(zweiteX) },
+          { tu: 'los', ziel: `${c}s`, nach: losGeht(zweiteX) },
+          { tu: 'beben', wert: 0.3 },
+        ],
+      },
+    ],
+    // Durchlaufen. Wer stehenbleibt, um zu schauen, steht drin.
+    loesung: [vor(b, { bisX: b.x + b.breite - 14, dauer: 3 })],
+  }
+}
+
 export interface BausteinEintrag {
   name: string
   bau: Baustein
@@ -503,4 +662,6 @@ export const BAUSTEINE: Record<string, BausteinEintrag> = {
   presse: { name: 'presse', bau: bPresse, min: 130 },
   umkehr: { name: 'umkehr', bau: bUmkehr, min: 110 },
   schwachersprung: { name: 'schwachersprung', bau: bSchwacherSprung, min: 130 },
+  jagd: { name: 'jagd', bau: bJagd, min: 150 },
+  waende: { name: 'waende', bau: bWaende, min: 150 },
 }
