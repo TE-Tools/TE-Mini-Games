@@ -23,10 +23,33 @@
 /** 0 = leeres Feld (nur während des Nachrutschens), 1..N = Farbe. */
 export type Farbe = number
 
+/**
+ * Was ein Knödel Besonderes kann.
+ *
+ * Beide entstehen aus langen Reihen und behalten die Farbe, aus der sie
+ * kommen -- sie zählen also ganz normal in jeder Reihe mit. Ihre Wirkung
+ * kommt erst, wenn sie *noch einmal* in einer Reihe landen. Genau darum
+ * lohnt es sich, sie liegenzulassen und den richtigen Platz zu suchen,
+ * statt sie beim nächstbesten Dreier zu verheizen.
+ *
+ *   'keine'    Ein ganz gewöhnlicher Knödel.
+ *   'gold'     Aus einer Fünferreihe: golden glänzend in seiner Farbe.
+ *              Kommt er wieder in eine Reihe, platzen alle seiner Farbe.
+ *   'diagonal' Aus einer Viererreihe. Kommt er wieder in eine Reihe, fegt
+ *              er beide Diagonalen durch sein Feld leer.
+ */
+export type Spezial = 'keine' | 'gold' | 'diagonal'
+
 export interface Zelle {
   farbe: Farbe
   /** Im goldenen Käfig: nicht schiebbar, zählt in keiner Reihe mit. */
   kaefig: boolean
+  spezial: Spezial
+}
+
+/** Ein gewöhnlicher Knödel dieser Farbe. */
+export function zelle(farbe: Farbe, kaefig = false): Zelle {
+  return { farbe, kaefig, spezial: 'keine' }
 }
 
 export interface DumplingLevel {
@@ -77,6 +100,12 @@ export const SPALTEN = 6
 
 /** Wie viele gleiche nebeneinander eine Reihe ergeben. */
 export const REIHE_AB = 3
+
+/** Ab so vielen in einer Reihe entsteht der Diagonale. */
+export const DIAGONAL_AB = 4
+
+/** Ab so vielen in einer Reihe entsteht der Goldene. */
+export const GOLD_AB = 5
 
 /**
  * Die Knödelfarben.

@@ -9,6 +9,8 @@ export {
   hatZug,
   mische,
   findeTreffer,
+  findeReihen,
+  wirkung,
   loeseAuf,
   zeitAbgelaufen,
   fortschritt,
@@ -17,7 +19,7 @@ export {
   isWon,
   isLost,
 } from './engine'
-export type { Schritt, ZugErgebnis } from './engine'
+export type { Schritt, ZugErgebnis, Reihe } from './engine'
 export {
   SAMMEL_KNOEDEL,
   STANDARD_KNOEDEL,
@@ -32,9 +34,13 @@ export {
   REIHEN,
   SPALTEN,
   REIHE_AB,
+  DIAGONAL_AB,
+  GOLD_AB,
+  zelle,
   FARB_HEX,
   FARB_NAME,
   type Farbe,
+  type Spezial,
   type Zelle,
   type DumplingLevel,
   type DumplingState,

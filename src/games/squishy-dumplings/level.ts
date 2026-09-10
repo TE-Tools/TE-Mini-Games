@@ -24,6 +24,7 @@ import {
   REIHEN,
   SPALTEN,
   type DumplingLevel,
+  zelle,
   type DumplingState,
   type Zelle,
 } from './types'
@@ -58,7 +59,7 @@ function baueFeld(
     for (let i = 0; i < feld.length; i++) {
       const gezogen = zieh(z, farben)
       z = gezogen.zufall
-      feld[i] = { farbe: gezogen.zahl + 1, kaefig: false }
+      feld[i] = zelle(gezogen.zahl + 1)
     }
     // Käfige verteilen: nicht in die unterste Reihe, sonst stehen sie von
     // Anfang an dort, wo ohnehin am meisten passiert.
@@ -83,7 +84,7 @@ function baueFeld(
   // Notausgang: ein glattes Feld ohne Käfige geht immer.
   const feld: Zelle[] = []
   for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) feld.push({ farbe: ((r + c * 2) % farben) + 1, kaefig: false })
+    for (let c = 0; c < cols; c++) feld.push(zelle(((r + c * 2) % farben) + 1))
   }
   return { feld, saat: z }
 }

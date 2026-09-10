@@ -45,10 +45,16 @@ Progressive Web App with short skill, memory, reaction and logic games.
   through. Lose a level ten times and you get a sixth slot for that level.
   Every level is proven winnable by an exact solver in
   `tests/bienen-flow.test.ts`, which also measures the difficulty curve
-- **Squishy Dumplings** – a match-3 game with steamed buns. Swap two neighbours;
-  if that puts three of a kind in a row they pop, new ones fall in from above,
-  and whatever lines up while falling pops too. A swap that makes no line is
-  refused, so you have to look before you tap. Each level asks for a number of
+- **Squishy Dumplings** – a match-3 game with steamed buns. Drag a dumpling onto
+  its neighbour (or tap the two, whichever you prefer) – it follows your finger
+  and the swap commits once it is halfway across. If that puts three of a kind
+  in a row they pop, new ones fall in from above, and whatever lines up while
+  falling pops too. A swap that makes no line is refused, so you have to look
+  before you move. **Long rows leave something behind**: four in a row become a
+  diagonal dumpling, five a golden one in that colour. Both count as ordinary
+  dumplings until you get them into a row again – then the diagonal sweeps both
+  diagonals of the board clear, and the golden one bursts every dumpling of its
+  colour. Anything their blast catches goes off too, each piece once. Each level asks for a number of
   dumplings within a time limit, and both screws turn at once: 4 colours become
   6, the target grows from 30 to 138, and the pace you must hold rises from 0.7
   to 2.6 dumplings per second. From level 12 there are cages: a caged dumpling
@@ -59,7 +65,9 @@ Progressive Web App with short skill, memory, reaction and logic games.
   the level map. The time limits are not guessed: two bots play every level in
   `tests/squishy-dumplings.test.ts` – a careful one that must always finish with
   a quarter of the clock to spare, and a random one whose spare time has to
-  shrink from level to level
+  shrink from level to level. The specials are measured there as well: in play
+  one turns up roughly every twelve moves, which leaves the pace at about 4.2
+  dumplings a move
 - **Trapbound** – a trap platformer: short levels that look harmless and are
   not. Run, jump, reach the door – except the floor crumbles under the last
   step, the ceiling drops when you pass a certain point, the exit walks away

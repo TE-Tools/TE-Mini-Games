@@ -130,11 +130,25 @@
   border: none;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.05);
-  cursor: pointer;
+  cursor: grab;
   display: block;
+  /* Ohne das rollt der Browser beim Ziehen die Seite statt den Knödel. */
+  touch-action: none;
   transition:
     transform 0.12s ease,
     background 0.15s ease;
+}
+
+/*
+ * Der Knödel am Finger.
+ *
+ * Ohne Übergang: Der Versatz kommt aus der Fingerposition, und eine
+ * Animation darüber macht daraus ein Nachziehen mit Gummiband.
+ */
+.zelleZieht {
+  transition: none;
+  z-index: 2;
+  cursor: grabbing;
 }
 
 .zelle:disabled {
@@ -178,6 +192,43 @@
   }
   75% {
     transform: translateX(14%) rotate(6deg);
+  }
+}
+
+/*
+ * Ein Sonderknödel zündet: eine Druckwelle nach außen.
+ *
+ * Bewusst nur ein Ring über der Zelle und nicht die Zelle selbst: Das
+ * Verschwinden macht schon `zelleTrifft`, und zwei Animationen auf demselben
+ * Element treten sich gegenseitig aus -- der Knödel blieb dann als leeres
+ * Feld stehen, während schon der nächste nachrückte.
+ */
+.zelleZuendet::after {
+  content: '';
+  position: absolute;
+  inset: -10%;
+  border-radius: 50%;
+  border: 3px solid #ffe9a8;
+  box-shadow:
+    0 0 18px 6px rgba(255, 215, 106, 0.75),
+    inset 0 0 14px rgba(255, 255, 255, 0.8);
+  animation: druckwelle 0.32s ease-out forwards;
+  pointer-events: none;
+  z-index: 3;
+}
+
+@keyframes druckwelle {
+  0% {
+    transform: scale(0.4);
+    opacity: 0.2;
+  }
+  40% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.1);
+    opacity: 0;
   }
 }
 
@@ -388,7 +439,8 @@
   .uhrKnapp,
   .belohnungBild,
   .zelleTrifft,
-  .zelleWackelt {
+  .zelleWackelt,
+  .zelleZuendet {
     animation: none;
   }
 }

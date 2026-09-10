@@ -50,9 +50,15 @@ function feldAus(zeilen: string[]): Zelle[] {
   for (const zeile of zeilen) {
     for (const z of zeile.replace(/\s/g, '')) {
       if (z >= 'A' && z <= 'F') {
-        out.push({ farbe: z.charCodeAt(0) - 64, kaefig: true })
+        out.push({ farbe: z.charCodeAt(0) - 64, kaefig: true, spezial: 'keine' })
+      } else if (z >= 'a' && z <= 'f') {
+        // Kleinbuchstabe = goldener Sonderknödel dieser Farbe.
+        out.push({ farbe: z.charCodeAt(0) - 96, kaefig: false, spezial: 'gold' })
+      } else if (z >= 'p' && z <= 'u') {
+        // p..u = diagonaler Sonderknödel der Farbe 1..6.
+        out.push({ farbe: z.charCodeAt(0) - 111, kaefig: false, spezial: 'diagonal' })
       } else {
-        out.push({ farbe: Number(z), kaefig: false })
+        out.push({ farbe: Number(z), kaefig: false, spezial: 'keine' })
       }
     }
   }
@@ -567,5 +573,103 @@ describe('Tauschprüfung', () => {
     const zuege = moeglicheZuege(s)
     expect(zuege.length).toBeGreaterThan(0)
     for (const [a, b] of zuege) expect(tauschBringtEtwas(s, a, b)).toBe(true)
+  })
+})
+
+/**
+ * Die Sonderknödel, so wie Thomas sie am 10.09.2026 beschrieben hat:
+ *
+ *   "Sollte man fünf in einer Reihe bekommen, soll ein golden glänzender
+ *    rauskommen von der Farbe. Und wenn man den mit einem anderen
+ *    kombiniert, also rechts oder links daneben eine Dreierreihe mit ihm
+ *    hinbekommt, explodieren alle in derselben Farbe einmal. [...] Bei
+ *    einer Viererreihe, dass diagonal alle weggesprengt werden, wenn mit
+ *    dem neuen besonderen Viererding noch mal mindestens ein Dreier
+ *    gemacht worden ist."
+ *
+ * Beide entstehen also aus der langen Reihe und wirken erst beim nächsten
+ * Mal. Das ist der Kern: Man kann sie sich aufheben.
+ */
+describe('Sonderknödel', () => {
+  it('macht aus einer Viererreihe einen diagonalen Knödel', () => {
+    const st = roh(level(['11213', '54124', '32452', '25345']))
+    const e = tausche(st, 2, 7)
+    expect(e.gueltig).toBe(true)
+    // Er liegt dort, wo der Finger war -- nicht am anderen Ende der Reihe.
+    expect(e.schritte[0]!.neue).toEqual([{ platz: 2, art: 'diagonal' }])
+    expect(e.state.feld[2]!.spezial).toBe('diagonal')
+    expect(e.state.feld[2]!.farbe).toBe(1)
+  })
+
+  it('macht aus einer Fünferreihe einen goldenen Knödel', () => {
+    const st = roh(level(['11211', '54124', '32452', '25345']))
+    const e = tausche(st, 2, 7)
+    expect(e.schritte[0]!.neue).toEqual([{ platz: 2, art: 'gold' }])
+    expect(e.state.feld[2]!.spezial).toBe('gold')
+    expect(e.state.feld[2]!.farbe).toBe(1)
+  })
+
+  it('zählt den Sonderknödel nicht als eingesammelt – er bleibt ja liegen', () => {
+    const st = roh(level(['11213', '54124', '32452', '25345']))
+    const e = tausche(st, 2, 7)
+    // Vier verschwinden, einer bleibt als Sonderknödel: drei gesammelt.
+    expect(e.schritte[0]!.treffer).toHaveLength(4)
+    expect(e.state.gesammelt).toBe(3)
+  })
+
+  it('lässt beim Goldenen alle seiner Farbe platzen – auch weit weg', () => {
+    // a = goldener Knödel der Farbe 1. Der Tausch macht mit ihm einen Dreier.
+    const st = roh(level(['21345', 'a3152', '45234', '32415']))
+    const e = tausche(st, 6, 1)
+    expect(e.gueltig).toBe(true)
+    const schritt = e.schritte[0]!
+    expect(schritt.gezuendet).toContain(5)
+    // Die 1 unten rechts (Feld 18) liegt in keiner Reihe und geht trotzdem mit.
+    expect(schritt.treffer).toContain(18)
+    // Nach dem Zug ist keine einzige 1 mehr übrig, die vorher dalag.
+    expect(schritt.treffer.length).toBeGreaterThanOrEqual(4)
+  })
+
+  it('fegt beim Diagonalen beide Schrägen leer', () => {
+    // p = diagonaler Knödel der Farbe 1, in der Mitte eines 5x5-Feldes.
+    const st = roh(level(['34523', '45234', '51p25', '23412', '42351']))
+    const e = tausche(st, 13, 18)
+    expect(e.gueltig).toBe(true)
+    const schritt = e.schritte[0]!
+    expect(schritt.gezuendet).toContain(12)
+    // Beide Diagonalen durch Feld 12 (Zeile 2, Spalte 2).
+    for (const i of [0, 6, 12, 18, 24, 4, 8, 16, 20]) {
+      expect(`Feld ${i}`).toBe(schritt.treffer.includes(i) ? `Feld ${i}` : `Feld ${i} fehlt`)
+    }
+  })
+
+  it('zündet einen Sonderknödel, den eine Sprengung mitreißt, gleich mit', () => {
+    // Der Diagonale (p, Feld 12) reißt Feld 0 mit -- dort liegt ein goldener
+    // Zweier, und der nimmt dann alle Zweien mit.
+    const st = roh(level(['b4523', '45234', '51p25', '23412', '42351']))
+    const e = tausche(st, 13, 18)
+    const schritt = e.schritte[0]!
+    expect(schritt.gezuendet).toContain(12)
+    expect(schritt.gezuendet).toContain(0)
+    // Die 2 in Feld 3 liegt auf keiner Diagonale und in keiner Reihe.
+    expect(schritt.treffer).toContain(3)
+  })
+
+  it('lässt Sonderknödel ganz normal nachrutschen', () => {
+    const st = roh(level(['54213', 'a2541', '33452', '25314'], 6))
+    // Unter dem Goldenen wird geräumt, also fällt er nach unten.
+    const vorher = st.feld.findIndex((z) => z.spezial === 'gold')
+    const e = tausche(st, 12, 17)
+    expect(e.gueltig).toBe(true)
+    const nachher = e.state.feld.findIndex((z) => z.spezial === 'gold')
+    expect(nachher === -1 || nachher >= vorher).toBe(true)
+  })
+
+  it('behält beim Mischen Farbe und Sonderart zusammen', () => {
+    const st = roh(level(['12345', 'a2345', '12345', '12345']))
+    const gemischt = mische(st)
+    const gold = gemischt.feld.filter((z) => z.spezial === 'gold')
+    expect(gold).toHaveLength(1)
+    expect(gold[0]!.farbe).toBe(1)
   })
 })

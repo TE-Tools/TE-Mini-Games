@@ -9,6 +9,9 @@
 
 export type Gesicht = 'froh' | 'zwinker' | 'selig' | 'frech' | 'schlaf' | 'stern'
 
+/** Sonderknödel aus Squishy Dumplings -- siehe games/squishy-dumplings/types.ts. */
+export type KnoedelSpezial = 'keine' | 'gold' | 'diagonal'
+
 export interface KnoedelProps {
   hex: string
   akzent: string
@@ -17,6 +20,8 @@ export interface KnoedelProps {
   groesse?: number | string
   /** Im Käfig: dann liegt ein goldenes Gitter darüber. */
   kaefig?: boolean
+  /** Aus einer langen Reihe entstanden: golden oder diagonal. */
+  spezial?: KnoedelSpezial
   title?: string
 }
 
@@ -109,9 +114,10 @@ export function Knoedel({
   gesicht = 'froh',
   groesse,
   kaefig = false,
+  spezial = 'keine',
   title,
 }: KnoedelProps) {
-  const id = `kn-${hex.replace('#', '')}-${gesicht}`
+  const id = `kn-${hex.replace('#', '')}-${gesicht}-${spezial}`
   // Auf hellen Knödeln braucht das Gesicht eine dunkle Farbe, auf ganz
   // dunklen eine helle -- sonst verschwinden die Augen im Teig. Der Glanzpunkt
   // im Auge muss die Gegenfarbe haben, sonst ist er nicht zu sehen: Erst sahen
@@ -138,6 +144,17 @@ export function Knoedel({
           <stop offset="45%" stopColor={hex} />
           <stop offset="100%" stopColor={akzent} />
         </radialGradient>
+        {spezial === 'gold' && (
+          // Der Goldene behält seine Farbe -- das Gold liegt als Schimmer
+          // darüber. Sonst sähen alle fünf Farben goldener Knödel gleich aus,
+          // und man wüsste nicht mehr, was er beim Zünden mitnimmt.
+          <linearGradient id={`${id}-g`} x1="0%" y1="0%" x2="70%" y2="100%">
+            <stop offset="0%" stopColor="#fff6cf" stopOpacity="0.95" />
+            <stop offset="38%" stopColor="#ffd76a" stopOpacity="0.5" />
+            <stop offset="62%" stopColor="#ffffff" stopOpacity="0.75" />
+            <stop offset="100%" stopColor="#e0a91b" stopOpacity="0.45" />
+          </linearGradient>
+        )}
       </defs>
 
       {/* Der Körper: unten rund, oben zusammengezogen wie ein Teigbeutel. */}
@@ -153,6 +170,23 @@ export function Knoedel({
         stroke={akzent}
         strokeWidth="2.5"
       />
+      {spezial === 'gold' && (
+        // Der Glanz liegt auf dem Teig, aber unter dem Gesicht: Sonst
+        // verschwinden Augen und Farbe darunter -- und die Farbe ist es,
+        // die beim Zünden zählt.
+        <path
+          d="M50 15
+             c-5 0 -8 3 -11 7
+             C23 28 11 41 11 59
+             c0 17 17 29 39 29
+             s39 -12 39 -29
+             c0 -18 -12 -31 -28 -37
+             c-3 -4 -6 -7 -11 -7z"
+          fill={`url(#${id}-g)`}
+          fillOpacity="0.5"
+        />
+      )}
+
       {/* Die Falten am Zipfel. */}
       <path d="M50 13 q-5 7 -8 12" stroke={akzent} strokeWidth="2" fill="none" opacity="0.7" />
       <path d="M50 13 q5 7 8 12" stroke={akzent} strokeWidth="2" fill="none" opacity="0.7" />
@@ -168,6 +202,42 @@ export function Knoedel({
         fill="none"
         strokeLinecap="round"
       />
+
+      {spezial === 'gold' && (
+        <g>
+          {/* Nur Rand und Stern -- der Schimmer liegt unter dem Gesicht. */}
+          <path
+            d="M50 15
+               c-5 0 -8 3 -11 7
+               C23 28 11 41 11 59
+               c0 17 17 29 39 29
+               s39 -12 39 -29
+               c0 -18 -12 -31 -28 -37
+               c-3 -4 -6 -7 -11 -7z"
+            fill="none"
+            stroke="#ffd76a"
+            strokeWidth="5"
+          />
+          <path
+            d="M50 4 l3.4 8 8.6 .7 -6.5 5.7 2 8.4 -7.5 -4.6 -7.5 4.6 2 -8.4 -6.5 -5.7 8.6 -.7z"
+            fill="#ffd76a"
+            stroke="#fff6cf"
+            strokeWidth="1.5"
+          />
+        </g>
+      )}
+
+      {spezial === 'diagonal' && (
+        <g strokeLinecap="round" fill="none">
+          {/* Zwei Blitze über Kreuz -- genau die Richtungen, die er wegfegt. */}
+          <path d="M20 24 L82 86" stroke="#1b1430" strokeWidth="11" opacity="0.45" />
+          <path d="M82 24 L20 86" stroke="#1b1430" strokeWidth="11" opacity="0.45" />
+          <path d="M20 24 L82 86" stroke="#ffffff" strokeWidth="6" />
+          <path d="M82 24 L20 86" stroke="#ffffff" strokeWidth="6" />
+          <path d="M20 24 L82 86" stroke="#9ad7ff" strokeWidth="2.5" />
+          <path d="M82 24 L20 86" stroke="#9ad7ff" strokeWidth="2.5" />
+        </g>
+      )}
 
       {kaefig && (
         <g stroke="#e0a91b" strokeWidth="4" fill="none" strokeLinecap="round">
