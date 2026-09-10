@@ -66,6 +66,19 @@ export function alleLevel(): LevelDaten[] {
   return Array.from({ length: LEVEL_ANZAHL }, (_, i) => levelDaten(i + 1))
 }
 
+/**
+ * Die Level mit einem Kristall – ohne dafür alle dreihundert zu bauen.
+ *
+ * Kristalle liegen nur in den handgebauten Leveln aus Welt 1; die erzeugten
+ * bekommen keine. Die Sammlung hat trotzdem `alleLevel()` aufgerufen und
+ * damit beim Öffnen alle dreihundert Level erzeugen lassen -- auf einem
+ * Handy waren das am 10.09.2026 fast zwanzig Sekunden, in denen die App
+ * stand. Deshalb hier der kurze Weg.
+ */
+export function levelMitKristall(): LevelDaten[] {
+  return WELT1.filter((l) => l.objekte.some((o) => o.typ === 'kristall'))
+}
+
 export function weltVon(nr: number): Welt {
   return WELTEN[weltNummer(nr) - 1] ?? WELTEN[0]!
 }

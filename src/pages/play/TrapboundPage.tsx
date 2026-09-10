@@ -5,7 +5,7 @@ import {
   laufe,
   starte,
   levelDaten,
-  alleLevel,
+  levelMitKristall,
   abschnittVon,
   weltVon,
   LEVEL_ANZAHL,
@@ -495,10 +495,8 @@ export function TrapboundPage() {
             – man findet ihn nur, wenn man dorthin geht, wo man eigentlich nicht hin soll.
           </p>
           <div className={styles.kristallGitter}>
-            {alleLevel().map((l) => {
-              const hat = l.objekte.some((o) => o.typ === 'kristall')
+            {levelMitKristall().map((l) => {
               const gefunden = Boolean(stand.level[String(l.nr)]?.kristall)
-              if (!hat) return null
               return (
                 <div key={l.nr} className={styles.kristallPlatz}>
                   <span className={gefunden ? styles.kristallDa : styles.kristallWeg}>◆</span>
@@ -508,9 +506,7 @@ export function TrapboundPage() {
             })}
           </div>
           <p className={styles.hinweis}>
-            {kristalle(stand)} von{' '}
-            {alleLevel().filter((l) => l.objekte.some((o) => o.typ === 'kristall')).length}{' '}
-            gefunden.
+            {kristalle(stand)} von {levelMitKristall().length} gefunden.
           </p>
         </div>
       </main>
