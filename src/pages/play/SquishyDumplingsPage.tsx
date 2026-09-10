@@ -80,6 +80,8 @@ export function SquishyDumplingsPage() {
   const [state, setState] = useState<DumplingState | null>(null)
   const [feld, setFeld] = useState<Zelle[]>([])
   const [treffer, setTreffer] = useState<Set<number>>(new Set())
+  /** Sonderknödel, die gerade zünden -- die blitzen kräftiger auf. */
+  const [zuendet, setZuendet] = useState<Set<number>>(new Set())
   const [gewaehlt, setGewaehlt] = useState<number | null>(null)
   const [wackelt, setWackelt] = useState<number[]>([])
   const [restzeit, setRestzeit] = useState(0)
@@ -137,6 +139,7 @@ export function SquishyDumplingsPage() {
     setState(match)
     setFeld(match.feld)
     setTreffer(new Set())
+    setZuendet(new Set())
     setGewaehlt(null)
     setWackelt([])
     setRestzeit(levelCfg.zeit)
@@ -248,11 +251,13 @@ export function SquishyDumplingsPage() {
         window.setTimeout(() => {
           if (lauf.current !== gen) return
           setTreffer(new Set([...schritt.treffer, ...schritt.befreit]))
+          setZuendet(new Set(schritt.gezuendet))
         }, verzoegerung)
         window.setTimeout(
           () => {
             if (lauf.current !== gen) return
             setTreffer(new Set())
+            setZuendet(new Set())
             setFeld(schritt.feld)
           },
           verzoegerung + SCHRITT_MS * 0.55,
@@ -302,33 +307,87 @@ export function SquishyDumplingsPage() {
     [state, gewaehlt, laeuft, spieleZug],
   )
 
-  /** Wischen: Wo der Finger loslässt, dorthin wird getauscht. */
-  const zeigerStart = useRef<{ i: number; x: number; y: number } | null>(null)
-  const onZeigerRunter = useCallback((i: number, x: number, y: number) => {
-    zeigerStart.current = { i, x, y }
-  }, [])
-  const onZeigerHoch = useCallback(
-    (x: number, y: number) => {
-      const start = zeigerStart.current
-      zeigerStart.current = null
-      if (!start || !state) return
-      const dx = x - start.x
-      const dy = y - start.y
-      if (Math.abs(dx) < 18 && Math.abs(dy) < 18) {
-        onZelle(start.i)
-        return
-      }
-      const r = Math.floor(start.i / state.cols)
-      const c = start.i % state.cols
+  /**
+   * Ziehen statt nur tippen.
+   *
+   * Der Knödel unter dem Finger geht mit, der Nachbar weicht ihm aus, und
+   * sobald man ihn über die halbe Feldbreite gezogen hat, ist der Zug getan
+   * -- ohne loszulassen. Antippen bleibt daneben erhalten: Wer lieber zwei
+   * Felder antippt, tut das weiter, und wer nur kurz hin und her wackelt,
+   * dem gilt das als Antippen.
+   */
+  const zeigerStart = useRef<{ i: number; x: number; y: number; feld: number } | null>(null)
+  const gezogenRef = useRef(false)
+  const [zug, setZug] = useState<{ i: number; ziel: number; dx: number; dy: number } | null>(null)
+
+  /** Das Nachbarfeld in der Richtung, in die gerade gezogen wird. */
+  const nachbarIn = useCallback(
+    (i: number, dx: number, dy: number): number | null => {
+      if (!state) return null
+      const r = Math.floor(i / state.cols)
+      const c = i % state.cols
       const waagerecht = Math.abs(dx) > Math.abs(dy)
       const nr = r + (waagerecht ? 0 : dy > 0 ? 1 : -1)
       const nc = c + (waagerecht ? (dx > 0 ? 1 : -1) : 0)
-      if (nr < 0 || nr >= state.rows || nc < 0 || nc >= state.cols) return
-      setGewaehlt(null)
-      spieleZug(start.i, nr * state.cols + nc)
+      if (nr < 0 || nr >= state.rows || nc < 0 || nc >= state.cols) return null
+      return nr * state.cols + nc
     },
-    [state, onZelle, spieleZug],
+    [state],
   )
+
+  const onZeigerRunter = useCallback(
+    (i: number, x: number, y: number, breite: number, zeiger: number, el: HTMLElement) => {
+      zeigerStart.current = { i, x, y, feld: breite }
+      gezogenRef.current = false
+      // Ohne Fangen springt das Ziehen ab, sobald der Finger das Feld
+      // verlässt -- und genau das tut er ja.
+      try {
+        el.setPointerCapture(zeiger)
+      } catch {
+        // Ältere Browser können das nicht; dann geht es eben ohne.
+      }
+    },
+    [],
+  )
+
+  const onZeigerBewegt = useCallback(
+    (x: number, y: number) => {
+      const start = zeigerStart.current
+      if (!start || !state || laeuft) return
+      const dx = x - start.x
+      const dy = y - start.y
+      if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return
+      const waagerecht = Math.abs(dx) > Math.abs(dy)
+      const ziel = nachbarIn(start.i, dx, dy)
+      if (ziel === null || !tauschErlaubt(state, start.i, ziel)) {
+        setZug(null)
+        return
+      }
+      gezogenRef.current = true
+      setGewaehlt(null)
+      // Nur so weit, wie der Nachbar entfernt ist -- weiter zu ziehen als
+      // bis auf sein Feld ergibt keinen Sinn.
+      const grenze = start.feld
+      const versatz = Math.max(-grenze, Math.min(grenze, waagerecht ? dx : dy))
+      setZug({ i: start.i, ziel, dx: waagerecht ? versatz : 0, dy: waagerecht ? 0 : versatz })
+
+      if (Math.abs(versatz) >= grenze * 0.5) {
+        zeigerStart.current = null
+        setZug(null)
+        spieleZug(start.i, ziel)
+      }
+    },
+    [state, laeuft, nachbarIn, spieleZug],
+  )
+
+  const onZeigerHoch = useCallback(() => {
+    const start = zeigerStart.current
+    zeigerStart.current = null
+    setZug(null)
+    if (!start || !state) return
+    // Losgelassen, bevor der Knödel drüben war: Das war ein Antippen.
+    if (!gezogenRef.current) onZelle(start.i)
+  }, [state, onZelle])
 
   if (loading) {
     return (
@@ -351,10 +410,14 @@ export function SquishyDumplingsPage() {
           </h1>
         </header>
         <p className={styles.hint}>
-          Schieb einen Knödel auf einen Nachbarplatz. Stehen dadurch drei gleiche in einer Reihe,
-          verschwinden sie und von oben fallen neue nach. Sammle das Ziel, bevor die Zeit um ist.
-          Später kommen Käfige dazu: Ein Knödel im Käfig lässt sich nicht schieben und zerreißt jede
-          Reihe – er springt auf, wenn direkt daneben etwas verschwindet.
+          Zieh einen Knödel auf seinen Nachbarn – oder tipp beide an. Stehen dadurch drei gleiche in
+          einer Reihe, verschwinden sie und von oben fallen neue nach. Sammle das Ziel, bevor die
+          Zeit um ist. Wer vier in eine Reihe bringt, bekommt einen diagonalen Knödel, wer fünf
+          schafft, einen goldenen in dieser Farbe. Beide bleiben liegen und zählen ganz normal mit:
+          Bringst du sie noch einmal in eine Reihe, fegt der Diagonale beide Schrägen leer und der
+          Goldene lässt alle Knödel seiner Farbe platzen. Später kommen Käfige dazu: Ein Knödel im
+          Käfig lässt sich nicht schieben und zerreißt jede Reihe – er springt auf, wenn direkt
+          daneben etwas verschwindet.
         </p>
 
         <section className={styles.sammlung}>
@@ -485,24 +548,52 @@ export function SquishyDumplingsPage() {
       >
         {feld.map((z, i) => {
           const hex = FARB_HEX[z.farbe] ?? '#888888'
+          // Beim Ziehen geht der Knödel unter dem Finger mit, sein Nachbar
+          // weicht in die Gegenrichtung aus -- so sieht man den Tausch schon,
+          // bevor er zählt.
+          const versatz =
+            zug?.i === i
+              ? { x: zug.dx, y: zug.dy }
+              : zug?.ziel === i
+                ? { x: -zug.dx, y: -zug.dy }
+                : null
           return (
             <button
               key={i}
               type="button"
               className={`${styles.zelle} ${gewaehlt === i ? styles.zelleGewaehlt : ''} ${
                 treffer.has(i) ? styles.zelleTrifft : ''
-              } ${wackelt.includes(i) ? styles.zelleWackelt : ''}`}
-              onPointerDown={(e) => onZeigerRunter(i, e.clientX, e.clientY)}
-              onPointerUp={(e) => onZeigerHoch(e.clientX, e.clientY)}
+              } ${wackelt.includes(i) ? styles.zelleWackelt : ''} ${
+                zuendet.has(i) ? styles.zelleZuendet : ''
+              } ${versatz ? styles.zelleZieht : ''}`}
+              style={
+                versatz ? { transform: `translate(${versatz.x}px, ${versatz.y}px)` } : undefined
+              }
+              onPointerDown={(e) =>
+                onZeigerRunter(
+                  i,
+                  e.clientX,
+                  e.clientY,
+                  e.currentTarget.getBoundingClientRect().width,
+                  e.pointerId,
+                  e.currentTarget,
+                )
+              }
+              onPointerMove={(e) => onZeigerBewegt(e.clientX, e.clientY)}
+              onPointerUp={onZeigerHoch}
+              onPointerCancel={onZeigerHoch}
               disabled={laeuft || state.phase !== 'play'}
-              aria-label={`${FARB_NAME[z.farbe] ?? ''}${z.kaefig ? ' im Käfig' : ''}`}
+              aria-label={`${FARB_NAME[z.farbe] ?? ''}${z.kaefig ? ' im Käfig' : ''}${
+                z.spezial === 'gold' ? ', golden' : z.spezial === 'diagonal' ? ', diagonal' : ''
+              }`}
             >
               {z.farbe > 0 && (
                 <Knoedel
                   hex={hex}
                   akzent={akzentVon(hex)}
-                  gesicht={z.kaefig ? 'schlaf' : 'froh'}
+                  gesicht={z.kaefig ? 'schlaf' : z.spezial === 'gold' ? 'stern' : 'froh'}
                   kaefig={z.kaefig}
+                  spezial={z.spezial}
                 />
               )}
             </button>
@@ -513,7 +604,7 @@ export function SquishyDumplingsPage() {
       <p className={styles.regelHinweis}>
         {state.besteKette > 1
           ? `Beste Kette: ${state.besteKette} Auflösungen hintereinander`
-          : 'Tipp: Zwei Knödel antippen oder wischen.'}
+          : 'Tipp: Knödel ziehen oder zwei antippen. Vier in einer Reihe geben einen diagonalen, fünf einen goldenen.'}
       </p>
 
       {phase === 'won' && (

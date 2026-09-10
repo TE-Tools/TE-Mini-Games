@@ -10,7 +10,16 @@
  * dasselbe Feld, und der Test kann ganze Partien durchspielen.
  */
 
-import { REIHE_AB, type DumplingLevel, type DumplingState, type Farbe, type Zelle } from './types'
+import {
+  DIAGONAL_AB,
+  GOLD_AB,
+  REIHE_AB,
+  type DumplingLevel,
+  type DumplingState,
+  type Farbe,
+  type Spezial,
+  type Zelle,
+} from './types'
 
 function mulberry(seed: number): { wert: number; naechste: number } {
   let t = (seed + 0x6d2b79f5) >>> 0
@@ -38,20 +47,30 @@ export function sindNachbarn(a: number, b: number, cols: number): boolean {
   return Math.abs(ra - rb) + Math.abs(ca - cb) === 1
 }
 
+/** Eine gefundene Reihe: welche Zellen und welche Farbe. */
+export interface Reihe {
+  zellen: number[]
+  farbe: Farbe
+}
+
 /**
- * Alle Zellen, die in einer Reihe aus drei oder mehr gleichen liegen.
+ * Alle Reihen aus drei oder mehr gleichen – waagerecht und senkrecht.
+ *
+ * Nicht nur die Zellen, sondern die Reihen selbst: Erst daran lässt sich
+ * ablesen, ob jemand vier oder fünf getroffen hat, und genau daraus
+ * entstehen die Sonderknödel.
  *
  * Käfige zählen nicht mit: Ein Knödel im Käfig zerreißt jede Linie. Nur
  * dadurch sind Käfige überhaupt ein Hindernis und nicht bloß Deko.
  */
-export function findeTreffer(feld: Zelle[], rows: number, cols: number): number[] {
-  const treffer = new Set<number>()
-
-  const pruefe = (lauf: number[]) => {
-    if (lauf.length >= REIHE_AB) for (const i of lauf) treffer.add(i)
-  }
+export function findeReihen(feld: Zelle[], rows: number, cols: number): Reihe[] {
+  const reihen: Reihe[] = []
 
   const zaehlbar = (z: Zelle | undefined) => z != null && z.farbe > 0 && !z.kaefig
+
+  const pruefe = (lauf: number[], farbe: Farbe) => {
+    if (lauf.length >= REIHE_AB) reihen.push({ zellen: [...lauf], farbe })
+  }
 
   for (let r = 0; r < rows; r++) {
     let lauf: number[] = []
@@ -63,11 +82,11 @@ export function findeTreffer(feld: Zelle[], rows: number, cols: number): number[
         lauf.push(i)
         continue
       }
-      pruefe(lauf)
+      pruefe(lauf, farbe)
       lauf = zaehlbar(z) ? [i] : []
       farbe = zaehlbar(z) ? z!.farbe : 0
     }
-    pruefe(lauf)
+    pruefe(lauf, farbe)
   }
 
   for (let c = 0; c < cols; c++) {
@@ -80,14 +99,66 @@ export function findeTreffer(feld: Zelle[], rows: number, cols: number): number[
         lauf.push(i)
         continue
       }
-      pruefe(lauf)
+      pruefe(lauf, farbe)
       lauf = zaehlbar(z) ? [i] : []
       farbe = zaehlbar(z) ? z!.farbe : 0
     }
-    pruefe(lauf)
+    pruefe(lauf, farbe)
   }
 
+  return reihen
+}
+
+/** Alle Zellen, die in irgendeiner Reihe liegen. */
+export function findeTreffer(feld: Zelle[], rows: number, cols: number): number[] {
+  const treffer = new Set<number>()
+  for (const reihe of findeReihen(feld, rows, cols)) for (const i of reihe.zellen) treffer.add(i)
   return [...treffer].sort((a, b) => a - b)
+}
+
+/**
+ * Was ein Sonderknödel mitreißt, wenn er zündet.
+ *
+ * Der Goldene nimmt alles seiner Farbe mit, der Diagonale beide Schrägen
+ * durch sein Feld. Käfige bleiben in beiden Fällen stehen -- die gehen nur
+ * auf, wenn direkt daneben etwas verschwindet, und das tun sie hier auch.
+ */
+export function wirkung(feld: Zelle[], rows: number, cols: number, i: number): number[] {
+  const z = feld[i]
+  if (!z || z.spezial === 'keine') return []
+
+  if (z.spezial === 'gold') {
+    const out: number[] = []
+    for (let j = 0; j < feld.length; j++) {
+      const k = feld[j]!
+      if (!k.kaefig && k.farbe === z.farbe) out.push(j)
+    }
+    return out
+  }
+
+  const r0 = Math.floor(i / cols)
+  const c0 = i % cols
+  const out: number[] = []
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (Math.abs(r - r0) !== Math.abs(c - c0)) continue
+      const j = idx(r, c, cols)
+      if (!feld[j]!.kaefig) out.push(j)
+    }
+  }
+  return out
+}
+
+/**
+ * Wo der Sonderknödel aus einer Reihe liegen bleibt.
+ *
+ * Am liebsten dort, wo der Finger war: Wer einen Knödel an seinen Platz
+ * schiebt, erwartet die Belohnung unter dem Finger und nicht am anderen
+ * Ende der Reihe. Fällt die Reihe von allein zusammen, ist es die Mitte.
+ */
+function platzFuer(zellen: number[], bevorzugt: number[]): number {
+  for (const i of bevorzugt) if (zellen.includes(i)) return i
+  return zellen[Math.floor(zellen.length / 2)]!
 }
 
 /** Welche Käfige eine Reihe aufspringen lässt: die direkt daneben. */
@@ -149,13 +220,13 @@ function rutschen(
       let farbe = gezogen.zahl + 1
       for (let k = 0; k < farben; k++) {
         const kandidat = ((gezogen.zahl + k) % farben) + 1
-        neu[i] = { farbe: kandidat, kaefig: false }
+        neu[i] = { farbe: kandidat, kaefig: false, spezial: 'keine' }
         if (findeTreffer(neu, rows, cols).length === 0) {
           farbe = kandidat
           break
         }
       }
-      neu[i] = { farbe, kaefig: false }
+      neu[i] = { farbe, kaefig: false, spezial: 'keine' }
     }
   }
   return { feld: neu, zufall: z }
@@ -167,6 +238,10 @@ export interface Schritt {
   treffer: number[]
   /** Käfige, die dabei aufspringen. */
   befreit: number[]
+  /** Sonderknödel, die in diesem Schritt gezündet haben. */
+  gezuendet: number[]
+  /** Sonderknödel, die neu entstanden sind (nach dem Nachrutschen). */
+  neue: { platz: number; art: Spezial }[]
   /** Das Feld nach dem Nachrutschen. */
   feld: Zelle[]
   /** Die wievielte Auflösung in Folge (1 = der Zug selbst). */
@@ -185,6 +260,8 @@ export function loeseAuf(
   cols: number,
   farben: number,
   zufall: number,
+  /** Die eben getauschten Felder -- dort entsteht ein Sonderknödel am liebsten. */
+  bevorzugt: number[] = [],
 ): { feld: Zelle[]; zufall: number; schritte: Schritt[]; gesammelt: number; befreit: number } {
   let aktuell = feld.map((z) => ({ ...z }))
   let z = zufall
@@ -193,17 +270,63 @@ export function loeseAuf(
   let befreitGesamt = 0
 
   for (let kette = 1; kette <= 60; kette++) {
-    const treffer = findeTreffer(aktuell, rows, cols)
-    if (treffer.length === 0) break
+    const reihen = findeReihen(aktuell, rows, cols)
+    if (reihen.length === 0) break
+
+    const weg = new Set<number>()
+    for (const reihe of reihen) for (const i of reihe.zellen) weg.add(i)
+
+    // Sonderknödel, die in einer Reihe liegen, zünden -- und was ihre
+    // Wirkung mitreißt, kann selbst wieder zünden. Jeder aber nur einmal,
+    // sonst dreht sich eine Kette aus Goldenen im Kreis.
+    const gezuendet: number[] = []
+    const offen = [...weg].filter((i) => aktuell[i]!.spezial !== 'keine')
+    while (offen.length > 0) {
+      const i = offen.pop()!
+      if (gezuendet.includes(i)) continue
+      gezuendet.push(i)
+      for (const j of wirkung(aktuell, rows, cols, i)) {
+        if (weg.has(j)) continue
+        weg.add(j)
+        if (aktuell[j]!.spezial !== 'keine') offen.push(j)
+      }
+    }
+
+    // Was aus den langen Reihen übrig bleibt. Der Platz wird erst nach dem
+    // Leeren wieder besetzt, damit ihn keine Wirkung nachträglich wegräumt.
+    const neue = new Map<number, { art: Spezial; farbe: Farbe }>()
+    for (const reihe of reihen) {
+      if (reihe.zellen.length < DIAGONAL_AB) continue
+      const art: Spezial = reihe.zellen.length >= GOLD_AB ? 'gold' : 'diagonal'
+      const platz = platzFuer(reihe.zellen, bevorzugt)
+      // Zwei lange Reihen über dasselbe Feld (ein Kreuz): Gold gewinnt.
+      if (neue.get(platz)?.art === 'gold') continue
+      neue.set(platz, { art, farbe: reihe.farbe })
+    }
+
+    const treffer = [...weg].sort((a, b) => a - b)
     const befreit = kaefigeDaneben(aktuell, rows, cols, treffer)
-    for (const i of treffer) aktuell[i] = { farbe: 0, kaefig: false }
+    for (const i of treffer) aktuell[i] = { farbe: 0, kaefig: false, spezial: 'keine' }
     for (const i of befreit) aktuell[i] = { ...aktuell[i]!, kaefig: false }
-    gesammelt += treffer.length
+    for (const [platz, n] of neue) {
+      aktuell[platz] = { farbe: n.farbe, kaefig: false, spezial: n.art }
+    }
+
+    // Der neue Sonderknödel bleibt liegen, also ist er nicht eingesammelt.
+    gesammelt += treffer.length - neue.size
     befreitGesamt += befreit.length
     const nach = rutschen(aktuell, rows, cols, farben, z)
     aktuell = nach.feld
     z = nach.zufall
-    schritte.push({ treffer, befreit, feld: aktuell.map((x) => ({ ...x })), kette })
+    schritte.push({
+      treffer,
+      befreit,
+      gezuendet: gezuendet.sort((a, b) => a - b),
+      neue: [...neue].map(([platz, n]) => ({ platz, art: n.art })),
+      feld: aktuell.map((x) => ({ ...x })),
+      kette,
+    })
+    bevorzugt = []
   }
 
   return { feld: aktuell, zufall: z, schritte, gesammelt, befreit: befreitGesamt }
@@ -269,9 +392,11 @@ export function mische(state: DumplingState): DumplingState {
       z = gezogen.zufall
       const a = frei[k]!
       const b = frei[gezogen.zahl]!
-      const merk = feld[a]!.farbe
-      feld[a] = { ...feld[a]!, farbe: feld[b]!.farbe }
-      feld[b] = { ...feld[b]!, farbe: merk }
+      // Farbe und Sonderart wandern zusammen -- ein goldener Roter darf
+      // beim Mischen nicht zu einem goldenen Blauen werden.
+      const merk = { farbe: feld[a]!.farbe, spezial: feld[a]!.spezial }
+      feld[a] = { ...feld[a]!, farbe: feld[b]!.farbe, spezial: feld[b]!.spezial }
+      feld[b] = { ...feld[b]!, ...merk }
     }
     const probe: DumplingState = { ...state, feld, zufall: z }
     if (findeTreffer(feld, state.rows, state.cols).length === 0 && hatZug(probe)) {
@@ -306,7 +431,7 @@ export function tausche(state: DumplingState, a: number, b: number): ZugErgebnis
     return { state, gueltig: false, schritte: [], getauscht: feld, gemischt: false }
   }
 
-  const auf = loeseAuf(feld, state.rows, state.cols, state.farben, state.zufall)
+  const auf = loeseAuf(feld, state.rows, state.cols, state.farben, state.zufall, [a, b])
   let neu: DumplingState = {
     ...state,
     feld: auf.feld,
