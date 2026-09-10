@@ -8,8 +8,8 @@ import {
   alleLevel,
   abschnittVon,
   weltVon,
-  WELTEN,
   LEVEL_ANZAHL,
+  TRAP_KARTE,
   leseStand,
   levelStand,
   merkeTod,
@@ -28,8 +28,9 @@ import { spiele, setzeTon, setzeLautstaerke, lautstaerke, tonAn } from '@/servic
 import { saveGameResult, addXp, recordLevelComplete, getOrCreateGameProgress } from '@/offline'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
+import { LevelMap } from '@/components/level-map/LevelMap'
+import { getOrCreateGuestProfile } from '@/offline'
 import { zeichne } from './TrapboundBild'
-import { TrapboundKarte } from './TrapboundKarte'
 import styles from './TrapboundPage.module.css'
 
 type Ansicht = 'menue' | 'karte' | 'spiel' | 'einstellungen' | 'sammlung' | 'ueber'
@@ -57,6 +58,7 @@ export function TrapboundPage() {
   const [pause, setPause] = useState(false)
   const [ende, setEnde] = useState<Ende | null>(null)
   const [tipp, setTipp] = useState('')
+  const [avatarId, setAvatarId] = useState<string | null>(null)
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const buehneRef = useRef<HTMLDivElement>(null)
@@ -82,10 +84,14 @@ export function TrapboundPage() {
     let weg = false
     void (async () => {
       try {
-        const p = await getOrCreateGameProgress('trapbound')
+        const [p, profil] = await Promise.all([
+          getOrCreateGameProgress('trapbound'),
+          getOrCreateGuestProfile(),
+        ])
         if (weg) return
         const s = leseStand()
         setLevelNr(Math.max(1, Math.min(LEVEL_ANZAHL, p.currentLevel || s.freigeschaltet)))
+        setAvatarId(profil.avatar)
       } catch {
         // Ohne Datenbank ist der lokale Stand maßgeblich.
       }
@@ -372,12 +378,14 @@ export function TrapboundPage() {
             {geschaffte(stand)}/{LEVEL_ANZAHL}
           </span>
         </header>
-        <TrapboundKarte
-          welten={WELTEN}
-          freigeschaltet={stand.freigeschaltet}
-          aktuell={levelNr}
-          stand={stand.level}
-          onWaehle={starteLevel}
+        <LevelMap
+          currentLevel={Math.min(levelNr, stand.freigeschaltet)}
+          highestLevel={stand.freigeschaltet}
+          avatarId={avatarId}
+          maxLevel={LEVEL_ANZAHL}
+          aufbau={TRAP_KARTE}
+          onSelectLevel={starteLevel}
+          gameLabel="Trapbound"
         />
       </main>
     )

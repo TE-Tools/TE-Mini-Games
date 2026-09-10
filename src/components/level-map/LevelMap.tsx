@@ -3,11 +3,12 @@ import { getAvatar } from '@/profile/avatars'
 import { isMilestoneLevel, milestoneKind } from '@/games/milestones'
 import {
   MAX_LEVEL,
-  LEVELS_PER_ZONE,
-  levelInZone,
-  segmentByIndex,
-  segmentIndexForLevel,
-  zoneForLevel,
+  ZEITREISE,
+  levelInZoneVon,
+  segmentVon,
+  segmentIndexVon,
+  zoneFuer,
+  type Kartenaufbau,
   type LevelZone,
 } from '@/progression/zones'
 import styles from './LevelMap.module.css'
@@ -24,6 +25,11 @@ export interface LevelMapProps {
   maxLevel?: number
   onSelectLevel: (level: number) => void
   gameLabel: string
+  /**
+   * Ein eigener Kartenaufbau: andere Zonen, andere Zonengröße. Ohne Angabe
+   * die Zeitreise (fünf Zonen zu hundert Leveln), so wie bisher.
+   */
+  aufbau?: Kartenaufbau
   /**
    * Eine eigene Spielfigur statt des Emoji-Avatars. Squishy Dumplings setzt
    * hier den gesammelten Knödel ein, den man als Avatar ausgewählt hat.
@@ -130,6 +136,7 @@ export function LevelMap({
   avatarId,
   avatarFigur,
   maxLevel = MAX_LEVEL,
+  aufbau = ZEITREISE,
   onSelectLevel,
   gameLabel,
   mitspieler = [],
@@ -147,7 +154,7 @@ export function LevelMap({
   }
   for (const liste of stehenBei.values()) liste.sort((a, b) => a.localeCompare(b, 'de'))
   const unlocked = Math.max(1, Math.min(maxLevel, Math.max(highestLevel, currentLevel)))
-  const lastSegment = segmentIndexForLevel(maxLevel)
+  const lastSegment = segmentIndexVon(aufbau, maxLevel)
 
   // Which piece of the map is on screen. The player's piece is the default;
   // walking through a gate overrides it until the player level changes again.
@@ -159,8 +166,8 @@ export function LevelMap({
   const segmentIndex =
     view && view.base === currentLevel
       ? view.index
-      : Math.min(lastSegment, segmentIndexForLevel(currentLevel))
-  const segment = segmentByIndex(segmentIndex)
+      : Math.min(lastSegment, segmentIndexVon(aufbau, currentLevel))
+  const segment = segmentVon(aufbau, segmentIndex)
   const to = Math.min(segment.to, maxLevel)
   const levels = Array.from({ length: to - segment.from + 1 }, (_, i) => segment.from + i)
 
@@ -180,8 +187,8 @@ export function LevelMap({
   ]
   const road = smoothPath(roadPoints)
 
-  const zone = zoneForLevel(currentLevel)
-  const positionInZone = levelInZone(currentLevel)
+  const zone = zoneFuer(aufbau, currentLevel)
+  const positionInZone = levelInZoneVon(aufbau, currentLevel)
 
   const landRef = useRef<HTMLDivElement>(null)
   const currentRef = useRef<HTMLDivElement>(null)
@@ -220,10 +227,12 @@ export function LevelMap({
         {unlocked > currentLevel ? ` · frei bis ${unlocked}` : ''}
       </p>
       <p className={styles.zoneLine} style={zoneStyle(zone)}>
-        <span className={styles.zoneBadge}>Zone {zone.index}</span>
+        <span className={styles.zoneBadge}>
+          {aufbau === ZEITREISE ? `Zone ${zone.index}` : `Welt ${zone.index}`}
+        </span>
         <strong>{zone.name}</strong>
         <span className={styles.zoneProgress}>
-          {positionInZone}/{LEVELS_PER_ZONE}
+          {positionInZone}/{Math.min(aufbau.levelProZone, maxLevel)}
         </span>
       </p>
 
@@ -303,7 +312,7 @@ export function LevelMap({
             const isZoneGateLevel = milestoneKind(L) === 'gate'
             const isMilestone = isMilestoneLevel(L)
             const isDone = L < unlocked
-            const levelZone = zoneForLevel(L)
+            const levelZone = zoneFuer(aufbau, L)
             // Scenery sits on the far side of the road so it never covers a slab.
             const side = point.x > 50 ? 'left' : 'right'
             const decor =

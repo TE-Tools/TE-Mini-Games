@@ -1,50 +1,73 @@
 /**
  * Das Levelverzeichnis.
  *
- * Eine neue Welt ist eine weitere Datei mit Leveldaten plus ein Eintrag in
- * WELTEN. Die Engine, die Karte und die Anzeige lesen ausschließlich hier --
- * niemand von ihnen kennt ein einzelnes Level.
+ * Die ersten zehn Level sind von Hand gebaut -- sie führen die Regeln ein
+ * und sind der Maßstab für alles danach. Ab Level 11 setzt der Generator aus
+ * Bausteinen zusammen; jeder Baustein bringt seine Lösung mit, damit der
+ * Test jedes Level nachspielen kann.
+ *
+ * Die Welten und ihr Aussehen auf der Karte stehen in ../welten.ts. Eine
+ * neue Welt ist dort ein Eintrag plus ein paar Bausteine mehr -- die Engine
+ * und die Anzeige müssen dafür nicht angefasst werden.
  */
 
 import type { LevelDaten, Welt } from '../types'
+import { TRAP_ZONEN, TRAP_MAX_LEVEL, LEVEL_PRO_WELT, weltNummer } from '../welten'
 import { WELT1 } from './welt1'
+import { erzeugeLevel } from './erzeugt'
 
-export const WELTEN: Welt[] = [
-  {
-    nr: 1,
-    name: 'Die Höhlen',
-    untertitel: 'Wo der Boden nicht hält, was er verspricht',
-    palette: {
-      hintergrund: '#141024',
-      ferne: '#221a3a',
-      boden: '#4b3f6b',
-      bodenKante: '#8f7cc4',
-      gefahr: '#ff4d6d',
-      akzent: '#7ce7c8',
-    },
-    abschnitte: [
-      { nr: 1, name: 'Der Eingang', level: [1, 2, 3, 4, 5] },
-      { nr: 2, name: 'Tiefer hinein', level: [6, 7, 8, 9, 10] },
-    ],
+/** Die Welten in der Form, die das Spiel selbst benutzt. */
+export const WELTEN: Welt[] = TRAP_ZONEN.map((z) => ({
+  nr: z.index,
+  name: z.name,
+  untertitel: z.description,
+  palette: {
+    hintergrund: z.palette.sky,
+    ferne: z.palette.blob,
+    boden: z.palette.ground,
+    bodenKante: z.palette.groundLight,
+    gefahr: '#ff4d6d',
+    akzent: z.palette.accent,
   },
-]
+  abschnitte: [
+    {
+      nr: 1,
+      name: 'Vorne',
+      level: Array.from({ length: 10 }, (_, i) => (z.index - 1) * LEVEL_PRO_WELT + 1 + i),
+    },
+    {
+      nr: 2,
+      name: 'Tiefer',
+      level: Array.from({ length: 10 }, (_, i) => (z.index - 1) * LEVEL_PRO_WELT + 11 + i),
+    },
+  ],
+}))
 
-const ALLE: LevelDaten[] = [...WELT1]
+export const LEVEL_ANZAHL = TRAP_MAX_LEVEL
 
-export const LEVEL_ANZAHL = ALLE.length
+/** Die handgebauten Level, nach Nummer. */
+const HAND = new Map(WELT1.map((l) => [l.nr, l]))
+
+/** Erzeugte Level werden gemerkt -- ein Level baut sich nur einmal auf. */
+const merker = new Map<number, LevelDaten>()
 
 export function levelDaten(nr: number): LevelDaten {
-  const gefunden = ALLE.find((l) => l.nr === nr)
-  return gefunden ?? ALLE[0]!
+  const n = Math.max(1, Math.min(LEVEL_ANZAHL, Math.floor(nr) || 1))
+  const hand = HAND.get(n)
+  if (hand) return hand
+  const da = merker.get(n)
+  if (da) return da
+  const neu = erzeugeLevel(n)
+  merker.set(n, neu)
+  return neu
 }
 
 export function alleLevel(): LevelDaten[] {
-  return ALLE
+  return Array.from({ length: LEVEL_ANZAHL }, (_, i) => levelDaten(i + 1))
 }
 
 export function weltVon(nr: number): Welt {
-  const level = levelDaten(nr)
-  return WELTEN.find((w) => w.nr === level.welt) ?? WELTEN[0]!
+  return WELTEN[weltNummer(nr) - 1] ?? WELTEN[0]!
 }
 
 export function abschnittVon(nr: number): { welt: Welt; abschnitt: number; name: string } {
@@ -60,3 +83,4 @@ export function istAbschnittsEnde(nr: number): boolean {
 }
 
 export { WELT1 }
+export { erzeugeLevel } from './erzeugt'

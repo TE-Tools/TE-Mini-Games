@@ -284,16 +284,10 @@ function einSchritt(s: Spielstand, eingabe: Eingabe, dt: number): void {
         loese(s, o.loest)
       }
     }
-    if (o.typ === 'knopf' && !st.ausgeloest) {
-      st.ausgeloest = true
-      st.offen = true
-      s.ereignisse.push('knopf')
-      loese(s, o.loest)
-    }
   }
 
   /*
-   * Federn wirken über die Fußsohle, nicht über den Bodenindex.
+   * Federn und Knöpfe wirken über die Fußsohle, nicht über den Bodenindex.
    *
    * Eine Feder liegt bündig im Boden -- sonst stünde sie als zwölf Pixel
    * hohe Wand im Weg, und man liefe dagegen statt darauf. Welcher der beiden
@@ -304,12 +298,20 @@ function einSchritt(s: Spielstand, eingabe: Eingabe, dt: number): void {
     for (let i = 0; i < s.level.objekte.length; i++) {
       const o = s.level.objekte[i]!
       const st = s.staende[i]!
-      if (o.typ !== 'feder' || !st.aktiv || !st.sichtbar) continue
+      if ((o.typ !== 'feder' && o.typ !== 'knopf') || !st.aktiv || !st.sichtbar) continue
       const f = feld(o, st)
       if (spieler.x >= f.x + f.b || spieler.x + spieler.b <= f.x) continue
       const sohle = s.schwerkraft > 0 ? spieler.y + spieler.h : spieler.y
       const kante = s.schwerkraft > 0 ? f.y : f.y + f.h
       if (Math.abs(sohle - kante) > 1.5) continue
+      if (o.typ === 'knopf') {
+        if (st.ausgeloest) continue
+        st.ausgeloest = true
+        st.offen = true
+        s.ereignisse.push('knopf')
+        loese(s, o.loest)
+        continue
+      }
       s.koerper.vy = -(o.kraft ?? 640) * s.schwerkraft
       s.koerper.amBoden = false
       s.koerper.imSprung = false
