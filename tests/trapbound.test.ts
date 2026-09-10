@@ -15,6 +15,8 @@ import { bewege, neuerKoerper, PHYSIK, type Feste } from '@/games/trapbound/phys
 import { laufe, starte } from '@/games/trapbound/engine'
 import { spieleLoesung } from '@/games/trapbound/loesung'
 import { alleLevel, levelDaten, LEVEL_ANZAHL, WELTEN, abschnittVon } from '@/games/trapbound/levels'
+import { erzeugeLevel } from '@/games/trapbound/levels/erzeugt'
+import { LEVEL_PRO_WELT } from '@/games/trapbound/welten'
 import {
   leseStand,
   levelStand,
@@ -425,12 +427,30 @@ describe('Die Fallen', () => {
 describe('Die Level', () => {
   const alle = alleLevel()
 
-  it('bringt zehn Level in einer Welt mit zwei Abschnitten', () => {
-    expect(alle).toHaveLength(10)
-    expect(LEVEL_ANZAHL).toBe(10)
-    expect(WELTEN).toHaveLength(1)
-    expect(WELTEN[0]!.abschnitte).toHaveLength(2)
-    expect(WELTEN[0]!.abschnitte.flatMap((a) => a.level)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+  it('bringt hundert Level in fünf Welten zu je zwanzig', () => {
+    expect(alle).toHaveLength(100)
+    expect(LEVEL_ANZAHL).toBe(100)
+    expect(WELTEN).toHaveLength(5)
+    for (const w of WELTEN) {
+      expect(w.abschnitte).toHaveLength(2)
+      expect(w.abschnitte.flatMap((a) => a.level)).toHaveLength(20)
+    }
+    // Jede Levelnummer kommt genau einmal auf der Karte vor.
+    const aufDerKarte = WELTEN.flatMap((w) => w.abschnitte.flatMap((a) => a.level))
+    expect(aufDerKarte).toHaveLength(100)
+    expect(new Set(aufDerKarte).size).toBe(100)
+  })
+
+  it('führt die Welten der Reihe nach ein', () => {
+    // Welt 1 kennt keine Förderbänder, Welt 2 keine Teleporter, und die
+    // vertauschte Steuerung gibt es erst in Welt 4.
+    const typenBis = (welt: number) =>
+      new Set(alle.filter((l) => l.welt <= welt).flatMap((l) => l.objekte.map((o) => o.typ)))
+    expect(typenBis(1).has('teleport')).toBe(true) // Level 8 hat einen
+    const umkehrAb = alle.find((l) => l.idee.includes('umkehr'))?.welt ?? 0
+    expect(umkehrAb).toBeGreaterThanOrEqual(4)
+    const bandAb = alle.find((l) => l.idee.includes('band'))?.welt ?? 0
+    expect(bandAb).toBeGreaterThanOrEqual(2)
   })
 
   it('gibt jedem Level Nummer, Namen, Idee und einen Ausgang', () => {
@@ -489,6 +509,58 @@ describe('Die Level', () => {
     expect(new Set(spaet).size).toBeGreaterThanOrEqual(7)
   })
 
+  /**
+   * Am 10.09.2026 sahen die erzeugten Level fast alle gleich aus: Der Platz
+   * wurde gleichmäßig auf drei Abschnitte verteilt, jeder bekam 114 Punkte,
+   * und damit fielen dreizehn der sechzehn Bausteine an ihrem Mindestmaß
+   * durch. Level 47 im Turm bestand aus Weg, Stacheln, Weg. Der Test unten
+   * hätte das gemerkt, die Lösbarkeitsprüfung nicht -- die war zufrieden.
+   */
+  it('baut die erzeugten Level aus dem ganzen Vorrat ihrer Welt', () => {
+    const teile = (nr: number) =>
+      erzeugeLevel(nr)
+        .idee.replace('Aus Bausteinen: ', '')
+        .replace(/\.$/, '')
+        .split(' + ')
+        .map((t) => t.trim())
+
+    // Über alle erzeugten Level: reichlich verschiedene Bausteine.
+    const alleTeile = new Set<string>()
+    for (let nr = 11; nr <= LEVEL_ANZAHL; nr++) for (const t of teile(nr)) alleTeile.add(t)
+    expect(alleTeile.size).toBeGreaterThanOrEqual(14)
+
+    // Und auch innerhalb einer einzelnen Welt darf es nicht eintönig werden.
+    for (let welt = 2; welt <= 5; welt++) {
+      const inWelt = new Set<string>()
+      const von = (welt - 1) * LEVEL_PRO_WELT + 1
+      for (let nr = Math.max(11, von); nr <= welt * LEVEL_PRO_WELT; nr++) {
+        for (const t of teile(nr)) inWelt.add(t)
+      }
+      expect(`Welt ${welt}: ${inWelt.size}`).toBe(
+        inWelt.size >= 8 ? `Welt ${welt}: ${inWelt.size}` : `Welt ${welt}: mindestens 8`,
+      )
+    }
+  })
+
+  it('gibt jedem erzeugten Level etwas, das wirklich aufhält', () => {
+    // Decke, Knopftür, unsichtbarer Steg, Band, Feder und Teleport lassen
+    // sich mit gehaltener Taste durchlaufen. Ein Level, das nur daraus
+    // besteht, wäre keins -- deshalb ist der erste Baustein immer eine
+    // Falle, an der Draufloslaufen endet.
+    const harmlos = new Set(['decke', 'knopftuer', 'unsichtbar', 'band', 'feder', 'teleport'])
+    const ohne: number[] = []
+    for (let nr = 11; nr <= LEVEL_ANZAHL; nr++) {
+      const teile = erzeugeLevel(nr)
+        .idee.replace('Aus Bausteinen: ', '')
+        .replace(/\.$/, '')
+        .split(' + ')
+        .map((t) => t.trim())
+      if (!teile.some((t) => !harmlos.has(t) && t !== 'weg' && !t.includes('Ausgang')))
+        ohne.push(nr)
+    }
+    expect(ohne).toEqual([])
+  })
+
   it('versteckt mindestens einen Kristall, aber nie auf dem Weg zum Ausgang', () => {
     const mitKristall = alle.filter((l) => l.objekte.some((o) => o.typ === 'kristall'))
     expect(mitKristall.length).toBeGreaterThanOrEqual(1)
@@ -530,6 +602,20 @@ describe('Zu schaffen', () => {
     const spaeter = [4, 5, 6, 7, 8, 9, 10].map((n) => stumpf(levelDaten(n)))
     expect(spaeter.every((p) => p !== 'geschafft')).toBe(true)
   }, 60_000)
+
+  it('lässt auch in den erzeugten Welten kaum jemanden blind durchlaufen', () => {
+    // Dieselbe Messung über alle hundert Level: Wer nur die Taste nach
+    // rechts hält, darf höchstens in den ganz frühen Leveln ankommen.
+    let durch = 0
+    for (let nr = 11; nr <= LEVEL_ANZAHL; nr++) {
+      let s = starte(levelDaten(nr))
+      for (let i = 0; i < 60 * 14 && s.phase === 'laeuft'; i++) {
+        s = laufe(s, { links: false, rechts: true, sprung: false }, TAKT)
+      }
+      if (s.phase === 'geschafft') durch++
+    }
+    expect(durch / (LEVEL_ANZAHL - 10)).toBeLessThan(0.1)
+  }, 120_000)
 })
 
 describe('Der Fortschritt', () => {

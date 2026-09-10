@@ -65,14 +65,20 @@ Progressive Web App with short skill, memory, reaction and logic games.
   step, the ceiling drops when you pass a certain point, the exit walks away
   as you approach it, and halfway through level 9 gravity flips and the door
   is on the ceiling. Every death is reproducible and the level restarts in
-  half a second, so the answer is always “again”. Ten levels in world 1 (The
-  Caves), split into two sections on a hand-drawn cave map with a gate between
-  them; a hidden crystal sits where nobody goes on purpose. Own engine: fixed
-  240 Hz timestep, AABB collisions resolved axis by axis, coyote time and jump
-  buffering so a missed jump is never the controls' fault. Levels are **data,
-  not code** (`src/games/trapbound/levels/`), each with a recorded solution
-  that `tests/trapbound.test.ts` plays back – change a level without fixing
-  its solution and the test fails. Traps compose through triggers and actions
+  half a second, so the answer is always “again”. **100 levels in five worlds**
+  – The Caves, The Factory, The Tower, The Twisted World, The Chaos – on the
+  same level map the other games use, twenty levels per world with a gate at
+  every world border; a hidden crystal sits where nobody goes on purpose. Own
+  engine: fixed 240 Hz timestep, AABB collisions resolved axis by axis, coyote
+  time and jump buffering so a missed jump is never the controls' fault.
+  Levels are **data, not code** (`src/games/trapbound/levels/`), each with a
+  recorded solution that `tests/trapbound.test.ts` plays back – change a level
+  without fixing its solution and the test fails. Levels 1–10 are hand-built;
+  11–100 are assembled from sixteen segment builders (`bausteine.ts`) that
+  emit geometry **and** the solution for that piece, seeded by the level
+  number – so level 47 looks the same on every device, every level is proven
+  solvable by playback, none of them can be beaten by just holding “right”,
+  and each world only draws on the traps it has introduced. Traps compose through triggers and actions
   (`zone → platform vanishes, spikes appear, gravity flips two seconds later`),
   so new worlds need no engine changes. Progress, deaths, best times, crystals
   and settings live in localStorage

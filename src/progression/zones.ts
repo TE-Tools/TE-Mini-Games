@@ -235,3 +235,66 @@ export function segmentByIndex(index: number): MapSegment {
 export function segmentForLevel(level: number): MapSegment {
   return segmentByIndex(segmentIndexForLevel(level))
 }
+
+/* ------------------------------------------------------------------ *
+ * Eigene Karten
+ *
+ * Die Zeitreise oben ist der Normalfall: fünf Zonen zu hundert Leveln,
+ * gelaufen in Stücken zu zwanzig. Ein Spiel darf aber einen eigenen Aufbau
+ * mitbringen -- Trapbound zum Beispiel hat fünf Welten zu zwanzig Leveln,
+ * und auf der Karte sollen Höhlen, Fabrik und Turm stehen und nicht Urwald
+ * und Vulkanland.
+ *
+ * Damit dabei nichts an den bestehenden Spielen kippt, bleiben alle
+ * Funktionen oben unverändert; hier stehen dieselben Rechnungen noch einmal,
+ * nur mit dem Aufbau als Angabe. `ZEITREISE` ist genau der alte Fall.
+ * ------------------------------------------------------------------ */
+
+export interface Kartenaufbau {
+  zonen: readonly LevelZone[]
+  levelProZone: number
+  segmentGroesse: number
+  maxLevel: number
+}
+
+export const ZEITREISE: Kartenaufbau = {
+  zonen: ZONES,
+  levelProZone: LEVELS_PER_ZONE,
+  segmentGroesse: SEGMENT_SIZE,
+  maxLevel: MAX_LEVEL,
+}
+
+function grenze(aufbau: Kartenaufbau, level: number): number {
+  if (!Number.isFinite(level)) return 1
+  return Math.max(1, Math.min(aufbau.maxLevel, Math.floor(level)))
+}
+
+export function zoneFuer(aufbau: Kartenaufbau, level: number): LevelZone {
+  const L = grenze(aufbau, level)
+  const index = Math.min(aufbau.zonen.length, Math.ceil(L / aufbau.levelProZone))
+  return aufbau.zonen[index - 1]!
+}
+
+export function levelInZoneVon(aufbau: Kartenaufbau, level: number): number {
+  return ((grenze(aufbau, level) - 1) % aufbau.levelProZone) + 1
+}
+
+export function segmentIndexVon(aufbau: Kartenaufbau, level: number): number {
+  return Math.ceil(grenze(aufbau, level) / aufbau.segmentGroesse)
+}
+
+export function segmentVon(aufbau: Kartenaufbau, index: number): MapSegment {
+  const anzahl = Math.ceil(aufbau.maxLevel / aufbau.segmentGroesse)
+  const i = Math.max(1, Math.min(anzahl, Math.floor(index)))
+  const to = i * aufbau.segmentGroesse
+  const zone = zoneFuer(aufbau, to)
+  const zoneBorder = to % aufbau.levelProZone === 0
+  return {
+    index: i,
+    from: to - aufbau.segmentGroesse + 1,
+    to,
+    zone,
+    gateName: zoneBorder ? zone.gateName : `Tor zu Abschnitt ${i + 1}`,
+    isZoneGate: zoneBorder,
+  }
+}

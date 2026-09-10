@@ -6,12 +6,21 @@ export { feld, istFest, istGefahr, type ObjektStand } from './fallen'
 export {
   WELTEN,
   LEVEL_ANZAHL,
+  erzeugeLevel,
   levelDaten,
   alleLevel,
   weltVon,
   abschnittVon,
   istAbschnittsEnde,
 } from './levels'
+export {
+  TRAP_KARTE,
+  TRAP_ZONEN,
+  TRAP_MAX_LEVEL,
+  LEVEL_PRO_WELT,
+  weltNummer,
+  weltZone,
+} from './welten'
 export {
   leseStand,
   levelStand,
