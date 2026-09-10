@@ -23,6 +23,13 @@ export type Klang =
   | 'treffer'
   | 'fehlschuss'
   | 'tick'
+  | 'sprung'
+  | 'landen'
+  | 'falle'
+  | 'tod'
+  | 'geschafft'
+  | 'geheimnis'
+  | 'knopf'
 
 interface Ton {
   frequenz: number
@@ -66,12 +73,59 @@ const KLAENGE: Record<Klang, Ton[]> = {
   treffer: [{ frequenz: 900, dauer: 0.09, typ: 'square', lautstaerke: 0.14, nach: 1300 }],
   fehlschuss: [{ frequenz: 220, dauer: 0.14, typ: 'sawtooth', lautstaerke: 0.12, nach: 130 }],
   tick: [{ frequenz: 1000, dauer: 0.03, typ: 'square', lautstaerke: 0.08 }],
+  // Trapbound: kurz, trocken, ohne Melodie -- in einem Fallenspiel wird oft
+  // gestorben, und ein hübsches Jingle geht davon schnell auf die Nerven.
+  sprung: [{ frequenz: 300, dauer: 0.07, typ: 'square', lautstaerke: 0.09, nach: 620 }],
+  landen: [{ frequenz: 160, dauer: 0.05, typ: 'triangle', lautstaerke: 0.07, nach: 110 }],
+  falle: [
+    { frequenz: 220, dauer: 0.09, typ: 'sawtooth', lautstaerke: 0.12, nach: 90 },
+    { frequenz: 90, dauer: 0.14, typ: 'square', lautstaerke: 0.08, ab: 0.06 },
+  ],
+  tod: [
+    { frequenz: 420, dauer: 0.08, typ: 'square', lautstaerke: 0.14, nach: 140 },
+    { frequenz: 150, dauer: 0.22, typ: 'sawtooth', lautstaerke: 0.1, ab: 0.07, nach: 60 },
+  ],
+  geschafft: [
+    { frequenz: 587, dauer: 0.1, typ: 'triangle', lautstaerke: 0.16 },
+    { frequenz: 880, dauer: 0.16, typ: 'triangle', lautstaerke: 0.16, ab: 0.09 },
+  ],
+  geheimnis: [
+    { frequenz: 1046, dauer: 0.09, typ: 'sine', lautstaerke: 0.14 },
+    { frequenz: 1568, dauer: 0.18, typ: 'sine', lautstaerke: 0.12, ab: 0.08 },
+  ],
+  knopf: [{ frequenz: 520, dauer: 0.05, typ: 'square', lautstaerke: 0.1 }],
 }
 
 const SPEICHER_SCHLUESSEL = 'te-mini-games:ton'
+const LAUT_SCHLUESSEL = 'te-mini-games:lautstaerke'
 
 let kontext: AudioContext | null = null
 let an = leseEinstellung()
+let laut = leseLautstaerke()
+
+function leseLautstaerke(): number {
+  try {
+    const roh = window.localStorage.getItem(LAUT_SCHLUESSEL)
+    const wert = roh === null ? 0.8 : Number(roh)
+    return Number.isFinite(wert) ? Math.max(0, Math.min(1, wert)) : 0.8
+  } catch {
+    return 0.8
+  }
+}
+
+/** Gesamtlautstärke, 0 bis 1. */
+export function lautstaerke(): number {
+  return laut
+}
+
+export function setzeLautstaerke(wert: number): void {
+  laut = Math.max(0, Math.min(1, wert))
+  try {
+    window.localStorage.setItem(LAUT_SCHLUESSEL, String(laut))
+  } catch {
+    // Kein Speicher -- die Einstellung gilt dann nur für diese Sitzung.
+  }
+}
 
 function leseEinstellung(): boolean {
   try {
@@ -111,7 +165,7 @@ function holeKontext(): AudioContext | null {
 
 /** Einen Klang abspielen. Fehler bleiben stumm -- Ton ist Beiwerk. */
 export function spiele(klang: Klang): void {
-  if (!an) return
+  if (!an || laut <= 0) return
   const ctx = holeKontext()
   if (!ctx) return
   try {
@@ -128,7 +182,10 @@ export function spiele(klang: Klang): void {
       }
       // Weich ein- und ausblenden, sonst knackt es auf kleinen Lautsprechern.
       verstaerker.gain.setValueAtTime(0.0001, beginn)
-      verstaerker.gain.exponentialRampToValueAtTime(ton.lautstaerke, beginn + 0.012)
+      verstaerker.gain.exponentialRampToValueAtTime(
+        Math.max(0.0002, ton.lautstaerke * laut),
+        beginn + 0.012,
+      )
       verstaerker.gain.exponentialRampToValueAtTime(0.0001, beginn + ton.dauer)
       osz.connect(verstaerker).connect(ctx.destination)
       osz.start(beginn)

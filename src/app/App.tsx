@@ -19,6 +19,7 @@ import { SchuetzenopolyPage } from '@/pages/play/SchuetzenopolyPage'
 import { KniffelPage } from '@/pages/play/KniffelPage'
 import { BienenFlowPage } from '@/pages/play/BienenFlowPage'
 import { SquishyDumplingsPage } from '@/pages/play/SquishyDumplingsPage'
+import { TrapboundPage } from '@/pages/play/TrapboundPage'
 import { FamilyPage } from '@/pages/family/FamilyPage'
 import { DailyPage } from '@/pages/daily/DailyPage'
 import { LeaderboardPage } from '@/pages/leaderboard/LeaderboardPage'
@@ -146,6 +147,7 @@ export function App() {
           <Route path="/play/kniffel" element={<KniffelPage />} />
           <Route path="/play/bienen-flow" element={<BienenFlowPage />} />
           <Route path="/play/squishy-dumplings" element={<SquishyDumplingsPage />} />
+          <Route path="/play/trapbound" element={<TrapboundPage />} />
           <Route path="/family" element={<FamilyPage />} />
           <Route path="/daily" element={<DailyPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />

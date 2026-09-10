@@ -20,6 +20,7 @@ export type GameId =
   | 'kniffel'
   | 'bienen-flow'
   | 'squishy-dumplings'
+  | 'trapbound'
 
 export interface GameLevelConfig {
   level: number

@@ -60,6 +60,22 @@ Progressive Web App with short skill, memory, reaction and logic games.
   `tests/squishy-dumplings.test.ts` – a careful one that must always finish with
   a quarter of the clock to spare, and a random one whose spare time has to
   shrink from level to level
+- **Trapbound** – a trap platformer: short levels that look harmless and are
+  not. Run, jump, reach the door – except the floor crumbles under the last
+  step, the ceiling drops when you pass a certain point, the exit walks away
+  as you approach it, and halfway through level 9 gravity flips and the door
+  is on the ceiling. Every death is reproducible and the level restarts in
+  half a second, so the answer is always “again”. Ten levels in world 1 (The
+  Caves), split into two sections on a hand-drawn cave map with a gate between
+  them; a hidden crystal sits where nobody goes on purpose. Own engine: fixed
+  240 Hz timestep, AABB collisions resolved axis by axis, coyote time and jump
+  buffering so a missed jump is never the controls' fault. Levels are **data,
+  not code** (`src/games/trapbound/levels/`), each with a recorded solution
+  that `tests/trapbound.test.ts` plays back – change a level without fixing
+  its solution and the test fails. Traps compose through triggers and actions
+  (`zone → platform vanishes, spikes appear, gravity flips two seconds later`),
+  so new worlds need no engine changes. Progress, deaths, best times, crystals
+  and settings live in localStorage
 - **Schützenopoly** – the big Schützenfest board game: 40 fields, 22 real German
   Schützenfeste, 2–4 players against rule-based AI on three levels, trading,
   building and three shooting-range minigames (see
