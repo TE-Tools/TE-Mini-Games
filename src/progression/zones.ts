@@ -14,7 +14,23 @@
 export const MAX_LEVEL = 500
 export const LEVELS_PER_ZONE = 100
 
+/**
+ * Die fünf Zonen der Zeitreise-Karte.
+ *
+ * Bleibt bei fünf: Mehrere Spiele hängen Tabellen daran, die für jede Zone
+ * einen Eintrag haben müssen.
+ */
 export type ZoneId = 'jungle' | 'volcanic' | 'canyon' | 'iceage' | 'glacier'
+
+/**
+ * Was auf einer Levelkarte als Zone stehen darf.
+ *
+ * Trapbound benutzt dieselbe Karte, hat aber fünfzehn eigene Welten. Deren
+ * Kennung entscheidet nur über eine Feinheit im Stil -- deshalb genügt hier
+ * eine Zeichenkette, statt jede Welt in `ZoneId` aufzunehmen und damit alle
+ * Tabellen der anderen Spiele zu erweitern.
+ */
+export type KartenZonenId = ZoneId | (string & {})
 
 export interface ZonePalette {
   ground: string
@@ -27,7 +43,7 @@ export interface ZonePalette {
 }
 
 export interface LevelZone {
-  id: ZoneId
+  id: KartenZonenId
   /** 1-based zone number (1 = Urwald … 5 = Gletschergipfel) */
   index: number
   name: string

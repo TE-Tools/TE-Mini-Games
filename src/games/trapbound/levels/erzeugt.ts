@@ -16,6 +16,7 @@
 
 import type { LevelDaten, LoesungsSchritt, Objekt } from '../types'
 import { LEVEL_PRO_WELT, TRAP_MAX_LEVEL, weltNummer } from '../welten'
+import { spieleLoesung } from '../loesung'
 import { BAUSTEINE, BODEN_Y, BODEN_H, STEH_Y, type BauStelle } from './bausteine'
 
 const BREITE = 480
@@ -37,7 +38,7 @@ const SCHLUSS_BREITE = 120
  * liegen -- sonst rennt man ins Messer, ohne eine Chance gehabt zu haben,
  * und das wäre nicht gemein, sondern unfair.
  */
-const SCHNAPP_BREITE = 150
+const SCHNAPP_BREITE = 144
 
 function mulberry(seed: number): () => number {
   let t = seed >>> 0
@@ -58,6 +59,18 @@ const WELT_BAUSTEINE: string[][] = [
   ['feder', 'teleport', 'jagd', 'waende'],
   ['umkehr', 'schwachersprung'],
   [],
+  // Ab hier die zweite Hälfte (Level 101). Jede Welt bringt wieder etwas
+  // Neues mit, und das Neue ist diesmal das, was man nicht kommen sieht.
+  ['blindbruch', 'blindfall'], // 6  Die Tiefe
+  ['pendel'], // 7  Die Schmiede
+  ['doppelluecke'], // 8  Das Uhrwerk
+  [], // 9  Die Leere
+  ['stachelregen'], // 10 Der Spiegelsaal
+  [], // 11 Das Gewitter
+  [], // 12 Der Schlund
+  [], // 13 Die Maschine
+  [], // 14 Der Albtraum
+  [], // 15 Das Ende
 ]
 
 /**
@@ -81,9 +94,28 @@ export const GEMEIN_AB = 50
  */
 export function schwierigkeit(nr: number): number {
   const inWelt = ((nr - 1) % LEVEL_PRO_WELT) + 1
-  const gesamt = (nr - 1) / (TRAP_MAX_LEVEL - 1)
+  // Fest auf hundert bezogen und nicht auf die Gesamtzahl: Sonst wären die
+  // ersten hundert Level beim Erweitern auf dreihundert plötzlich leichter
+  // geworden, obwohl sie niemand angefasst hat.
+  const gesamt = Math.min(1, (nr - 1) / 99)
   const inWeltAnteil = (inWelt - 1) / (LEVEL_PRO_WELT - 1)
   return Math.min(1, 0.55 * gesamt + 0.45 * inWeltAnteil)
+}
+
+/** Ab Level 101 beginnt die zweite Hälfte. */
+export const HAERTER_AB = 101
+
+/**
+ * Wie weit man in der zweiten Hälfte ist: 0 bei Level 101, 1 bei 300.
+ *
+ * Der zweite Regler neben `schwierigkeit`. Er entscheidet nicht über die
+ * Zeitfenster einzelner Fallen -- die sind schon bei 1 angekommen --,
+ * sondern darüber, wie viel gleichzeitig passiert: wie oft eine Falle blind
+ * ist und wie oft ein Level ein Albtraum wird.
+ */
+export function haerte(nr: number): number {
+  if (nr < HAERTER_AB) return 0
+  return Math.min(1, (nr - HAERTER_AB) / (TRAP_MAX_LEVEL - HAERTER_AB))
 }
 
 /**
@@ -99,6 +131,53 @@ export function istGemein(nr: number): boolean {
   if (nr < GEMEIN_AB) return false
   const inWelt = ((nr - 1) % LEVEL_PRO_WELT) + 1
   return GEMEINE_PLAETZE.includes(inWelt)
+}
+
+/**
+ * Die blinden Bausteine: die, die man vorher nicht sieht.
+ *
+ * Sie sind der Grund, warum ein Albtraumlevel wirklich zwanzig Versuche
+ * kostet und nicht drei. Ein Zeitfenster lernt man in zwei Anläufen; eine
+ * Falle, von der man nicht weiß, dass es sie gibt, kostet den ersten
+ * Versuch pro Stück -- und danach noch die, in denen man sie zwar kennt,
+ * aber die Stelle noch nicht trifft.
+ */
+const BLIND = ['blindbruch', 'blindfall', 'stachelregen']
+
+/**
+ * Bausteine, deren Lösung darin besteht, still zu stehen.
+ *
+ * Sie vertragen sich nicht mit der Jagd: Wer gejagt wird, kann nicht auf den
+ * Takt einer Säge warten. Level 159 war genau das -- Jagd und Säge im selben
+ * Level -- und schlicht nicht zu schaffen.
+ */
+const WARTET = [
+  'saege',
+  'presse',
+  'decke',
+  'blindfall',
+  'stachelregen',
+  'pendel',
+  'aufzug',
+  // Auch die vertauschte Steuerung nicht: Der Umweg, den man zum Umlernen
+  // braucht, führt einen der Jagd direkt in die Arme. Gemessen an Level 103
+  // -- die Figur lief rückwärts in die Sägen, die hinter ihr standen.
+  'umkehr',
+]
+
+/**
+ * Albtraumlevel: gemein und blind zugleich.
+ *
+ * Drei Plätze je Welt ab Level 101, versetzt zu den gemeinen und nie
+ * daneben. Sie bekommen eine Jagd oder Wände, dazu mindestens eine blinde
+ * Falle und den zuschnappenden Ausgang.
+ */
+const ALPTRAUM_PLAETZE = [5, 10, 14]
+
+export function istAlptraum(nr: number): boolean {
+  if (nr < HAERTER_AB) return false
+  const inWelt = ((nr - 1) % LEVEL_PRO_WELT) + 1
+  return ALPTRAUM_PLAETZE.includes(inWelt)
 }
 
 function bausteinePool(welt: number): string[] {
@@ -157,7 +236,13 @@ function waehleBausteine(
     rest -= BAUSTEINE[erzwungen]!.min
   }
   while (namen.length < hoechstens) {
-    const passt = pool.filter((n) => n !== 'weg' && !namen.includes(n) && BAUSTEINE[n]!.min <= rest)
+    const passt = pool.filter((n) => {
+      if (n === 'weg' || namen.includes(n) || BAUSTEINE[n]!.min > rest) return false
+      // Jagd und Warten schließen einander aus, in beide Richtungen.
+      if (namen.includes('jagd') && WARTET.includes(n)) return false
+      if (n === 'jagd' && namen.some((m) => WARTET.includes(m))) return false
+      return true
+    })
     // Der erste muss einer sein, der wirklich aufhält.
     const erste = namen.length === 0 ? passt.filter((n) => SPERREND.includes(n)) : passt
     // Und möglichst keiner, den man gerade in den letzten Leveln hatte.
@@ -199,6 +284,7 @@ interface PlanEintrag {
   namen: string[]
   breiten: number[]
   gemein: boolean
+  alptraum: boolean
   name: string
 }
 
@@ -214,12 +300,22 @@ function bauPlan(): PlanEintrag[] {
   const rng = mulberry(20260910)
   const plan: PlanEintrag[] = []
   const paare = new Map<string, number>()
+  // Gemeine Level und Albträume schöpfen aus einem kleinen Vorrat -- ihr
+  // erster Baustein ist immer die Jagd oder die Wände. Damit sich das nicht
+  // alle paar Level wiederholt, sind die letzten sechs Paarungen dieser Art
+  // gesperrt. (183 und 185 waren sonst zweimal dasselbe.)
+  const letzteGemeine: string[] = []
+  // Albträume brauchen eine eigene, kürzere Liste: Ihr Vorrat ist klein
+  // (Jagd oder Wände, dazu etwas Blindes), da wäre eine lange Sperre nicht
+  // zu erfüllen.
+  const letzteAlptraeume: string[] = []
 
   for (let nr = 11; nr <= TRAP_MAX_LEVEL; nr++) {
     const welt = weltNummer(nr)
     const inWelt = ((nr - 1) % LEVEL_PRO_WELT) + 1
     const schwer = schwierigkeit(nr)
-    const gemein = istGemein(nr)
+    const alptraum = istAlptraum(nr)
+    const gemein = istGemein(nr) || alptraum
     const pool = bausteinePool(welt).filter((n) => gemein || !GEMEIN.includes(n))
     const platz = BREITE - START_BREITE - schlussBreite(nr)
     const hoechstens = schwer < 0.25 ? 2 : 3
@@ -234,9 +330,9 @@ function bauPlan(): PlanEintrag[] {
     // ganz zuletzt eine Paarung. Andersherum wäre es falsch -- ein
     // wiederholter Baustein fällt viel weniger auf als ein Level, das genau
     // so schon einmal dastand.
-    for (let versuch = 0; versuch < 90; versuch++) {
-      const meideFrisch = versuch < 30
-      const meideWiederholung = versuch < 70
+    for (let versuch = 0; versuch < 200; versuch++) {
+      const meideFrisch = versuch < 60
+      const meideWiederholung = versuch < 150
       const kandidat = waehleBausteine(
         pool,
         platz,
@@ -245,18 +341,72 @@ function bauPlan(): PlanEintrag[] {
         meideFrisch ? frisch : [],
         gemein ? GEMEIN[Math.floor(rng() * GEMEIN.length)]! : undefined,
       )
+      // Im Albtraum muss außerdem etwas Blindes dabei sein.
+      if (
+        alptraum &&
+        versuch < 190 &&
+        !kandidat.namen.some((n) => BLIND.includes(n)) &&
+        pool.some((n) => BLIND.includes(n))
+      ) {
+        continue
+      }
       const schluessel = [...kandidat.namen].sort().join('+')
+      const sperre = alptraum ? letzteAlptraeume : letzteGemeine
+      if (gemein && versuch < 190 && sperre.includes(schluessel)) continue
       const zuletzt = paare.get(schluessel)
       if (meideWiederholung && zuletzt !== undefined && nr - zuletzt < NICHT_WIEDER) continue
       gewaehlt = kandidat
       paare.set(schluessel, nr)
+      if (gemein) {
+        sperre.push(schluessel)
+        if (letzteGemeine.length > 12) letzteGemeine.shift()
+        if (letzteAlptraeume.length > 3) letzteAlptraeume.shift()
+      }
       break
     }
-    const fertig = gewaehlt ?? waehleBausteine(pool, platz, hoechstens, rng)
+    let notfall = gewaehlt
+    if (!notfall) {
+      // Nichts gefunden, das alle Regeln erfüllt: Dann wenigstens die
+      // Paarung nehmen, die am längsten nicht dran war. Ein blindes
+      // Nachziehen hatte hier zwei gleiche Level im Abstand von sechs
+      // erzeugt.
+      let bester: { namen: string[]; breiten: number[] } | null = null
+      let besterAbstand = -1
+      for (let versuch = 0; versuch < 40; versuch++) {
+        const kandidat = waehleBausteine(
+          pool,
+          platz,
+          hoechstens,
+          rng,
+          [],
+          gemein ? GEMEIN[Math.floor(rng() * GEMEIN.length)]! : undefined,
+        )
+        const schluessel = [...kandidat.namen].sort().join('+')
+        const zuletzt = paare.get(schluessel)
+        const abstand = zuletzt === undefined ? 9999 : nr - zuletzt
+        if (abstand > besterAbstand) {
+          besterAbstand = abstand
+          bester = kandidat
+        }
+      }
+      if (bester) {
+        notfall = bester
+        paare.set([...bester.namen].sort().join('+'), nr)
+      }
+    }
+    const fertig = notfall ?? waehleBausteine(pool, platz, hoechstens, rng)
     plan.push({
       ...fertig,
       gemein,
-      name: levelName(nr, fertig.namen, inWelt === LEVEL_PRO_WELT, gemein, plan.at(-1)?.name),
+      alptraum,
+      name: levelName(
+        nr,
+        fertig.namen,
+        inWelt === LEVEL_PRO_WELT,
+        gemein,
+        alptraum,
+        plan.at(-1)?.name,
+      ),
     })
   }
 
@@ -276,7 +426,7 @@ const SCHLUSS_TEXT: Record<SchlussArt, string> = {
 
 /** Wie viel Platz der Ausgang eines Levels braucht. */
 function schlussBreite(nr: number): number {
-  return istGemein(nr) ? SCHNAPP_BREITE : SCHLUSS_BREITE
+  return istGemein(nr) || istAlptraum(nr) ? SCHNAPP_BREITE : SCHLUSS_BREITE
 }
 
 function baueSchluss(
@@ -342,14 +492,20 @@ function baueSchluss(
         { typ: 'feder', x: x + 4, y: BODEN_Y, b: 26, h: 14, kraft: 620 },
         { typ: 'ziel', x: x + 40, y: BODEN_Y - 32, b: 22, h: 32, falle: true },
         { typ: 'schild', x: x + 34, y: BODEN_Y - 54, b: 40, h: 13, text: 'AUSGANG' },
-        { typ: 'block', x: x + 44, y: BODEN_Y - 90, b: 48, h: 10 },
-        { typ: 'ziel', x: x + 58, y: BODEN_Y - 122, b: 22, h: 32 },
+        // Breit genug, um den Bogen zu fangen: Bei 48 Punkten flog die Figur
+        // knapp daran vorbei, wenn sie mit Schwung auf die Feder kam, und
+        // fiel rechts aus dem Bild.
+        { typ: 'block', x: x + 40, y: BODEN_Y - 90, b: 76, h: 10 },
+        { typ: 'ziel', x: x + 72, y: BODEN_Y - 122, b: 22, h: 32 },
       ],
       loesung: [
         vor({ bisBoden: true, dauer: 1 }),
         vor({ bisX: x + 2 }),
+        // Erst zum Stehen kommen: Wer mit Schwung auf die Feder springt,
+        // fliegt an der oberen Plattform vorbei und aus dem Bild heraus.
+        { dauer: 0.45 },
         vor({ bisBoden: true, dauer: 2.6 }),
-        vor({ bisX: x + 58 }),
+        vor({ bisX: x + 74 }),
       ],
     }
   }
@@ -436,15 +592,23 @@ function baueSchluss(
  * passen, entscheidet ihr Mindestmaß. Passt keiner, kommt schlichter Boden --
  * lieber eine ruhige Stelle als ein Level, das nicht aufgeht.
  */
-export function erzeugeLevel(nr: number): LevelDaten {
+/**
+ * Ein Level bauen -- `variante` dreht nur am Zufall in den Bausteinen.
+ *
+ * Gebraucht wird das für die Selbstprüfung unten: Wenn eine Variante nicht
+ * aufgeht, wird die nächste probiert, statt ein unschaffbares Level
+ * auszuliefern.
+ */
+function baueLevel(nr: number, variante: number): LevelDaten {
   const welt = weltNummer(nr)
   const inWelt = ((nr - 1) % LEVEL_PRO_WELT) + 1
   const schwer = schwierigkeit(nr)
   const istTor = inWelt === LEVEL_PRO_WELT
-  const gemein = istGemein(nr)
-  const rng = mulberry(nr * 2654435761 + 1013904223)
-
   const plan = bauPlan()[nr - 11]!
+  // Die Notausgangs-Variante lässt den zuschnappenden Ausgang weg.
+  const gemein = (istGemein(nr) || plan.alptraum) && variante >= 0
+  const rng = mulberry(nr * 2654435761 + 1013904223 + variante * 7919)
+
   const { namen, breiten } = plan
 
   const objekte: Objekt[] = [{ typ: 'block', x: 0, y: BODEN_Y, b: START_BREITE, h: BODEN_H }]
@@ -508,6 +672,178 @@ export function erzeugeLevel(nr: number): LevelDaten {
   }
 }
 
+/**
+ * Blinde Fallen dorthin streuen, wo die Lösung ohnehin in der Luft ist.
+ *
+ * Der Trick: Wer den Sprung kennt, fliegt darüber hinweg und merkt nichts.
+ * Wer ihn nicht kennt, läuft hinein. Damit kostet jede dieser Fallen genau
+ * einen Anlauf -- und mehrere davon sind der Grund, warum ein Albtraumlevel
+ * nicht in drei Versuchen fällt.
+ *
+ * Jede Falle wird einzeln geprüft: Sie kommt nur ins Level, wenn die
+ * hinterlegte Lösung sie danach immer noch übersteht.
+ */
+function streueBlindfallen(level: LevelDaten, hoechstens: number, saat: number): LevelDaten {
+  const erst = spieleLoesung(level)
+  if (!erst.geschafft) return level
+
+  // Stellen suchen, an denen die Figur klar über dem Boden fliegt.
+  const boegen: { von: number; bis: number }[] = []
+  let start: number | null = null
+  for (const punkt of erst.spur) {
+    const hoch = !punkt.amBoden && punkt.y < BODEN_Y - 30
+    if (hoch && start === null) start = punkt.x
+    if (!hoch && start !== null) {
+      if (punkt.x - start > 18) boegen.push({ von: start, bis: punkt.x })
+      start = null
+    }
+  }
+
+  const rng = mulberry(saat)
+  let gebaut = level
+  let gesetzt = 0
+  for (const bogen of boegen) {
+    if (gesetzt >= hoechstens) break
+    const mitte = Math.round((bogen.von + bogen.bis) / 2)
+    const breite = Math.min(26, Math.max(16, Math.round(bogen.bis - bogen.von - 14)))
+    const id = `bz${level.nr}_${gesetzt}`
+    // Nur wo auch wirklich Boden ist -- über einer Lücke wäre der Stachel
+    // Deko.
+    const aufBoden = gebaut.objekte.some(
+      (o) =>
+        o.typ === 'block' &&
+        o.y === BODEN_Y &&
+        o.x <= mitte - 4 &&
+        o.x + o.b >= mitte + breite + 4 &&
+        !o.weg,
+    )
+    if (!aufBoden) continue
+    const zoneX = Math.max(4, mitte - 74 - Math.round(rng() * 10))
+    const versuch: LevelDaten = {
+      ...gebaut,
+      objekte: [
+        ...gebaut.objekte,
+        {
+          typ: 'stachel',
+          id,
+          x: mitte - Math.round(breite / 2),
+          y: BODEN_Y - 12,
+          b: breite,
+          h: 12,
+          versteckt: true,
+        },
+        {
+          typ: 'zone',
+          x: zoneX,
+          y: BODEN_Y - 50,
+          b: 8,
+          h: 50,
+          einmal: true,
+          loest: [{ tu: 'zeigen', ziel: id }],
+        },
+      ],
+    }
+    if (!spieleLoesung(versuch).geschafft) continue
+    gebaut = versuch
+    gesetzt++
+  }
+  return gebaut
+}
+
+/**
+ * Boden, der ohne Vorwarnung nachgibt – dort, wo die Lösung schnell ist.
+ *
+ * Die zweite Sorte blinder Falle. Sie wird in den Boden geschnitten, nicht
+ * daraufgelegt: Der ursprüngliche Block wird geteilt, damit unter der Platte
+ * wirklich nichts mehr ist. Wer im Lauf darüber geht, ist drüben, bevor sie
+ * nachgibt. Wer zögert oder erst schaut, fällt.
+ */
+function streueBruchboden(level: LevelDaten, hoechstens: number, saat: number): LevelDaten {
+  const erst = spieleLoesung(level)
+  if (!erst.geschafft) return level
+
+  // Schnelle Bodenstrecken aus der Spur lesen.
+  const stellen: { von: number; bis: number }[] = []
+  let start: number | null = null
+  for (let i = 1; i < erst.spur.length; i++) {
+    const a = erst.spur[i - 1]!
+    const b = erst.spur[i]!
+    const schnell = b.amBoden && (b.x - a.x) / Math.max(1e-6, b.t - a.t) > 100
+    if (schnell && start === null) start = b.x
+    if (!schnell && start !== null) {
+      if (b.x - start > 40) stellen.push({ von: start, bis: b.x })
+      start = null
+    }
+  }
+
+  const rng = mulberry(saat)
+  let gebaut = level
+  let gesetzt = 0
+  for (const stelle of stellen) {
+    if (gesetzt >= hoechstens) break
+    const breite = 24
+    const von = Math.round(
+      stelle.von + 12 + rng() * Math.max(0, stelle.bis - stelle.von - breite - 24),
+    )
+    const bis = von + breite
+    const idx = gebaut.objekte.findIndex(
+      (o) =>
+        o.typ === 'block' && o.y === BODEN_Y && !o.weg && o.x + 6 <= von && o.x + o.b >= bis + 6,
+    )
+    if (idx < 0) continue
+    const alt = gebaut.objekte[idx]!
+    const objekte = [...gebaut.objekte]
+    objekte.splice(
+      idx,
+      1,
+      { ...alt, b: von - alt.x },
+      {
+        typ: 'bruch',
+        x: von,
+        y: BODEN_Y,
+        b: breite,
+        h: BODEN_H,
+        // Gerade so lange, dass ein Lauf darüber hinwegkommt und ein
+        // Schritt nicht.
+        verzoegerung: 0.2,
+        heimlich: true,
+      },
+      { ...alt, x: bis, b: alt.x + alt.b - bis },
+    )
+    const versuch: LevelDaten = { ...gebaut, objekte }
+    if (!spieleLoesung(versuch).geschafft) continue
+    gebaut = versuch
+    gesetzt++
+  }
+  return gebaut
+}
+
+/**
+ * Ein Level bauen und selbst nachspielen.
+ *
+ * Bisher hat nur der Test geprüft, ob die erzeugten Level aufgehen -- und
+ * damit stand die Zusage "jedes Level ist zu schaffen" nur, solange jemand
+ * den Test laufen ließ. Mit dreihundert Leveln, blinden Fallen und
+ * Albträumen wird das zu wackelig: Jetzt spielt der Generator jede Variante
+ * selbst durch und liefert nur aus, was er geschafft hat. Bleibt alles
+ * liegen, kommt der schlichte Aufbau ohne zuschnappenden Ausgang.
+ *
+ * Das kostet einen Durchlauf je Level (wenige Millisekunden) und passiert
+ * einmal, weil `levelDaten` das Ergebnis behält.
+ */
+export function erzeugeLevel(nr: number): LevelDaten {
+  for (const variante of [0, 1, 2]) {
+    const l = baueLevel(nr, variante)
+    if (!spieleLoesung(l).geschafft) continue
+    // Ab Level 101 kommen blinde Stacheln dazu, im Albtraum am meisten.
+    if (nr < HAERTER_AB) return l
+    const alp = istAlptraum(nr)
+    const mitStacheln = streueBlindfallen(l, alp ? 6 : 2, nr * 31 + 7)
+    return streueBruchboden(mitStacheln, alp ? 4 : 1, nr * 131 + 11)
+  }
+  return baueLevel(nr, -1)
+}
+
 /** Namen aus dem, was drinsteckt -- damit die Karte nicht "Level 57" sagt. */
 const NAMEN: Record<string, string[]> = {
   weg: ['Ruhige Bahn', 'Kurzer Weg', 'Durchatmen', 'Fast geschenkt'],
@@ -528,7 +864,22 @@ const NAMEN: Record<string, string[]> = {
   schwachersprung: ['Schwere Beine', 'Kein Schwung', 'Bleierne Füße', 'Halbe Kraft'],
   jagd: ['Es kommt näher', 'Nicht umdrehen', 'Im Nacken', 'Lauf!'],
   waende: ['Die Wände kommen', 'Enger und enger', 'Zwischen den Wänden', 'Zuschieben'],
+  blindbruch: ['Sah fest aus', 'Nichts deutete darauf hin', 'Plopp', 'Der Boden log'],
+  blindfall: ['Aus dem Nichts von oben', 'Wo kam der her', 'Deckenschlag', 'Kopf hoch'],
+  pendel: ['Hin und her', 'Warten und springen', 'Das Pendel', 'Im Vorbeigehen'],
+  stachelregen: ['Es regnet', 'Von oben kommt mehr', 'Schauer', 'Nicht stehenbleiben, echt'],
+  doppelluecke: ['Zweimal springen', 'Der schmale Absatz', 'Zwei Löcher', 'Absatz dazwischen'],
 }
+
+/** Die Namen für die Albträume. Wer den auf der Karte liest, weiß Bescheid. */
+const ALPTRAUM_NAMEN = [
+  'Viel Glück',
+  'Nicht dein Ernst',
+  'Zwanzig Versuche',
+  'Wer hat sich das ausgedacht',
+  'Das kann nicht sein',
+  'Wieder von vorn',
+]
 
 /** Die Namen für die gemeinen Level -- die sollen schon vorher warnen. */
 const GEMEINE_NAMEN = [
@@ -552,9 +903,15 @@ function levelName(
   teile: string[],
   istTor: boolean,
   gemein: boolean,
+  alptraum: boolean,
   davor: string | undefined,
 ): string {
   if (istTor) return 'Prüfung'
+  if (alptraum) {
+    const a = mulberry(nr * 15486071 + 29)
+    a()
+    return ALPTRAUM_NAMEN[Math.floor(a() * ALPTRAUM_NAMEN.length)]!
+  }
   if (gemein) {
     const g = mulberry(nr * 104729 + 17)
     g()

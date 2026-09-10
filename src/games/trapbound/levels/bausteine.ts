@@ -638,6 +638,211 @@ export const bWaende: Baustein = (b) => {
   }
 }
 
+// ------------------------------------------------- Ab Level 101: die blinden
+//
+// Was diese Bausteine verbindet: Man sieht sie vorher nicht. Ein Bruchboden
+// zeigt sonst Risse, ein Fallblock hängt sichtbar an der Decke -- beides mit
+// Absicht, damit man beim zweiten Mal eine Chance hat. Hier fehlt der
+// Hinweis. Fair bleibt das nur, weil der Neustart eine halbe Sekunde dauert
+// und die Stelle immer dieselbe ist: Man lernt sie, statt sie zu sehen.
+
+/** Boden, der ohne Risse nachgibt. */
+export const bBlindBruch: Baustein = (b) => {
+  const breite = mische(b.rng, 46, 58)
+  return {
+    objekte: [
+      boden(b.x, 30),
+      {
+        typ: 'bruch',
+        x: b.x + 30,
+        y: BODEN_Y,
+        b: breite,
+        h: BODEN_H,
+        verzoegerung: 0.05,
+        heimlich: true,
+      },
+      boden(b.x + 30 + breite, b.breite - 30 - breite),
+    ],
+    loesung: [
+      vor(b, { bisBoden: true, dauer: 1 }),
+      vor(b, { bisX: b.x + 14 }),
+      vor(b, { sprung: true, dauer: 0.34 }),
+      vor(b, { bisBoden: true }),
+    ],
+  }
+}
+
+/** Ein Block, der aus einer leeren Decke kommt. */
+export const bBlindFall: Baustein = (b) => {
+  const id = `bf${b.nr}`
+  const mitte = b.x + Math.round(b.breite / 2)
+  return {
+    objekte: [
+      boden(b.x, b.breite),
+      // Nicht da, bis er fällt: Die Zone lässt ihn im selben Augenblick
+      // erscheinen und stürzen.
+      {
+        typ: 'fall',
+        id,
+        x: mitte - 22,
+        y: 30,
+        b: 44,
+        h: 42,
+        toedlich: true,
+        versteckt: true,
+      },
+      {
+        typ: 'zone',
+        x: b.x + 8,
+        y: BODEN_Y - 50,
+        b: 10,
+        h: 50,
+        einmal: true,
+        loest: [
+          { tu: 'zeigen', ziel: id },
+          { tu: 'fallen', ziel: id },
+          { tu: 'beben', wert: 0.4 },
+        ],
+      },
+    ],
+    loesung: [
+      vor(b, { bisX: b.x + 16 }),
+      { dauer: 0.9 },
+      vor(b, { bisX: mitte - 40 }),
+      vor(b, { sprung: true, dauer: 0.34 }),
+      vor(b, { bisBoden: true }),
+      vor(b, { bisX: mitte + 30 }),
+      vor(b, { bisBoden: true, dauer: 1.2 }),
+      vor(b, { bisX: b.x + b.breite - 14 }),
+    ],
+  }
+}
+
+/**
+ * Ein Sägeblatt, das über einer Lücke hin und her pendelt.
+ *
+ * Es hängt in Sprunghöhe: Wer davorsteht, ist sicher, wer springt, nicht.
+ * Und springen muss man, denn darunter ist ein Loch. Also warten, bis es
+ * weggependelt ist -- aber nicht zu lange, es kommt zurück.
+ *
+ * Der erste Anlauf ließ es auf Bodenhöhe pendeln. Das war schlicht nicht
+ * passierbar: kein Zeitfenster, in dem der Gang frei war.
+ */
+export const bPendel: Baustein = (b) => {
+  const id = `pd${b.nr}`
+  const links = 40
+  const spalt = 34
+  // Weit genug pendeln: Bei kurzer Strecke parkte das Blatt genau dort, wo
+  // die Figur nach dem Sprung aufkommt -- sie sprang der Säge in die Arme.
+  const strecke = Math.min(110, b.breite - links - spalt - 24)
+  const dauer = 0.85 - b.schwer * 0.2
+  const warte = 0.3
+  const zoneX = b.x + links - 20
+  return {
+    objekte: [
+      boden(b.x, links),
+      boden(b.x + links + spalt, b.breite - links - spalt),
+      {
+        typ: 'saege',
+        id,
+        x: b.x + links - 4,
+        y: BODEN_Y - 50,
+        b: 20,
+        h: 20,
+        weg: { dx: strecke, dy: 0, dauer, warte, wartetAufAusloeser: true },
+      },
+      {
+        typ: 'zone',
+        x: zoneX,
+        y: BODEN_Y - 50,
+        b: 8,
+        h: 50,
+        einmal: true,
+        loest: [{ tu: 'los', ziel: id }],
+      },
+    ],
+    loesung: [
+      vor(b, { bisBoden: true, dauer: 1 }),
+      vor(b, { bisX: zoneX - 5 }),
+      // Gerade so lange, bis das Blatt die Lücke verlassen hat.
+      { dauer: dauer * 0.55 },
+      vor(b, { sprung: true, dauer: 0.34 }),
+      vor(b, { bisBoden: true }),
+    ],
+  }
+}
+
+/** Stacheln, die nacheinander aus der Decke kommen. */
+export const bStachelRegen: Baustein = (b) => {
+  const anzahl = 3
+  const objekte: Objekt[] = [boden(b.x, b.breite)]
+  const loest = []
+  const abstand = Math.floor((b.breite - 76) / anzahl)
+  for (let k = 0; k < anzahl; k++) {
+    const id = `sr${b.nr}_${k}`
+    // Stacheln statt Fallblöcke: Ein Fallblock bleibt liegen, wo er
+    // aufkommt, und stand danach als Stufe im Weg -- der Test lief mitten im
+    // Abschnitt gegen eine Wand aus drei Blöcken. Ein Stachel mit einem Weg
+    // fällt genauso, verschwindet aber im Boden.
+    objekte.push({
+      typ: 'stachel',
+      id,
+      x: b.x + 56 + k * abstand,
+      y: 24,
+      b: 16,
+      h: 16,
+      versteckt: true,
+      weg: { dx: 0, dy: 220, dauer: 0.42, einweg: true, wartetAufAusloeser: true },
+    })
+    // Einer nach dem anderen, im Abstand eines Schrittes -- wer stehenbleibt,
+    // bekommt den nächsten auf den Kopf.
+    loest.push({ tu: 'zeigen' as const, ziel: id, nach: k * 0.42 })
+    loest.push({ tu: 'los' as const, ziel: id, nach: k * 0.42 })
+  }
+  objekte.push({
+    typ: 'zone',
+    x: b.x + 10,
+    y: BODEN_Y - 50,
+    b: 8,
+    h: 50,
+    einmal: true,
+    loest: [...loest, { tu: 'beben', wert: 0.3 }],
+  })
+  return {
+    objekte,
+    loesung: [
+      // Erst durchlassen, dann in einem Zug hindurch.
+      vor(b, { bisX: b.x + 16 }),
+      { dauer: 0.42 * anzahl + 0.7 },
+      vor(b, { bisX: b.x + b.breite - 14, dauer: 2.4 }),
+    ],
+  }
+}
+
+/** Zwei Lücken hintereinander, dazwischen ein schmaler Absatz. */
+export const bDoppelLuecke: Baustein = (b) => {
+  const spalt = mische(b.rng, 38, 38 + Math.round(b.schwer * 10))
+  const insel = 30
+  const links = 28
+  const rest = b.breite - links - spalt - insel - spalt
+  return {
+    objekte: [
+      boden(b.x, links),
+      boden(b.x + links + spalt, insel),
+      boden(b.x + links + spalt + insel + spalt, Math.max(20, rest)),
+    ],
+    loesung: [
+      vor(b, { bisBoden: true, dauer: 1 }),
+      vor(b, { bisX: b.x + links - 16 }),
+      vor(b, { sprung: true, dauer: 0.34 }),
+      vor(b, { bisBoden: true }),
+      vor(b, { bisX: b.x + links + spalt + insel - 16 }),
+      vor(b, { sprung: true, dauer: 0.34 }),
+      vor(b, { bisBoden: true }),
+    ],
+  }
+}
+
 export interface BausteinEintrag {
   name: string
   bau: Baustein
@@ -662,6 +867,11 @@ export const BAUSTEINE: Record<string, BausteinEintrag> = {
   presse: { name: 'presse', bau: bPresse, min: 130 },
   umkehr: { name: 'umkehr', bau: bUmkehr, min: 110 },
   schwachersprung: { name: 'schwachersprung', bau: bSchwacherSprung, min: 130 },
-  jagd: { name: 'jagd', bau: bJagd, min: 150 },
-  waende: { name: 'waende', bau: bWaende, min: 150 },
+  jagd: { name: 'jagd', bau: bJagd, min: 148 },
+  waende: { name: 'waende', bau: bWaende, min: 138 },
+  blindbruch: { name: 'blindbruch', bau: bBlindBruch, min: 120 },
+  blindfall: { name: 'blindfall', bau: bBlindFall, min: 130 },
+  pendel: { name: 'pendel', bau: bPendel, min: 190 },
+  stachelregen: { name: 'stachelregen', bau: bStachelRegen, min: 140 },
+  doppelluecke: { name: 'doppelluecke', bau: bDoppelLuecke, min: 160 },
 }

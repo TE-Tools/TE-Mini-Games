@@ -27,7 +27,7 @@
  */
 
 import { MAX_LEVEL, SEGMENT_SIZE, isSegmentGate, segmentIndexForLevel } from '@/progression/zones'
-import { zoneForLevel, type ZoneId } from '@/progression/zones'
+import { zoneForLevel, type KartenZonenId } from '@/progression/zones'
 
 export interface PerfectSecondLevel {
   level: number
@@ -36,7 +36,7 @@ export interface PerfectSecondLevel {
   hitsRequired: number
   maxDeviationRatio: number
   /** Zone the level belongs to (map theming / UI copy) */
-  zoneId: ZoneId
+  zoneId: KartenZonenId
 }
 
 /** Longest target time on the whole map, in seconds. */
