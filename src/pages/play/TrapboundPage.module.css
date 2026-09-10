@@ -1,0 +1,514 @@
+/*
+ * TRAPBOUND – dunkel, kontrastreich, ohne Schnörkel.
+ *
+ * Das Spielfeld ist die Hauptsache: Alles andere hält sich zurück. Die
+ * Steuerknöpfe sind bewusst groß (mindestens 64 px), weil sie mit dem Daumen
+ * getroffen werden müssen, während unter dem Finger jemand stirbt.
+ */
+
+.page {
+  min-height: 100dvh;
+  padding: 0.75rem 1rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  color: #ece9f7;
+  background: radial-gradient(120% 80% at 50% 0%, #221a3a 0%, #141024 55%, #0b0916 100%);
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.back {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  opacity: 0.85;
+  text-decoration: none;
+  padding: 0.25rem 0.4rem;
+}
+
+.kopfTitel {
+  flex: 1;
+  font-size: 1.05rem;
+  margin: 0;
+  text-align: center;
+  letter-spacing: 0.08em;
+}
+
+.kopfWert {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+  font-size: 0.85rem;
+}
+
+.titelblock {
+  text-align: center;
+  padding: 1.6rem 0 0.6rem;
+}
+
+.titel {
+  margin: 0;
+  font-size: clamp(2.2rem, 12vw, 3.4rem);
+  letter-spacing: 0.16em;
+  font-weight: 900;
+  color: #f4f1ff;
+  text-shadow:
+    0 0 24px rgba(124, 231, 200, 0.35),
+    0 3px 0 #4b3f6b;
+}
+
+.untertitel {
+  margin: 0.3rem 0 0;
+  letter-spacing: 0.3em;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #7ce7c8;
+  opacity: 0.9;
+}
+
+.menue {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.menueHaupt,
+.menueKnopf {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  border: 1px solid #4b3f6b;
+  background: rgba(75, 63, 107, 0.28);
+  color: #ece9f7;
+  letter-spacing: 0.06em;
+}
+
+.menueHaupt {
+  background: #7ce7c8;
+  border-color: #7ce7c8;
+  color: #10202a;
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: 0.1em;
+}
+
+.menueKnopf:hover,
+.menueHaupt:hover {
+  filter: brightness(1.12);
+}
+
+.fussnote {
+  text-align: center;
+  font-size: 0.78rem;
+  opacity: 0.6;
+  margin: 0.4rem 0 0;
+}
+
+/* --------------------------------------------------------------- Karte */
+
+.kartenHuelle {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-radius: 14px;
+  border: 1px solid rgba(143, 124, 196, 0.3);
+  background: #141024;
+  max-height: calc(100dvh - 8rem);
+  -webkit-overflow-scrolling: touch;
+}
+
+.karte {
+  display: block;
+}
+
+/* ---------------------------------------------------------------- Spiel */
+
+.spielSeite {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: #0b0916;
+  color: #ece9f7;
+  /* Kein Wischen/Zoomen, während gespielt wird. */
+  touch-action: none;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.hud {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.7rem;
+  background: #141024;
+  border-bottom: 1px solid rgba(143, 124, 196, 0.25);
+}
+
+.hudKnopf {
+  font: inherit;
+  font-size: 0.8rem;
+  background: rgba(143, 124, 196, 0.18);
+  border: 1px solid rgba(143, 124, 196, 0.4);
+  color: inherit;
+  border-radius: 8px;
+  padding: 0.35rem 0.6rem;
+  cursor: pointer;
+}
+
+.hudMitte {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.15;
+  min-width: 0;
+}
+
+.hudLevel {
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.hudKlein {
+  font-size: 0.62rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  opacity: 0.55;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hudRechts {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.82rem;
+}
+
+.hudWert {
+  opacity: 0.85;
+}
+
+.buehne {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #0b0916;
+  min-height: 0;
+}
+
+/*
+ * Das Spielfeld ist 16:9 und wird in die freie Fläche eingepasst -- die
+ * Zeichenroutine zentriert es selbst. Unten bleibt eine feste Zeile für die
+ * Daumen; die ist wichtiger als ein paar Pixel mehr Bild.
+ */
+.leinwandBox {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+/*
+ * Absolut gesetzt, nicht nur auf 100% Höhe: Ein <canvas> in einem
+ * Flex-Kind ohne feste Höhe ignoriert prozentuale Höhen und fällt auf sein
+ * Eigenmaß von 300x150 zurück -- das Spielfeld war dadurch ein schmaler
+ * Streifen am oberen Rand.
+ */
+.leinwand {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* Die Pixel dürfen Pixel bleiben. */
+  image-rendering: pixelated;
+}
+
+.tipp {
+  position: absolute;
+  top: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(20, 16, 36, 0.82);
+  border: 1px solid rgba(143, 124, 196, 0.35);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Steuerkreuz: groß, halbtransparent, immer griffbereit. */
+.pad {
+  flex: none;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 1rem 1.6rem;
+  box-sizing: border-box;
+  min-height: 8rem;
+}
+
+.padGetauscht {
+  flex-direction: row-reverse;
+}
+
+.padLinks {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.padKnopf {
+  width: 4.6rem;
+  height: 4.6rem;
+  border-radius: 50%;
+  border: 2px solid rgba(143, 124, 196, 0.55);
+  background: rgba(36, 28, 62, 0.55);
+  color: #ece9f7;
+  font-size: 1.4rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+}
+
+.padKnopf:active {
+  background: rgba(124, 231, 200, 0.35);
+  border-color: #7ce7c8;
+}
+
+.padSprung {
+  width: 5.4rem;
+  height: 5.4rem;
+  border-color: rgba(124, 231, 200, 0.6);
+}
+
+.werkzeuge {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.werkzeug {
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(143, 124, 196, 0.4);
+  background: rgba(75, 63, 107, 0.25);
+  color: #ece9f7;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+/* --------------------------------------------------------- Dialoge, Text */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(11, 9, 22, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 5;
+}
+
+.dialog {
+  background: #1b1630;
+  border: 1px solid rgba(143, 124, 196, 0.45);
+  border-radius: 16px;
+  padding: 1.2rem 1.4rem;
+  max-width: 320px;
+  width: 100%;
+  text-align: center;
+  animation: hoch 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+.dialogSieg {
+  border-color: #7ce7c8;
+  box-shadow: 0 0 38px rgba(124, 231, 200, 0.22);
+}
+
+@keyframes hoch {
+  from {
+    transform: translateY(14px) scale(0.94);
+    opacity: 0;
+  }
+}
+
+.dialog h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.15rem;
+  letter-spacing: 0.06em;
+}
+
+.dialog p {
+  margin: 0.2rem 0;
+}
+
+.sterne {
+  color: #7ce7c8;
+  letter-spacing: 0.2em;
+  font-size: 1.2rem;
+  margin-bottom: 0.3rem;
+}
+
+.dialogKnoepfe {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.dialogKnoepfe button {
+  font: inherit;
+  padding: 0.55rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid rgba(143, 124, 196, 0.5);
+  background: rgba(75, 63, 107, 0.35);
+  color: inherit;
+  cursor: pointer;
+}
+
+.dialogKnoepfe .primaer {
+  background: #7ce7c8;
+  border-color: #7ce7c8;
+  color: #10202a;
+  font-weight: 700;
+}
+
+.karte2 {
+  border-radius: 14px;
+  border: 1px solid rgba(143, 124, 196, 0.3);
+  background: rgba(27, 22, 48, 0.7);
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  line-height: 1.45;
+  font-size: 0.9rem;
+}
+
+.reihe {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.reihe input[type='range'] {
+  flex: 1;
+  max-width: 60%;
+  accent-color: #7ce7c8;
+}
+
+.reihe input[type='checkbox'] {
+  width: 1.3rem;
+  height: 1.3rem;
+  accent-color: #7ce7c8;
+}
+
+.hinweis {
+  font-size: 0.82rem;
+  opacity: 0.72;
+  margin: 0;
+}
+
+.gefahrKnopf {
+  font: inherit;
+  padding: 0.5rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 77, 109, 0.5);
+  background: rgba(255, 77, 109, 0.12);
+  color: #ff9aae;
+  cursor: pointer;
+}
+
+.kristallGitter {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: 0.5rem;
+}
+
+.kristallPlatz {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 10px;
+  background: rgba(75, 63, 107, 0.25);
+}
+
+.kristallDa {
+  color: #7ce7c8;
+  font-size: 1.1rem;
+}
+
+.kristallWeg {
+  color: #4b3f6b;
+  font-size: 1.1rem;
+}
+
+/* Auf breiten Bildschirmen bleibt das Spielfeld mittig und die Knöpfe außen. */
+@media (min-width: 720px) {
+  .leinwandBox {
+    max-height: 72dvh;
+    max-width: min(100%, 150dvh);
+  }
+
+  .padKnopf {
+    width: 3.6rem;
+    height: 3.6rem;
+    font-size: 1.1rem;
+  }
+
+  .padSprung {
+    width: 4.2rem;
+    height: 4.2rem;
+  }
+
+  .pad {
+    max-width: 640px;
+    min-height: 6rem;
+    margin: 0 auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog {
+    animation: none;
+  }
+}
