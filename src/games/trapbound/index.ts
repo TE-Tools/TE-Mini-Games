@@ -9,6 +9,7 @@ export {
   erzeugeLevel,
   levelDaten,
   alleLevel,
+  levelMitKristall,
   weltVon,
   abschnittVon,
   istAbschnittsEnde,
