@@ -63,7 +63,8 @@ const WELT_BAUSTEINE: string[][] = [
   // Neues mit, und das Neue ist diesmal das, was man nicht kommen sieht.
   ['blindbruch', 'blindfall'], // 6  Die Tiefe
   ['pendel'], // 7  Die Schmiede
-  ['doppelluecke'], // 8  Das Uhrwerk
+  // Ab Welt 8 (Level 141) die Wand, die zurückschiebt.
+  ['doppelluecke', 'schieber'], // 8  Das Uhrwerk
   [], // 9  Die Leere
   ['stachelregen'], // 10 Der Spiegelsaal
   [], // 11 Das Gewitter
@@ -145,6 +146,32 @@ export function istGemein(nr: number): boolean {
 const BLIND = ['blindbruch', 'blindfall', 'stachelregen']
 
 /**
+ * Bausteine, in denen sich von selbst etwas bewegt oder verändert.
+ *
+ * Ab Level 150 muss jedes Level mindestens einen davon enthalten. Sonst
+ * kämen die vier beweglichen Dinge allein aus dem Ausgang, und der Weg
+ * dorthin stünde still.
+ */
+const BEWEGT = [
+  'bruch',
+  'stachelfalle',
+  'saege',
+  'decke',
+  'aufzug',
+  'knopftuer',
+  'band',
+  'presse',
+  'teleport',
+  'blindbruch',
+  'blindfall',
+  'stachelregen',
+  'pendel',
+  'schieber',
+  'jagd',
+  'waende',
+]
+
+/**
  * Bausteine, deren Lösung darin besteht, still zu stehen.
  *
  * Sie vertragen sich nicht mit der Jagd: Wer gejagt wird, kann nicht auf den
@@ -159,6 +186,7 @@ const WARTET = [
   'stachelregen',
   'pendel',
   'aufzug',
+  'schieber',
   // Auch die vertauschte Steuerung nicht: Der Umweg, den man zum Umlernen
   // braucht, führt einen der Jagd direkt in die Arme. Gemessen an Level 103
   // -- die Figur lief rückwärts in die Sägen, die hinter ihr standen.
@@ -173,6 +201,19 @@ const WARTET = [
  * Falle und den zuschnappenden Ausgang.
  */
 const ALPTRAUM_PLAETZE = [5, 10, 14]
+
+/**
+ * Plätze, an denen die Welt zeigt, was sie Neues mitbringt.
+ *
+ * Ohne diese Regel ging das Neue im Vorrat unter: Der Schieber kam in
+ * hundertfünfzig Leveln fünfmal vor, weil zwanzig andere Bausteine
+ * mitkonkurrierten. Man soll eine neue Falle aber mehrfach sehen, bevor sie
+ * später zwischen allem anderen auftaucht -- erst lernen, dann anwenden.
+ *
+ * Die vier Plätze liegen zwischen den gemeinen (3, 8, 12, 16, 19) und den
+ * Albträumen (5, 10, 14), stoßen also mit keinem zusammen.
+ */
+const NEU_PLAETZE = [2, 6, 11, 15]
 
 export function istAlptraum(nr: number): boolean {
   if (nr < HAERTER_AB) return false
@@ -206,6 +247,18 @@ const SPERREND = [
   'aufzug',
   'umkehr',
   'schwachersprung',
+  // Die Bausteine der zweiten Hälfte halten genauso auf -- die Liste war
+  // einfach älter als sie. Fehlten sie hier, galt ein Albtraum aus Jagd und
+  // blindem Bruchboden als "hält niemanden auf", und die Regel schob ihn in
+  // den Notausgang, wo sich die Paarungen dann wiederholten.
+  'blindbruch',
+  'blindfall',
+  'stachelregen',
+  'doppelluecke',
+  'pendel',
+  'schieber',
+  'jagd',
+  'waende',
 ]
 
 /**
@@ -324,6 +377,14 @@ function bauPlan(): PlanEintrag[] {
       .flatMap((p) => p.namen)
       .filter((n) => !GEMEIN.includes(n))
 
+    // Auf den Lernplätzen zeigt die Welt, was sie Neues mitbringt.
+    const eigene = (WELT_BAUSTEINE[welt - 1] ?? []).filter(
+      (n) => n !== 'weg' && !GEMEIN.includes(n) && BAUSTEINE[n]!.min <= platz,
+    )
+    const lernPlatz = NEU_PLAETZE.indexOf(inWelt)
+    const zeigeNeu =
+      !gemein && lernPlatz >= 0 && eigene.length > 0 ? eigene[lernPlatz % eigene.length] : undefined
+
     let gewaehlt: { namen: string[]; breiten: number[] } | null = null
     // Die Bedingungen weichen in dieser Reihenfolge: erst gilt beides, dann
     // darf ein Baustein aus den letzten Leveln wieder vorkommen, und erst
@@ -339,7 +400,7 @@ function bauPlan(): PlanEintrag[] {
         hoechstens,
         rng,
         meideFrisch ? frisch : [],
-        gemein ? GEMEIN[Math.floor(rng() * GEMEIN.length)]! : undefined,
+        gemein ? GEMEIN[Math.floor(rng() * GEMEIN.length)]! : zeigeNeu,
       )
       // Im Albtraum muss außerdem etwas Blindes dabei sein.
       if (
@@ -347,6 +408,26 @@ function bauPlan(): PlanEintrag[] {
         versuch < 190 &&
         !kandidat.namen.some((n) => BLIND.includes(n)) &&
         pool.some((n) => BLIND.includes(n))
+      ) {
+        continue
+      }
+      // Etwas, das wirklich aufhält, muss dabei sein. Sonst konnte ein
+      // erzwungener Lern-Baustein (Teleport, Knopftür) diese Regel
+      // aushebeln -- die Level 46, 51 und 55 waren danach mit gehaltener
+      // Taste zu schaffen.
+      if (
+        versuch < 150 &&
+        !kandidat.namen.some((n) => SPERREND.includes(n)) &&
+        pool.some((n) => SPERREND.includes(n))
+      ) {
+        continue
+      }
+      // Ab Level 150: Mindestens ein Baustein, in dem sich selbst etwas tut.
+      if (
+        nr >= VIER_AB &&
+        versuch < 150 &&
+        !kandidat.namen.some((n) => BEWEGT.includes(n)) &&
+        pool.some((n) => BEWEGT.includes(n))
       ) {
         continue
       }
@@ -426,7 +507,11 @@ const SCHLUSS_TEXT: Record<SchlussArt, string> = {
 
 /** Wie viel Platz der Ausgang eines Levels braucht. */
 function schlussBreite(nr: number): number {
-  return istGemein(nr) || istAlptraum(nr) ? SCHNAPP_BREITE : SCHLUSS_BREITE
+  // Ab Level 150 wird der breitere Schluss immer eingeplant, auch wenn das
+  // Level am Ende doch eine schlichte Tür bekommt: Ob der Ausgang zuschnappt,
+  // entscheidet sich erst, wenn feststeht, wie viel sich im Level sonst
+  // bewegt -- und die Breite muss vorher feststehen.
+  return istGemein(nr) || istAlptraum(nr) || nr >= VIER_AB ? SCHNAPP_BREITE : SCHLUSS_BREITE
 }
 
 function baueSchluss(
@@ -599,12 +684,38 @@ function baueSchluss(
  * aufgeht, wird die nächste probiert, statt ein unschaffbares Level
  * auszuliefern.
  */
-function baueLevel(nr: number, variante: number): LevelDaten {
+function baueLevel(
+  nr: number,
+  variante: number,
+  schlussErzwingen?: SchlussArt,
+  /** Nur den ersten Baustein nehmen -- der Notausgang, wenn nichts aufgeht. */
+  nurErsten = false,
+): LevelDaten {
   const welt = weltNummer(nr)
   const inWelt = ((nr - 1) % LEVEL_PRO_WELT) + 1
   const schwer = schwierigkeit(nr)
   const istTor = inWelt === LEVEL_PRO_WELT
-  const plan = bauPlan()[nr - 11]!
+  const planRoh = bauPlan()[nr - 11]!
+  // Der Notausgang nimmt nur den ersten Baustein und gibt ihm den ganzen
+  // Platz. Jeder Baustein für sich ist nachweislich zu schaffen; erst ihre
+  // Übergabe kann klemmen -- Level 151 (Doppellücke und Presse) war so ein
+  // Fall.
+  const plan: PlanEintrag = nurErsten
+    ? (() => {
+        // Von den geplanten Bausteinen der, in dem sich etwas bewegt --
+        // sonst steht im Notausgang-Level gar nichts mehr (Level 278 kam so
+        // auf nur drei bewegliche Dinge statt vier).
+        const i = Math.max(
+          0,
+          planRoh.namen.findIndex((n) => BEWEGT.includes(n)),
+        )
+        return {
+          ...planRoh,
+          namen: [planRoh.namen[i]!],
+          breiten: [planRoh.breiten.reduce((a, b) => a + b, 0)],
+        }
+      })()
+    : planRoh
   // Die Notausgangs-Variante lässt den zuschnappenden Ausgang weg.
   const gemein = (istGemein(nr) || plan.alptraum) && variante >= 0
   const rng = mulberry(nr * 2654435761 + 1013904223 + variante * 7919)
@@ -647,15 +758,17 @@ function baueLevel(nr: number, variante: number): LevelDaten {
 
   // Auf einem gemeinen Level schnappt der Ausgang zu: Genau davor kommt
   // noch einmal etwas, womit man nicht gerechnet hat.
-  const art: SchlussArt = gemein
-    ? 'zuschnapp'
-    : istTor
-      ? 'falsch'
-      : schwer > 0.55 && rng() < 0.4
-        ? 'flucht'
-        : schwer > 0.75 && rng() < 0.3
-          ? 'falsch'
-          : 'tuer'
+  const art: SchlussArt = schlussErzwingen
+    ? schlussErzwingen
+    : gemein
+      ? 'zuschnapp'
+      : istTor
+        ? 'falsch'
+        : schwer > 0.55 && rng() < 0.4
+          ? 'flucht'
+          : schwer > 0.75 && rng() < 0.3
+            ? 'falsch'
+            : 'tuer'
   const schluss = baueSchluss(art, x, nr, umgedreht)
   objekte.push(...schluss.objekte)
   loesung.push(...schluss.loesung)
@@ -670,6 +783,37 @@ function baueLevel(nr: number, variante: number): LevelDaten {
     objekte,
     loesung,
   }
+}
+
+/** Ab hier soll in jedem Level ständig etwas in Bewegung sein. */
+export const VIER_AB = 150
+
+/** So viele bewegliche Dinge mindestens, ab Level 150. */
+export const WANDEL_ZIEL = 4
+
+/**
+ * Wie viel sich in einem Level bewegt oder verändert.
+ *
+ * Thomas am 11.09.2026: "ab 150 [...] das heißt es sind 4 Sachen die sich
+ * verändern verschieben." Gezählt wird alles, was nicht einfach dasteht:
+ * was fährt, fällt, bricht, aufgeht, auftaucht oder wegspringt.
+ */
+export function zaehleWandel(l: LevelDaten): number {
+  return l.objekte.filter(
+    (o) =>
+      o.weg !== undefined ||
+      o.typ === 'bruch' ||
+      o.typ === 'fall' ||
+      o.typ === 'tuer' ||
+      o.typ === 'knopf' ||
+      o.versteckt === true ||
+      o.heimlich === true ||
+      o.flieht !== undefined ||
+      o.falle === true ||
+      // Ein Förderband steht zwar still, verschiebt aber einen -- und genau
+      // darum geht es hier.
+      o.schub !== undefined,
+  ).length
 }
 
 /**
@@ -718,6 +862,13 @@ function streueBlindfallen(level: LevelDaten, hoechstens: number, saat: number):
         !o.weg,
     )
     if (!aufBoden) continue
+    // Nicht zweimal an dieselbe Stelle: Beim Nachlegen für die
+    // Vier-Dinge-Regel würden sich sonst zwei Stachelreihen überlagern.
+    if (
+      gebaut.objekte.some((o) => o.typ === 'stachel' && Math.abs(o.x - (mitte - breite / 2)) < 24)
+    ) {
+      continue
+    }
     const zoneX = Math.max(4, mitte - 74 - Math.round(rng() * 10))
     const versuch: LevelDaten = {
       ...gebaut,
@@ -791,6 +942,7 @@ function streueBruchboden(level: LevelDaten, hoechstens: number, saat: number): 
         o.typ === 'block' && o.y === BODEN_Y && !o.weg && o.x + 6 <= von && o.x + o.b >= bis + 6,
     )
     if (idx < 0) continue
+    if (gebaut.objekte.some((o) => o.typ === 'bruch' && Math.abs(o.x - von) < 40)) continue
     const alt = gebaut.objekte[idx]!
     const objekte = [...gebaut.objekte]
     objekte.splice(
@@ -832,14 +984,35 @@ function streueBruchboden(level: LevelDaten, hoechstens: number, saat: number): 
  * einmal, weil `levelDaten` das Ergebnis behält.
  */
 export function erzeugeLevel(nr: number): LevelDaten {
-  for (const variante of [0, 1, 2]) {
-    const l = baueLevel(nr, variante)
+  for (const versuch of [
+    { variante: 0, einfach: false },
+    { variante: 1, einfach: false },
+    { variante: 2, einfach: false },
+    // Geht keine Variante auf, wird das Level einfacher gebaut, statt ein
+    // unschaffbares auszuliefern.
+    { variante: 0, einfach: true },
+    { variante: 1, einfach: true },
+  ]) {
+    const l = baueLevel(nr, versuch.variante, undefined, versuch.einfach)
     if (!spieleLoesung(l).geschafft) continue
+    const variante = versuch.variante
     // Ab Level 101 kommen blinde Stacheln dazu, im Albtraum am meisten.
     if (nr < HAERTER_AB) return l
     const alp = istAlptraum(nr)
-    const mitStacheln = streueBlindfallen(l, alp ? 6 : 2, nr * 31 + 7)
-    return streueBruchboden(mitStacheln, alp ? 4 : 1, nr * 131 + 11)
+    const streuen = (roh: LevelDaten): LevelDaten =>
+      streueBruchboden(streueBlindfallen(roh, alp ? 6 : 3, nr * 31 + 7), alp ? 4 : 2, nr * 131 + 11)
+
+    const fertig = streuen(l)
+    if (nr < VIER_AB || zaehleWandel(fertig) >= WANDEL_ZIEL) return fertig
+
+    // Zu wenig in Bewegung: Dann schnappt eben der Ausgang zu. Das bringt
+    // Stacheln, eine herabfahrende Wand und ihren Auslöser auf einmal --
+    // und passt zu dem, was ab hier ohnehin gelten soll: Kurz vor der Tür
+    // kommt noch etwas.
+    const mitSchnapp = baueLevel(nr, variante, 'zuschnapp', versuch.einfach)
+    if (!spieleLoesung(mitSchnapp).geschafft) return fertig
+    const gestreut = streuen(mitSchnapp)
+    return zaehleWandel(gestreut) > zaehleWandel(fertig) ? gestreut : fertig
   }
   return baueLevel(nr, -1)
 }

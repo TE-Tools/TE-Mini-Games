@@ -106,7 +106,16 @@ Progressive Web App with short skill, memory, reaction and logic games.
   each one verified individually: whoever knows the jump sails over it,
   whoever does not walks in. Thirty of those levels are **nightmares** – a
   chase or closing walls, a blind trap, the snapping door, and about 4.5
-  unannounced traps each, against 0.3 in the first hundred levels. Traps compose through triggers and actions
+  unannounced traps each, against 0.3 in the first hundred levels. **From
+  level 150 nothing stands still**: every level carries at least four things
+  that move, fall, break, open or shove – measured, not hoped for (5.0 on
+  average, 8.5 in the nightmares, against 2.3 in the first hundred). Among
+  them is a **wall that pushes you back**: it slides in from above and drives
+  anyone standing past the gap back into it, so you wait on the safe side
+  until it retracts – skip the wait and the recorded solution itself drowns
+  in the pit, which is what the test checks. Each world also teaches its own
+  new trap on four fixed slots before it turns up mixed with everything
+  else. Traps compose through triggers and actions
   (`zone → platform vanishes, spikes appear, gravity flips two seconds later`),
   so new worlds need no engine changes. Progress, deaths, best times, crystals
   and settings live in localStorage
