@@ -1042,6 +1042,7 @@ const NAMEN: Record<string, string[]> = {
   pendel: ['Hin und her', 'Warten und springen', 'Das Pendel', 'Im Vorbeigehen'],
   stachelregen: ['Es regnet', 'Von oben kommt mehr', 'Schauer', 'Nicht stehenbleiben, echt'],
   doppelluecke: ['Zweimal springen', 'Der schmale Absatz', 'Zwei Löcher', 'Absatz dazwischen'],
+  schieber: ['Zurück mit dir', 'Erst mal warten', 'Die Wand will da lang', 'Rückwärts'],
 }
 
 /** Die Namen für die Albträume. Wer den auf der Karte liest, weiß Bescheid. */

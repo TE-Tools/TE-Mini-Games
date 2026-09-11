@@ -1077,3 +1077,22 @@ describe('Ab Level 150', () => {
     expect(welt8.has('doppelluecke')).toBe(true)
   }, 120_000)
 })
+
+/**
+ * Kein Level heißt "Weiter".
+ *
+ * Das ist der Rückfallname, wenn ein Baustein keine eigenen Namen hat. Am
+ * 11.09.2026 traf es Level 284: Der Schieber war neu, seine Namensliste
+ * fehlte, und auf der Karte stand ein nichtssagendes "Weiter". Der Test
+ * fällt jetzt, sobald ein neuer Baustein ohne Namen ins Spiel kommt.
+ */
+describe('Levelnamen', () => {
+  it('gibt keinem Level den Rückfallnamen', () => {
+    const ohne: string[] = []
+    for (let nr = 11; nr <= LEVEL_ANZAHL; nr++) {
+      const name = levelDaten(nr).name
+      if (name === 'Weiter' || name === 'Weiter?') ohne.push(`${nr}: ${name}`)
+    }
+    expect(ohne).toEqual([])
+  }, 120_000)
+})
