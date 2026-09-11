@@ -20,7 +20,10 @@ import {
   istAlptraum,
   GEMEIN_AB,
   HAERTER_AB,
+  VIER_AB,
+  WANDEL_ZIEL,
   schwierigkeit,
+  zaehleWandel,
 } from '@/games/trapbound/levels/erzeugt'
 import { LEVEL_PRO_WELT } from '@/games/trapbound/welten'
 import {
@@ -977,10 +980,100 @@ describe('Die zweite Hälfte', () => {
     }
     const stichprobe = alptraeume.filter((_, i) => i % 3 === 0)
     const mittel = stichprobe.reduce((a, n) => a + luft(n), 0) / stichprobe.length
+    // Gemessen 0,28 s (11.09.2026); auf gewöhnlichen Leveln sind es 0,66 bis
+    // 0,75 s. Die Grenze liegt bewusst etwas über dem gemessenen Wert: Sie
+    // soll anschlagen, wenn die Albträume gutmütig werden, und nicht bei
+    // jeder Kleinigkeit am Generator.
     expect(`Albtraum ${mittel.toFixed(2)}s`).toBe(
-      mittel < 0.25
+      mittel < 0.35
         ? `Albtraum ${mittel.toFixed(2)}s`
         : `Albtraum zu gutmütig: ${mittel.toFixed(2)}s`,
     )
+  }, 120_000)
+})
+
+/**
+ * Ab Level 150: vier Dinge, die sich bewegen.
+ *
+ * Thomas am 11.09.2026: "ab 150 [...] das heißt es sind 4 sachen die sich
+ * verändern verschieben auch mal eine wand die dich nach hinten schiebt und
+ * man irgendwo warten muss oder dann über das hinterniss zurück springen
+ * muss. Das man das nach und nach lernen muss."
+ *
+ * Drei Zusagen stehen darin, und alle drei werden hier gemessen: dass immer
+ * etwas in Bewegung ist, dass die schiebende Wand wirklich zurückschiebt,
+ * und dass man das Neue erst kennenlernt, bevor es zwischen allem anderen
+ * auftaucht.
+ */
+describe('Ab Level 150', () => {
+  it('hält in jedem Level mindestens vier Dinge in Bewegung', () => {
+    const zuRuhig: string[] = []
+    for (let nr = VIER_AB; nr <= LEVEL_ANZAHL; nr++) {
+      const n = zaehleWandel(levelDaten(nr))
+      if (n < WANDEL_ZIEL) zuRuhig.push(`${nr}: nur ${n}`)
+    }
+    expect(zuRuhig).toEqual([])
+  }, 120_000)
+
+  it('bewegt dort deutlich mehr als in der ersten Hälfte', () => {
+    const mittel = (von: number, bis: number) => {
+      let summe = 0
+      for (let nr = von; nr <= bis; nr++) summe += zaehleWandel(levelDaten(nr))
+      return summe / (bis - von + 1)
+    }
+    expect(mittel(VIER_AB, LEVEL_ANZAHL)).toBeGreaterThan(mittel(11, 100) * 2)
+  }, 120_000)
+
+  /**
+   * Die Wand, die zurückschiebt.
+   *
+   * Gemessen wird sie an ihrem Sinn: Wer nicht wartet, sondern gleich
+   * hinüberspringt, wird von ihr in die Lücke zurückgedrängt und fällt. Der
+   * Test nimmt dazu die Wartepause aus der hinterlegten Lösung heraus -- und
+   * verlangt, dass es dann schiefgeht.
+   */
+  it('schiebt bei der Schieberwand zurück, wer nicht wartet', () => {
+    const schieberLevel: number[] = []
+    for (let nr = 11; nr <= LEVEL_ANZAHL; nr++) {
+      if (levelDaten(nr).idee.includes('schieber')) schieberLevel.push(nr)
+    }
+    expect(schieberLevel.length).toBeGreaterThanOrEqual(4)
+
+    for (const nr of schieberLevel) {
+      const l = levelDaten(nr)
+      const ohne = [...(l.loesung ?? [])]
+      const i = ohne.findIndex((x) => (x.dauer ?? 0) > 1.5 && !x.links && !x.rechts && !x.sprung)
+      expect(`Level ${nr}`).toBe(i >= 0 ? `Level ${nr}` : `Level ${nr} wartet gar nicht`)
+      ohne.splice(i, 1)
+      expect(`${nr} ohne Warten`).toBe(
+        spieleLoesung({ ...l, loesung: ohne }).geschafft
+          ? `${nr} ohne Warten kommt durch`
+          : `${nr} ohne Warten`,
+      )
+    }
+  }, 120_000)
+
+  it('zeigt jede neue Falle zuerst in ihrer eigenen Welt', () => {
+    // Welt 6 bringt die blinden, Welt 7 das Pendel, Welt 8 Schieber und
+    // Doppellücke. Jede davon muss in ihrer Welt vorkommen, sonst lernt man
+    // sie nie kennen, bevor sie im Chaos auftaucht.
+    const inWelt = (von: number, bis: number) => {
+      const teile = new Set<string>()
+      for (let nr = von; nr <= bis; nr++) {
+        for (const t of levelDaten(nr)
+          .idee.replace('Aus Bausteinen: ', '')
+          .replace(/\.$/, '')
+          .split(' + ')) {
+          teile.add(t.trim())
+        }
+      }
+      return teile
+    }
+    const welt6 = inWelt(101, 120)
+    expect(welt6.has('blindbruch') || welt6.has('blindfall')).toBe(true)
+    expect(inWelt(121, 140).has('pendel')).toBe(true)
+    const welt8 = inWelt(141, 160)
+    expect(welt8.has('schieber')).toBe(true)
+    expect(welt8.has('doppelluecke')).toBe(true)
   }, 120_000)
 })

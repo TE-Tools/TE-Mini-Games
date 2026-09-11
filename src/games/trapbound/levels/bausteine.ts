@@ -843,6 +843,74 @@ export const bDoppelLuecke: Baustein = (b) => {
   }
 }
 
+/**
+ * Der Schieber – eine Wand, die auf dich zukommt und dich zurückdrängt.
+ *
+ * Thomas am 11.09.2026: "auch mal eine Wand die dich nach hinten schiebt und
+ * man irgendwo warten muss oder dann über das Hindernis zurück springen
+ * muss."
+ *
+ * Der Aufbau: eine sichere Seite links, dahinter eine Lücke, dann die offene
+ * Strecke. Wer zu früh hinüberspringt, bekommt die Wand entgegen und wird in
+ * die Lücke zurückgeschoben. Richtig ist, auf der sicheren Seite zu warten,
+ * bis sie sich zurückzieht -- oder, wenn man schon drüben ist, rechtzeitig
+ * über die Lücke zurückzuspringen.
+ *
+ * Sie parkt schräg über Kopfhöhe, nicht am Boden: Am Boden hätte sie den
+ * Ausgang des Abschnitts versperrt, und man wäre eingesperrt gewesen statt
+ * gefordert.
+ */
+export const bSchieber: Baustein = (b) => {
+  const id = `sb${b.nr}`
+  const links = 30
+  const spalt = 38
+  const dauer = 0.9 - b.schwer * 0.2
+  // Lange Pause am oberen Parkplatz: Das ist das Fenster, in dem man
+  // hinüberkommt.
+  const warte = 1.6
+  const parkX = b.x + b.breite - 46
+  // So weit, dass die Wand bis kurz hinter die Lücke kommt: Nur dann schiebt
+  // sie jemanden, der schon drüben steht, auch wirklich zurück.
+  const weit = b.breite - 118
+  return {
+    objekte: [
+      boden(b.x, links),
+      boden(b.x + links + spalt, b.breite - links - spalt),
+      {
+        typ: 'beweger',
+        id,
+        x: parkX,
+        y: BODEN_Y - 132,
+        b: 16,
+        h: 90,
+        weg: { dx: -weit, dy: 52, dauer, warte, wartetAufAusloeser: true },
+      },
+      {
+        typ: 'zone',
+        x: b.x + 10,
+        y: BODEN_Y - 50,
+        b: 8,
+        h: 50,
+        einmal: true,
+        loest: [
+          { tu: 'los', ziel: id },
+          { tu: 'beben', wert: 0.25 },
+        ],
+      },
+    ],
+    loesung: [
+      // Auf der sicheren Seite stehenbleiben, bis die Wand wieder hochfährt.
+      vor(b, { bisBoden: true, dauer: 1 }),
+      vor(b, { bisX: b.x + 14 }),
+      { dauer: dauer + warte + dauer * 0.6 },
+      // Jetzt hinüber und durch.
+      vor(b, { sprung: true, dauer: 0.34 }),
+      vor(b, { bisBoden: true }),
+      vor(b, { bisX: b.x + b.breite - 14, dauer: 2 }),
+    ],
+  }
+}
+
 export interface BausteinEintrag {
   name: string
   bau: Baustein
@@ -874,4 +942,5 @@ export const BAUSTEINE: Record<string, BausteinEintrag> = {
   pendel: { name: 'pendel', bau: bPendel, min: 190 },
   stachelregen: { name: 'stachelregen', bau: bStachelRegen, min: 140 },
   doppelluecke: { name: 'doppelluecke', bau: bDoppelLuecke, min: 160 },
+  schieber: { name: 'schieber', bau: bSchieber, min: 160 },
 }
