@@ -12,6 +12,7 @@
 
 import { supabase, isSupabaseConfigured } from '@/database/supabase'
 import { onlineFehlerText } from './onlineFehler'
+import { raumFunktionen } from './raeume'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
 export type OnlinePhase = 'lobby' | 'night' | 'day' | 'vote' | 'result' | 'over'
@@ -97,13 +98,20 @@ async function rpc<T>(name: string, args: Record<string, unknown>, fallback: str
   return data as T
 }
 
+/* Räume: Lebenszeichen, öffentlich schalten, öffentliche Räume (Migration 018). */
+const raum = raumFunktionen('sr', client)
+export const herzschlagSr = raum.herzschlag
+export const fetchOeffentlicheSrRaeume = raum.oeffentlicheRaeume
+
 export async function createOnlineMatch(options: {
   size: number
   event: boolean
   zugId: string
   name?: string
+  /** Für alle sichtbar in der Lobby, mit dem Namen des Gastgebers. */
+  oeffentlich?: boolean
 }): Promise<{ match_id: string; code: string }> {
-  return rpc(
+  const created = await rpc<{ match_id: string; code: string }>(
     'sr_create_match',
     {
       p_size: options.size,
@@ -113,6 +121,8 @@ export async function createOnlineMatch(options: {
     },
     'Die Runde konnte nicht eröffnet werden.',
   )
+  if (options.oeffentlich) await raum.oeffentlichSchalten(created.match_id, true)
+  return created
 }
 
 export async function joinOnlineMatch(

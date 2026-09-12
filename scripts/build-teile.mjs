@@ -46,12 +46,20 @@ function ohneKommentare(sql) {
       if (t.includes('*/')) imBlock = false
       continue
     }
-    if (t.startsWith('/*') && !t.includes('*/')) { imBlock = true; continue }
+    if (t.startsWith('/*') && !t.includes('*/')) {
+      imBlock = true
+      continue
+    }
     if (t.startsWith('/*') && t.includes('*/')) continue
     if (t.startsWith('--')) continue
     raus.push(z)
   }
-  return raus.join('\n').replace(/\n{3,}/g, '\n\n').trim() + '\n'
+  return (
+    raus
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim() + '\n'
+  )
 }
 
 /**
@@ -124,7 +132,10 @@ let nummer = 0
 const uebersicht = []
 
 for (const datei of dateien) {
-  const roh = ohneKommentare(readFileSync(join(quelle, datei), 'utf8'))
+  // Windows-Arbeitskopien haben CRLF (autocrlf); die Schnitte unten suchen
+  // nach "\n" -- ohne diese Zeile blieb die Wortliste am 12.09.2026 ein
+  // 28-KB-Stück, weil kein ",\n" mehr zu finden war.
+  const roh = ohneKommentare(readFileSync(join(quelle, datei), 'utf8').replace(/\r\n/g, '\n'))
   const stuecke = []
   let puffer = ''
   for (const a of anweisungen(roh).flatMap(insertTeilen)) {

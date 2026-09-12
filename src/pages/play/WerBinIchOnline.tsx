@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CATEGORIES } from '@/games/finde-den-imposter'
 import { getCurrentUser } from '@/auth/authService'
@@ -13,10 +13,15 @@ import {
   nextWbiRoundOnline,
   fetchWbiState,
   fetchMyWbiMatches,
+  fetchOeffentlicheWbiRaeume,
+  herzschlagWbi,
   subscribeToWbiMatch,
   type WbiOnlineState,
   type WbiOpenMatch,
 } from '@/services/werBinIchOnline'
+import { HERZSCHLAG_MS, RAUM_GESCHLOSSEN_TEXT, RAUM_PARAM, istRaumWeg } from '@/services/raeume'
+import { OeffentlicheRaeume } from './OeffentlicheRaeume'
+import raum from './OeffentlicheRaeume.module.css'
 import styles from './WerBinIchPage.module.css'
 
 /** Nachfassen, falls Realtime mal nichts liefert. */
@@ -28,7 +33,10 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
 
   const [categoryId, setCategoryId] = useState(CATEGORIES[0]?.id ?? 'tiere')
   const [name, setName] = useState('')
+  const [oeffentlich, setOeffentlich] = useState(false)
   const [code, setCode] = useState('')
+  /** Der Raum, an dem gerade gehorcht wird -- für verspätete Antworten. */
+  const aktuellerRaum = useRef<string | null>(null)
 
   const [matchId, setMatchId] = useState<string | null>(null)
   const [state, setState] = useState<WbiOnlineState | null>(null)
@@ -63,6 +71,14 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
       setState(await fetchWbiState(id))
       setError(null)
     } catch (e) {
+      // Der Server löscht Räume, in denen zwanzig Minuten niemand mehr war
+      // (Migration 018). Dann zurück in den Vorraum, mit Erklärung.
+      if (istRaumWeg(e) && aktuellerRaum.current === id) {
+        setMatchId(null)
+        setState(null)
+        setError(RAUM_GESCHLOSSEN_TEXT)
+        return
+      }
       setError(e instanceof Error ? e.message : 'Der Spielstand kam nicht an.')
     }
   }, [])
@@ -70,16 +86,21 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
   useEffect(() => {
     if (!matchId) return
     let abbruch = false
+    aktuellerRaum.current = matchId
     const hole = () => {
       if (!abbruch) void laden(matchId)
     }
     hole()
     const stop = subscribeToWbiMatch(matchId, hole)
     const timer = window.setInterval(hole, POLL_MS)
+    // Lebenszeichen: Solange jemand den Raum offen hat, bleibt er bestehen.
+    const herz = window.setInterval(() => void herzschlagWbi(matchId), HERZSCHLAG_MS)
     return () => {
       abbruch = true
+      aktuellerRaum.current = null
       stop()
       window.clearInterval(timer)
+      window.clearInterval(herz)
     }
   }, [matchId, laden])
 
@@ -95,12 +116,28 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
     }
   }, [])
 
+  // Von "Offene Spiele" mit ?raum=CODE gekommen: einmal von selbst beitreten.
+  const autoBeigetreten = useRef(false)
+  useEffect(() => {
+    if (!signedIn || autoBeigetreten.current) return
+    const raumCode = new URLSearchParams(window.location.search).get(RAUM_PARAM)
+    if (!raumCode) return
+    autoBeigetreten.current = true
+    // Nicht direkt im Effekt: der Aufruf setzt sofort Zustand, das mag React nicht.
+    const t = window.setTimeout(() => {
+      void run(async () => {
+        setMatchId(await joinWbiMatch(raumCode))
+      })
+    }, 0)
+    return () => window.clearTimeout(t)
+  }, [signedIn, run])
+
   if (!isWerBinIchOnlineAvailable) {
     return (
       <div className={styles.card}>
         <p className={styles.subtitle}>
-          Für Online-Runden fehlt die Verbindung zum Konto-Server. Am einen Gerät geht es
-          trotzdem jederzeit.
+          Für Online-Runden fehlt die Verbindung zum Konto-Server. Am einen Gerät geht es trotzdem
+          jederzeit.
         </p>
         <button type="button" className={styles.btn} onClick={onBack}>
           Zurück zum Spiel am einen Gerät
@@ -115,8 +152,8 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
     return (
       <div className={styles.card}>
         <p className={styles.subtitle}>
-          Online spielst du mit deinem Konto – so weiß der Server, wem er welches Wort
-          vorenthalten muss.
+          Online spielst du mit deinem Konto – so weiß der Server, wem er welches Wort vorenthalten
+          muss.
         </p>
         <Link to="/auth" className={styles.btn} style={{ textAlign: 'center' }}>
           Anmelden
@@ -161,13 +198,24 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
               ))}
             </select>
           </label>
+          <label className={raum.oeffentlich}>
+            <input
+              type="checkbox"
+              checked={oeffentlich}
+              onChange={(e) => setOeffentlich(e.target.checked)}
+            />
+            <span>
+              Öffentliche Runde
+              <small>Steht für alle in der Lobby, mit deinem Namen. Jeder kann beitreten.</small>
+            </span>
+          </label>
           <button
             type="button"
             className={styles.btn}
             disabled={busy}
             onClick={() =>
               void run(async () => {
-                const neu = await createWbiMatchOnline({ categoryId, name })
+                const neu = await createWbiMatchOnline({ categoryId, name, oeffentlich })
                 setMatchId(neu.match_id)
               })
             }
@@ -199,6 +247,16 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
             Beitreten
           </button>
         </div>
+
+        <OeffentlicheRaeume
+          laden={fetchOeffentlicheWbiRaeume}
+          gesperrt={busy}
+          onBeitreten={(r) =>
+            void run(async () => {
+              setMatchId(await joinWbiMatch(r.code, name))
+            })
+          }
+        />
 
         {open.length > 0 && (
           <div className={styles.card}>
@@ -355,9 +413,7 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
                 </>
               ) : (
                 <>
-                  <h2 className={styles.cardTitle}>
-                    {me.correct ? 'Richtig!' : 'Leider daneben'}
-                  </h2>
+                  <h2 className={styles.cardTitle}>{me.correct ? 'Richtig!' : 'Leider daneben'}</h2>
                   <p className={styles.subtitle}>
                     Du hast „{me.guess}" getippt – du warst <strong>{me.word}</strong>.
                   </p>

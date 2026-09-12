@@ -10,6 +10,7 @@
 
 import { supabase, isSupabaseConfigured } from '@/database/supabase'
 import { onlineFehlerText } from './onlineFehler'
+import { raumFunktionen } from './raeume'
 
 export const isWerBinIchOnlineAvailable = isSupabaseConfigured
 
@@ -73,9 +74,16 @@ async function rpc<T>(name: string, args: Record<string, unknown>): Promise<T> {
   return data as T
 }
 
+/* Räume: Lebenszeichen, öffentlich schalten, öffentliche Räume (Migration 018). */
+const raum = raumFunktionen('wbi', client)
+export const herzschlagWbi = raum.herzschlag
+export const fetchOeffentlicheWbiRaeume = raum.oeffentlicheRaeume
+
 export async function createWbiMatchOnline(opts: {
   categoryId: string
   name?: string
+  /** Für alle sichtbar in der Lobby, mit dem Namen des Gastgebers. */
+  oeffentlich?: boolean
 }): Promise<{ match_id: string; code: string }> {
   const rows = await rpc<{ match_id: string; code: string }[]>('wbi_create_match', {
     p_category: opts.categoryId,
@@ -85,6 +93,7 @@ export async function createWbiMatchOnline(opts: {
     ? rows[0]
     : (rows as unknown as { match_id: string; code: string })
   if (!first) throw new Error('Die Runde konnte nicht eröffnet werden.')
+  if (opts.oeffentlich) await raum.oeffentlichSchalten(first.match_id, true)
   return first
 }
 

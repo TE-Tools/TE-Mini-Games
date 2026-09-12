@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CATEGORIES, ONLINE_MODES, modeOf, chaosRuleLabel } from '@/games/finde-den-imposter'
 import { loadCustomCategories } from '@/games/finde-den-imposter/customCategories'
@@ -16,6 +16,8 @@ import {
   fetchOnlineState,
   fetchMyOnlineMatches,
   fetchMyCustomCategories,
+  fetchOeffentlicheImposterRaeume,
+  herzschlagImposter,
   saveCustomCategoryOnline,
   subscribeToOnlineMatch,
   type CustomCategoryOnline,
@@ -23,6 +25,9 @@ import {
   type OnlineState,
   type OpenMatch,
 } from '@/services/imposterOnline'
+import { HERZSCHLAG_MS, RAUM_GESCHLOSSEN_TEXT, RAUM_PARAM, istRaumWeg } from '@/services/raeume'
+import { OeffentlicheRaeume } from './OeffentlicheRaeume'
+import raum from './OeffentlicheRaeume.module.css'
 import styles from './FindeDenImposterPage.module.css'
 
 /** Nachfassen, falls Realtime mal nichts liefert. */
@@ -45,7 +50,10 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
   const [eigene, setEigene] = useState<CustomCategoryOnline[]>([])
   const [mode, setMode] = useState<OnlineMode>('classic')
   const [name, setName] = useState('')
+  const [oeffentlich, setOeffentlich] = useState(false)
   const [code, setCode] = useState('')
+  /** Der Raum, an dem gerade gehorcht wird -- für verspätete Antworten. */
+  const aktuellerRaum = useRef<string | null>(null)
 
   const [matchId, setMatchId] = useState<string | null>(null)
   const [state, setState] = useState<OnlineState | null>(null)
@@ -93,6 +101,14 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
       setState(await fetchOnlineState(id))
       setError(null)
     } catch (e) {
+      // Der Server löscht Räume, in denen zwanzig Minuten niemand mehr war
+      // (Migration 018). Dann zurück in den Vorraum, mit Erklärung.
+      if (istRaumWeg(e) && aktuellerRaum.current === id) {
+        setMatchId(null)
+        setState(null)
+        setError(RAUM_GESCHLOSSEN_TEXT)
+        return
+      }
       setError(e instanceof Error ? e.message : 'Der Spielstand kam nicht an.')
     }
   }, [])
@@ -100,16 +116,21 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
   useEffect(() => {
     if (!matchId) return
     let abbruch = false
+    aktuellerRaum.current = matchId
     const hole = () => {
       if (!abbruch) void laden(matchId)
     }
     hole()
     const stop = subscribeToOnlineMatch(matchId, hole)
     const timer = window.setInterval(hole, POLL_MS)
+    // Lebenszeichen: Solange jemand den Raum offen hat, bleibt er bestehen.
+    const herz = window.setInterval(() => void herzschlagImposter(matchId), HERZSCHLAG_MS)
     return () => {
       abbruch = true
+      aktuellerRaum.current = null
       stop()
       window.clearInterval(timer)
+      window.clearInterval(herz)
     }
   }, [matchId, laden])
 
@@ -157,12 +178,28 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
     }
   }, [])
 
+  // Von "Offene Spiele" mit ?raum=CODE gekommen: einmal von selbst beitreten.
+  const autoBeigetreten = useRef(false)
+  useEffect(() => {
+    if (!signedIn || autoBeigetreten.current) return
+    const raumCode = new URLSearchParams(window.location.search).get(RAUM_PARAM)
+    if (!raumCode) return
+    autoBeigetreten.current = true
+    // Nicht direkt im Effekt: der Aufruf setzt sofort Zustand, das mag React nicht.
+    const t = window.setTimeout(() => {
+      void run(async () => {
+        setMatchId(await joinOnlineMatch(raumCode))
+      })
+    }, 0)
+    return () => window.clearTimeout(t)
+  }, [signedIn, run])
+
   if (!isImposterOnlineAvailable) {
     return (
       <div className={styles.card}>
         <p className={styles.subtitle}>
-          Für Online-Runden fehlt die Verbindung zum Konto-Server. Am einen Gerät geht es
-          trotzdem jederzeit.
+          Für Online-Runden fehlt die Verbindung zum Konto-Server. Am einen Gerät geht es trotzdem
+          jederzeit.
         </p>
         <button type="button" className={styles.btn} onClick={onBack}>
           Zurück zum Spiel am einen Gerät
@@ -177,8 +214,8 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
     return (
       <div className={styles.card}>
         <p className={styles.subtitle}>
-          Online spielst du mit deinem Konto – so weiß der Server, wem er welches Wort
-          schicken darf.
+          Online spielst du mit deinem Konto – so weiß der Server, wem er welches Wort schicken
+          darf.
         </p>
         <Link to="/auth" className={styles.btn} style={{ textAlign: 'center' }}>
           Anmelden
@@ -251,8 +288,8 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
           {nochNichtHochgeladen.length > 0 && (
             <div className={styles.meta}>
               <p>
-                Auf diesem Gerät liegen {nochNichtHochgeladen.length} eigene Listen, die der
-                Server noch nicht kennt.
+                Auf diesem Gerät liegen {nochNichtHochgeladen.length} eigene Listen, die der Server
+                noch nicht kennt.
               </p>
               <button
                 type="button"
@@ -273,11 +310,22 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
           )}
           {(categoryId.startsWith(EIGEN_PREFIX) || eigene.length > 0) && (
             <p className={styles.meta}>
-              Bei einer eigenen Liste kennst du als Gastgeber die Wörter – du erfährst aber
-              nicht, welches gezogen wurde. Je kürzer die Liste, desto leichter hast du es
-              trotzdem bei der letzten Chance.
+              Bei einer eigenen Liste kennst du als Gastgeber die Wörter – du erfährst aber nicht,
+              welches gezogen wurde. Je kürzer die Liste, desto leichter hast du es trotzdem bei der
+              letzten Chance.
             </p>
           )}
+          <label className={raum.oeffentlich}>
+            <input
+              type="checkbox"
+              checked={oeffentlich}
+              onChange={(e) => setOeffentlich(e.target.checked)}
+            />
+            <span>
+              Öffentliche Runde
+              <small>Steht für alle in der Lobby, mit deinem Namen. Jeder kann beitreten.</small>
+            </span>
+          </label>
           <button
             type="button"
             className={styles.btn}
@@ -292,6 +340,7 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
                   customCategoryId: eigenId,
                   mode,
                   name,
+                  oeffentlich,
                 })
                 setMatchId(neu.match_id)
               })
@@ -324,6 +373,16 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
             Beitreten
           </button>
         </div>
+
+        <OeffentlicheRaeume
+          laden={fetchOeffentlicheImposterRaeume}
+          gesperrt={busy}
+          onBeitreten={(r) =>
+            void run(async () => {
+              setMatchId(await joinOnlineMatch(r.code, name))
+            })
+          }
+        />
 
         {open.length > 0 && (
           <div className={styles.card}>
@@ -481,9 +540,7 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
               Imposter erraten
             </button>
           ) : (
-            <p className={styles.meta}>
-              Der Gastgeber startet das Raten, wenn ihr so weit seid.
-            </p>
+            <p className={styles.meta}>Der Gastgeber startet das Raten, wenn ihr so weit seid.</p>
           )}
         </div>
       )}
@@ -555,16 +612,16 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
             <>
               <h2 className={styles.cardTitle}>Letzte Chance</h2>
               <p className={styles.subtitle}>
-                {state.players.find((p) => p.seat === m.accused_seat)?.name} wurde erwischt und
-                rät jetzt das geheime Wort.
+                {state.players.find((p) => p.seat === m.accused_seat)?.name} wurde erwischt und rät
+                jetzt das geheime Wort.
               </p>
               {/* Im Duell können beide Imposter erwischt worden sein -- dann
                   kommen sie nacheinander dran, und wer wartet, soll wissen,
                   dass danach noch jemand kommt. */}
               {istDuell && m.correct_accusation === true && (
                 <p className={styles.meta}>
-                  Im Duell rät jeder Erwischte einzeln. Trifft einer von beiden, ist die Runde
-                  für die Imposter gedreht.
+                  Im Duell rät jeder Erwischte einzeln. Trifft einer von beiden, ist die Runde für
+                  die Imposter gedreht.
                 </p>
               )}
             </>
@@ -607,7 +664,9 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
                   (m.last_chance_success ? ', letzte Chance getroffen' : ', letzte Chance daneben')}
               </p>
             )}
-            {m.accused_seat === null && <p className={styles.meta}>Gleichstand – niemand wurde angeklagt.</p>}
+            {m.accused_seat === null && (
+              <p className={styles.meta}>Gleichstand – niemand wurde angeklagt.</p>
+            )}
           </div>
           {m.is_host && (
             <button

@@ -145,6 +145,13 @@ Progressive Web App with short skill, memory, reaction and logic games.
   Schützenfeste, 2–4 players against rule-based AI on three levels, trading,
   building and three shooting-range minigames (see
   `docs/design/schuetzenopoly/`)
+- **Online-Räume** (Schützenrunde, Imposter, Wer bin ich?, Stadt-Land-Fluss, Kniffel):
+  a host can open a **public room** that everyone sees in the lobby and on the
+  home page under _Offene Spiele_ – with the host's name and everyone already
+  inside; joining goes through the usual code. Rooms nobody has open for
+  **20 minutes** are deleted on the server (`018_oeffentliche_raeume.sql`);
+  every open room sends a heartbeat once a minute, so a waiting host keeps his
+  room. No cron: cleanup runs whenever someone opens a lobby
 - Level map 1–500 across five biomes (jungle → volcanic → rock desert → ice age → glacier peak)
 - Installable as an app (PWA) – "App installieren" on the home screen
 - Offline-first (IndexedDB)

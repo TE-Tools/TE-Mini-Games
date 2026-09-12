@@ -47,14 +47,25 @@ const WURF_ANIMATION_MS = 340
 type Ansicht = 'menue' | 'aufbau' | 'solo' | 'online'
 
 const STUFEN: { id: KiStufe; label: string; erklaerung: string }[] = [
-  { id: 'leicht', label: 'Leicht', erklaerung: 'Behält die häufigste Zahl, trägt den höchsten Wurf ein.' },
+  {
+    id: 'leicht',
+    label: 'Leicht',
+    erklaerung: 'Behält die häufigste Zahl, trägt den höchsten Wurf ein.',
+  },
   { id: 'normal', label: 'Normal', erklaerung: 'Achtet auf Straßen und auf den oberen Bonus.' },
-  { id: 'schwer', label: 'Schwer', erklaerung: 'Probiert jede Haltemöglichkeit durch und rechnet.' },
+  {
+    id: 'schwer',
+    label: 'Schwer',
+    erklaerung: 'Probiert jede Haltemöglichkeit durch und rechnet.',
+  },
 ]
 
 export function KniffelPage() {
   const navigate = useNavigate()
-  const [ansicht, setAnsicht] = useState<Ansicht>('menue')
+  // Mit ?raum=CODE (von der Seite "Offene Spiele") geht es direkt in den Online-Teil.
+  const [ansicht, setAnsicht] = useState<Ansicht>(() =>
+    new URLSearchParams(window.location.search).has('raum') ? 'online' : 'menue',
+  )
   const [spielerName, setSpielerName] = useState('Du')
   const [gegner, setGegner] = useState(1)
   const [stufe, setStufe] = useState<KiStufe>('normal')
@@ -180,12 +191,18 @@ export function KniffelPage() {
         <Kopf onZurueck={() => navigate('/')} ton={ton} onTon={tonUmschalten} />
         <section className={styles.menue}>
           <p className={styles.einleitung}>
-            Dreizehn Felder, drei Würfe je Zug. Wer oben 63 zusammenbekommt, kriegt 35
-            Punkte dazu – und wer fünf gleiche wirft, den Kniffel.
+            Dreizehn Felder, drei Würfe je Zug. Wer oben 63 zusammenbekommt, kriegt 35 Punkte dazu –
+            und wer fünf gleiche wirft, den Kniffel.
           </p>
 
-          <button type="button" className={styles.grosserKnopf} onClick={() => setAnsicht('aufbau')}>
-            <span className={styles.knopfIcon} aria-hidden="true">🤖</span>
+          <button
+            type="button"
+            className={styles.grosserKnopf}
+            onClick={() => setAnsicht('aufbau')}
+          >
+            <span className={styles.knopfIcon} aria-hidden="true">
+              🤖
+            </span>
             <span>
               <strong>Gegen den Rechner</strong>
               <small>Allein, sofort losspielen</small>
@@ -198,7 +215,9 @@ export function KniffelPage() {
             onClick={() => setAnsicht('online')}
             disabled={!isKniffelOnlineAvailable}
           >
-            <span className={styles.knopfIcon} aria-hidden="true">👥</span>
+            <span className={styles.knopfIcon} aria-hidden="true">
+              👥
+            </span>
             <span>
               <strong>Online gegeneinander</strong>
               <small>
@@ -265,9 +284,7 @@ export function KniffelPage() {
                 </button>
               ))}
             </div>
-            <p className={styles.erklaerung}>
-              {STUFEN.find((s) => s.id === stufe)?.erklaerung}
-            </p>
+            <p className={styles.erklaerung}>{STUFEN.find((s) => s.id === stufe)?.erklaerung}</p>
           </fieldset>
 
           <button type="button" className={styles.start} onClick={starten}>
@@ -315,7 +332,11 @@ export function KniffelPage() {
             <button type="button" className={shell.primaryBtn} onClick={starten}>
               Noch eine Partie
             </button>
-            <button type="button" className={shell.secondaryBtn} onClick={() => setAnsicht('menue')}>
+            <button
+              type="button"
+              className={shell.secondaryBtn}
+              onClick={() => setAnsicht('menue')}
+            >
               Anderer Modus
             </button>
             <Link to="/" className={shell.homeLink}>
@@ -336,63 +357,62 @@ export function KniffelPage() {
             Block weg. Auf dem Handy sonst der Dauerzustand: Man tippt ein
             Feld an und muss zum Würfeln wieder hochscrollen. */}
         <div className={styles.oben}>
-        <p
-          className={`${styles.amZug} ${mensch ? styles.amZugIch : styles.amZugAndere}`}
-          aria-live="polite"
-        >
-          <span className={styles.amZugPunkt} aria-hidden="true" />
-          {mensch ? (
-            'Du bist dran'
-          ) : (
-            <>
-              <strong className={styles.amZugName}>{aktiv.name}</strong> ist dran
-            </>
-          )}
-          <span className={styles.wurfZaehler}>
-            {zustand.wurfNummer === 0
-              ? 'noch nicht gewürfelt'
-              : `Wurf ${zustand.wurfNummer} von ${WUERFE_JE_ZUG}`}
-          </span>
-        </p>
-
-        <Wuerfelreihe
-          wuerfel={zustand.wuerfel}
-          gehalten={zustand.gehalten}
-          haltbar={mensch && zustand.wurfNummer > 0 && zustand.wurfNummer < WUERFE_JE_ZUG}
-          rollt={rollt}
-          onHalten={haltenKlick}
-        />
-
-        {mensch && zustand.wurfNummer > 0 && zustand.wurfNummer < WUERFE_JE_ZUG && (
-          <p className={styles.halteHinweis}>
-            Tippe die Würfel an, die liegen bleiben sollen.
-            {zustand.gehalten.some(Boolean) && (
-              <button
-                type="button"
-                className={styles.textKnopf}
-                onClick={() => setZustand((alt) => (alt ? alleFreigeben(alt) : alt))}
-              >
-                Alle freigeben
-              </button>
-            )}
-          </p>
-        )}
-
-        {mensch && (
-          <button
-            type="button"
-            className={styles.wuerfelKnopf}
-            onClick={wuerfelKlick}
-            disabled={!darfWuerfeln(zustand)}
+          <p
+            className={`${styles.amZug} ${mensch ? styles.amZugIch : styles.amZugAndere}`}
+            aria-live="polite"
           >
-            {zustand.wurfNummer === 0
-              ? '🎲 Würfeln'
-              : darfWuerfeln(zustand)
-                ? `🎲 Nochmal (${WUERFE_JE_ZUG - zustand.wurfNummer} übrig)`
-                : 'Jetzt eintragen'}
-          </button>
-        )}
+            <span className={styles.amZugPunkt} aria-hidden="true" />
+            {mensch ? (
+              'Du bist dran'
+            ) : (
+              <>
+                <strong className={styles.amZugName}>{aktiv.name}</strong> ist dran
+              </>
+            )}
+            <span className={styles.wurfZaehler}>
+              {zustand.wurfNummer === 0
+                ? 'noch nicht gewürfelt'
+                : `Wurf ${zustand.wurfNummer} von ${WUERFE_JE_ZUG}`}
+            </span>
+          </p>
 
+          <Wuerfelreihe
+            wuerfel={zustand.wuerfel}
+            gehalten={zustand.gehalten}
+            haltbar={mensch && zustand.wurfNummer > 0 && zustand.wurfNummer < WUERFE_JE_ZUG}
+            rollt={rollt}
+            onHalten={haltenKlick}
+          />
+
+          {mensch && zustand.wurfNummer > 0 && zustand.wurfNummer < WUERFE_JE_ZUG && (
+            <p className={styles.halteHinweis}>
+              Tippe die Würfel an, die liegen bleiben sollen.
+              {zustand.gehalten.some(Boolean) && (
+                <button
+                  type="button"
+                  className={styles.textKnopf}
+                  onClick={() => setZustand((alt) => (alt ? alleFreigeben(alt) : alt))}
+                >
+                  Alle freigeben
+                </button>
+              )}
+            </p>
+          )}
+
+          {mensch && (
+            <button
+              type="button"
+              className={styles.wuerfelKnopf}
+              onClick={wuerfelKlick}
+              disabled={!darfWuerfeln(zustand)}
+            >
+              {zustand.wurfNummer === 0
+                ? '🎲 Würfeln'
+                : darfWuerfeln(zustand)
+                  ? `🎲 Nochmal (${WUERFE_JE_ZUG - zustand.wurfNummer} übrig)`
+                  : 'Jetzt eintragen'}
+            </button>
+          )}
         </div>
 
         {mensch && zustand.wurfNummer > 0 && (
