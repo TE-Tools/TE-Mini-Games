@@ -76,6 +76,20 @@ Progressive Web App with short skill, memory, reaction and logic games.
   the pack, the slower the walk home. Deterministic 30 Hz simulation without
   Three.js, so `tests/emberwake.test.ts` lets a bot play the levels headless.
   Vertical slice: world 1, levels 1 and 2. Design docs in `docs/design/emberwake/`
+- **Sudoku** – nine by nine, three difficulties of fifty puzzles each: _Leicht_
+  (singles only, from 46 givens down to about 30), _Mittel_ (pairs, triples,
+  pointing pairs, box-line -- nothing beyond) and _Schwer_ (X-Wing, XY-Wing,
+  Swordfish, colouring, and at the end puzzles that need contradiction chains
+  or even nested assumptions -- the kind you sit on for an hour). Each
+  difficulty is its own track with its own level map; you do not have to
+  clear the easy ones first. Notes, undo, auto-cleanup of notes, and a hint
+  that explains the next logical step with its technique. Hard mode never
+  shows mistakes, so guessing does not work. The 150 puzzles are **data, not
+  code** (`src/games/sudoku/daten.ts`), sieved by `scripts/build-sudoku-levels.mjs`
+  with a human-style solver (`techniken.ts`) that grades every puzzle by the
+  hardest step it needs; `tests/sudoku.test.ts` re-solves all 150, checks each
+  has exactly one solution, and checks the grading and ordering. An unfinished
+  puzzle (grid, notes, clock) is kept on the device
 - **Trapbound** – a trap platformer: short levels that look harmless and are
   not. Run, jump, reach the door – except the floor crumbles under the last
   step, the ceiling drops when you pass a certain point, the exit walks away

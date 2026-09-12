@@ -16,6 +16,7 @@ import { bienenFlowGame } from './bienen-flow'
 import { squishyDumplingsGame } from './squishy-dumplings'
 import { trapboundGame } from './trapbound'
 import { emberwakeGame } from './emberwake/definition'
+import { sudokuGame } from './sudoku'
 
 /** Register all built-in games. Call once at app startup. */
 export function registerAllGames(): void {
@@ -36,4 +37,5 @@ export function registerAllGames(): void {
   registerGame(squishyDumplingsGame)
   registerGame(trapboundGame)
   registerGame(emberwakeGame)
+  registerGame(sudokuGame)
 }

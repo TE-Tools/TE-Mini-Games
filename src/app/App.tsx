@@ -20,6 +20,7 @@ import { KniffelPage } from '@/pages/play/KniffelPage'
 import { BienenFlowPage } from '@/pages/play/BienenFlowPage'
 import { SquishyDumplingsPage } from '@/pages/play/SquishyDumplingsPage'
 import { TrapboundPage } from '@/pages/play/TrapboundPage'
+import { SudokuPage } from '@/pages/play/SudokuPage'
 import { FamilyPage } from '@/pages/family/FamilyPage'
 
 // Emberwake bringt Three.js mit (rund 135 KB gzip). Das lädt erst, wer die
@@ -177,6 +178,7 @@ export function App() {
               </Suspense>
             }
           />
+          <Route path="/play/sudoku" element={<SudokuPage />} />
           <Route path="/family" element={<FamilyPage />} />
           <Route path="/daily" element={<DailyPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
