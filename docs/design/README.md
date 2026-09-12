@@ -6,6 +6,8 @@ Verbindliche Gestaltungs- und Umsetzungsvorgaben.
 |-------|--------|--------|
 | **Levelkarte 1–500 („Zeitreise“)** | umgesetzt | [level-map-500/](./level-map-500/) |
 | **Schützenopoly** | umgesetzt | [schuetzenopoly/](./schuetzenopoly/) |
+| **Emberwake** | umgesetzt (Vertical Slice) | [emberwake/](./emberwake/) |
+| **Sudoku** | umgesetzt | [sudoku/](./sudoku/) |
 
 ## Levelkarte 1–500 (Kurz)
 
@@ -25,3 +27,14 @@ Details: [`level-map-500/README.md`](./level-map-500/README.md)
 
 Details: [`schuetzenopoly/README.md`](./schuetzenopoly/README.md) ·
 Faktencheck: [`schuetzenopoly/grundstuecke.md`](./schuetzenopoly/grundstuecke.md)
+
+## Sudoku (Kurz)
+
+- Drei Stufen zu je fünfzig Rätseln, jede eine eigene Strecke mit eigener Levelkarte
+- Schwierigkeit ist der schwerste nötige Schritt eines Menschenlösers (`src/games/sudoku/techniken.ts`):
+  Leicht nur Singles, Mittel bis verstecktes Tripel, Schwer ab X-Wing bis zu verschachtelten Ketten
+- Die 150 Rätsel sind Daten (`daten.ts`), gesiebt von `scripts/build-sudoku-levels.mjs`;
+  `tests/sudoku.test.ts` rechnet jedes nach
+- Bei Schwer werden Fehler nie angezeigt, damit Raten nicht funktioniert
+
+Details: [`sudoku/README.md`](./sudoku/README.md)
