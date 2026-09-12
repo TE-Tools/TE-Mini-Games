@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { SPALTEN, STANDARD_SPALTEN, spalteLabel } from '@/games/stadt-land-fluss'
 import { getCurrentUser } from '@/auth/authService'
@@ -12,10 +12,15 @@ import {
   tickSlf,
   fetchSlfState,
   fetchMySlfMatches,
+  fetchOeffentlicheSlfRaeume,
+  herzschlagSlf,
   subscribeToSlfMatch,
   type SlfOnlineState,
   type SlfOpenMatch,
 } from '@/services/stadtLandFlussOnline'
+import { HERZSCHLAG_MS, RAUM_GESCHLOSSEN_TEXT, RAUM_PARAM, istRaumWeg } from '@/services/raeume'
+import { OeffentlicheRaeume } from './OeffentlicheRaeume'
+import raum from './OeffentlicheRaeume.module.css'
 import styles from './StadtLandFlussPage.module.css'
 
 const POLL_MS = 2000
@@ -27,7 +32,10 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
   const [spalten, setSpalten] = useState<string[]>(STANDARD_SPALTEN)
   const [sekunden, setSekunden] = useState(120)
   const [name, setName] = useState('')
+  const [oeffentlich, setOeffentlich] = useState(false)
   const [code, setCode] = useState('')
+  /** Der Raum, an dem gerade gehorcht wird -- für verspätete Antworten. */
+  const aktuellerRaum = useRef<string | null>(null)
 
   const [matchId, setMatchId] = useState<string | null>(null)
   const [state, setState] = useState<SlfOnlineState | null>(null)
@@ -66,6 +74,14 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
       setState(await fetchSlfState(id))
       setError(null)
     } catch (e) {
+      // Der Server löscht Räume, in denen zwanzig Minuten niemand mehr war
+      // (Migration 018). Dann zurück in den Vorraum, mit Erklärung.
+      if (istRaumWeg(e) && aktuellerRaum.current === id) {
+        setMatchId(null)
+        setState(null)
+        setError(RAUM_GESCHLOSSEN_TEXT)
+        return
+      }
       setError(e instanceof Error ? e.message : 'Der Spielstand kam nicht an.')
     }
   }, [])
@@ -73,16 +89,21 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
   useEffect(() => {
     if (!matchId) return
     let abbruch = false
+    aktuellerRaum.current = matchId
     const hole = () => {
       if (!abbruch) void laden(matchId)
     }
     hole()
     const stop = subscribeToSlfMatch(matchId, hole)
     const timer = window.setInterval(hole, POLL_MS)
+    // Lebenszeichen: Solange jemand den Raum offen hat, bleibt er bestehen.
+    const herz = window.setInterval(() => void herzschlagSlf(matchId), HERZSCHLAG_MS)
     return () => {
       abbruch = true
+      aktuellerRaum.current = null
       stop()
       window.clearInterval(timer)
+      window.clearInterval(herz)
     }
   }, [matchId, laden])
 
@@ -105,6 +126,22 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
       setBusy(false)
     }
   }, [])
+
+  // Von "Offene Spiele" mit ?raum=CODE gekommen: einmal von selbst beitreten.
+  const autoBeigetreten = useRef(false)
+  useEffect(() => {
+    if (!signedIn || autoBeigetreten.current) return
+    const raumCode = new URLSearchParams(window.location.search).get(RAUM_PARAM)
+    if (!raumCode) return
+    autoBeigetreten.current = true
+    // Nicht direkt im Effekt: der Aufruf setzt sofort Zustand, das mag React nicht.
+    const t = window.setTimeout(() => {
+      void run(async () => {
+        setMatchId(await joinSlfMatch(raumCode))
+      })
+    }, 0)
+    return () => window.clearTimeout(t)
+  }, [signedIn, run])
 
   // Ist die Frist um, gibt der Client automatisch ab und stösst die Wertung
   // an. Entschieden wird trotzdem auf dem Server -- slf_tick prüft die Zeit
@@ -133,8 +170,8 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
     return (
       <div className={styles.card}>
         <p className={styles.subtitle}>
-          Für Online-Runden fehlt die Verbindung zum Konto-Server. Am einen Gerät geht es
-          trotzdem jederzeit.
+          Für Online-Runden fehlt die Verbindung zum Konto-Server. Am einen Gerät geht es trotzdem
+          jederzeit.
         </p>
         <button type="button" className={styles.btn} onClick={onBack}>
           Zurück zum Spiel am einen Gerät
@@ -149,8 +186,8 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
     return (
       <div className={styles.card}>
         <p className={styles.subtitle}>
-          Online spielst du mit deinem Konto – so kann der Server die Punkte zählen, ohne
-          dass sich jemand selbst zu viele gibt.
+          Online spielst du mit deinem Konto – so kann der Server die Punkte zählen, ohne dass sich
+          jemand selbst zu viele gibt.
         </p>
         <Link to="/auth" className={styles.btn} style={{ textAlign: 'center' }}>
           Anmelden
@@ -210,13 +247,29 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
               onChange={(e) => setSekunden(Number(e.target.value))}
             />
           </label>
+          <label className={raum.oeffentlich}>
+            <input
+              type="checkbox"
+              checked={oeffentlich}
+              onChange={(e) => setOeffentlich(e.target.checked)}
+            />
+            <span>
+              Öffentliche Runde
+              <small>Steht für alle in der Lobby, mit deinem Namen. Jeder kann beitreten.</small>
+            </span>
+          </label>
           <button
             type="button"
             className={styles.btn}
             disabled={busy || spalten.length === 0}
             onClick={() =>
               void run(async () => {
-                const neu = await createSlfMatchOnline({ columns: spalten, seconds: sekunden, name })
+                const neu = await createSlfMatchOnline({
+                  columns: spalten,
+                  seconds: sekunden,
+                  name,
+                  oeffentlich,
+                })
                 setMatchId(neu.match_id)
               })
             }
@@ -248,6 +301,16 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
             Beitreten
           </button>
         </div>
+
+        <OeffentlicheRaeume
+          laden={fetchOeffentlicheSlfRaeume}
+          gesperrt={busy}
+          onBeitreten={(r) =>
+            void run(async () => {
+              setMatchId(await joinSlfMatch(r.code, name))
+            })
+          }
+        />
 
         {open.length > 0 && (
           <div className={styles.card}>
@@ -300,8 +363,8 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
         <div className={styles.card}>
           <h2 className={styles.cardTitle}>Vorraum</h2>
           <p className={styles.subtitle}>
-            Gebt den Code weiter. Spalten: {m.columns.map(spalteLabel).join(', ')} ·{' '}
-            {m.seconds} s je Runde.
+            Gebt den Code weiter. Spalten: {m.columns.map(spalteLabel).join(', ')} · {m.seconds} s
+            je Runde.
           </p>
           <ul className={styles.list}>
             {state.players.map((p) => (

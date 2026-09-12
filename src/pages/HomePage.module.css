@@ -707,3 +707,24 @@
     font-size: 2.6rem;
   }
 }
+
+/* Der Weg zu allen öffentlichen Räumen -- ein Knopf über den Kacheln. */
+.offeneSpiele {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--touch-min);
+  margin-top: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-xl);
+  background: var(--color-navy);
+  color: #fff;
+  font-weight: 800;
+  box-shadow: var(--btn-shadow);
+  text-decoration: none;
+}
+
+.offeneSpiele:hover {
+  background: var(--color-navy-hover);
+}

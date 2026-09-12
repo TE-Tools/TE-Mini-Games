@@ -31,7 +31,10 @@ export function WerBinIchPage() {
   const [categoryId, setCategoryId] = useState(CATEGORIES[0]?.id ?? 'tiere')
   const [guessText, setGuessText] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [online, setOnline] = useState(false)
+  // Mit ?raum=CODE (von der Seite "Offene Spiele") geht es direkt in den Online-Teil.
+  const [online, setOnline] = useState(() =>
+    new URLSearchParams(window.location.search).has('raum'),
+  )
   const [eigene] = useState<CustomCategory[]>(() => loadCustomCategories())
 
   const playerCount = useMemo(
@@ -129,8 +132,8 @@ export function WerBinIchPage() {
             </select>
           </label>
           <p className={styles.meta}>
-            Die Kategorien und eigenen Wortlisten teilt sich das Spiel mit „Finde den
-            Imposter" – angelegt werden sie dort.
+            Die Kategorien und eigenen Wortlisten teilt sich das Spiel mit „Finde den Imposter" –
+            angelegt werden sie dort.
           </p>
         </div>
 
@@ -161,11 +164,7 @@ export function WerBinIchPage() {
           <p className={styles.meta}>
             Du siehst gleich, wer die anderen sind – deinen eigenen Begriff nicht.
           </p>
-          <button
-            type="button"
-            className={styles.btn}
-            onClick={() => setState(openReveal(state))}
-          >
+          <button type="button" className={styles.btn} onClick={() => setState(openReveal(state))}>
             Ich bin {ap.name} – ansehen
           </button>
         </div>
@@ -197,11 +196,7 @@ export function WerBinIchPage() {
             ))}
           </ul>
         </div>
-        <button
-          type="button"
-          className={styles.btn}
-          onClick={() => setState(confirmReveal(state))}
-        >
+        <button type="button" className={styles.btn} onClick={() => setState(confirmReveal(state))}>
           Gesehen – weiter
         </button>
       </main>
@@ -219,15 +214,11 @@ export function WerBinIchPage() {
           <p className={styles.subtitle}>Jetzt fängt an</p>
           <p className={styles.coverName}>{starter.name}</p>
           <p className={styles.hint}>
-            Reihum eine Ja/Nein-Frage stellen. Wer ein „Ja" bekommt, darf gleich noch
-            eine – bei „Nein" ist der Nächste dran.
+            Reihum eine Ja/Nein-Frage stellen. Wer ein „Ja" bekommt, darf gleich noch eine – bei
+            „Nein" ist der Nächste dran.
           </p>
         </div>
-        <button
-          type="button"
-          className={styles.btn}
-          onClick={() => setState(startGuessing(state))}
-        >
+        <button type="button" className={styles.btn} onClick={() => setState(startGuessing(state))}>
           Jetzt raten
         </button>
       </main>
@@ -276,11 +267,7 @@ export function WerBinIchPage() {
           <p className={styles.subtitle}>Du warst</p>
           <p className={styles.unknownWord}>{ap.word}</p>
           {!ap.correct && <p className={styles.meta}>Dein Tipp: „{ap.guess}"</p>}
-          <button
-            type="button"
-            className={styles.btn}
-            onClick={() => setState(nextGuesser(state))}
-          >
+          <button type="button" className={styles.btn} onClick={() => setState(nextGuesser(state))}>
             Weiter
           </button>
         </div>

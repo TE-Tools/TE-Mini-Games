@@ -24,7 +24,10 @@ export function StadtLandFlussPage() {
   const [sekunden, setSekunden] = useState(90)
   const [felder, setFelder] = useState<Record<string, string>>({})
   const [error, setError] = useState<string | null>(null)
-  const [online, setOnline] = useState(false)
+  // Mit ?raum=CODE (von der Seite "Offene Spiele") geht es direkt in den Online-Teil.
+  const [online, setOnline] = useState(() =>
+    new URLSearchParams(window.location.search).has('raum'),
+  )
 
   // Die Uhr läuft gegen einen Zeitpunkt, nicht gegen einen Zähler – sonst
   // stimmte sie nicht mehr, wenn das Handy zwischendurch schlief.
@@ -40,16 +43,13 @@ export function StadtLandFlussPage() {
     [namesText],
   )
 
-  const abgeben = useCallback(
-    (s: SlfState, antworten: Record<string, string>) => {
-      setAblauf(null)
-      setRest(null)
-      const next = submitAnswers(s, antworten)
-      setFelder({})
-      setState(next)
-    },
-    [],
-  )
+  const abgeben = useCallback((s: SlfState, antworten: Record<string, string>) => {
+    setAblauf(null)
+    setRest(null)
+    const next = submitAnswers(s, antworten)
+    setFelder({})
+    setState(next)
+  }, [])
 
   // Der Zeitpunkt ist fest, deshalb macht es nichts, dass der Takt bei jedem
   // Tastendruck neu aufgesetzt wird -- so kommen beim Ablauf die zuletzt
@@ -100,8 +100,8 @@ export function StadtLandFlussPage() {
         </Link>
         <h1 className={styles.title}>✏️ Stadt-Land-Fluss</h1>
         <p className={styles.subtitle}>
-          Ein Buchstabe, ein paar Spalten, die Uhr läuft. Am einen Gerät geht es reihum –
-          online schreiben alle gleichzeitig.
+          Ein Buchstabe, ein paar Spalten, die Uhr läuft. Am einen Gerät geht es reihum – online
+          schreiben alle gleichzeitig.
         </p>
 
         <div className={styles.card}>

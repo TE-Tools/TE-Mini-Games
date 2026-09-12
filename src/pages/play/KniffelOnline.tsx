@@ -17,7 +17,9 @@ import {
   eintragenOnline,
   fetchKniffelState,
   fetchMyKniffelMatches,
+  fetchOeffentlicheKniffelRaeume,
   haltenOnline,
+  herzschlagKniffel,
   joinKniffelMatch,
   leaveKniffelMatch,
   startKniffelMatch,
@@ -27,8 +29,11 @@ import {
   type KniffelOpenMatch,
 } from '@/services/kniffelOnline'
 import { spiele, vibriere } from '@/services/sound'
+import { HERZSCHLAG_MS, RAUM_GESCHLOSSEN_TEXT, RAUM_PARAM, istRaumWeg } from '@/services/raeume'
 import { Wuerfelreihe } from './kniffel/Wuerfelreihe'
 import { Kniffelblock, type BlockSpalte } from './kniffel/Kniffelblock'
+import { OeffentlicheRaeume } from './OeffentlicheRaeume'
+import raum from './OeffentlicheRaeume.module.css'
 import shell from './PlayShell.module.css'
 import styles from './KniffelPage.module.css'
 
@@ -53,7 +58,10 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
   // null = noch nicht nachgesehen. Ohne Konto geht online gar nichts:
   // Der Server weiss sonst nicht, wer würfelt.
   const [angemeldet, setAngemeldet] = useState<boolean | null>(null)
+  const [oeffentlich, setOeffentlich] = useState(false)
   const letzteWurfNummer = useRef(0)
+  /** Der Raum, an dem gerade gehorcht wird -- für verspätete Antworten. */
+  const aktuellerRaum = useRef<string | null>(null)
 
   const laden = useCallback(async (id: string) => {
     try {
@@ -61,6 +69,14 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
       setState(neu)
       setFehler(null)
     } catch (err) {
+      // Der Server löscht Räume, in denen zwanzig Minuten niemand mehr war
+      // (Migration 018). Dann zurück in die Lobby, mit Erklärung.
+      if (istRaumWeg(err) && aktuellerRaum.current === id) {
+        setMatchId(null)
+        setState(null)
+        setFehler(RAUM_GESCHLOSSEN_TEXT)
+        return
+      }
       setFehler(err instanceof Error ? err.message : 'Die Runde ließ sich nicht laden.')
     }
   }, [])
@@ -93,9 +109,12 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
   useEffect(() => {
     if (!matchId) return
     let abbruch = false
+    aktuellerRaum.current = matchId
     const hole = () => {
       if (!abbruch) void laden(matchId)
     }
+    // Lebenszeichen: Solange jemand den Raum offen hat, bleibt er bestehen.
+    const herz = window.setInterval(() => void herzschlagKniffel(matchId), HERZSCHLAG_MS)
     // Der erste Abruf laeuft ueber denselben Weg wie alle spaeteren, statt
     // im Effektkoerper zu stehen -- sonst haengt der Zustand am Rendern.
     const sofort = window.setTimeout(hole, 0)
@@ -105,9 +124,11 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
     const uhr = window.setInterval(hole, 4000)
     return () => {
       abbruch = true
+      aktuellerRaum.current = null
       window.clearTimeout(sofort)
       ab()
       window.clearInterval(uhr)
+      window.clearInterval(herz)
     }
   }, [matchId, laden])
 
@@ -150,23 +171,47 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
 
   const eroeffnen = () =>
     versuche(async () => {
-      const { match_id } = await createKniffelMatch(await nameFuerDieRunde())
+      const { match_id } = await createKniffelMatch(await nameFuerDieRunde(), oeffentlich)
       setMatchId(match_id)
     })
 
-  const beitreten = () =>
+  const beitreten = (raumCode = code) =>
     versuche(async () => {
-      const id = await joinKniffelMatch(code, await nameFuerDieRunde())
+      const id = await joinKniffelMatch(raumCode, await nameFuerDieRunde())
       setMatchId(id)
     })
 
-  const verlassen = () =>
-    versuche(async () => {
+  // Von "Offene Spiele" mit ?raum=CODE gekommen: einmal von selbst beitreten.
+  const autoBeigetreten = useRef(false)
+  useEffect(() => {
+    if (angemeldet !== true || autoBeigetreten.current) return
+    const raumCode = new URLSearchParams(window.location.search).get(RAUM_PARAM)
+    if (!raumCode) return
+    autoBeigetreten.current = true
+    // Nicht direkt im Effekt: der Aufruf setzt sofort Zustand, das mag React nicht.
+    const t = window.setTimeout(() => {
+      void beitreten(raumCode.toUpperCase())
+    }, 0)
+    return () => window.clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [angemeldet])
+
+  // Nicht über `versuche`: Das holte danach den Stand des verlassenen Raums
+  // und meldete "nicht dabei" -- was hier kein Fehler ist.
+  const verlassen = async () => {
+    setLaeuft(true)
+    setFehler(null)
+    try {
       if (matchId) await leaveKniffelMatch(matchId)
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : 'Das hat nicht geklappt.')
+    } finally {
       setMatchId(null)
       setState(null)
+      setLaeuft(false)
       setOffene(await fetchMyKniffelMatches().catch(() => []))
-    })
+    }
+  }
 
   /* ------------------------------------------------------------ Lobby */
 
@@ -190,8 +235,8 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
         {angemeldet === false && (
           <section className={styles.lobby}>
             <p className={styles.einleitung}>
-              Online spielst du mit deinem Konto – nur so weiß der Server, wer gerade
-              würfelt, und niemand kann sich seine Augen selbst aussuchen.
+              Online spielst du mit deinem Konto – nur so weiß der Server, wer gerade würfelt, und
+              niemand kann sich seine Augen selbst aussuchen.
             </p>
             <Link to="/auth" className={styles.start} style={{ textAlign: 'center' }}>
               Anmelden
@@ -203,76 +248,89 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
         )}
 
         {angemeldet === true && (
-        <section className={styles.lobby}>
-          <p className={styles.einleitung}>
-            Einer eröffnet den Raum und gibt den Code weiter. Gewürfelt wird auf dem
-            Server – niemand kann sich seine Augen selbst aussuchen.
-          </p>
-
-          <button
-            type="button"
-            className={styles.start}
-            onClick={eroeffnen}
-            disabled={laeuft}
-          >
-            ➕ Raum eröffnen
-          </button>
-
-          <div className={styles.trenner}>
-            <span>oder</span>
-          </div>
-
-          <label className={styles.feld}>
-            <span>Spielcode</span>
-            <input
-              className={styles.codeEingabe}
-              value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
-              maxLength={5}
-              placeholder="A7K9P"
-              inputMode="text"
-              autoCapitalize="characters"
-              autoComplete="off"
-            />
-          </label>
-          <button
-            type="button"
-            className={styles.wuerfelKnopf}
-            onClick={beitreten}
-            disabled={laeuft || code.length < 4}
-          >
-            Beitreten
-          </button>
-
-          {offene.length > 0 && (
-            <div className={styles.offeneListe}>
-              <h3>Deine offenen Runden</h3>
-              <ul>
-                {offene.map((m) => (
-                  <li key={m.match_id}>
-                    <button type="button" onClick={() => setMatchId(m.match_id)}>
-                      <strong>{m.code}</strong>
-                      <span>
-                        {m.phase === 'lobby' ? 'wartet' : `Runde ${m.runde}`} · {m.size}{' '}
-                        {m.size === 1 ? 'Spieler' : 'Spieler'}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {fehler && (
-            <p className={styles.fehler} role="alert">
-              {fehler}
+          <section className={styles.lobby}>
+            <p className={styles.einleitung}>
+              Einer eröffnet den Raum und gibt den Code weiter. Gewürfelt wird auf dem Server –
+              niemand kann sich seine Augen selbst aussuchen.
             </p>
-          )}
 
-          <Link to="/" className={shell.homeLink}>
-            Zum Menü
-          </Link>
-        </section>
+            <label className={raum.oeffentlich}>
+              <input
+                type="checkbox"
+                checked={oeffentlich}
+                onChange={(e) => setOeffentlich(e.target.checked)}
+              />
+              <span>
+                Öffentlicher Raum
+                <small>Steht für alle in der Lobby, mit deinem Namen. Jeder kann beitreten.</small>
+              </span>
+            </label>
+
+            <button type="button" className={styles.start} onClick={eroeffnen} disabled={laeuft}>
+              ➕ Raum eröffnen
+            </button>
+
+            <div className={styles.trenner}>
+              <span>oder</span>
+            </div>
+
+            <label className={styles.feld}>
+              <span>Spielcode</span>
+              <input
+                className={styles.codeEingabe}
+                value={code}
+                onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                maxLength={5}
+                placeholder="A7K9P"
+                inputMode="text"
+                autoCapitalize="characters"
+                autoComplete="off"
+              />
+            </label>
+            <button
+              type="button"
+              className={styles.wuerfelKnopf}
+              onClick={() => beitreten()}
+              disabled={laeuft || code.length < 4}
+            >
+              Beitreten
+            </button>
+
+            <OeffentlicheRaeume
+              laden={fetchOeffentlicheKniffelRaeume}
+              gesperrt={laeuft}
+              onBeitreten={(r) => void beitreten(r.code)}
+            />
+
+            {offene.length > 0 && (
+              <div className={styles.offeneListe}>
+                <h3>Deine offenen Runden</h3>
+                <ul>
+                  {offene.map((m) => (
+                    <li key={m.match_id}>
+                      <button type="button" onClick={() => setMatchId(m.match_id)}>
+                        <strong>{m.code}</strong>
+                        <span>
+                          {m.phase === 'lobby' ? 'wartet' : `Runde ${m.runde}`} · {m.size}{' '}
+                          {m.size === 1 ? 'Spieler' : 'Spieler'}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {fehler && (
+              <p className={styles.fehler} role="alert">
+                {fehler}
+              </p>
+            )}
+
+            <Link to="/" className={shell.homeLink}>
+              Zum Menü
+            </Link>
+          </section>
         )}
       </main>
     )
@@ -330,8 +388,8 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
           <p className={styles.codeLabel}>Spielcode</p>
           <p className={styles.code}>{match.code}</p>
           <p className={styles.einleitung}>
-            Gib den Code weiter. Sobald alle da sind, startet {match.is_host ? 'du' : 'der Gastgeber'}{' '}
-            die Runde.
+            Gib den Code weiter. Sobald alle da sind, startet{' '}
+            {match.is_host ? 'du' : 'der Gastgeber'} die Runde.
           </p>
 
           <ul className={styles.spielerListe}>
@@ -386,7 +444,11 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
           <p className={gewonnen ? shell.correct : shell.wrong}>
             {gewonnen ? '🏆 Gewonnen!' : `${tabelle[0]?.name} gewinnt.`}
           </p>
-          {ich && <p className={shell.scoreLine}>Deine Punkte: <strong>{ich.punkte}</strong></p>}
+          {ich && (
+            <p className={shell.scoreLine}>
+              Deine Punkte: <strong>{ich.punkte}</strong>
+            </p>
+          )}
           <ol className={styles.endstand}>
             {tabelle.map((p, i) => (
               <li key={p.seat} className={styles.endEintrag}>
@@ -423,59 +485,58 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
       <section className={styles.tisch}>
         {/* Wie im Solospiel: oben bleibt stehen, der Block scrollt. */}
         <div className={styles.oben}>
-        <p
-          className={`${styles.amZug} ${ichBinDran ? styles.amZugIch : styles.amZugAndere}`}
-          aria-live="polite"
-        >
-          <span className={styles.amZugPunkt} aria-hidden="true" />
-          {ichBinDran ? (
-            'Du bist dran'
-          ) : (
-            <>
-              <strong className={styles.amZugName}>{amZugName}</strong> ist dran
-            </>
-          )}
-          <span className={styles.wurfZaehler}>
-            {match.wurf_nummer === 0
-              ? 'noch nicht gewürfelt'
-              : `Wurf ${match.wurf_nummer} von ${WUERFE_JE_ZUG}`}
-          </span>
-        </p>
-
-        <Wuerfelreihe
-          wuerfel={match.wuerfel}
-          gehalten={match.gehalten}
-          haltbar={ichBinDran && match.wurf_nummer > 0 && match.wurf_nummer < WUERFE_JE_ZUG}
-          rollt={rollt}
-          onHalten={haltenKlick}
-        />
-
-        {ichBinDran && match.wurf_nummer > 0 && match.wurf_nummer < WUERFE_JE_ZUG && (
-          <p className={styles.halteHinweis}>Tippe die Würfel an, die liegen bleiben sollen.</p>
-        )}
-
-        {ichBinDran && (
-          <button
-            type="button"
-            className={styles.wuerfelKnopf}
-            onClick={wuerfelnKlick}
-            disabled={laeuft || match.wurf_nummer >= WUERFE_JE_ZUG}
+          <p
+            className={`${styles.amZug} ${ichBinDran ? styles.amZugIch : styles.amZugAndere}`}
+            aria-live="polite"
           >
-            {match.wurf_nummer === 0
-              ? '🎲 Würfeln'
-              : match.wurf_nummer < WUERFE_JE_ZUG
-                ? `🎲 Nochmal (${WUERFE_JE_ZUG - match.wurf_nummer} übrig)`
-                : 'Jetzt eintragen'}
-          </button>
-        )}
-
-        {!ichBinDran && (
-          <p className={styles.warten}>
-            <strong>{amZugName}</strong>{' '}
-            {match.wurf_nummer === 0 ? 'ist am Zug.' : 'würfelt gerade.'} Du kommst
-            danach dran.
+            <span className={styles.amZugPunkt} aria-hidden="true" />
+            {ichBinDran ? (
+              'Du bist dran'
+            ) : (
+              <>
+                <strong className={styles.amZugName}>{amZugName}</strong> ist dran
+              </>
+            )}
+            <span className={styles.wurfZaehler}>
+              {match.wurf_nummer === 0
+                ? 'noch nicht gewürfelt'
+                : `Wurf ${match.wurf_nummer} von ${WUERFE_JE_ZUG}`}
+            </span>
           </p>
-        )}
+
+          <Wuerfelreihe
+            wuerfel={match.wuerfel}
+            gehalten={match.gehalten}
+            haltbar={ichBinDran && match.wurf_nummer > 0 && match.wurf_nummer < WUERFE_JE_ZUG}
+            rollt={rollt}
+            onHalten={haltenKlick}
+          />
+
+          {ichBinDran && match.wurf_nummer > 0 && match.wurf_nummer < WUERFE_JE_ZUG && (
+            <p className={styles.halteHinweis}>Tippe die Würfel an, die liegen bleiben sollen.</p>
+          )}
+
+          {ichBinDran && (
+            <button
+              type="button"
+              className={styles.wuerfelKnopf}
+              onClick={wuerfelnKlick}
+              disabled={laeuft || match.wurf_nummer >= WUERFE_JE_ZUG}
+            >
+              {match.wurf_nummer === 0
+                ? '🎲 Würfeln'
+                : match.wurf_nummer < WUERFE_JE_ZUG
+                  ? `🎲 Nochmal (${WUERFE_JE_ZUG - match.wurf_nummer} übrig)`
+                  : 'Jetzt eintragen'}
+            </button>
+          )}
+
+          {!ichBinDran && (
+            <p className={styles.warten}>
+              <strong>{amZugName}</strong>{' '}
+              {match.wurf_nummer === 0 ? 'ist am Zug.' : 'würfelt gerade.'} Du kommst danach dran.
+            </p>
+          )}
         </div>
 
         {fehler && (

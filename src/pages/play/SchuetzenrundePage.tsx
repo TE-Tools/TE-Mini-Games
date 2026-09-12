@@ -66,14 +66,16 @@ export function SchuetzenrundePage() {
   const [spreadRumour, setSpreadRumour] = useState(false)
   const [saved, setSaved] = useState(false)
   const [zugBoard, setZugBoard] = useState<ZugScore[]>([])
-  const [online, setOnline] = useState(false)
+  // Mit ?raum=CODE (von der Seite "Offene Spiele") geht es direkt in den Online-Teil.
+  const [online, setOnline] = useState(() =>
+    new URLSearchParams(window.location.search).has('raum'),
+  )
 
   // ---- phase clock (spec: Nacht 45 s, Tag 90 s, Abstimmung 30 s, Ergebnis 8 s)
   const [deadline, setDeadline] = useState<number | null>(null)
   const [now, setNow] = useState(() => Date.now())
   const onTimeoutRef = useRef<() => void>(() => {})
-  const secondsLeft =
-    deadline == null ? null : Math.max(0, Math.round((deadline - now) / 1000))
+  const secondsLeft = deadline == null ? null : Math.max(0, Math.round((deadline - now) / 1000))
 
   const me = match ? humanPlayer(match) : null
   const myRole = me ? roleOf(me.role) : null
@@ -396,7 +398,9 @@ export function SchuetzenrundePage() {
           {zugById(me.zugId).badge} {zugById(me.zugId).name}
           {match.event ? ' · Schützenfest' : ''}
         </p>
-        {!me.alive && <p className={styles.dead}>Du bist ausgeschieden – du schaust nur noch zu.</p>}
+        {!me.alive && (
+          <p className={styles.dead}>Du bist ausgeschieden – du schaust nur noch zu.</p>
+        )}
       </section>
 
       {match.notes.length > 0 && (

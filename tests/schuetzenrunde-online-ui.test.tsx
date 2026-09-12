@@ -34,6 +34,8 @@ vi.mock('@/services/schuetzenrundeOnline', () => ({
   tickOnlineMatch: vi.fn(async () => {}),
   fetchState: vi.fn(async () => state.current),
   fetchOpenMatches: vi.fn(async () => []),
+  fetchOeffentlicheSrRaeume: vi.fn(async () => []),
+  herzschlagSr: vi.fn(async () => {}),
   subscribeToMatch: () => () => {},
 }))
 
@@ -43,7 +45,10 @@ vi.mock('@/auth/authService', () => ({
 
 const { SchuetzenrundeOnline } = await import('@/pages/play/SchuetzenrundeOnline')
 
-function makeState(over: Partial<OnlineState['match']> = {}, me: Partial<OnlineState['me']> = {}): OnlineState {
+function makeState(
+  over: Partial<OnlineState['match']> = {},
+  me: Partial<OnlineState['me']> = {},
+): OnlineState {
   return {
     match: {
       id: 'm1',
@@ -71,10 +76,42 @@ function makeState(over: Partial<OnlineState['match']> = {}, me: Partial<OnlineS
       ...me,
     },
     players: [
-      { seat: 0, name: 'Anna', is_bot: false, alive: true, zug_id: 'jaeger', acted: false, role: 'schiessmeister' },
-      { seat: 1, name: 'Bert', is_bot: false, alive: true, zug_id: 'grenadier', acted: true, role: null },
-      { seat: 2, name: 'Karl', is_bot: true, alive: true, zug_id: 'fahnen', acted: true, role: null },
-      { seat: 3, name: 'Rosi', is_bot: true, alive: false, zug_id: 'jaeger', acted: true, role: 'saboteur' },
+      {
+        seat: 0,
+        name: 'Anna',
+        is_bot: false,
+        alive: true,
+        zug_id: 'jaeger',
+        acted: false,
+        role: 'schiessmeister',
+      },
+      {
+        seat: 1,
+        name: 'Bert',
+        is_bot: false,
+        alive: true,
+        zug_id: 'grenadier',
+        acted: true,
+        role: null,
+      },
+      {
+        seat: 2,
+        name: 'Karl',
+        is_bot: true,
+        alive: true,
+        zug_id: 'fahnen',
+        acted: true,
+        role: null,
+      },
+      {
+        seat: 3,
+        name: 'Rosi',
+        is_bot: true,
+        alive: false,
+        zug_id: 'jaeger',
+        acted: true,
+        role: 'saboteur',
+      },
     ],
     log: ['Nacht 1: Rosi wurde von den Saboteuren erwischt.'],
     messages: [{ seat: 2, name: 'Karl', is_bot: true, text: 'Ich traue Bert nicht.', round: 1 }],

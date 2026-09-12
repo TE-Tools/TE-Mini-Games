@@ -21,15 +21,20 @@ import {
   tickOnlineMatch,
   fetchState,
   fetchOpenMatches,
+  fetchOeffentlicheSrRaeume,
+  herzschlagSr,
   subscribeToMatch,
   isOnlineAvailable,
   type OnlineState,
   type OpenMatch,
 } from '@/services/schuetzenrundeOnline'
+import { HERZSCHLAG_MS, RAUM_GESCHLOSSEN_TEXT, RAUM_PARAM, istRaumWeg } from '@/services/raeume'
 import { getCurrentUser } from '@/auth/authService'
 import { saveGameResult, addXp } from '@/offline'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
+import { OeffentlicheRaeume } from './OeffentlicheRaeume'
+import raum from './OeffentlicheRaeume.module.css'
 import styles from './SchuetzenrundePage.module.css'
 
 /** Wie oft wir beim Server nachfassen, falls Realtime nichts liefert. */
@@ -57,7 +62,10 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
   const [size, setSize] = useState(8)
   const [event, setEvent] = useState(false)
   const [zugId, setZugId] = useState(ZUEGE[0]!.id)
+  const [oeffentlich, setOeffentlich] = useState(false)
   const [code, setCode] = useState('')
+  /** Der Raum, an dem gerade gehorcht wird -- für verspätete Antworten. */
+  const aktuellerRaum = useRef<string | null>(null)
 
   const [matchId, setMatchId] = useState<string | null>(null)
   const [state, setState] = useState<OnlineState | null>(null)
@@ -141,6 +149,14 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
         setError(null)
         if (next.match.phase === 'over') void storeResult(next)
       } catch (e) {
+        // Der Server löscht Räume, in denen zwanzig Minuten niemand mehr war
+        // (Migration 018). Dann zurück in den Vorraum, mit Erklärung.
+        if (istRaumWeg(e) && aktuellerRaum.current === id) {
+          setMatchId(null)
+          setState(null)
+          setError(RAUM_GESCHLOSSEN_TEXT)
+          return
+        }
         setError(e instanceof Error ? e.message : 'Der Spielstand kam nicht an.')
       }
     },
@@ -151,6 +167,7 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
   useEffect(() => {
     if (!matchId) return
     let cancelled = false
+    aktuellerRaum.current = matchId
     const pull = () => {
       if (!cancelled) void refresh(matchId)
     }
@@ -162,10 +179,14 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
       // Die Uhr entscheidet der Server – wir stupsen sie nur an.
       void tickOnlineMatch(matchId).catch(() => {})
     }, POLL_MS)
+    // Lebenszeichen: Solange jemand den Raum offen hat, bleibt er bestehen.
+    const herz = window.setInterval(() => void herzschlagSr(matchId), HERZSCHLAG_MS)
     return () => {
       cancelled = true
+      aktuellerRaum.current = null
       unsubscribe()
       window.clearInterval(timer)
+      window.clearInterval(herz)
     }
   }, [matchId, refresh])
 
@@ -187,14 +208,31 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
     }
   }, [])
 
+  // Von "Offene Spiele" mit ?raum=CODE gekommen: einmal von selbst beitreten.
+  const autoBeigetreten = useRef(false)
+  useEffect(() => {
+    if (!signedIn || autoBeigetreten.current) return
+    const raumCode = new URLSearchParams(window.location.search).get(RAUM_PARAM)
+    if (!raumCode) return
+    autoBeigetreten.current = true
+    // Nicht direkt im Effekt: der Aufruf setzt sofort Zustand, das mag React nicht.
+    const t = window.setTimeout(() => {
+      void run(async () => {
+        const joined = await joinOnlineMatch(raumCode)
+        setMatchId(joined.match_id)
+      })
+    }, 0)
+    return () => window.clearTimeout(t)
+  }, [signedIn, run])
+
   /* ------------------------------ Vorraum ------------------------------ */
 
   if (!isOnlineAvailable) {
     return (
       <section className={styles.actions}>
         <p className={styles.hint}>
-          Für Online-Runden fehlt die Verbindung zum Konto-Server. Offline gegen Bots geht
-          trotzdem jederzeit.
+          Für Online-Runden fehlt die Verbindung zum Konto-Server. Offline gegen Bots geht trotzdem
+          jederzeit.
         </p>
         <button type="button" className={styles.primaryBtn} onClick={onBack}>
           Zurück zum Spiel gegen Bots
@@ -263,13 +301,25 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
           Schützenfest: drei Schuss und Vogelschießen am Ende
         </label>
 
+        <label className={raum.oeffentlich}>
+          <input
+            type="checkbox"
+            checked={oeffentlich}
+            onChange={(e) => setOeffentlich(e.target.checked)}
+          />
+          <span>
+            Öffentliche Runde
+            <small>Steht für alle in der Lobby, mit deinem Namen. Jeder kann beitreten.</small>
+          </span>
+        </label>
+
         <button
           type="button"
           className={styles.primaryBtn}
           disabled={busy}
           onClick={() =>
             void run(async () => {
-              const created = await createOnlineMatch({ size, event, zugId })
+              const created = await createOnlineMatch({ size, event, zugId, oeffentlich })
               setMatchId(created.match_id)
             })
           }
@@ -301,6 +351,17 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
         >
           Beitreten
         </button>
+
+        <OeffentlicheRaeume
+          laden={fetchOeffentlicheSrRaeume}
+          gesperrt={busy}
+          onBeitreten={(r) =>
+            void run(async () => {
+              const joined = await joinOnlineMatch(r.code)
+              setMatchId(joined.match_id)
+            })
+          }
+        />
 
         {open.length > 0 && (
           <section className={styles.board} aria-label="Deine laufenden Runden">
@@ -437,7 +498,8 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
         <section className={styles.actions}>
           <p className={styles.phaseTitle}>Vorraum</p>
           <p className={styles.hint}>
-            Gib den Code weiter. {m.is_host ? 'Du startest, wenn ihr so weit seid.' : 'Der Gastgeber startet die Runde.'}
+            Gib den Code weiter.{' '}
+            {m.is_host ? 'Du startest, wenn ihr so weit seid.' : 'Der Gastgeber startet die Runde.'}
           </p>
           {m.is_host && (
             <button
@@ -587,11 +649,7 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
               disabled={busy || me.acted || !me.alive}
               onClick={() => void run(() => sendVote(m.id, selected))}
             >
-              {me.acted
-                ? 'Stimme abgegeben'
-                : selected != null
-                  ? 'Stimme abgeben'
-                  : 'Enthalten'}
+              {me.acted ? 'Stimme abgegeben' : selected != null ? 'Stimme abgeben' : 'Enthalten'}
             </button>
           )}
         </section>

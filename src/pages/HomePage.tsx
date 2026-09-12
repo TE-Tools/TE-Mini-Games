@@ -85,7 +85,10 @@ export function HomePage() {
   const streakDays = profile?.streakDays ?? 0
   const xpProgress = xpProgressInLevel(totalXp)
   const fehlend = Math.max(0, xpProgress.needed - xpProgress.current)
-  const anteil = Math.max(2, Math.min(100, (xpProgress.current / Math.max(1, xpProgress.needed)) * 100))
+  const anteil = Math.max(
+    2,
+    Math.min(100, (xpProgress.current / Math.max(1, xpProgress.needed)) * 100),
+  )
 
   return (
     <main className={styles.page}>
@@ -128,7 +131,9 @@ export function HomePage() {
         </div>
         <div className={styles.standTeil}>
           <span className={styles.standLabel}>XP</span>
-          <span className={styles.standWert}>{loading ? '…' : totalXp.toLocaleString('de-DE')}</span>
+          <span className={styles.standWert}>
+            {loading ? '…' : totalXp.toLocaleString('de-DE')}
+          </span>
         </div>
         <div className={styles.standTeil}>
           <span className={styles.standLabel}>Serie</span>
@@ -182,6 +187,12 @@ export function HomePage() {
         <h2 className={styles.abschnittTitel}>Spiele entdecken</h2>
         <p className={styles.abschnittText}>Wähle eine Herausforderung.</p>
 
+        {/* Wer mitspielen will, statt selbst zu eröffnen: alle öffentlichen
+            Räume aller Online-Spiele auf einer Seite (12.09.2026, Thomas). */}
+        <Link to="/offene-spiele" className={styles.offeneSpiele}>
+          <span aria-hidden="true">🌐</span> Offene Spiele – wer gerade wartet
+        </Link>
+
         <nav className={styles.kacheln} aria-label="Spiele">
           {SPIELE_KACHELN.map((k) => (
             <article key={k.id} className={styles.kachel} data-game={k.id}>
@@ -205,8 +216,8 @@ export function HomePage() {
           fuer paypal.me braucht es nichts davon. */}
       <footer className={styles.spende}>
         <p className={styles.spendeText}>
-          TE-Mini Games ist kostenlos und ohne Werbung. Wenn es dir Freude macht,
-          kannst du einen Kaffee ausgeben.
+          TE-Mini Games ist kostenlos und ohne Werbung. Wenn es dir Freude macht, kannst du einen
+          Kaffee ausgeben.
         </p>
         <a
           className={styles.spendeKnopf}
@@ -241,6 +252,7 @@ function Menue({ onSchliessen }: { onSchliessen: () => void }) {
     { pfad: '/daily', icon: '📅', name: 'Daily Challenge' },
     { pfad: '/leaderboard', icon: '🏆', name: 'Rangliste' },
     { pfad: '/achievements', icon: '🏅', name: 'Abzeichen' },
+    { pfad: '/offene-spiele', icon: '🌐', name: 'Offene Spiele' },
   ]
   return (
     <div className={styles.menueHintergrund} onClick={onSchliessen} role="presentation">
@@ -366,8 +378,8 @@ function RanglisteKurz() {
       {oben === null && <p className={styles.leiseZeile}>Laden…</p>}
       {oben?.length === 0 && (
         <p className={styles.leiseZeile}>
-          Dafür braucht es ein Konto und einen Benutzernamen – dann siehst du hier, wo die
-          anderen stehen.
+          Dafür braucht es ein Konto und einen Benutzernamen – dann siehst du hier, wo die anderen
+          stehen.
         </p>
       )}
       {oben && oben.length > 0 && (

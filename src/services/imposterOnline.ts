@@ -10,6 +10,7 @@
 
 import { supabase, isSupabaseConfigured } from '@/database/supabase'
 import { onlineFehlerText } from './onlineFehler'
+import { raumFunktionen } from './raeume'
 
 export const isImposterOnlineAvailable = isSupabaseConfigured
 
@@ -26,13 +27,7 @@ export interface OnlinePlayer {
 }
 
 export type OnlineMode =
-  | 'classic'
-  | 'double'
-  | 'blank'
-  | 'categories_only'
-  | 'speed'
-  | 'chaos'
-  | 'duel'
+  'classic' | 'double' | 'blank' | 'categories_only' | 'speed' | 'chaos' | 'duel'
 
 export interface OnlineMatch {
   id: string
@@ -139,6 +134,11 @@ export const fetchMyCustomCategories = () =>
 export const deleteCustomCategoryOnline = (id: string) =>
   rpc<void>('fdi_delete_custom_category', { p_id: id })
 
+/* Räume: Lebenszeichen, öffentlich schalten, öffentliche Räume (Migration 018). */
+const raum = raumFunktionen('fdi', client)
+export const herzschlagImposter = raum.herzschlag
+export const fetchOeffentlicheImposterRaeume = raum.oeffentlicheRaeume
+
 export async function createOnlineMatch(opts: {
   /** Eine fertige Kategorie – oder null, wenn eine eigene Liste gespielt wird. */
   categoryId: string | null
@@ -146,6 +146,8 @@ export async function createOnlineMatch(opts: {
   name?: string
   /** Kennung einer eigenen Wortliste aus `fetchMyCustomCategories`. */
   customCategoryId?: string | null
+  /** Für alle sichtbar in der Lobby, mit dem Namen des Gastgebers. */
+  oeffentlich?: boolean
 }): Promise<{ match_id: string; code: string }> {
   const rows = await rpc<{ match_id: string; code: string }[]>('fdi_create_match', {
     p_category: opts.categoryId,
@@ -153,8 +155,11 @@ export async function createOnlineMatch(opts: {
     p_name: opts.name ?? null,
     p_custom_category: opts.customCategoryId ?? null,
   })
-  const first = Array.isArray(rows) ? rows[0] : (rows as unknown as { match_id: string; code: string })
+  const first = Array.isArray(rows)
+    ? rows[0]
+    : (rows as unknown as { match_id: string; code: string })
   if (!first) throw new Error('Die Runde konnte nicht eröffnet werden.')
+  if (opts.oeffentlich) await raum.oeffentlichSchalten(first.match_id, true)
   return first
 }
 
@@ -162,14 +167,17 @@ export async function joinOnlineMatch(code: string, name?: string): Promise<stri
   return rpc<string>('fdi_join_match', { p_code: code.trim().toUpperCase(), p_name: name ?? null })
 }
 
-export const leaveOnlineMatch = (matchId: string) => rpc<void>('fdi_leave_match', { p_match: matchId })
-export const startOnlineMatch = (matchId: string) => rpc<void>('fdi_start_match', { p_match: matchId })
+export const leaveOnlineMatch = (matchId: string) =>
+  rpc<void>('fdi_leave_match', { p_match: matchId })
+export const startOnlineMatch = (matchId: string) =>
+  rpc<void>('fdi_start_match', { p_match: matchId })
 export const toAccusePhase = (matchId: string) => rpc<void>('fdi_to_accuse', { p_match: matchId })
 export const voteOnline = (matchId: string, seat: number) =>
   rpc<void>('fdi_vote', { p_match: matchId, p_seat: seat })
 export const lastChanceOnline = (matchId: string, guess: string) =>
   rpc<void>('fdi_last_chance', { p_match: matchId, p_guess: guess })
-export const nextRoundOnline = (matchId: string) => rpc<void>('fdi_next_round', { p_match: matchId })
+export const nextRoundOnline = (matchId: string) =>
+  rpc<void>('fdi_next_round', { p_match: matchId })
 
 export async function fetchOnlineState(matchId: string): Promise<OnlineState> {
   return rpc<OnlineState>('fdi_get_state', { p_match: matchId })

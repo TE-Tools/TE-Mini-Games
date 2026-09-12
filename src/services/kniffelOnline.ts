@@ -11,6 +11,7 @@
 
 import { supabase, isSupabaseConfigured } from '@/database/supabase'
 import { onlineFehlerText } from './onlineFehler'
+import { raumFunktionen } from './raeume'
 import type { Block } from '@/games/kniffel'
 
 export const isKniffelOnlineAvailable = isSupabaseConfigured
@@ -65,8 +66,14 @@ async function rpc<T>(name: string, args: Record<string, unknown>): Promise<T> {
   return data as T
 }
 
+/* Räume: Lebenszeichen, öffentlich schalten, öffentliche Räume (Migration 018). */
+const raum = raumFunktionen('kniffel', client)
+export const herzschlagKniffel = raum.herzschlag
+export const fetchOeffentlicheKniffelRaeume = raum.oeffentlicheRaeume
+
 export async function createKniffelMatch(
   name?: string,
+  oeffentlich = false,
 ): Promise<{ match_id: string; code: string }> {
   const rows = await rpc<{ match_id: string; code: string }[]>('kniffel_create_match', {
     p_name: name ?? null,
@@ -75,6 +82,7 @@ export async function createKniffelMatch(
     ? rows[0]
     : (rows as unknown as { match_id: string; code: string })
   if (!first) throw new Error('Die Runde konnte nicht eröffnet werden.')
+  if (oeffentlich) await raum.oeffentlichSchalten(first.match_id, true)
   return first
 }
 

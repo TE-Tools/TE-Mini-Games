@@ -39,7 +39,10 @@ export function FindeDenImposterPage() {
   const [mode, setMode] = useState<ImposterModeId>('classic')
   const [guessText, setGuessText] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [online, setOnline] = useState(false)
+  // Mit ?raum=CODE (von der Seite "Offene Spiele") geht es direkt in den Online-Teil.
+  const [online, setOnline] = useState(() =>
+    new URLSearchParams(window.location.search).has('raum'),
+  )
   const [eigene, setEigene] = useState<CustomCategory[]>(() => loadCustomCategories())
   const [zeigeEditor, setZeigeEditor] = useState(false)
 
@@ -147,8 +150,8 @@ export function FindeDenImposterPage() {
         </Link>
         <h1 className={styles.title}>😈 Finde den Imposter</h1>
         <p className={styles.subtitle}>
-          Einer kennt das geheime Wort nicht. Miteinander reden, gemeinsam raten – und die
-          letzte Chance nutzen.
+          Einer kennt das geheime Wort nicht. Miteinander reden, gemeinsam raten – und die letzte
+          Chance nutzen.
         </p>
 
         <div className={styles.card}>
@@ -276,7 +279,9 @@ export function FindeDenImposterPage() {
           {roundLabel}
           {kategorieZusatz}
         </p>
-        {cfg.specialRule && <p className={styles.badge}>Chaos: {chaosRuleLabel(cfg.specialRule)}</p>}
+        {cfg.specialRule && (
+          <p className={styles.badge}>Chaos: {chaosRuleLabel(cfg.specialRule)}</p>
+        )}
         <div className={`${styles.card} ${styles.secretBox}`}>
           <p className={styles.subtitle}>
             Nur für {ap.name}
@@ -332,7 +337,9 @@ export function FindeDenImposterPage() {
           Diskussion · {roundLabel}
           {kategorieZusatz}
         </p>
-        {cfg.specialRule && <p className={styles.badge}>Chaos: {chaosRuleLabel(cfg.specialRule)}</p>}
+        {cfg.specialRule && (
+          <p className={styles.badge}>Chaos: {chaosRuleLabel(cfg.specialRule)}</p>
+        )}
         <div className={`${styles.card} ${styles.cover}`}>
           <p className={styles.subtitle}>Jetzt fängt an</p>
           <p className={styles.coverName}>
@@ -401,8 +408,7 @@ export function FindeDenImposterPage() {
                 <h2 className={styles.cardTitle}>Team {t}</h2>
                 {getippt ? (
                   <p className={styles.meta}>
-                    getippt auf{' '}
-                    <strong>{state.players.find((p) => p.id === getippt)?.name}</strong>
+                    getippt auf <strong>{state.players.find((p) => p.id === getippt)?.name}</strong>
                   </p>
                 ) : (
                   <div className={styles.voteGrid}>
@@ -461,12 +467,10 @@ export function FindeDenImposterPage() {
         <div className={styles.card}>
           <h2 className={styles.cardTitle}>Erwischt, {ap.name}!</h2>
           <p className={styles.subtitle}>
-            Letzte Chance: Rate das geheime Wort. Triffst du es, hast du die Runde doch
-            noch gedreht.
+            Letzte Chance: Rate das geheime Wort. Triffst du es, hast du die Runde doch noch
+            gedreht.
           </p>
-          {offen > 1 && (
-            <p className={styles.meta}>Danach ist noch {offen - 1} Erwischter dran.</p>
-          )}
+          {offen > 1 && <p className={styles.meta}>Danach ist noch {offen - 1} Erwischter dran.</p>}
           <label className={styles.label}>
             Dein Tipp
             <input
@@ -507,10 +511,10 @@ export function FindeDenImposterPage() {
 
     return (
       <main className={styles.page}>
-        <h1 className={styles.title}>
-          {cfg.mode === 'duel' ? 'Duell entschieden' : ueberschrift}
-        </h1>
-        {cfg.specialRule && <p className={styles.badge}>Chaos: {chaosRuleLabel(cfg.specialRule)}</p>}
+        <h1 className={styles.title}>{cfg.mode === 'duel' ? 'Duell entschieden' : ueberschrift}</h1>
+        {cfg.specialRule && (
+          <p className={styles.badge}>Chaos: {chaosRuleLabel(cfg.specialRule)}</p>
+        )}
 
         <div className={styles.card}>
           <p className={styles.subtitle}>Das geheime Wort war</p>
@@ -519,9 +523,7 @@ export function FindeDenImposterPage() {
             {cfg.imposterCount > 1 ? 'Imposter waren' : 'Imposter war'}{' '}
             <strong>{imposterNamen}</strong>
           </p>
-          {!cfg.showCategory && (
-            <p className={styles.meta}>Kategorie: {cfg.categoryLabel}</p>
-          )}
+          {!cfg.showCategory && <p className={styles.meta}>Kategorie: {cfg.categoryLabel}</p>}
         </div>
 
         <div className={styles.card}>
@@ -533,7 +535,9 @@ export function FindeDenImposterPage() {
                 const getippt = state.players.find((p) => p.id === id)
                 return (
                   <li key={t}>
-                    <span>Team {t} tippte auf {getippt?.name ?? '–'}</span>
+                    <span>
+                      Team {t} tippte auf {getippt?.name ?? '–'}
+                    </span>
                     <strong>{teamCaught(state, t) ? 'erwischt' : 'daneben'}</strong>
                   </li>
                 )
