@@ -1,0 +1,564 @@
+/*
+ * Sudoku -- Stufenauswahl, Gitter, Tasten.
+ *
+ * Das Gitter ist ein echtes 9×9-Raster aus Knöpfen; die dicken Linien der
+ * Kästen kommen über Klassen an jeder dritten Zelle, nicht über verschachtelte
+ * Container -- so bleibt jede Zelle ein Knopf mit Namen für die Tastatur.
+ */
+
+/* ------------------------------------------------------------ Menü */
+
+.stufen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.stufe {
+  background: var(--grad-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  border-left-width: 8px;
+}
+
+.stufe_leicht {
+  border-left-color: #3f8a5a;
+}
+
+.stufe_mittel {
+  border-left-color: #b07a2a;
+}
+
+.stufe_schwer {
+  border-left-color: #5a2f5e;
+}
+
+.stufeKopf {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.stufeName {
+  font-size: var(--text-xl);
+  font-weight: 800;
+}
+
+.stufeStand {
+  font-weight: 800;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.stufeText {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.stufeBalken {
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.stufeBalken span {
+  display: block;
+  height: 100%;
+  background: var(--grad-primary);
+  border-radius: var(--radius-full);
+  transition: width var(--transition-normal);
+}
+
+.stufeKnoepfe {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.stufeHaupt {
+  flex: 1;
+  min-height: var(--touch-min);
+  padding: var(--space-3) var(--space-4);
+  background: var(--grad-primary);
+  color: var(--color-primary-text);
+  border-radius: var(--radius-xl);
+  font-weight: 800;
+  border: 2px solid var(--color-primary-hover);
+  box-shadow: var(--btn-shadow);
+}
+
+.stufeNeben {
+  min-height: var(--touch-min);
+  padding: var(--space-3) var(--space-4);
+  background: var(--grad-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  font-weight: 700;
+  box-shadow: var(--btn-shadow);
+}
+
+.einstellungen {
+  width: 100%;
+  background: var(--grad-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.einstTitel {
+  font-size: var(--text-base);
+  font-weight: 800;
+}
+
+.reihe {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  font-weight: 600;
+  font-size: var(--text-sm);
+}
+
+.reihe small {
+  display: block;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  font-size: var(--text-xs);
+}
+
+.reihe input {
+  width: 22px;
+  height: 22px;
+  flex: none;
+}
+
+.tastatur {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.gefahr {
+  align-self: flex-start;
+  font-size: var(--text-sm);
+  color: var(--color-danger);
+  text-decoration: underline;
+  padding: var(--space-2) 0;
+}
+
+/* ------------------------------------------------------------ Spiel */
+
+.spielSeite {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-3);
+  max-width: 32rem;
+  margin: 0 auto;
+  width: 100%;
+  gap: var(--space-3);
+}
+
+.kopf {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  align-items: center;
+  width: 100%;
+  gap: var(--space-2);
+}
+
+.kopfMitte {
+  text-align: center;
+  min-width: 0;
+}
+
+.kopfTitel {
+  font-size: var(--text-lg);
+  font-weight: 800;
+}
+
+.kopfKlein {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.kopfRechts {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.uhr {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  font-size: var(--text-base);
+  color: var(--color-game-b);
+  min-width: 3.2rem;
+  text-align: right;
+}
+
+.pauseKnopf {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: var(--grad-surface);
+  border: 2px solid var(--color-border);
+  box-shadow: var(--btn-shadow);
+  font-size: var(--text-sm);
+}
+
+.zeile {
+  display: flex;
+  gap: var(--space-4);
+  width: 100%;
+  justify-content: center;
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.leise {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.fehlerRot {
+  color: var(--color-danger);
+}
+
+.gitterRahmen {
+  position: relative;
+  width: 100%;
+  max-width: min(100%, 30rem);
+  border: 3px solid var(--color-text);
+  border-radius: 6px;
+  background: var(--color-bg-elevated);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+.gitter {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  aspect-ratio: 1;
+  width: 100%;
+}
+
+.verdeckt .gitter {
+  filter: blur(6px);
+  pointer-events: none;
+}
+
+.zelle {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--color-border-strong);
+  border-bottom: 1px solid var(--color-border-strong);
+  background: var(--color-bg-elevated);
+  font-size: clamp(1rem, 4.6vw, 1.7rem);
+  font-weight: 700;
+  padding: 0;
+  border-radius: 0;
+  transition: background var(--transition-fast);
+  min-width: 0;
+}
+
+.zelle:nth-child(9n) {
+  border-right: none;
+}
+
+.zelle:nth-last-child(-n + 9) {
+  border-bottom: none;
+}
+
+.rechtsDick {
+  border-right: 2px solid var(--color-text);
+}
+
+.untenDick {
+  border-bottom: 2px solid var(--color-text);
+}
+
+.vorgabe {
+  color: var(--color-text);
+  font-weight: 800;
+}
+
+.eigen {
+  color: var(--color-primary);
+}
+
+.nachbar {
+  background: #efedf9;
+}
+
+.gleich {
+  background: #dcd6f5;
+}
+
+.gewaehlt {
+  background: #c9c0f2;
+  box-shadow: inset 0 0 0 2px var(--color-primary);
+  z-index: 1;
+}
+
+.falsch {
+  color: var(--color-danger);
+  background: #fde7ec;
+}
+
+.falsch.gewaehlt {
+  background: #f8cfd9;
+}
+
+.tippBasis {
+  background: #fff1c2;
+}
+
+.tippZiel {
+  background: #ffe08a;
+  box-shadow: inset 0 0 0 2px var(--color-warning);
+}
+
+.ziffer {
+  line-height: 1;
+}
+
+.notizen {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  width: 100%;
+  height: 100%;
+  font-size: clamp(0.45rem, 1.8vw, 0.7rem);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  line-height: 1;
+  padding: 1px;
+}
+
+.notiz,
+.notizLeer,
+.notizGleich {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notizGleich {
+  color: var(--color-primary);
+  font-weight: 800;
+  background: #dcd6f5;
+  border-radius: 3px;
+}
+
+/* ---------------------------------------------------------- Overlay */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(31 34 51 / 0.35);
+  padding: var(--space-4);
+  z-index: 2;
+}
+
+.dialog {
+  background: var(--color-bg-elevated);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 22rem;
+}
+
+.dialog h2 {
+  font-size: var(--text-xl);
+  font-weight: 800;
+}
+
+.dialogSieg {
+  border-color: var(--color-gold-light);
+}
+
+.sterne {
+  font-size: var(--text-2xl);
+  color: var(--color-gold);
+  letter-spacing: 0.1em;
+}
+
+.dialogKnoepfe {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.dialogKnoepfe button,
+.tippKnoepfe button {
+  min-height: 44px;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--grad-surface);
+  border: 2px solid var(--color-border);
+  font-weight: 700;
+  box-shadow: var(--btn-shadow);
+}
+
+.primaer {
+  background: var(--grad-primary) !important;
+  color: var(--color-primary-text) !important;
+  border-color: var(--color-primary-hover) !important;
+}
+
+/* ------------------------------------------------------------- Tipp */
+
+.tippKasten {
+  width: 100%;
+  background: linear-gradient(180deg, #fff9e6, #fff1c2);
+  border: 2px solid #e6c65a;
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.tippText {
+  font-weight: 700;
+  font-size: var(--text-sm);
+}
+
+.tippTechnik {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.tippKnoepfe {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* --------------------------------------------------------- Werkzeuge */
+
+.werkzeuge {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.werkzeug {
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: var(--grad-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  box-shadow: var(--btn-shadow);
+  padding: var(--space-1);
+}
+
+.werkzeug span {
+  font-size: var(--text-lg);
+  line-height: 1;
+}
+
+.werkzeug:disabled {
+  opacity: 0.45;
+}
+
+.werkzeugAn {
+  background: var(--grad-primary);
+  color: var(--color-primary-text);
+  border-color: var(--color-primary-hover);
+}
+
+.tasten {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 4px;
+  width: 100%;
+}
+
+.taste {
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--grad-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--btn-shadow);
+  padding: 2px 0;
+  min-width: 0;
+}
+
+.taste:disabled {
+  opacity: 0.55;
+}
+
+.tasteFertig {
+  opacity: 0.35;
+}
+
+.tasteZiffer {
+  font-size: clamp(1.1rem, 5vw, 1.5rem);
+  font-weight: 800;
+  color: var(--color-primary);
+  line-height: 1.1;
+}
+
+.tasteRest {
+  font-size: 0.6rem;
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+.notizenFuellen {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-decoration: underline;
+  padding: var(--space-1);
+}
+
+.notizenFuellen:disabled {
+  opacity: 0.45;
+}
+
+.fussnote {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-align: center;
+  max-width: 24rem;
+}

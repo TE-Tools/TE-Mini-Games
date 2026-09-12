@@ -22,6 +22,7 @@ export type GameId =
   | 'squishy-dumplings'
   | 'trapbound'
   | 'emberwake'
+  | 'sudoku'
 
 export interface GameLevelConfig {
   level: number

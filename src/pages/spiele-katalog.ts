@@ -40,6 +40,7 @@ export const SPIELE_KACHELN: readonly KachelEintrag[] = [
     art: 'Gedächtnis',
   },
   { id: 'kopfrechnen', name: 'Kopfrechnen', pfad: '/play/kopfrechnen', icon: '🔢', art: 'Rechnen' },
+  { id: 'sudoku', name: 'Sudoku', pfad: '/play/sudoku', icon: '🔢', art: 'Logik' },
   { id: 'bienen-flow', name: 'Bienen-Flow', pfad: '/play/bienen-flow', icon: '🐝', art: 'Puzzle' },
   {
     id: 'squishy-dumplings',
