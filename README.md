@@ -68,6 +68,14 @@ Progressive Web App with short skill, memory, reaction and logic games.
   shrink from level to level. The specials are measured there as well: in play
   one turns up roughly every twelve moves, which leaves the pace at about 4.2
   dumplings a move
+- **Emberwake** – a 3D survival game (Three.js, stylized low poly, no textures,
+  no model files – everything is generated in code). You carry the last ember
+  through an extinguished forest; your lantern draws power from the camp's
+  core, and the further you go, the faster the core drains – so every expedition
+  costs the safety of your night. Weight instead of inventory slots: the heavier
+  the pack, the slower the walk home. Deterministic 30 Hz simulation without
+  Three.js, so `tests/emberwake.test.ts` lets a bot play the levels headless.
+  Vertical slice: world 1, levels 1 and 2. Design docs in `docs/design/emberwake/`
 - **Trapbound** – a trap platformer: short levels that look harmless and are
   not. Run, jump, reach the door – except the floor crumbles under the last
   step, the ceiling drops when you pass a certain point, the exit walks away

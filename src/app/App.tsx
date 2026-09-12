@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { HomePage } from '@/pages/HomePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
@@ -21,6 +21,12 @@ import { BienenFlowPage } from '@/pages/play/BienenFlowPage'
 import { SquishyDumplingsPage } from '@/pages/play/SquishyDumplingsPage'
 import { TrapboundPage } from '@/pages/play/TrapboundPage'
 import { FamilyPage } from '@/pages/family/FamilyPage'
+
+// Emberwake bringt Three.js mit (rund 135 KB gzip). Das lädt erst, wer die
+// Kachel antippt -- die Startseite und alle anderen Spiele bleiben davon frei.
+const EmberwakePage = lazy(() =>
+  import('@/pages/play/EmberwakePage').then((m) => ({ default: m.EmberwakePage })),
+)
 import { DailyPage } from '@/pages/daily/DailyPage'
 import { LeaderboardPage } from '@/pages/leaderboard/LeaderboardPage'
 import { AchievementsPage } from '@/pages/achievements/AchievementsPage'
@@ -148,6 +154,29 @@ export function App() {
           <Route path="/play/bienen-flow" element={<BienenFlowPage />} />
           <Route path="/play/squishy-dumplings" element={<SquishyDumplingsPage />} />
           <Route path="/play/trapbound" element={<TrapboundPage />} />
+          <Route
+            path="/play/emberwake"
+            element={
+              <Suspense
+                fallback={
+                  <main
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      minHeight: '100dvh',
+                      padding: '1.5rem',
+                    }}
+                  >
+                    <p style={{ opacity: 0.7 }}>Emberwake lädt…</p>
+                  </main>
+                }
+              >
+                <EmberwakePage />
+              </Suspense>
+            }
+          />
           <Route path="/family" element={<FamilyPage />} />
           <Route path="/daily" element={<DailyPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />

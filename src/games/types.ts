@@ -21,6 +21,7 @@ export type GameId =
   | 'bienen-flow'
   | 'squishy-dumplings'
   | 'trapbound'
+  | 'emberwake'
 
 export interface GameLevelConfig {
   level: number

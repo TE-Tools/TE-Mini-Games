@@ -49,6 +49,7 @@ export const SPIELE_KACHELN: readonly KachelEintrag[] = [
     art: 'Drei gewinnt',
   },
   { id: 'trapbound', name: 'Trapbound', pfad: '/play/trapbound', icon: '🕳️', art: 'Jump and Run' },
+  { id: 'emberwake', name: 'Emberwake', pfad: '/play/emberwake', icon: '🔥', art: 'Survival' },
   { id: 'kniffel', name: 'Kniffel', pfad: '/play/kniffel', icon: '🎲', art: 'Würfeln' },
   {
     id: 'schuetzenopoly',

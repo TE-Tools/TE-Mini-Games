@@ -1,0 +1,14 @@
+/*
+ * Die Bühne für EMBERWAKE: liegt über der ganzen App, dunkel, ohne Ränder.
+ * Das Spiel ist bewusst dunkel -- es handelt von Licht in der Finsternis --
+ * und bleibt eine Insel im hellen Design. Alles Weitere gestaltet
+ * src/games/emberwake/ui/styles/emberwake.css unterhalb von .ew-root.
+ */
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: #0a0c12;
+  overflow: hidden;
+  touch-action: none;
+}

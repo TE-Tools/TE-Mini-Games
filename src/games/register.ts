@@ -15,6 +15,7 @@ import { kniffelGame } from './kniffel'
 import { bienenFlowGame } from './bienen-flow'
 import { squishyDumplingsGame } from './squishy-dumplings'
 import { trapboundGame } from './trapbound'
+import { emberwakeGame } from './emberwake/definition'
 
 /** Register all built-in games. Call once at app startup. */
 export function registerAllGames(): void {
@@ -34,4 +35,5 @@ export function registerAllGames(): void {
   registerGame(bienenFlowGame)
   registerGame(squishyDumplingsGame)
   registerGame(trapboundGame)
+  registerGame(emberwakeGame)
 }
