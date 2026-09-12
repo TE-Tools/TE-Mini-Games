@@ -47,3 +47,8 @@ corresponding feature; do not invent a competing design.
   `render/` importiert Three.js (die Simulation läuft headless in Vitest), in
   der Simulation nie `Math.random()` (nur `core/Rng.ts`), Inhalte sind Daten in
   `data/`, die Oberfläche bleibt unter `.ew-root` und rührt keine App-Tokens an.
+- **Sudoku:** `docs/design/sudoku/` – Stufen, Technikgewichte, Erzeugung. Die 150
+  Rätsel in `src/games/sudoku/daten.ts` werden nie von Hand geändert, sondern mit
+  `scripts/build-sudoku-levels.mjs` neu erzeugt; wer eine Technik oder ein Gewicht in
+  `techniken.ts` ändert, erzeugt die Daten neu, sonst fällt `tests/sudoku.test.ts`.
+  Die Stufen sind eigene Strecken -- Schwer darf nie hinter Leicht verschlossen werden.
