@@ -122,7 +122,18 @@ Einmalig einzurichten ist eine einzige Angabe als Repository-Secret,
 `SUPABASE_DB_URL` — die Verbindungszeichenkette aus Supabase unter *Project
 Settings → Database → Connection string → URI*. **Den Eintrag mit Port 5432
 nehmen**, nicht 6543: Der Transaction-Modus des Poolers kann keine Funktionen
-anlegen. Die Einzelheiten stehen im Kopf von
+anlegen.
+
+**Es muss die Pooler-Zeichenkette sein** (Host `aws-0-….pooler.supabase.com`,
+Benutzer `postgres.<ref>`), nicht der direkte Host `db.<ref>.supabase.co`. Der
+hat seit der IPv4-Abschaltung von Supabase nur noch eine IPv6-Adresse, und
+GitHub-Runner haben kein IPv6. Am 13.09.2026 stand deshalb nur
+
+    psql: connection to server at "db.<ref>.supabase.co" (2a05:d018:…),
+    port 5432 failed: Network is unreachable
+
+im Protokoll — nichts war kaputt, es war die falsche Adresse. Der Ablauf
+prüft das jetzt vorab und sagt es im Klartext. Die Einzelheiten stehen im Kopf von
 `.github/workflows/migrationen-einspielen.yml`.
 
 Der Ablauf hat einen Haken „nur nachsehen, was fehlt" — damit lässt sich der
