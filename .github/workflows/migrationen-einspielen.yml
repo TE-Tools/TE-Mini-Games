@@ -55,6 +55,37 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq postgresql-client
 
+      # Erreichbar? Das ist die Stelle, an der es am 13.09.2026 scheiterte --
+      # mit einer Meldung, aus der niemand schlau wurde:
+      #
+      #   psql: connection to server at "db.<ref>.supabase.co"
+      #   (2a05:d018:...), port 5432 failed: Network is unreachable
+      #
+      # Dahinter steckt nichts Kaputtes, sondern eine Adresse: Der direkte
+      # Datenbank-Host von Supabase hat seit der IPv4-Abschaltung nur noch
+      # eine IPv6-Adresse, und GitHub-Runner haben kein IPv6. Der Pooler-Host
+      # (aws-0-....pooler.supabase.com) ist über IPv4 erreichbar.
+      #
+      # Der Test unten sagt das im Klartext, statt es den Nächsten wieder
+      # eine halbe Stunde suchen zu lassen.
+      - name: Ist die Datenbank überhaupt erreichbar?
+        env:
+          PGURL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          host=$(printf '%s' "$PGURL" | sed -E 's#^[a-z+]+://[^@]*@##; s#[:/].*$##')
+          echo "Host aus dem Secret: $host"
+
+          if printf '%s' "$host" | grep -qE '^db\.[a-z0-9]+\.supabase\.co$'; then
+            echo "::error::Das Secret SUPABASE_DB_URL zeigt auf den direkten Datenbank-Host ($host). Der hat nur eine IPv6-Adresse, und GitHub-Runner können kein IPv6 -- deshalb bricht das Einspielen mit 'Network is unreachable' ab. Nimm stattdessen die Pooler-Zeichenkette: Supabase -> Project Settings -> Database -> Connection string -> Reiter URI, Eintrag mit Port 5432 (Session-Modus, Host aws-0-....pooler.supabase.com, Benutzer postgres.<ref>). Nicht Port 6543 -- der Transaction-Modus kann keine Funktionen anlegen."
+            exit 1
+          fi
+
+          if ! getent ahostsv4 "$host" > /dev/null; then
+            echo "::error::Für $host gibt es keine IPv4-Adresse. GitHub-Runner können kein IPv6. Nimm die Pooler-Zeichenkette aus Supabase (Project Settings -> Database -> Connection string -> URI, Port 5432)."
+            exit 1
+          fi
+          echo "IPv4 vorhanden -- weiter."
+
       # Erst zeigen, was da ist. Das ist die Antwort auf "ist es schon drin?"
       # und kostet nichts.
       - name: Stand vorher
