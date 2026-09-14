@@ -26,7 +26,7 @@ export function DatenschutzPage() {
         <h2>1. Verantwortlicher</h2>
         <div className={styles.kasten}>
           <p>
-            <strong>TE-Alltagshelfer</strong>
+            <strong>TE-Digital</strong> (vormals TE-Alltagshelfer)
             <br />
             Inhaber: Thomas Elsen
             <br />

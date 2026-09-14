@@ -32,7 +32,7 @@ describe('Impressum', () => {
     // und getByText beschwert sich dann ueber mehrere Treffer.
     const { container } = zeige(<ImpressumPage />)
     const text = container.textContent ?? ''
-    for (const angabe of ['TE-Alltagshelfer', 'Thomas Elsen', 'Holbeinstraße 6', '41470 Neuss']) {
+    for (const angabe of ['TE-Digital', 'Thomas Elsen', 'Holbeinstraße 6', '41470 Neuss']) {
       expect(text, `${angabe} fehlt`).toContain(angabe)
     }
     expect(screen.getByRole('link', { name: /te-alltagshelfer@outlook\.de/ }).getAttribute('href'))

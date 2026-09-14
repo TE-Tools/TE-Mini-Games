@@ -22,7 +22,7 @@ export function ImpressumPage() {
         <h2>Angaben gemäß § 5 DDG</h2>
         <div className={styles.kasten}>
           <p>
-            <strong>TE-Alltagshelfer</strong>
+            <strong>TE-Digital</strong> (vormals TE-Alltagshelfer)
             <br />
             Inhaber: Thomas Elsen
             <br />
