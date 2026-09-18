@@ -20,6 +20,7 @@ import {
   todeGesamt,
   loescheStand,
   BILD_BREITE,
+  PHYSIK,
   BILD_HOEHE,
   type Spielstand,
   type Stand,
@@ -69,6 +70,8 @@ export function TrapboundPage() {
   const endeRef = useRef(false)
   /** Zählt bei jedem Levelwechsel hoch; alte Schleifen brechen daran ab. */
   const lauf = useRef(0)
+  /** Wo die Kamera gerade steht; null heißt "beim nächsten Bild hinsetzen". */
+  const kameraRef = useRef<number | null>(null)
 
   const einst = stand.einstellungen
 
@@ -103,6 +106,7 @@ export function TrapboundPage() {
 
   const starteLevel = useCallback((nr: number) => {
     lauf.current += 1
+    kameraRef.current = null
     const daten = levelDaten(nr)
     spielRef.current = starte(daten)
     todeRef.current = 0
@@ -116,6 +120,7 @@ export function TrapboundPage() {
 
   /** Nach einem Tod: sofort wieder auf Anfang, Fallen zurück. */
   const neustart = useCallback(() => {
+    kameraRef.current = null
     const daten = levelDaten(levelNr)
     spielRef.current = starte(daten)
     setEnde(null)
@@ -247,16 +252,45 @@ export function TrapboundPage() {
       ctx.setTransform(1, 0, 0, 1, 0, 0)
       ctx.fillStyle = '#0b0916'
       ctx.fillRect(0, 0, c.width, c.height)
-      ctx.setTransform(
-        skala,
+
+      /*
+       * Die Kamera.
+       *
+       * Ein Level war bisher genau ein Bildschirm breit. Damit passten zwei,
+       * höchstens drei Fallen hinein -- und genau daran lag, was am
+       * 18.09.2026 gemeldet wurde: "immer das selbe, die Level sehen ähnlich
+       * aus". Längere Level lösen das an der Wurzel, und dafür muss das Bild
+       * mitwandern.
+       *
+       * Der Ausschnitt bleibt immer BILD_BREITE breit, egal wie lang das
+       * Level ist: Die Figur behält ihre Größe, ein Sprung sieht überall
+       * gleich weit aus. Die Kamera zieht weich nach, damit das Bild beim
+       * Laufen nicht springt, und bleibt an den Enden stehen.
+       */
+      const levelBreite = s.level.breite ?? BILD_BREITE
+      const ziel = Math.max(
         0,
-        0,
-        skala,
-        (c.width - BILD_BREITE * skala) / 2,
-        (c.height - BILD_HOEHE * skala) / 2,
+        Math.min(levelBreite - BILD_BREITE, s.koerper.x + PHYSIK.breite / 2 - BILD_BREITE / 2),
       )
+      if (kameraRef.current === null) kameraRef.current = ziel
+      else kameraRef.current += (ziel - kameraRef.current) * 0.18
+      const kamera = Math.round(kameraRef.current)
+
+      const randX = (c.width - BILD_BREITE * skala) / 2
+      const randY = (c.height - BILD_HOEHE * skala) / 2
+
+      // Der Ausschnitt wird beschnitten. Solange ein Level genau ein Bild
+      // breit war, lag ohnehin nichts daneben; jetzt schon, und ohne diese
+      // Sperre malte das Spiel in den schwarzen Rand hinein.
+      ctx.save()
+      ctx.beginPath()
+      ctx.rect(randX, randY, BILD_BREITE * skala, BILD_HOEHE * skala)
+      ctx.clip()
+
+      ctx.setTransform(skala, 0, 0, skala, randX - kamera * skala, randY)
       ctx.imageSmoothingEnabled = false
       zeichne(ctx, s, { welt: weltVon(s.level.nr), beben: einst.beben, uhr: u })
+      ctx.restore()
     }
 
     requestAnimationFrame(bild)

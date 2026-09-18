@@ -104,14 +104,27 @@ Progressive Web App with short skill, memory, reaction and logic games.
   Levels are **data, not code** (`src/games/trapbound/levels/`), each with a
   recorded solution that `tests/trapbound.test.ts` plays back – change a level
   without fixing its solution and the test fails. Levels 1–10 are hand-built;
-  11–300 are assembled from twenty-three segment builders (`bausteine.ts`) that
+  11–300 are assembled from twenty-eight segment builders (`bausteine.ts`) that
   emit geometry **and** the solution for that piece – so every level is proven
   solvable by playback, none of them can be beaten by just holding “right”,
-  and each world only draws on the traps it has introduced. The whole run of
+  and each world only draws on the traps it has introduced. **Levels get
+  longer as you go**: the first forty are one screen wide, then every world
+  adds 60 units up to two and a half screens (1240), and the view follows the
+  figure – she keeps her size, so a jump is the same distance everywhere. That
+  is the fix for the one complaint the finishers had, “the levels look alike”:
+  one screen held two or three traps, 1240 units hold up to six, and the
+  number of possible levels goes up with it. Measured: **289 of the 290
+  generated levels have a build nobody else has**, the closest repeat is 201
+  levels apart, and no level is a single trap any more. The whole run of
   290 generated levels is laid out in **one deterministic pass**, which
   remembers what came before: an ordinary trap pairing cannot return for 50
   levels, no two neighbours share more than one trap, and no two neighbours
-  carry the same name. The generator also **plays every level before it hands
+  carry the same name. The last stretch of a level is drawn from **five kinds
+  of exit** and never the same three times running: the plain door, the one
+  that flees, the fake one over a spring, the one that snaps shut – and the
+  one that **stands on the floor where you can see it and leaps up** when you
+  come close, uncovering the spikes below and the two steps you now have to
+  climb. The generator also **plays every level before it hands
   it over** – three variants, and only one it got through itself is shipped.
   **From level 50 on, every fourth level or so is a mean one** – a wall of
   saw blades sweeps in behind you, walls shoot out of the floor and drop from
@@ -132,12 +145,18 @@ Progressive Web App with short skill, memory, reaction and logic games.
   level 150 nothing stands still**: every level carries at least four things
   that move, fall, break, open or shove – measured, not hoped for (5.0 on
   average, 8.5 in the nightmares, against 2.3 in the first hundred). Among
-  them is a **wall that pushes you back**: it slides in from above and drives
-  anyone standing past the gap back into it, so you wait on the safe side
+  them is a **wall that pushes you back**: it comes down over the gap itself
+  and drives anyone standing past it back in, so you wait on the safe side
   until it retracts – skip the wait and the recorded solution itself drowns
-  in the pit, which is what the test checks. Each world also teaches its own
-  new trap on four fixed slots before it turns up mixed with everything
-  else. Traps compose through triggers and actions
+  in the pit, which is what the test checks. The long levels bring five more
+  traps that never fitted on one screen: a **ferry** you have to call, ride
+  and step off again; a **bolt** that shoots along the floor from ahead of
+  you, low and fast, so you jump on the spot; a **way over the top** where
+  the ground is walled off and two steps take you onto a roof; a **stretch
+  that caves in behind you**, five plates each of which holds for one stride
+  and not two; and **stepping stones over nothing** that fall the moment you
+  land. Each world also teaches its own new trap on four fixed slots before
+  it turns up mixed with everything else. Traps compose through triggers and actions
   (`zone → platform vanishes, spikes appear, gravity flips two seconds later`),
   so new worlds need no engine changes. Progress, deaths, best times, crystals
   and settings live in localStorage

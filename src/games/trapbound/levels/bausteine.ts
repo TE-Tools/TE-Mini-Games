@@ -283,7 +283,10 @@ export const bAufzug: Baustein = (b) => {
 
 /** Eine Wand, die zu hoch zum Springen ist – und eine Feder davor. */
 export const bFeder: Baustein = (b) => {
-  const wandX = b.x + b.breite - 54
+  // Die Mauer hängt an der Feder, nicht am Abschnittsende: Ein Federsprung
+  // trägt rund hundertvierzig Punkte weit, und sobald der Abschnitt breiter
+  // wurde als das, kam die Figur vor der Mauer auf und stand davor.
+  const wandX = Math.min(b.x + b.breite - 54, b.x + 118)
   return {
     objekte: [
       boden(b.x, b.breite),
@@ -309,7 +312,11 @@ export const bKnopfTuer: Baustein = (b) => {
         typ: 'knopf',
         // Bündig im Boden: Ein aufgesetzter Knopf wäre eine Stufe, gegen die
         // man läuft, statt daraufzutreten.
-        x: b.x + 24,
+        //
+        // Und in fester Entfernung vor der Tür, nicht am Abschnittsanfang:
+        // Die Tür fällt nach 1,4 Sekunden wieder zu, und sobald die
+        // Abschnitte länger wurden, reichte die Zeit für den Weg nicht mehr.
+        x: Math.max(b.x + 24, b.x + b.breite - 150),
         y: BODEN_Y,
         b: 26,
         h: 8,
@@ -864,14 +871,32 @@ export const bSchieber: Baustein = (b) => {
   const id = `sb${b.nr}`
   const links = 30
   const spalt = 38
-  const dauer = 0.9 - b.schwer * 0.2
+  /*
+   * Schnell genug, dass sie unten ist, bevor man da ist.
+   *
+   * Vorher stand hier 0,9 Sekunden. Das war lange genug, dass die Figur --
+   * Lücke überspringen, landen -- nach einer halben Sekunde unter der noch
+   * schwebenden Wand hindurchspazierte: Der Schieber schob niemanden mehr
+   * zurück, sondern war Deko. Gemessen an Level 198.
+   */
+  const dauer = 0.46 - b.schwer * 0.08
   // Lange Pause am oberen Parkplatz: Das ist das Fenster, in dem man
   // hinüberkommt.
   const warte = 1.6
-  const parkX = b.x + b.breite - 46
-  // So weit, dass die Wand bis kurz hinter die Lücke kommt: Nur dann schiebt
-  // sie jemanden, der schon drüben steht, auch wirklich zurück.
-  const weit = b.breite - 118
+  /*
+   * Wo die Wand unten ankommt: mitten über der Lücke.
+   *
+   * Vorher war das hinter der Lücke ausgerechnet, und damit tat die Wand
+   * nicht, wofür sie gebaut ist: Wer zu früh hinübersprang, wurde nicht
+   * zurückgeschoben, sondern stand nur eine Sekunde davor und ging dann
+   * weiter. Jetzt endet sie über dem Loch -- wer ihr im Weg steht, wird
+   * hineingeschoben.
+   */
+  const linksEnde = b.x + 44
+  // Gedeckelt, damit sie in einem breiten Abschnitt nicht zur Gewehrkugel
+  // wird; der Rest der Breite wird schlichter Boden.
+  const weit = Math.min(132, b.breite - 90)
+  const parkX = linksEnde + weit
   return {
     objekte: [
       boden(b.x, links),
@@ -911,6 +936,282 @@ export const bSchieber: Baustein = (b) => {
   }
 }
 
+// ------------------------------------------- Ab Level 161: hoch hinaus
+//
+// Was diese Bausteine verbindet: Sie spielen nicht mehr nur auf dem
+// Hauptboden. Thomas am 18.09.2026: "die Level sehen ähnlich aus [...]
+// viele neue Hindernisse oder an anderen Stellen". Genau daran lag es --
+// alles stand auf derselben Linie, und ein Level unterschied sich vom
+// nächsten nur dadurch, welche Falle auf dieser Linie stand. Hier geht es
+// darüber, darunter und darauf.
+
+/**
+ * Ein Steg, der über den Abgrund fährt – man muss mitfahren.
+ *
+ * Der Aufzug fährt hoch und runter, dieser hier quer. Das ist der
+ * Unterschied: Man steht nicht davor und wartet, sondern steht *darauf* und
+ * fährt. Wer zu früh abspringt, fällt; wer zu spät aussteigt, fährt zurück.
+ *
+ * Er parkt drüben und kommt geholt: Die Zone am Eingang schickt ihn los, er
+ * fährt herüber, wartet kurz -- das ist das Fenster zum Aufsteigen -- und
+ * fährt zurück.
+ */
+export const bFahrsteg: Baustein = (b) => {
+  const id = `fg${b.nr}`
+  const links = 32
+  const rechts = 34
+  const spalt = b.breite - links - rechts
+  const steg = 46
+  const strecke = spalt - steg
+  const dauer = strecke / (74 + b.schwer * 26)
+  // Reichlich Pause an beiden Enden: Das ist das Fenster zum Ein- und
+  // Aussteigen, und es darf nicht der Teil sein, an dem es scheitert.
+  const warte = 1.3
+  return {
+    objekte: [
+      boden(b.x, links),
+      boden(b.x + links + spalt, rechts),
+      {
+        typ: 'beweger',
+        id,
+        // Der Steg steht drüben und fährt nach links her: dx ist negativ.
+        x: b.x + links + strecke,
+        // Bündig mit dem Hauptboden, nicht darüber: Zwei Punkte Stufe
+        // reichten, damit die waagerechte Auflösung den Steg für eine Wand
+        // hielt -- die Figur lief dagegen, statt aufzusteigen.
+        y: BODEN_Y,
+        b: steg,
+        h: 14,
+        weg: { dx: -strecke, dy: 0, dauer, warte, wartetAufAusloeser: true },
+      },
+      {
+        typ: 'zone',
+        x: b.x + 8,
+        y: BODEN_Y - 50,
+        b: 8,
+        h: 50,
+        einmal: true,
+        loest: [{ tu: 'los', ziel: id }],
+      },
+    ],
+    loesung: [
+      vor(b, { bisBoden: true, dauer: 1 }),
+      // Bis an die Kante und warten, bis der Steg da ist.
+      vor(b, { bisX: b.x + links - 14 }),
+      { dauer: dauer + warte * 0.35 },
+      // Aufsteigen.
+      vor(b, { bisX: b.x + links + 16, dauer: 0.7 }),
+      // Und stehenbleiben: Der Steg fährt, man selbst nicht.
+      { dauer: warte * 0.5 + dauer + 0.12 },
+      vor(b, { bisX: b.x + b.breite - 14, dauer: 2 }),
+    ],
+  }
+}
+
+/**
+ * Ein Bolzen, der flach über den Boden schießt.
+ *
+ * Alles andere in diesem Spiel fällt von oben oder kommt aus dem Boden. Der
+ * hier kommt waagerecht und schnell -- und zwar von vorn, aus der Richtung,
+ * in die man ohnehin läuft. Man sieht ihn kommen und hat eine knappe halbe
+ * Sekunde, um zu springen.
+ *
+ * Er bleibt links im Boden stecken, wo man schon vorbei ist: Bliebe er
+ * liegen, wo man steht, wäre der Abschnitt nach dem ersten Schuss versperrt.
+ */
+export const bSchuss: Baustein = (b) => {
+  const id = `sc${b.nr}`
+  // Langsam genug, dass man ihn kommen sieht: Der erste Anlauf schoss mit
+  // 285 Punkten je Sekunde, und zwischen Auslöser und Einschlag lagen zwei
+  // Zehntel -- das war kein Zeitfenster, sondern Auswendiglernen.
+  const tempo = 150 + b.schwer * 50
+  const startX = b.x + b.breite - 22
+  const strecke = startX - (b.x + 2)
+  const flug = strecke / tempo
+  const zoneX = b.x + 12
+  /** Wo die Figur steht, wenn es knallt. */
+  const warteX = b.x + 34
+  /** Wann der Bolzen an ihr ist, vom Auslöser an gerechnet. */
+  const ankunft = (startX - (warteX + 11)) / tempo
+  // Der Bogen dauert knapp sechs Zehntel, die Spitze liegt in der Mitte.
+  const gipfel = 0.29
+  const anlauf = (warteX - zoneX) / 138
+  return {
+    objekte: [
+      boden(b.x, b.breite),
+      {
+        typ: 'saege',
+        id,
+        x: startX,
+        y: BODEN_Y - 15,
+        b: 15,
+        h: 15,
+        versteckt: true,
+        weg: { dx: -strecke, dy: 0, dauer: flug, einweg: true, wartetAufAusloeser: true },
+      },
+      {
+        typ: 'zone',
+        x: zoneX,
+        y: BODEN_Y - 50,
+        b: 8,
+        h: 50,
+        einmal: true,
+        loest: [
+          { tu: 'zeigen', ziel: id },
+          { tu: 'los', ziel: id },
+          { tu: 'beben', wert: 0.3 },
+        ],
+      },
+    ],
+    loesung: [
+      vor(b, { bisBoden: true, dauer: 1 }),
+      vor(b, { bisX: warteX }),
+      { dauer: Math.max(0.05, ankunft - gipfel - anlauf) },
+      // Auf der Stelle springen: Wer dabei losläuft, kommt dem Bolzen
+      // entgegen und trifft ihn, bevor der Bogen oben ist.
+      { sprung: true, dauer: 0.34 },
+      { bisBoden: true, dauer: 1.2 },
+      vor(b, { bisX: b.x + b.breite - 14, dauer: 2.4 }),
+    ],
+  }
+}
+
+/**
+ * Der Weg nach oben – unten ist zu.
+ *
+ * Eine Mauer sperrt den Hauptboden ab, daneben führen zwei Stufen auf ein
+ * Dach, und drüben geht es wieder hinunter. Das ist der einzige Baustein,
+ * in dem man den Boden für eine ganze Weile verlässt -- und deshalb der,
+ * der am meisten dagegen tut, dass alle Level gleich aussehen.
+ */
+export const bDachweg: Baustein = (b) => {
+  // Die drei Höhen sind gemessen, nicht geraten: Ein Sprung trägt sechzig
+  // Punkte hoch und -- aus dem Stand, bis die Füße wieder auf Absatzhöhe
+  // sind -- rund fünfzig weit. Vierundvierzig und zweiundvierzig Stufenhöhe
+  // lassen also knapp zwanzig Punkte Luft, genug, um nicht an der
+  // Dachkante hängenzubleiben.
+  const stufeY = BODEN_Y - 44
+  const dachY = BODEN_Y - 86
+  const stufeX = b.x + 40
+  const dachX = b.x + 120
+  const dachBis = b.x + b.breite - 30
+  const mauerX = b.x + b.breite - 84
+  return {
+    objekte: [
+      boden(b.x, b.breite),
+      // Die Sperre: Unten kommt niemand durch. Sie steht unter dem Dach,
+      // damit man sie von oben überquert.
+      { typ: 'block', x: mauerX, y: BODEN_Y - 78, b: 16, h: 78 },
+      { typ: 'block', x: stufeX, y: stufeY, b: 72, h: 10 },
+      { typ: 'block', x: dachX, y: dachY, b: dachBis - dachX, h: 10 },
+    ],
+    loesung: [
+      vor(b, { bisBoden: true, dauer: 1 }),
+      vor(b, { bisX: b.x + 4 }),
+      // Erst zum Stehen kommen: Wer mit vollem Schwung abspringt, fliegt
+      // über die Stufe hinweg.
+      { dauer: 0.35 },
+      vor(b, { sprung: true, dauer: 0.36 }),
+      vor(b, { bisBoden: true, dauer: 1.4 }),
+      vor(b, { bisX: b.x + 86 }),
+      vor(b, { sprung: true, dauer: 0.36 }),
+      vor(b, { bisBoden: true, dauer: 1.4 }),
+      // Oben entlang bis ans Ende des Dachs ...
+      vor(b, { bisX: dachBis - 14, dauer: 2.4 }),
+      // ... und ohne Taste hinunter: Ein Schritt ins Leere trägt weit genug,
+      // ein gehaltener Lauf trüge bis in den nächsten Abschnitt.
+      { bisBoden: true, dauer: 1.6 },
+      vor(b, { bisX: b.x + b.breite - 14, dauer: 1.6 }),
+    ],
+  }
+}
+
+/**
+ * Eine ganze Strecke, die hinter einem einbricht.
+ *
+ * Nicht eine Platte, sondern fünf hintereinander. Jede hält lange genug für
+ * einen Schritt und nicht lange genug für zwei. Wer losrennt, ist drüben;
+ * wer in der Mitte kurz überlegt, steht auf nichts mehr.
+ */
+export const bEinsturz: Baustein = (b) => {
+  const links = 26
+  const rechts = 26
+  const strecke = b.breite - links - rechts
+  // Platten von rund dreißig Punkten: So bleibt man auf jeder etwa eine
+  // Fünftelsekunde, und daran hängt, wie lange sie halten darf.
+  const anzahl = Math.max(4, Math.round(strecke / 30))
+  const platte = strecke / anzahl
+  // Gerechnet, nicht geraten: Lauftempo ist 138, die Figur 11 breit. So
+  // lange braucht ein Schritt über eine Platte -- plus eine Handbreit Luft,
+  // die mit der Schwierigkeit schrumpft.
+  const verzoegerung = (platte + 11) / 138 + 0.16 - b.schwer * 0.06
+  const objekte: Objekt[] = [boden(b.x, links)]
+  for (let k = 0; k < anzahl; k++) {
+    objekte.push({
+      typ: 'bruch',
+      x: b.x + links + k * platte,
+      y: BODEN_Y,
+      b: platte,
+      h: BODEN_H,
+      verzoegerung,
+    })
+  }
+  objekte.push(boden(b.x + links + strecke, rechts))
+  return {
+    objekte,
+    loesung: [
+      vor(b, { bisBoden: true, dauer: 1 }),
+      // In einem Zug hindurch. Anhalten ist hier die einzige Art zu
+      // verlieren.
+      vor(b, { bisX: b.x + b.breite - 14, dauer: 3 }),
+    ],
+  }
+}
+
+/**
+ * Zwei Trittsteine über dem Nichts, und beide fallen.
+ *
+ * Der Einsturz mit Boden darunter verzeiht einen Fehltritt. Hier ist
+ * darunter nichts: Wer einen Stein verpasst oder darauf stehenbleibt, fällt
+ * aus dem Bild. Die Sprünge gehen ineinander über -- ankommen, weiterlaufen,
+ * wieder abspringen --, und genau das muss man ein paarmal üben.
+ */
+export const bKippStufen: Baustein = (b) => {
+  const links = 28
+  const stein = 44
+  const spalt = 40
+  // Zwei Steine, drei Sprünge. Die Maße sind nicht gewählt, sondern
+  // gemessen: Ein Sprung mit Anlauf trägt einundachtzig Punkte weit, und mit
+  // Lücke vierzig und Stein vierundvierzig kommt die Figur jedes Mal in der
+  // Mitte des nächsten Steins auf.
+  const s1 = b.x + links + spalt
+  const s2 = s1 + stein + spalt
+  const bank = s2 + stein + spalt
+  const objekte: Objekt[] = [
+    boden(b.x, links),
+    { typ: 'fall', x: s1, y: BODEN_Y, b: stein, h: 14, verzoegerung: 0.26 },
+    { typ: 'fall', x: s2, y: BODEN_Y, b: stein, h: 14, verzoegerung: 0.26 },
+    boden(bank, Math.max(24, b.x + b.breite - bank)),
+  ]
+  return {
+    objekte,
+    loesung: [
+      vor(b, { bisBoden: true, dauer: 1 }),
+      vor(b, { bisX: b.x + links - 16 }),
+      vor(b, { sprung: true, dauer: 0.34 }),
+      vor(b, { bisBoden: true, dauer: 1.2 }),
+      // Nicht bis an die Kante trödeln: Der Stein hält nur einen Wimpernschlag.
+      vor(b, { bisX: s1 + stein - 22 }),
+      vor(b, { sprung: true, dauer: 0.34 }),
+      vor(b, { bisBoden: true, dauer: 1.2 }),
+      vor(b, { bisX: s2 + stein - 22 }),
+      vor(b, { sprung: true, dauer: 0.34 }),
+      vor(b, { bisBoden: true, dauer: 1.2 }),
+      vor(b, { bisX: b.x + b.breite - 14, dauer: 1.6 }),
+    ],
+  }
+}
+
 export interface BausteinEintrag {
   name: string
   bau: Baustein
@@ -943,4 +1244,9 @@ export const BAUSTEINE: Record<string, BausteinEintrag> = {
   stachelregen: { name: 'stachelregen', bau: bStachelRegen, min: 140 },
   doppelluecke: { name: 'doppelluecke', bau: bDoppelLuecke, min: 160 },
   schieber: { name: 'schieber', bau: bSchieber, min: 160 },
+  fahrsteg: { name: 'fahrsteg', bau: bFahrsteg, min: 190 },
+  schuss: { name: 'schuss', bau: bSchuss, min: 190 },
+  dachweg: { name: 'dachweg', bau: bDachweg, min: 230 },
+  einsturz: { name: 'einsturz', bau: bEinsturz, min: 170 },
+  kippstufen: { name: 'kippstufen', bau: bKippStufen, min: 270 },
 }
