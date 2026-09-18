@@ -24,6 +24,7 @@ import {
   WANDEL_ZIEL,
   schwierigkeit,
   zaehleWandel,
+  levelBreite,
 } from '@/games/trapbound/levels/erzeugt'
 import { LEVEL_PRO_WELT } from '@/games/trapbound/welten'
 import {
@@ -931,11 +932,21 @@ describe('Die zweite Hälfte', () => {
     else if (nr < 101 && !istGemein(nr)) fruehe.push(nr)
   }
 
-  it('lässt die ersten hundert Level in Ruhe', () => {
-    // Die Erweiterung darf nichts an dem ändern, was schon gespielt wurde.
+  it('hält die heimlichen Fallen aus den ersten hundert Leveln heraus', () => {
     expect(schwierigkeit(100)).toBeCloseTo(1, 5)
     expect(istAlptraum(100)).toBe(false)
-    expect(schnitt(fruehe)).toBeLessThan(0.6)
+    // Gemessen wird das, was die zweite Hälfte ausmacht: Boden, der ohne
+    // Risse nachgibt, und Blöcke, die ohne Vorwarnung fallen. Die gehören
+    // erst ab Welt 6 ins Spiel.
+    //
+    // Früher stand hier die Zahl aller versteckten Dinge. Die ist mit den
+    // längeren Leveln gewachsen, weil in ein Level jetzt mehr Bausteine
+    // passen -- aber eine Stachelfalle, die aus dem Boden kommt, gibt es
+    // seit Welt 1, und sie hat mit der zweiten Hälfte nichts zu tun.
+    const heimlich = (nr: number) => levelDaten(nr).objekte.filter((o) => o.heimlich).length
+    expect(fruehe.reduce((a, nr) => a + heimlich(nr), 0)).toBe(0)
+    // Und die Albträume haben davon reichlich.
+    expect(schnitt(alptraeume)).toBeGreaterThan(schnitt(fruehe) + 2)
   }, 120_000)
 
   it('setzt Albträume erst ab Level 101 und nie zwei nebeneinander', () => {
@@ -1028,11 +1039,16 @@ describe('Ab Level 150', () => {
    * Die Wand, die zurückschiebt.
    *
    * Gemessen wird sie an ihrem Sinn: Wer nicht wartet, sondern gleich
-   * hinüberspringt, wird von ihr in die Lücke zurückgedrängt und fällt. Der
-   * Test nimmt dazu die Wartepause aus der hinterlegten Lösung heraus -- und
-   * verlangt, dass es dann schiefgeht.
+   * hinüberspringt, wird von ihr in die Lücke zurückgedrängt und fällt.
+   * Der Test nimmt dazu die Wartepausen aus der hinterlegten Lösung heraus
+   * -- und verlangt, dass es dann schiefgeht.
+   *
+   * Alle Pausen, nicht nur die erste: In einem Level stecken inzwischen bis
+   * zu sechs Bausteine, und mehr als einer davon verlangt Stillstehen. Die
+   * erste Pause zu treffen, hieße darauf zu hoffen, dass der Schieber der
+   * vorderste ist.
    */
-  it('schiebt bei der Schieberwand zurück, wer nicht wartet', () => {
+  it('kommt nicht durch, wer in den Warte-Leveln nicht wartet', () => {
     const schieberLevel: number[] = []
     for (let nr = 11; nr <= LEVEL_ANZAHL; nr++) {
       if (levelDaten(nr).idee.includes('schieber')) schieberLevel.push(nr)
@@ -1041,10 +1057,10 @@ describe('Ab Level 150', () => {
 
     for (const nr of schieberLevel) {
       const l = levelDaten(nr)
-      const ohne = [...(l.loesung ?? [])]
-      const i = ohne.findIndex((x) => (x.dauer ?? 0) > 1.5 && !x.links && !x.rechts && !x.sprung)
-      expect(`Level ${nr}`).toBe(i >= 0 ? `Level ${nr}` : `Level ${nr} wartet gar nicht`)
-      ohne.splice(i, 1)
+      const alle = [...(l.loesung ?? [])]
+      const pausen = alle.filter((x) => (x.dauer ?? 0) > 1.5 && !x.links && !x.rechts && !x.sprung)
+      expect(`Level ${nr}`).toBe(pausen.length > 0 ? `Level ${nr}` : `Level ${nr} wartet gar nicht`)
+      const ohne = alle.filter((x) => !pausen.includes(x))
       expect(`${nr} ohne Warten`).toBe(
         spieleLoesung({ ...l, loesung: ohne }).geschafft
           ? `${nr} ohne Warten kommt durch`
@@ -1075,6 +1091,12 @@ describe('Ab Level 150', () => {
     const welt8 = inWelt(141, 160)
     expect(welt8.has('schieber')).toBe(true)
     expect(welt8.has('doppelluecke')).toBe(true)
+    // Und die Bausteine, die erst in ein langes Level passen.
+    expect(inWelt(121, 140).has('einsturz')).toBe(true)
+    expect(inWelt(161, 180).has('fahrsteg')).toBe(true)
+    expect(inWelt(201, 220).has('schuss')).toBe(true)
+    expect(inWelt(221, 240).has('dachweg')).toBe(true)
+    expect(inWelt(241, 260).has('kippstufen')).toBe(true)
   }, 120_000)
 })
 
@@ -1094,5 +1116,150 @@ describe('Levelnamen', () => {
       if (name === 'Weiter' || name === 'Weiter?') ohne.push(`${nr}: ${name}`)
     }
     expect(ohne).toEqual([])
+  }, 120_000)
+})
+
+/**
+ * Längere Level.
+ *
+ * Thomas am 18.09.2026, nachdem jemand das Endlevel erreicht hatte: "zu
+ * einfach, weil immer das selbe passiert, die Level sehen ähnlich aus [...]
+ * die dürfen auch länger werden und viel schwerer, viele neue Hindernisse
+ * oder an anderen Stellen".
+ *
+ * Die Kritik ließ sich nachrechnen: Ein Level war genau einen Bildschirm
+ * breit. Davon gingen Start und Ausgang ab, es blieben rund dreihundert
+ * Punkte -- Platz für zwei, höchstens drei Fallen. Bei knapp dreißig
+ * Bausteinen sind das ein paar hundert sinnvolle Paarungen, verteilt auf
+ * zweihundertneunzig Level. Man *musste* dasselbe mehrfach sehen.
+ *
+ * Hier steht, was dagegen getan wurde, und zwar als Messung: Breite,
+ * Bausteine je Level, verschiedene Bauarten, Abwechslung der Ausgänge.
+ */
+describe('Längere Level', () => {
+  const bausteine = (nr: number) =>
+    levelDaten(nr)
+      .idee.replace('Aus Bausteinen: ', '')
+      .replace(/\.$/, '')
+      .split(' + ')
+      .map((t) => t.trim())
+      .filter((t) => !t.includes('Ausgang'))
+
+  const schlussArt = (nr: number) => {
+    const m =
+      /\+ (fliehender Ausgang|falscher Ausgang|zuschnappender Ausgang|Ausgang springt nach oben)\.$/.exec(
+        levelDaten(nr).idee,
+      )
+    return m?.[1] ?? 'schlichte Tür'
+  }
+
+  it('lässt die ersten vierzig Level einen Bildschirm breit', () => {
+    // Da lernt man das Spiel, und ein Level, das man ganz sieht, ist dafür
+    // das bessere.
+    for (let nr = 1; nr <= 40; nr++)
+      expect(`${nr}: ${levelBreite(nr)}`).toBe(`${nr}: ${BILD_BREITE}`)
+  })
+
+  it('wächst danach mit jeder Welt bis auf zweieinhalb Bildschirme', () => {
+    for (let nr = 41; nr <= LEVEL_ANZAHL; nr++) {
+      expect(levelBreite(nr)).toBeGreaterThanOrEqual(levelBreite(nr - LEVEL_PRO_WELT))
+    }
+    expect(levelBreite(41)).toBeGreaterThan(BILD_BREITE)
+    expect(levelBreite(LEVEL_ANZAHL)).toBeGreaterThanOrEqual(BILD_BREITE * 2.5)
+    // Und die Leveldaten tragen die Breite auch wirklich.
+    for (let nr = 11; nr <= LEVEL_ANZAHL; nr++) {
+      expect(`${nr}: ${levelDaten(nr).breite}`).toBe(`${nr}: ${levelBreite(nr)}`)
+    }
+  }, 120_000)
+
+  it('packt hinten bis zu sechs Fallen in ein Level', () => {
+    let hoechstens = 0
+    let mindestens = 99
+    for (let nr = 11; nr <= LEVEL_ANZAHL; nr++) {
+      hoechstens = Math.max(hoechstens, bausteine(nr).length)
+      mindestens = Math.min(mindestens, bausteine(nr).length)
+    }
+    expect(hoechstens).toBeGreaterThanOrEqual(6)
+    // Und keins besteht aus einem einzigen Stück: Das war der Notausgang,
+    // wenn die Übergabe zwischen zwei Bausteinen klemmte, und er machte aus
+    // einem Level eine einzelne Falle mit viel Boden davor.
+    expect(mindestens).toBeGreaterThanOrEqual(2)
+    const spaet: number[] = []
+    for (let nr = 241; nr <= LEVEL_ANZAHL; nr++) spaet.push(bausteine(nr).length)
+    expect(spaet.reduce((a, b) => a + b, 0) / spaet.length).toBeGreaterThan(3.5)
+  }, 120_000)
+
+  it('baut fast jedes Level anders als jedes andere', () => {
+    // Die eigentliche Messung zur Beschwerde. Vorher gab es 72 verschiedene
+    // Bauarten auf 90 Level; hier müssen es fast so viele sein wie Level.
+    const arten = new Set<string>()
+    for (let nr = 11; nr <= LEVEL_ANZAHL; nr++) arten.add([...bausteine(nr)].sort().join('+'))
+    expect(arten.size).toBeGreaterThanOrEqual(LEVEL_ANZAHL - 10 - 15)
+  }, 120_000)
+
+  it('wechselt auch den letzten Meter durch', () => {
+    // Der Ausgang bleibt am meisten im Gedächtnis, weil man ihn in jedem
+    // Level sieht. Vorher war er in mehr als der Hälfte aller Level eine
+    // schlichte Tür.
+    const zahl = new Map<string, number>()
+    for (let nr = 11; nr <= LEVEL_ANZAHL; nr++) {
+      const a = schlussArt(nr)
+      zahl.set(a, (zahl.get(a) ?? 0) + 1)
+    }
+    expect(zahl.size).toBe(5)
+    for (const [art, n] of zahl) {
+      expect(`${art}: ${n >= 20 && n <= (LEVEL_ANZAHL - 10) * 0.45}`).toBe(`${art}: true`)
+    }
+    /*
+     * Nie dreimal derselbe hintereinander -- ab Level 101.
+     *
+     * Davor geht es nicht, und das ist Absicht: In den ersten Welten steht
+     * nur die schlichte Tür zur Wahl, weil ein fliehender oder falscher
+     * Ausgang da noch nichts zu suchen hätte. Wer Level 21 bis 27 spielt,
+     * sieht siebenmal dieselbe Tür, und das soll er auch.
+     */
+    const dreimal: string[] = []
+    for (let nr = HAERTER_AB; nr <= LEVEL_ANZAHL; nr++) {
+      if (
+        schlussArt(nr) === schlussArt(nr - 1) &&
+        schlussArt(nr) === schlussArt(nr - 2) &&
+        // Gemeine Level und Albträume bekommen immer den zuschnappenden
+        // Ausgang -- das ist ihr Wesen, nicht Einfallslosigkeit.
+        !(istGemein(nr) || istAlptraum(nr))
+      ) {
+        dreimal.push(`${nr - 2}-${nr}: ${schlussArt(nr)}`)
+      }
+    }
+    expect(dreimal).toEqual([])
+  }, 120_000)
+
+  /**
+   * Die Tür, die nach oben wegspringt.
+   *
+   * Thomas: "das man als Beispiel unten Tür sieht und die nach oben
+   * springt". Der Test misst beides: dass sie unten steht, wo man sie sieht,
+   * und dass danach ein Weg nach oben da ist, der vorher nicht da war.
+   */
+  it('lässt die Tür nach oben wegspringen und zeigt dann die Treppe', () => {
+    const hochLevel: number[] = []
+    for (let nr = 11; nr <= LEVEL_ANZAHL; nr++) {
+      if (schlussArt(nr) === 'Ausgang springt nach oben') hochLevel.push(nr)
+    }
+    expect(hochLevel.length).toBeGreaterThanOrEqual(20)
+
+    for (const nr of hochLevel) {
+      const l = levelDaten(nr)
+      const tuer = l.objekte.find((o) => o.typ === 'ziel' && !o.falle)!
+      // Sie steht auf dem Hauptboden, in Augenhöhe -- man sieht sie.
+      expect(`${nr}: ${tuer.y}`).toBe(`${nr}: ${240 - 32}`)
+      // Und sie springt nach oben, nicht nur ein Stück zur Seite.
+      expect(`${nr}: ${(tuer.flieht?.dy ?? 0) < -60}`).toBe(`${nr}: true`)
+      // Zwei Stufen, die es vorher nicht gab.
+      const stufen = l.objekte.filter((o) => o.typ === 'block' && o.versteckt)
+      expect(`${nr}: ${stufen.length} Stufen`).toBe(`${nr}: 2 Stufen`)
+      // Die obere liegt so hoch, dass die Tür darauf steht.
+      const oben = stufen.reduce((a, b) => (a.y < b.y ? a : b))
+      expect(`${nr}: ${oben.y === tuer.y + (tuer.flieht?.dy ?? 0) + tuer.h}`).toBe(`${nr}: true`)
+    }
   }, 120_000)
 })

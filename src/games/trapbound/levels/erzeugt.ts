@@ -19,7 +19,31 @@ import { LEVEL_PRO_WELT, TRAP_MAX_LEVEL, weltNummer } from '../welten'
 import { spieleLoesung } from '../loesung'
 import { BAUSTEINE, BODEN_Y, BODEN_H, STEH_Y, type BauStelle } from './bausteine'
 
-const BREITE = 480
+/**
+ * Wie breit ein Level ist.
+ *
+ * Thomas am 18.09.2026: "die Level sehen ähnlich aus [...] die dürfen auch
+ * länger werden und viel schwerer". Das war die Wurzel des Problems, nicht
+ * ein Nebenschauplatz: Ein Level war genau ein Bildschirm breit, 480 Punkte.
+ * Davon gehen Start und Ausgang ab, es blieben rund 320 -- Platz für zwei,
+ * bestenfalls drei Bausteine. Bei vierundzwanzig Bausteinen gibt es davon
+ * ein paar hundert sinnvolle Paarungen, und über zweihundertneunzig Level
+ * verteilt heißt das: Man sieht dieselbe Sorte Level immer wieder.
+ *
+ * Drei Bausteine mehr je Level vervielfachen diese Zahl. Deshalb wächst die
+ * Breite ab Welt 3 mit jeder Welt, bis auf zweieinhalb Bildschirme. Die
+ * Anzeige wandert mit (siehe TrapboundPage), die Figur bleibt gleich groß,
+ * und ein Sprung ist überall gleich weit.
+ *
+ * Die ersten vierzig Level bleiben bei einem Bildschirm: Da lernt man das
+ * Spiel, und ein Level, das man ganz sieht, ist dafür das bessere.
+ */
+export function levelBreite(nr: number): number {
+  const welt = weltNummer(nr)
+  if (welt <= 2) return 480
+  return Math.min(1240, 480 + (welt - 2) * 60)
+}
+
 /** Ab hier beginnt der erste Abschnitt. */
 const START_BREITE = 44
 /**
@@ -62,14 +86,17 @@ const WELT_BAUSTEINE: string[][] = [
   // Ab hier die zweite Hälfte (Level 101). Jede Welt bringt wieder etwas
   // Neues mit, und das Neue ist diesmal das, was man nicht kommen sieht.
   ['blindbruch', 'blindfall'], // 6  Die Tiefe
-  ['pendel'], // 7  Die Schmiede
+  ['pendel', 'einsturz'], // 7  Die Schmiede
   // Ab Welt 8 (Level 141) die Wand, die zurückschiebt.
   ['doppelluecke', 'schieber'], // 8  Das Uhrwerk
-  [], // 9  Die Leere
+  // Ab Welt 9 sind die Level lang genug für die Bausteine, die Platz
+  // brauchen -- der Fahrsteg, der Bolzen, der Weg übers Dach und die
+  // Trittsteine passen in einen einzigen Bildschirm gar nicht hinein.
+  ['fahrsteg'], // 9  Die Leere
   ['stachelregen'], // 10 Der Spiegelsaal
-  [], // 11 Das Gewitter
-  [], // 12 Der Schlund
-  [], // 13 Die Maschine
+  ['schuss'], // 11 Das Gewitter
+  ['dachweg'], // 12 Der Schlund
+  ['kippstufen'], // 13 Die Maschine
   [], // 14 Der Albtraum
   [], // 15 Das Ende
 ]
@@ -169,6 +196,10 @@ const BEWEGT = [
   'schieber',
   'jagd',
   'waende',
+  'fahrsteg',
+  'schuss',
+  'einsturz',
+  'kippstufen',
 ]
 
 /**
@@ -191,6 +222,12 @@ const WARTET = [
   // braucht, führt einen der Jagd direkt in die Arme. Gemessen an Level 103
   // -- die Figur lief rückwärts in die Sägen, die hinter ihr standen.
   'umkehr',
+  // Der Fahrsteg kommt geholt und man wartet auf ihn; beim Bolzen springt
+  // man auf der Stelle; und der Weg übers Dach beginnt mit Anhalten, weil
+  // ein Sprung mit vollem Schwung über die erste Stufe hinwegträgt.
+  'fahrsteg',
+  'schuss',
+  'dachweg',
 ]
 
 /**
@@ -259,6 +296,11 @@ const SPERREND = [
   'schieber',
   'jagd',
   'waende',
+  'fahrsteg',
+  'schuss',
+  'dachweg',
+  'einsturz',
+  'kippstufen',
 ]
 
 /**
@@ -281,7 +323,7 @@ function waehleBausteine(
   frisch: string[] = [],
   /** Womit das Level anfangen muss (für gemeine Level). */
   erzwungen?: string,
-): { namen: string[]; breiten: number[] } {
+): { namen: string[]; breiten: number[]; fueller: number[] } {
   const namen: string[] = []
   let rest = platz
   if (erzwungen && BAUSTEINE[erzwungen]!.min <= rest) {
@@ -309,12 +351,35 @@ function waehleBausteine(
   // Kann vorkommen, wenn eine Welt nur breite Bausteine kennt: dann lieber
   // ein ruhiges Level als gar keins.
   if (namen.length === 0) {
-    return { namen: ['weg'], breiten: [platz] }
+    return {
+      namen: ['weg'],
+      breiten: [Math.min(platz, 200)],
+      fueller: [platz - Math.min(platz, 200)],
+    }
   }
-  const zugabe = Math.floor(rest / namen.length)
+  /*
+   * Ein Baustein darf höchstens neunzig Punkte breiter werden als nötig.
+   *
+   * Bis die Level länger wurden, ging die ganze übrige Breite an die
+   * Bausteine -- bei drei Stücken auf 320 Punkten war das eine Handbreit und
+   * fiel nicht auf. Auf 990 Punkten ist es das nicht mehr, und mehrere
+   * Bausteine gehen daran kaputt: Die Knopftür fällt nach anderthalb
+   * Sekunden wieder zu, egal wie weit der Weg ist; das Förderband wäre
+   * minutenlang; der Federsprung trägt hundertvierzig Punkte und nicht
+   * mehr. Gemessen an Level 226, das daran unlösbar wurde.
+   *
+   * Was übrig bleibt, wird zu ruhigen Strecken zwischen den Fallen. Das ist
+   * kein Notbehelf, sondern gut so: Ein Level ganz ohne Luft zwischen den
+   * Fallen liest sich nicht mehr.
+   */
+  const zugabe = Math.min(ZUGABE_MAX, Math.floor(rest / namen.length))
   const breiten = namen.map((n) => BAUSTEINE[n]!.min + zugabe)
-  breiten[breiten.length - 1]! += rest - zugabe * namen.length
-  return { namen, breiten }
+  let uebrig = rest - zugabe * namen.length
+  const proStueck = Math.floor(uebrig / namen.length)
+  const fueller = namen.map(() => proStueck)
+  uebrig -= proStueck * namen.length
+  fueller[fueller.length - 1]! += uebrig
+  return { namen, breiten, fueller }
 }
 
 /**
@@ -336,10 +401,16 @@ function waehleBausteine(
 interface PlanEintrag {
   namen: string[]
   breiten: number[]
+  /** Ruhige Strecke hinter jedem Baustein. */
+  fueller: number[]
   gemein: boolean
   alptraum: boolean
   name: string
+  schluss: SchlussArt
 }
+
+/** Wie viel breiter als nötig ein einzelner Baustein höchstens wird. */
+const ZUGABE_MAX = 90
 
 /** Wie viele Level zurück eine Paarung nicht wiederkommen darf. */
 const NICHT_WIEDER = 90
@@ -362,6 +433,9 @@ function bauPlan(): PlanEintrag[] {
   // (Jagd oder Wände, dazu etwas Blindes), da wäre eine lange Sperre nicht
   // zu erfüllen.
   const letzteAlptraeume: string[] = []
+  // Und dasselbe für die Ausgänge: Der letzte Meter eines Levels soll nicht
+  // dreimal hintereinander derselbe sein.
+  const letzteSchluesse: SchlussArt[] = []
 
   for (let nr = 11; nr <= TRAP_MAX_LEVEL; nr++) {
     const welt = weltNummer(nr)
@@ -370,8 +444,28 @@ function bauPlan(): PlanEintrag[] {
     const alptraum = istAlptraum(nr)
     const gemein = istGemein(nr) || alptraum
     const pool = bausteinePool(welt).filter((n) => gemein || !GEMEIN.includes(n))
-    const platz = BREITE - START_BREITE - schlussBreite(nr)
-    const hoechstens = schwer < 0.25 ? 2 : 3
+    const ganz = levelBreite(nr)
+    const schluss = waehleSchluss(
+      nr,
+      gemein,
+      inWelt === LEVEL_PRO_WELT,
+      ganz - START_BREITE,
+      rng,
+      letzteSchluesse,
+    )
+    letzteSchluesse.push(schluss)
+    if (letzteSchluesse.length > 3) letzteSchluesse.shift()
+    const platz = ganz - START_BREITE - schlussBreite(nr, schluss)
+    /*
+     * Wie viele Bausteine in ein Level passen.
+     *
+     * Nicht mehr fest zwei oder drei, sondern so viele, wie die Breite
+     * hergibt -- und die wächst mit der Welt. In Welt 3 sind das drei, ganz
+     * hinten sechs. Das ist der eigentliche Hebel gegen "immer dasselbe":
+     * Aus drei Bausteinen aus einem Vorrat von knapp dreißig lassen sich ein
+     * paar tausend Level bauen, aus sechs ein paar Millionen.
+     */
+    const hoechstens = schwer < 0.25 ? 2 : Math.max(3, Math.min(6, Math.round(platz / 175)))
     const frisch = plan
       .slice(-FRISCH_FENSTER)
       .flatMap((p) => p.namen)
@@ -385,7 +479,7 @@ function bauPlan(): PlanEintrag[] {
     const zeigeNeu =
       !gemein && lernPlatz >= 0 && eigene.length > 0 ? eigene[lernPlatz % eigene.length] : undefined
 
-    let gewaehlt: { namen: string[]; breiten: number[] } | null = null
+    let gewaehlt: { namen: string[]; breiten: number[]; fueller: number[] } | null = null
     // Die Bedingungen weichen in dieser Reihenfolge: erst gilt beides, dann
     // darf ein Baustein aus den letzten Leveln wieder vorkommen, und erst
     // ganz zuletzt eine Paarung. Andersherum wäre es falsch -- ein
@@ -451,7 +545,7 @@ function bauPlan(): PlanEintrag[] {
       // Paarung nehmen, die am längsten nicht dran war. Ein blindes
       // Nachziehen hatte hier zwei gleiche Level im Abstand von sechs
       // erzeugt.
-      let bester: { namen: string[]; breiten: number[] } | null = null
+      let bester: { namen: string[]; breiten: number[]; fueller: number[] } | null = null
       let besterAbstand = -1
       for (let versuch = 0; versuch < 40; versuch++) {
         const kandidat = waehleBausteine(
@@ -462,6 +556,15 @@ function bauPlan(): PlanEintrag[] {
           [],
           gemein ? GEMEIN[Math.floor(rng() * GEMEIN.length)]! : undefined,
         )
+        // Auch hier muss etwas dabei sein, das wirklich aufhält. Ohne diese
+        // Zeile rutschte Level 31 als Decke-und-Knopftür durch: mit
+        // gehaltener Taste zu schaffen.
+        if (
+          !kandidat.namen.some((n) => SPERREND.includes(n)) &&
+          pool.some((n) => SPERREND.includes(n))
+        ) {
+          continue
+        }
         const schluessel = [...kandidat.namen].sort().join('+')
         const zuletzt = paare.get(schluessel)
         const abstand = zuletzt === undefined ? 9999 : nr - zuletzt
@@ -480,6 +583,7 @@ function bauPlan(): PlanEintrag[] {
       ...fertig,
       gemein,
       alptraum,
+      schluss,
       name: levelName(
         nr,
         fertig.namen,
@@ -495,26 +599,83 @@ function bauPlan(): PlanEintrag[] {
   return plan
 }
 
-/** Der Ausgang eines Levels – vier Bauarten, eine gemeiner als die andere. */
-type SchlussArt = 'tuer' | 'flucht' | 'falsch' | 'zuschnapp'
+/** Der Ausgang eines Levels – fünf Bauarten, eine gemeiner als die andere. */
+export type SchlussArt = 'tuer' | 'flucht' | 'falsch' | 'zuschnapp' | 'hoch'
 
 const SCHLUSS_TEXT: Record<SchlussArt, string> = {
   tuer: '',
   flucht: ' + fliehender Ausgang',
   falsch: ' + falscher Ausgang',
   zuschnapp: ' + zuschnappender Ausgang',
+  hoch: ' + Ausgang springt nach oben',
+}
+
+/**
+ * Die Tür, die nach oben wegspringt, braucht am meisten Platz.
+ *
+ * Thomas am 18.09.2026: "das man als Beispiel unten Tür sieht und die nach
+ * oben springt". Dahinter müssen zwei Stufen und ein Absatz Platz haben,
+ * sonst ist die Tür oben und niemand kommt hinterher.
+ */
+const HOCH_BREITE = 206
+
+const SCHLUSS_MASS: Record<SchlussArt, number> = {
+  tuer: SCHLUSS_BREITE,
+  flucht: SCHLUSS_BREITE,
+  falsch: SCHLUSS_BREITE,
+  zuschnapp: SCHNAPP_BREITE,
+  hoch: HOCH_BREITE,
 }
 
 /** Wie viel Platz der Ausgang eines Levels braucht. */
-function schlussBreite(nr: number): number {
-  // Ab Level 150 wird der breitere Schluss immer eingeplant, auch wenn das
-  // Level am Ende doch eine schlichte Tür bekommt: Ob der Ausgang zuschnappt,
-  // entscheidet sich erst, wenn feststeht, wie viel sich im Level sonst
-  // bewegt -- und die Breite muss vorher feststehen.
-  return istGemein(nr) || istAlptraum(nr) || nr >= VIER_AB ? SCHNAPP_BREITE : SCHLUSS_BREITE
+function schlussBreite(nr: number, art: SchlussArt): number {
+  // Ab Level 150 wird mindestens der zuschnappende Schluss eingeplant, auch
+  // wenn das Level am Ende doch eine schlichte Tür bekommt: Ob der Ausgang
+  // zuschnappt, entscheidet sich erst, wenn feststeht, wie viel sich im Level
+  // sonst bewegt -- und die Breite muss vorher feststehen.
+  const mindestens =
+    istGemein(nr) || istAlptraum(nr) || nr >= VIER_AB ? SCHNAPP_BREITE : SCHLUSS_BREITE
+  return Math.max(mindestens, SCHLUSS_MASS[art])
 }
 
-function baueSchluss(
+/**
+ * Welchen Ausgang ein Level bekommt.
+ *
+ * Bisher war das eine Kette von Würfen, an deren Ende fast immer die
+ * schlichte Tür stand: über zweihundert Level hinweg kamen die drei
+ * besonderen Ausgänge zusammen seltener vor als die Tür allein. Damit war
+ * der letzte Meter eines Levels fast immer derselbe -- und genau der bleibt
+ * im Gedächtnis, weil man ihn am häufigsten zu sehen bekommt.
+ *
+ * Jetzt wird aus einem Vorrat gewählt, der mit der Schwierigkeit wächst, und
+ * die letzten drei Ausgänge sind gesperrt.
+ */
+function waehleSchluss(
+  nr: number,
+  gemein: boolean,
+  istTor: boolean,
+  platz: number,
+  rng: () => number,
+  letzte: SchlussArt[],
+): SchlussArt {
+  if (gemein) return 'zuschnapp'
+  if (istTor) return 'falsch'
+  const schwer = schwierigkeit(nr)
+  const vorrat: SchlussArt[] = ['tuer']
+  if (schwer > 0.3) vorrat.push('flucht')
+  if (schwer > 0.45) vorrat.push('falsch')
+  // Die springende Tür braucht Platz für ihre Treppe -- erst wenn die Level
+  // lang genug sind, passt sie überhaupt hinein. Dreihundert Punkte müssen
+  // für die Fallen übrig bleiben: Level 31 bestand sonst aus einer einzigen
+  // Knopftür und einem Ausgang, der die halbe Breite fraß.
+  if (schwer > 0.4 && platz - HOCH_BREITE >= 300) vorrat.push('hoch')
+  if (schwer > 0.6) vorrat.push('zuschnapp')
+  const frisch = vorrat.filter((a) => !letzte.includes(a))
+  const moeglich = frisch.length > 0 ? frisch : vorrat
+  return moeglich[Math.floor(rng() * moeglich.length)]!
+}
+
+export function baueSchluss(
   art: SchlussArt,
   x: number,
   nr: number,
@@ -526,8 +687,74 @@ function baueSchluss(
     typ: 'block',
     x,
     y: BODEN_Y,
-    b: art === 'zuschnapp' ? SCHNAPP_BREITE : SCHLUSS_BREITE,
+    b: SCHLUSS_MASS[art],
     h: BODEN_H,
+  }
+
+  if (art === 'hoch') {
+    const s1 = `ho${nr}a`
+    const s2 = `ho${nr}b`
+    const sp = `ho${nr}s`
+    return {
+      objekte: [
+        boden,
+        /*
+         * Die Tür steht unten, in aller Ruhe sichtbar, und sieht aus wie das
+         * Ende eines leichten Levels. Kommt man näher, springt sie hoch --
+         * und erst in dem Augenblick erscheinen die beiden Stufen, über die
+         * man ihr folgen kann, und die Stacheln, die den einfachen Weg
+         * darunter zumachen.
+         *
+         * Die Maße sind gemessen, nicht geraten: Ein Sprung aus dem Stand
+         * trägt fünfzig Punkte weit, bis die Füße wieder auf
+         * Absatzhöhe sind, und höchstens sechzig hoch. Vierundvierzig
+         * und zweiundvierzig Stufenhöhe lassen also Luft, ohne dass es
+         * geschenkt wäre.
+         */
+        {
+          typ: 'ziel',
+          x: x + 74,
+          y: BODEN_Y - 32,
+          b: 22,
+          h: 32,
+          flieht: { dx: 84, dy: -86 },
+          loest: [
+            { tu: 'zeigen', ziel: s1 },
+            { tu: 'zeigen', ziel: s2 },
+            { tu: 'zeigen', ziel: sp },
+            { tu: 'beben', wert: 0.45 },
+          ],
+        },
+        { typ: 'block', id: s1, x: x + 56, y: BODEN_Y - 44, b: 66, h: 10, versteckt: true },
+        { typ: 'block', id: s2, x: x + 136, y: BODEN_Y - 86, b: 56, h: 10, versteckt: true },
+        // Unter der Treppe wird es ungemütlich: Wer danebentritt, fängt von
+        // vorn an. Sie beginnen erst hinter dem Platz, auf dem man steht,
+        // wenn die Tür wegspringt.
+        {
+          typ: 'stachel',
+          id: sp,
+          x: x + 78,
+          y: BODEN_Y - 12,
+          b: 76,
+          h: 12,
+          versteckt: true,
+        },
+      ],
+      loesung: [
+        vor({ bisBoden: true, dauer: 1 }),
+        // Bis hierher -- und ab hier ist die Tür oben. Nicht weiter: Die
+        // erste Stufe erscheint bei x+56, und wer darunter steht, stößt sich
+        // beim Absprung den Kopf an ihrer Unterkante.
+        vor({ bisX: x + 30 }),
+        { dauer: 0.4 },
+        vor({ sprung: true, dauer: 0.36 }),
+        vor({ bisBoden: true, dauer: 1.4 }),
+        vor({ bisX: x + 104 }),
+        vor({ sprung: true, dauer: 0.36 }),
+        vor({ bisBoden: true, dauer: 1.4 }),
+        vor({ bisX: x + 160, dauer: 1.6 }),
+      ],
+    }
   }
 
   if (art === 'flucht') {
@@ -688,8 +915,8 @@ function baueLevel(
   nr: number,
   variante: number,
   schlussErzwingen?: SchlussArt,
-  /** Nur den ersten Baustein nehmen -- der Notausgang, wenn nichts aufgeht. */
-  nurErsten = false,
+  /** Höchstens so viele Bausteine nehmen -- der Notausgang, wenn nichts aufgeht. */
+  kuerzen = 0,
 ): LevelDaten {
   const welt = weltNummer(nr)
   const inWelt = ((nr - 1) % LEVEL_PRO_WELT) + 1
@@ -700,27 +927,48 @@ function baueLevel(
   // Platz. Jeder Baustein für sich ist nachweislich zu schaffen; erst ihre
   // Übergabe kann klemmen -- Level 151 (Doppellücke und Presse) war so ein
   // Fall.
-  const plan: PlanEintrag = nurErsten
-    ? (() => {
-        // Von den geplanten Bausteinen der, in dem sich etwas bewegt --
-        // sonst steht im Notausgang-Level gar nichts mehr (Level 278 kam so
-        // auf nur drei bewegliche Dinge statt vier).
-        const i = Math.max(
-          0,
-          planRoh.namen.findIndex((n) => BEWEGT.includes(n)),
-        )
-        return {
-          ...planRoh,
-          namen: [planRoh.namen[i]!],
-          breiten: [planRoh.breiten.reduce((a, b) => a + b, 0)],
-        }
-      })()
-    : planRoh
+  const plan: PlanEintrag =
+    kuerzen > 0 && kuerzen < planRoh.namen.length
+      ? (() => {
+          /*
+           * Der Notausgang: weniger Bausteine, dafür mehr ruhige Strecke.
+           *
+           * Zuerst kommen die, in denen sich etwas bewegt -- sonst stünde im
+           * gekürzten Level gar nichts mehr (Level 278 kam so auf nur drei
+           * bewegliche Dinge statt vier). Die Breite der weggelassenen
+           * Stücke wird nicht auf die übrigen verteilt, sondern zu Boden:
+           * Ein Baustein, der doppelt so breit ist wie vorgesehen, geht
+           * kaputt (siehe ZUGABE_MAX).
+           */
+          // Zuerst die, die wirklich aufhalten, dann die, in denen sich etwas
+          // bewegt. Ohne die erste Hälfte dieser Regel blieb von Level 31
+          // eine einzelne Knopftür übrig -- mit gehaltener Taste zu
+          // schaffen.
+          const rang = (n: string) => (SPERREND.includes(n) ? 0 : 2) + (BEWEGT.includes(n) ? 0 : 1)
+          const reihenfolge = planRoh.namen
+            .map((n, i) => ({ n, i }))
+            .sort((a, x) => rang(a.n) - rang(x.n) || a.i - x.i)
+            .slice(0, kuerzen)
+            .sort((a, x) => a.i - x.i)
+          const weg = planRoh.namen
+            .map((_, i) => i)
+            .filter((i) => !reihenfolge.some((r) => r.i === i))
+            .reduce((summe, i) => summe + planRoh.breiten[i]! + planRoh.fueller[i]!, 0)
+          const fueller = reihenfolge.map((r) => planRoh.fueller[r.i]!)
+          fueller[fueller.length - 1]! += weg
+          return {
+            ...planRoh,
+            namen: reihenfolge.map((r) => r.n),
+            breiten: reihenfolge.map((r) => planRoh.breiten[r.i]!),
+            fueller,
+          }
+        })()
+      : planRoh
   // Die Notausgangs-Variante lässt den zuschnappenden Ausgang weg.
   const gemein = (istGemein(nr) || plan.alptraum) && variante >= 0
   const rng = mulberry(nr * 2654435761 + 1013904223 + variante * 7919)
 
-  const { namen, breiten } = plan
+  const { namen, breiten, fueller } = plan
 
   const objekte: Objekt[] = [{ typ: 'block', x: 0, y: BODEN_Y, b: START_BREITE, h: BODEN_H }]
   const loesung: LoesungsSchritt[] = []
@@ -754,21 +1002,24 @@ function baueLevel(
     })
     loesung.push({ dauer: 0.18 })
     x += breiten[i]!
+    // Die ruhige Strecke dahinter: schlichter Boden zum Durchatmen.
+    const ruhe = fueller[i]!
+    if (ruhe > 0) {
+      objekte.push({ typ: 'block', x, y: BODEN_Y, b: ruhe, h: BODEN_H })
+      loesung.push({
+        bisX: x + ruhe - 12,
+        dauer: ruhe / 100 + 1,
+        ...(umgedreht ? { links: true } : { rechts: true }),
+      })
+      x += ruhe
+    }
   }
 
-  // Auf einem gemeinen Level schnappt der Ausgang zu: Genau davor kommt
-  // noch einmal etwas, womit man nicht gerechnet hat.
-  const art: SchlussArt = schlussErzwingen
-    ? schlussErzwingen
-    : gemein
-      ? 'zuschnapp'
-      : istTor
-        ? 'falsch'
-        : schwer > 0.55 && rng() < 0.4
-          ? 'flucht'
-          : schwer > 0.75 && rng() < 0.3
-            ? 'falsch'
-            : 'tuer'
+  // Welcher Ausgang, steht im Plan -- der kennt als einziger die Ausgänge der
+  // Nachbarlevel und kann dafür sorgen, dass sich der letzte Meter nicht
+  // dreimal hintereinander wiederholt. Auf einem gemeinen Level schnappt er
+  // zu: Genau davor kommt noch einmal etwas, womit man nicht gerechnet hat.
+  const art: SchlussArt = schlussErzwingen ?? (gemein ? 'zuschnapp' : plan.schluss)
   const schluss = baueSchluss(art, x, nr, umgedreht)
   objekte.push(...schluss.objekte)
   loesung.push(...schluss.loesung)
@@ -779,6 +1030,7 @@ function baueLevel(
     abschnitt: welt,
     name: art === 'falsch' && !istTor ? `${plan.name}?` : plan.name,
     idee: `Aus Bausteinen: ${benutzt.join(' + ')}${SCHLUSS_TEXT[art]}.`,
+    breite: levelBreite(nr),
     start: { x: 18, y: STEH_Y },
     objekte,
     loesung,
@@ -985,15 +1237,22 @@ function streueBruchboden(level: LevelDaten, hoechstens: number, saat: number): 
  */
 export function erzeugeLevel(nr: number): LevelDaten {
   for (const versuch of [
-    { variante: 0, einfach: false },
-    { variante: 1, einfach: false },
-    { variante: 2, einfach: false },
-    // Geht keine Variante auf, wird das Level einfacher gebaut, statt ein
-    // unschaffbares auszuliefern.
-    { variante: 0, einfach: true },
-    { variante: 1, einfach: true },
+    { variante: 0, kuerzen: 0 },
+    { variante: 1, kuerzen: 0 },
+    { variante: 2, kuerzen: 0 },
+    // Geht keine Variante auf, klemmt fast immer eine Übergabe zwischen zwei
+    // Bausteinen. Dann wird nicht gleich auf ein Stück heruntergegangen,
+    // sondern Schritt für Schritt gekürzt -- ein Level aus vier Fallen ist
+    // immer noch besser als eines aus einer.
+    { variante: 0, kuerzen: 4 },
+    { variante: 0, kuerzen: 3 },
+    { variante: 1, kuerzen: 3 },
+    { variante: 0, kuerzen: 2 },
+    { variante: 1, kuerzen: 2 },
+    { variante: 0, kuerzen: 1 },
+    { variante: 1, kuerzen: 1 },
   ]) {
-    const l = baueLevel(nr, versuch.variante, undefined, versuch.einfach)
+    const l = baueLevel(nr, versuch.variante, undefined, versuch.kuerzen)
     if (!spieleLoesung(l).geschafft) continue
     const variante = versuch.variante
     // Ab Level 101 kommen blinde Stacheln dazu, im Albtraum am meisten.
@@ -1009,7 +1268,7 @@ export function erzeugeLevel(nr: number): LevelDaten {
     // Stacheln, eine herabfahrende Wand und ihren Auslöser auf einmal --
     // und passt zu dem, was ab hier ohnehin gelten soll: Kurz vor der Tür
     // kommt noch etwas.
-    const mitSchnapp = baueLevel(nr, variante, 'zuschnapp', versuch.einfach)
+    const mitSchnapp = baueLevel(nr, variante, 'zuschnapp', versuch.kuerzen)
     if (!spieleLoesung(mitSchnapp).geschafft) return fertig
     const gestreut = streuen(mitSchnapp)
     return zaehleWandel(gestreut) > zaehleWandel(fertig) ? gestreut : fertig
@@ -1043,6 +1302,11 @@ const NAMEN: Record<string, string[]> = {
   stachelregen: ['Es regnet', 'Von oben kommt mehr', 'Schauer', 'Nicht stehenbleiben, echt'],
   doppelluecke: ['Zweimal springen', 'Der schmale Absatz', 'Zwei Löcher', 'Absatz dazwischen'],
   schieber: ['Zurück mit dir', 'Erst mal warten', 'Die Wand will da lang', 'Rückwärts'],
+  fahrsteg: ['Bitte einsteigen', 'Übersetzen', 'Die Fähre', 'Mitfahren, nicht mitlaufen'],
+  schuss: ['Duck dich – nein, spring', 'Es kommt was', 'Flach und schnell', 'Der Bolzen'],
+  dachweg: ['Über die Mauer', 'Der obere Weg', 'Unten ist zu', 'Übers Dach'],
+  einsturz: ['Nicht anhalten', 'Alles bricht', 'Die ganze Strecke', 'Renn einfach'],
+  kippstufen: ['Trittsteine', 'Nur kurz stehen', 'Drei Sprünge', 'Nichts hält'],
 }
 
 /** Die Namen für die Albträume. Wer den auf der Karte liest, weiß Bescheid. */

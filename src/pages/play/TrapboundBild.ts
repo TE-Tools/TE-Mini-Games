@@ -69,7 +69,10 @@ export function zeichne(
 
   ctx.fillStyle = p.boden
   ctx.globalAlpha = 0.25
-  for (let i = 0; i < 7; i++) {
+  // So viele Zacken, wie das Level breit ist: Bei festen sieben hörte die
+  // Ferne nach 460 Punkten auf, und in einem Level von zwölfhundert Punkten
+  // lief man aus der Landschaft heraus.
+  for (let i = 0; i < Math.ceil(breite / 72) + 1; i++) {
     const x = 30 + i * 72
     const h = 26 + ((i * 53) % 34)
     ctx.beginPath()
@@ -121,8 +124,23 @@ export function zeichne(
           ctx.stroke()
         }
         if (o.typ === 'beweger') {
+          /*
+           * Alles, was fährt, bekommt eine leuchtende Kante.
+           *
+           * Vorher war das ein kurzer Strich in der Mitte. Bei einem Aufzug
+           * reichte das -- der steht sichtbar über einem Loch. Der Fahrsteg
+           * aber liegt bündig im Hauptboden, und dort war er von gewöhnlichem
+           * Boden nicht zu unterscheiden: Man sah nicht, worauf man steigen
+           * soll. Jetzt ist die Oberkante in der Akzentfarbe und trägt zwei
+           * Kerben.
+           */
           ctx.fillStyle = p.akzent
-          ctx.fillRect(f.x + f.b / 2 - 6 + wackel, f.y + 5, 12, 2)
+          ctx.fillRect(f.x + wackel, f.y, f.b, 3)
+          ctx.globalAlpha = 0.55
+          for (let k = 0; k < Math.max(2, Math.floor(f.b / 14)); k++) {
+            ctx.fillRect(f.x + 4 + k * 14 + wackel, f.y + 5, 6, 2)
+          }
+          ctx.globalAlpha = 1
         }
         break
       }
