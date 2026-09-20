@@ -104,19 +104,62 @@ export function TrapboundPage() {
     }
   }, [])
 
-  const starteLevel = useCallback((nr: number) => {
-    lauf.current += 1
-    kameraRef.current = null
-    const daten = levelDaten(nr)
-    spielRef.current = starte(daten)
-    todeRef.current = 0
-    setLevelNr(nr)
-    setHud({ tode: 0, zeit: 0, kristall: false })
-    setEnde(null)
-    setPause(false)
-    setTipp(daten.nr <= 3 ? 'Nach rechts zur Tür.' : '')
-    setAnsicht('spiel')
+  /*
+   * Das nächste Level schon einmal bauen, während dieses läuft.
+   *
+   * Ein Level entsteht erst, wenn es gebraucht wird, und der Generator
+   * spielt es dabei selbst durch -- bei den langen Endspiel-Leveln dauert das
+   * bis zu einer halben Sekunde, auf einem älteren Telefon entsprechend
+   * länger. Das wäre genau der Augenblick, in dem man auf den Knopf gedrückt
+   * hat und noch nichts passiert.
+   *
+   * `levelDaten` merkt sich das Ergebnis. Wer also während des Spielens
+   * schon einmal das nächste bauen lässt, wartet später nicht mehr. Das
+   * passiert in einer Leerlaufpause, damit es dem laufenden Bild nichts
+   * wegnimmt.
+   */
+  const warmeVor = useCallback((nr: number) => {
+    if (nr < 1 || nr > LEVEL_ANZAHL) return
+    const bauen = () => {
+      try {
+        levelDaten(nr)
+      } catch {
+        // Ein Fehler beim Vorwarmen darf das laufende Spiel nicht stören --
+        // spätestens beim Start des Levels fällt er ohnehin auf.
+      }
+    }
+    const fenster = window as Window & {
+      requestIdleCallback?: (r: () => void, o?: { timeout: number }) => number
+    }
+    if (typeof fenster.requestIdleCallback === 'function') {
+      fenster.requestIdleCallback(bauen, { timeout: 4000 })
+    } else {
+      window.setTimeout(bauen, 1200)
+    }
   }, [])
+
+  const starteLevel = useCallback(
+    (nr: number) => {
+      lauf.current += 1
+      kameraRef.current = null
+      const daten = levelDaten(nr)
+      spielRef.current = starte(daten)
+      todeRef.current = 0
+      setLevelNr(nr)
+      setHud({ tode: 0, zeit: 0, kristall: false })
+      setEnde(null)
+      setPause(false)
+      setTipp(daten.nr <= 3 ? 'Nach rechts zur Tür.' : '')
+      setAnsicht('spiel')
+      warmeVor(nr + 1)
+    },
+    [warmeVor],
+  )
+
+  // Und schon im Menü das Level vorbereiten, auf das der große Knopf zeigt.
+  useEffect(() => {
+    if (ansicht === 'menue' || ansicht === 'karte') warmeVor(stand.freigeschaltet)
+  }, [ansicht, stand.freigeschaltet, warmeVor])
 
   /** Nach einem Tod: sofort wieder auf Anfang, Fallen zurück. */
   const neustart = useCallback(() => {

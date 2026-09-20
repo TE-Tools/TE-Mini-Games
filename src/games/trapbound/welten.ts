@@ -1,5 +1,5 @@
 /**
- * Die fünf Welten von Trapbound – und wie sie auf der Karte aussehen.
+ * Die Welten von Trapbound – und wie sie auf der Karte aussehen.
  *
  * Die Levelkarte ist dieselbe wie in den anderen Spielen (die gewundene
  * Straße mit Toren), nur mit eigenen Zonen: Statt Urwald und Vulkanland
@@ -295,7 +295,7 @@ export const TRAP_ZONEN: readonly LevelZone[] = [
     name: 'Das Ende',
     levelFrom: 281,
     levelTo: 300,
-    description: 'Zwanzig Level. Danach kommt nichts mehr.',
+    description: 'Du dachtest, hier ist Schluss.',
     creatures: ['👑', '🏁', '💀', '🌟'],
     palette: {
       ground: '#4a4a4a',
@@ -306,7 +306,113 @@ export const TRAP_ZONEN: readonly LevelZone[] = [
       blob: '#232323',
     },
     gateLevel: 300,
-    gateName: 'Das Ende',
+    gateName: 'Tor zur Schneide',
+  },
+  /*
+   * Ab hier die dritte Hälfte -- Level 301 bis 400.
+   *
+   * Thomas am 18.09.2026: "du sollst 100 neue machen". Die fünf Welten
+   * hier sind nicht mehr Steigerung derselben Sache, sondern eine eigene
+   * Stufe: Was vorher die Ausnahme war -- eine Jagd, eine blinde Falle, ein
+   * zuschnappender Ausgang --, ist hier die Regel, und es kommt doppelt.
+   */
+  {
+    id: 'blade',
+    index: 16,
+    name: 'Die Schneide',
+    levelFrom: 301,
+    levelTo: 320,
+    description: 'Kein Level ohne etwas im Nacken.',
+    creatures: ['🪚', '⚔️', '🌀', '⚡'],
+    palette: {
+      ground: '#3d2a2a',
+      groundLight: '#c2555f',
+      accent: '#ff8a8a',
+      path: '#553636',
+      sky: '#190f0f',
+      blob: '#281919',
+    },
+    gateLevel: 320,
+    gateName: 'Tor zum Kesselhaus',
+  },
+  {
+    id: 'boiler',
+    index: 17,
+    name: 'Das Kesselhaus',
+    levelFrom: 321,
+    levelTo: 340,
+    description: 'Heiß, eng, und die Gitter fallen von selbst.',
+    creatures: ['🔥', '🛠️', '🌡️', '⚙️'],
+    palette: {
+      ground: '#4a3418',
+      groundLight: '#d98c2b',
+      accent: '#ffc258',
+      path: '#5f4522',
+      sky: '#1c1208',
+      blob: '#2a1d0e',
+    },
+    gateLevel: 340,
+    gateName: 'Tor zur Schwärze',
+  },
+  {
+    id: 'blackness',
+    index: 18,
+    name: 'Die Schwärze',
+    levelFrom: 341,
+    levelTo: 360,
+    description: 'Der Boden sieht überall gleich aus. Er ist es nicht.',
+    creatures: ['🌑', '🕳️', '🌫️', '🖤'],
+    palette: {
+      // Dunkel, aber nicht unlesbar: Beim ersten Anlauf lag der Boden so
+      // nah am Himmel, dass man im Bild kaum sah, wo er aufhört. Eine Welt
+      // darf finster aussehen -- raten, wo der Rand ist, soll man nicht.
+      ground: '#31333e',
+      groundLight: '#8288a2',
+      accent: '#9fb3ff',
+      path: '#3c3f4c',
+      sky: '#0c0c11',
+      blob: '#1a1b24',
+    },
+    gateLevel: 360,
+    gateName: 'Tor zum Räderwerk',
+  },
+  {
+    id: 'gearworks',
+    index: 19,
+    name: 'Das Räderwerk',
+    levelFrom: 361,
+    levelTo: 380,
+    description: 'Alles greift ineinander. Auch nach dir.',
+    creatures: ['⚙️', '🔗', '🔄', '🔩'],
+    palette: {
+      ground: '#25403c',
+      groundLight: '#4fae9e',
+      accent: '#79f3dc',
+      path: '#2f524d',
+      sky: '#0c1615',
+      blob: '#132321',
+    },
+    gateLevel: 380,
+    gateName: 'Tor zum letzten Licht',
+  },
+  {
+    id: 'lastlight',
+    index: 20,
+    name: 'Das letzte Licht',
+    levelFrom: 381,
+    levelTo: 400,
+    description: 'Zwanzig Level. Diesmal wirklich.',
+    creatures: ['🕯️', '✨', '🌟', '🏁'],
+    palette: {
+      ground: '#44406a',
+      groundLight: '#b9b0ee',
+      accent: '#fff2a8',
+      path: '#565080',
+      sky: '#12101f',
+      blob: '#1d1a30',
+    },
+    gateLevel: 400,
+    gateName: 'Das letzte Licht',
   },
 ]
 
