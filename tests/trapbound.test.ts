@@ -25,8 +25,10 @@ import {
   schwierigkeit,
   zaehleWandel,
   levelBreite,
+  ENDSPIEL_AB,
+  wandelZiel,
 } from '@/games/trapbound/levels/erzeugt'
-import { LEVEL_PRO_WELT } from '@/games/trapbound/welten'
+import { LEVEL_PRO_WELT, TRAP_KARTE } from '@/games/trapbound/welten'
 import {
   leseStand,
   levelStand,
@@ -41,6 +43,7 @@ import {
 } from '@/games/trapbound/fortschritt'
 import { trapboundGame } from '@/games/trapbound/definition'
 import { BILD_BREITE, BILD_HOEHE, type Eingabe, type LevelDaten } from '@/games/trapbound/types'
+import { BODEN_Y } from '@/games/trapbound/levels/bausteine'
 
 const NICHTS: Eingabe = { links: false, rechts: false, sprung: false }
 const TAKT = 1 / 60
@@ -437,18 +440,18 @@ describe('Die Fallen', () => {
 describe('Die Level', () => {
   const alle = alleLevel()
 
-  it('bringt dreihundert Level in fünfzehn Welten zu je zwanzig', () => {
-    expect(alle).toHaveLength(300)
-    expect(LEVEL_ANZAHL).toBe(300)
-    expect(WELTEN).toHaveLength(15)
+  it('bringt vierhundert Level in zwanzig Welten zu je zwanzig', () => {
+    expect(alle).toHaveLength(400)
+    expect(LEVEL_ANZAHL).toBe(400)
+    expect(WELTEN).toHaveLength(20)
     for (const w of WELTEN) {
       expect(w.abschnitte).toHaveLength(2)
       expect(w.abschnitte.flatMap((a) => a.level)).toHaveLength(20)
     }
     // Jede Levelnummer kommt genau einmal auf der Karte vor.
     const aufDerKarte = WELTEN.flatMap((w) => w.abschnitte.flatMap((a) => a.level))
-    expect(aufDerKarte).toHaveLength(300)
-    expect(new Set(aufDerKarte).size).toBe(300)
+    expect(aufDerKarte).toHaveLength(400)
+    expect(new Set(aufDerKarte).size).toBe(400)
   })
 
   it('führt die Welten der Reihe nach ein', () => {
@@ -786,9 +789,28 @@ describe('Abwechslung', () => {
       // Ein gemeinsamer Baustein ist hinnehmbar, zwei wären dasselbe Level.
       // Bei zwei gemeinen Leveln nebeneinander ist der erste Baustein
       // zwangsläufig wieder eine Jagd oder eine Wand -- das zählt nicht.
-      const beideGemein = istGemein(nr - 1) && istGemein(nr)
+      /*
+       * Zwei gemeine Level nebeneinander teilen zwangsläufig ihren ersten
+       * Baustein -- das ist eine Jagd oder eine Wand, und mehr gibt der
+       * Vorrat nicht her. Im Endspiel sind es sogar beide zugleich: Dort
+       * bekommt jeder Albtraum eine Jagd *und* eine Wand, und achtzig von
+       * hundert Leveln sind gemein. Das zählt nicht als Wiederholung.
+       */
+      const beideGemein =
+        (istGemein(nr - 1) || istAlptraum(nr - 1)) && (istGemein(nr) || istAlptraum(nr))
       const echte = beideGemein ? gleich.filter((t) => t !== 'jagd' && t !== 'waende') : gleich
-      if (echte.length >= 2) zuNah.push(`${nr - 1}/${nr}: ${gleich.join(', ')}`)
+      /*
+       * Wie viel Überschneidung hinnehmbar ist, hängt an der Länge.
+       *
+       * Die Regel stammt aus der Zeit, als ein Level aus zwei oder drei
+       * Bausteinen bestand: Zwei gemeinsame wären da fast dasselbe Level
+       * gewesen. Bei sieben Stücken sind zwei gemeinsame nicht einmal ein
+       * Drittel, und zwei Nachbarn wirken trotzdem verschieden. Ein Drittel
+       * bleibt die Grenze -- bei drei Bausteinen ist das wieder einer.
+       */
+      const kuerzer = Math.min(bauart(nr - 1).split('+').length, b.length)
+      const erlaubt = Math.max(1, Math.floor(kuerzer / 3))
+      if (echte.length > erlaubt) zuNah.push(`${nr - 1}/${nr}: ${gleich.join(', ')}`)
     }
     expect(zuNah).toEqual([])
   }, 120_000)
@@ -814,12 +836,41 @@ describe('Gemeine Level', () => {
     expect(gemeine.length).toBeGreaterThanOrEqual(10)
   })
 
-  it('setzt sie einzeln, nie zwei hintereinander', () => {
-    const paare = gemeine.filter((nr) => gemeine.includes(nr + 1))
+  it('setzt sie bis Level 300 einzeln, nie zwei hintereinander', () => {
+    // Bis zum Endspiel gilt: Wenn jedes zweite Level einen jagt, ist es
+    // keine Ausnahme mehr, sondern der Normalzustand -- und dann hört der
+    // Schreck auf.
+    const paare = gemeine.filter((nr) => nr < ENDSPIEL_AB && gemeine.includes(nr + 1))
     expect(paare).toEqual([])
     // Und nicht zu selten: In den Leveln ab 50 mindestens jedes achte.
     const ab50 = LEVEL_ANZAHL - GEMEIN_AB + 1
     expect(gemeine.length / ab50).toBeGreaterThan(0.125)
+  })
+
+  /**
+   * Und im Endspiel andersherum.
+   *
+   * Thomas am 18.09.2026: "du sollst 100 neue machen" -- schwere. Ab Level
+   * 301 ist das Gemeine die Regel: Von hundert Leveln sind achtzig gemein
+   * oder Albtraum, und vier je Welt bleiben ruhig -- drei, an denen die Welt
+   * ihre neue Falle zeigt, und das Tor.
+   */
+  it('dreht es im Endspiel um: vier von fünf Leveln sind gemein', () => {
+    let gem = 0
+    let alp = 0
+    let ruhig = 0
+    for (let nr = ENDSPIEL_AB; nr <= LEVEL_ANZAHL; nr++) {
+      if (istAlptraum(nr)) alp++
+      else if (istGemein(nr)) gem++
+      else ruhig++
+    }
+    expect(`${gem}/${alp}/${ruhig}`).toBe('50/30/20')
+    // Nie zwei Albträume nebeneinander -- auch hier nicht.
+    const nebeneinander: number[] = []
+    for (let nr = ENDSPIEL_AB; nr < LEVEL_ANZAHL; nr++) {
+      if (istAlptraum(nr) && istAlptraum(nr + 1)) nebeneinander.push(nr)
+    }
+    expect(nebeneinander).toEqual([])
   })
 
   it('lässt in jedem gemeinen Level etwas hinter einem her oder auf einen zu', () => {
@@ -845,7 +896,16 @@ describe('Gemeine Level', () => {
       for (let i = ls.length - 1; i >= 0; i--) if (ls[i]!.sprung) return i
       return -1
     }
-    for (const nr of gemeine) {
+    // Gemessen wird der zuschnappende Ausgang -- er ist es, der Stacheln
+    // freilegt und eine Wand herunterlässt. Im Endspiel bekommt die Hälfte
+    // der gemeinen Level stattdessen die springende Tür; die hat ihre eigene
+    // Gemeinheit (sie legt Stacheln frei und verlangt einen Aufstieg), aber
+    // eine halbe Sekunde Nachdenken verzeiht sie, und das ist in Ordnung.
+    const mitSchnapp = gemeine.filter((nr) =>
+      levelDaten(nr).idee.includes('zuschnappender Ausgang'),
+    )
+    expect(mitSchnapp.length).toBeGreaterThanOrEqual(40)
+    for (const nr of mitSchnapp) {
       const l = levelDaten(nr)
       const i = letzterSprung(l)
       expect(`Level ${nr}`).toBe(i >= 0 ? `Level ${nr}` : `Level ${nr} hat gar keinen Sprung`)
@@ -1017,13 +1077,16 @@ describe('Die zweite Hälfte', () => {
  * auftaucht.
  */
 describe('Ab Level 150', () => {
-  it('hält in jedem Level mindestens vier Dinge in Bewegung', () => {
+  it('hält in jedem Level mindestens vier Dinge in Bewegung – ab 301 sechs', () => {
     const zuRuhig: string[] = []
     for (let nr = VIER_AB; nr <= LEVEL_ANZAHL; nr++) {
       const n = zaehleWandel(levelDaten(nr))
-      if (n < WANDEL_ZIEL) zuRuhig.push(`${nr}: nur ${n}`)
+      if (n < wandelZiel(nr)) zuRuhig.push(`${nr}: nur ${n} statt ${wandelZiel(nr)}`)
     }
     expect(zuRuhig).toEqual([])
+    expect(WANDEL_ZIEL).toBe(4)
+    expect(wandelZiel(VIER_AB)).toBe(4)
+    expect(wandelZiel(ENDSPIEL_AB)).toBe(6)
   }, 120_000)
 
   it('bewegt dort deutlich mehr als in der ersten Hälfte', () => {
@@ -1261,5 +1324,188 @@ describe('Längere Level', () => {
       const oben = stufen.reduce((a, b) => (a.y < b.y ? a : b))
       expect(`${nr}: ${oben.y === tuer.y + (tuer.flieht?.dy ?? 0) + tuer.h}`).toBe(`${nr}: true`)
     }
+  }, 120_000)
+})
+
+/**
+ * Das Endspiel – Level 301 bis 400.
+ *
+ * Thomas am 18.09.2026, nachdem die längeren Level draußen waren: "Wieviel
+ * neue schwere Level hast du gemacht? Du sollst 100 neue machen."
+ *
+ * Es waren null gewesen -- die dreihundert Level waren umgebaut, aber keins
+ * war dazugekommen. Hier stehen die hundert neuen und was sie von den
+ * dreihundert davor unterscheidet, als Messung.
+ */
+describe('Das Endspiel', () => {
+  const bausteine = (nr: number) =>
+    levelDaten(nr)
+      .idee.replace('Aus Bausteinen: ', '')
+      .replace(/\.$/, '')
+      .split(' + ')
+      .map((t) => t.trim())
+      .filter((t) => !t.includes('Ausgang'))
+
+  it('hängt hundert Level in fünf neuen Welten an', () => {
+    expect(LEVEL_ANZAHL - 300).toBe(100)
+    const neue = WELTEN.slice(15)
+    expect(neue).toHaveLength(5)
+    for (const w of neue) {
+      const level = w.abschnitte.flatMap((a) => a.level)
+      expect(level).toHaveLength(20)
+      expect(Math.min(...level)).toBeGreaterThan(300)
+    }
+    // Jede Welt hat ein Tor, und das letzte liegt auf Level 400.
+    expect(TRAP_KARTE.zonen.at(-1)?.gateLevel).toBe(400)
+    expect(new Set(TRAP_KARTE.zonen.map((z) => z.id)).size).toBe(20)
+  })
+
+  it('macht die Endspiel-Level am längsten', () => {
+    // Die Breite wächst je Welt weiter und läuft im Endspiel in ihren
+    // Deckel: 1320 in Welt 16, 1480 ab Welt 18.
+    for (let nr = ENDSPIEL_AB; nr <= LEVEL_ANZAHL; nr++) {
+      expect(levelBreite(nr)).toBeGreaterThanOrEqual(1320)
+      expect(levelBreite(nr)).toBeGreaterThan(levelBreite(300))
+    }
+    expect(levelBreite(LEVEL_ANZAHL)).toBe(1480)
+    // Und damit passen mehr Fallen hinein als je zuvor.
+    let hoechstens = 0
+    for (let nr = ENDSPIEL_AB; nr <= LEVEL_ANZAHL; nr++) {
+      hoechstens = Math.max(hoechstens, bausteine(nr).length)
+    }
+    expect(hoechstens).toBe(7)
+  }, 120_000)
+
+  it('gibt jedem Endspiel-Albtraum zwei Sachen, die einen jagen', () => {
+    // Bis Level 300 war der erste Baustein eines gemeinen Levels eine Jagd
+    // *oder* eine Wand. Ab 301 soll im Albtraum beides zusammen vorkommen.
+    const albtraeume: number[] = []
+    for (let nr = ENDSPIEL_AB; nr <= LEVEL_ANZAHL; nr++) if (istAlptraum(nr)) albtraeume.push(nr)
+    const mitZwei = albtraeume.filter(
+      (nr) => bausteine(nr).filter((t) => t === 'jagd' || t === 'waende').length >= 2,
+    )
+    expect(`${mitZwei.length} von ${albtraeume.length}`).toBe(
+      mitZwei.length >= albtraeume.length * 0.7
+        ? `${mitZwei.length} von ${albtraeume.length}`
+        : 'zu wenige mit zwei Gemeinheiten',
+    )
+  }, 120_000)
+
+  it('zeigt jede der sechs neuen Fallen in ihrer eigenen Welt', () => {
+    const inWelt = (von: number, bis: number) => {
+      const teile = new Set<string>()
+      for (let nr = von; nr <= bis; nr++) for (const t of bausteine(nr)) teile.add(t)
+      return teile
+    }
+    expect(inWelt(301, 320).has('doppelsaege')).toBe(true)
+    expect(inWelt(321, 340).has('fallgitter')).toBe(true)
+    expect(inWelt(341, 360).has('blindweg')).toBe(true)
+    expect(inWelt(341, 360).has('kopfueber')).toBe(true)
+    expect(inWelt(361, 380).has('zange')).toBe(true)
+    expect(inWelt(381, 400).has('sprungdreh')).toBe(true)
+    // Und keine davon taucht vorher auf.
+    const vorher = inWelt(11, 300)
+    for (const neu of [
+      'doppelsaege',
+      'fallgitter',
+      'blindweg',
+      'zange',
+      'kopfueber',
+      'sprungdreh',
+    ]) {
+      expect(`${neu} vor 301`).toBe(vorher.has(neu) ? `${neu} kommt zu früh` : `${neu} vor 301`)
+    }
+  }, 120_000)
+
+  /**
+   * Auf dem Kopf.
+   *
+   * Thomas am 20.09.2026: "auch mit auf dem Kopf laufen und solche Sachen,
+   * wenn man springt plötzlich an der Decke ist".
+   *
+   * Zwei Bausteine machen das. Beim einen dreht sich die Schwerkraft, sobald
+   * man den Abschnitt betritt; beim anderen hängt der Drehpunkt über
+   * Kopfhöhe, sodass ihn nur erreicht, wer springt -- und dann endet der
+   * Sprung an der Decke statt auf dem Boden. Gemessen wird beides: dass die
+   * Schwerkraft wirklich kippt, dass es eine Decke zum Laufen gibt und dass
+   * sie am Ende wieder herum ist.
+   */
+  it('dreht die Schwerkraft um und wieder zurück', () => {
+    const mitDrehung: number[] = []
+    for (let nr = ENDSPIEL_AB; nr <= LEVEL_ANZAHL; nr++) {
+      const teile = bausteine(nr)
+      if (teile.includes('kopfueber') || teile.includes('sprungdreh')) mitDrehung.push(nr)
+    }
+    expect(mitDrehung.length).toBeGreaterThanOrEqual(10)
+
+    for (const nr of mitDrehung) {
+      const l = levelDaten(nr)
+      const dreher = l.objekte.filter((o) => (o.loest ?? []).some((a) => a.tu === 'schwerkraft'))
+      // Immer paarweise: einmal hin, einmal zurück.
+      const hin = dreher.filter((o) => (o.loest ?? []).some((a) => a.wert === -1)).length
+      const zurueck = dreher.filter((o) => (o.loest ?? []).some((a) => a.wert === 1)).length
+      expect(`Level ${nr}: ${hin} hin, ${zurueck} zurück`).toBe(
+        hin > 0 && hin === zurueck
+          ? `Level ${nr}: ${hin} hin, ${zurueck} zurück`
+          : `Level ${nr}: unpaarig`,
+      )
+      // Und es gibt eine Decke, auf der man dann steht.
+      const decke = l.objekte.filter((o) => o.typ === 'block' && o.y < 80 && o.b > 100)
+      expect(`Level ${nr} Decke`).toBe(
+        decke.length > 0 ? `Level ${nr} Decke` : `Level ${nr} hat keine Decke`,
+      )
+      // Am Ende des Levels steht die Figur wieder richtig herum.
+      const r = spieleLoesung(l)
+      expect(`Level ${nr}: ${r.stand.schwerkraft}`).toBe(`Level ${nr}: 1`)
+    }
+  }, 120_000)
+
+  it('streut im Endspiel deutlich mehr Fallen ohne Vorwarnung', () => {
+    const blind = (nr: number) =>
+      levelDaten(nr).objekte.filter((o) => o.versteckt || o.heimlich).length
+    const schnitt = (von: number, bis: number) => {
+      let summe = 0
+      for (let nr = von; nr <= bis; nr++) summe += blind(nr)
+      return summe / (bis - von + 1)
+    }
+    expect(schnitt(ENDSPIEL_AB, LEVEL_ANZAHL)).toBeGreaterThan(schnitt(101, 300) * 1.5)
+  }, 120_000)
+
+  /**
+   * Keine Falle sperrt jemanden ein.
+   *
+   * Das ist die wichtigste Regel des Spiels und stand vorher nur als
+   * Kommentar da: Wer eine Falle verpasst, stirbt und ist eine halbe Sekunde
+   * später wieder im Spiel. Wer eingesperrt wird, kann nicht sterben und
+   * muss von Hand neu starten -- das ist die schlechtere Strafe.
+   *
+   * Zwei der neuen Bausteine sind genau daran gescheitert: Das Fallgitter
+   * hatte eine Tür, die ein Knopf nur einmal öffnete, und die Zange schloss
+   * sich um die Figur, ohne sie zu erwischen. Beide haben jetzt Stacheln.
+   * Der Test fällt, wenn das jemand wieder wegnimmt.
+   */
+  it('lässt jede zufahrende Wand tödlich sein, statt einzusperren', () => {
+    const ohneStachel: string[] = []
+    for (let nr = ENDSPIEL_AB; nr <= LEVEL_ANZAHL; nr++) {
+      const l = levelDaten(nr)
+      for (const o of l.objekte) {
+        // Alles, was fest ist, sich auf den Boden zubewegt und dort
+        // liegenbleibt. Eine Wand, die wieder hochfährt (der Schieber),
+        // sperrt niemanden dauerhaft ein -- die ist nicht gemeint.
+        if (o.typ !== 'beweger' || !o.weg || o.weg.dy <= 0 || !o.weg.einweg) continue
+        const endeY = o.y + o.weg.dy + o.h
+        if (endeY < BODEN_Y - 4) continue
+        // Dann muss ein Stachel mitfahren, der einen erwischt.
+        const hatStachel = l.objekte.some(
+          (x) =>
+            x.typ === 'stachel' &&
+            x.weg !== undefined &&
+            x.weg.dy === o.weg!.dy &&
+            Math.abs(x.x - o.x) < 4,
+        )
+        if (!hatStachel) ohneStachel.push(`Level ${nr}: Wand bei x=${Math.round(o.x)}`)
+      }
+    }
+    expect(ohneStachel).toEqual([])
   }, 120_000)
 })

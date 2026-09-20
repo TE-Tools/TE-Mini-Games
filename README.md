@@ -95,16 +95,17 @@ Progressive Web App with short skill, memory, reaction and logic games.
   step, the ceiling drops when you pass a certain point, the exit walks away
   as you approach it, and halfway through level 9 gravity flips and the door
   is on the ceiling. Every death is reproducible and the level restarts in
-  half a second, so the answer is always “again”. **100 levels in five worlds**
-  – The Caves, The Factory, The Tower, The Twisted World, The Chaos – on the
-  same level map the other games use, twenty levels per world with a gate at
-  every world border; a hidden crystal sits where nobody goes on purpose. Own
+  half a second, so the answer is always “again”. **400 levels in twenty
+  worlds** – from The Caves and The Factory through The Nightmare to The Last
+  Light – on the same level map the other games use, twenty levels per world
+  with a gate at every world border; a hidden crystal sits where nobody goes
+  on purpose. Own
   engine: fixed 240 Hz timestep, AABB collisions resolved axis by axis, coyote
   time and jump buffering so a missed jump is never the controls' fault.
   Levels are **data, not code** (`src/games/trapbound/levels/`), each with a
   recorded solution that `tests/trapbound.test.ts` plays back – change a level
   without fixing its solution and the test fails. Levels 1–10 are hand-built;
-  11–300 are assembled from twenty-eight segment builders (`bausteine.ts`) that
+  11–400 are assembled from thirty-four segment builders (`bausteine.ts`) that
   emit geometry **and** the solution for that piece – so every level is proven
   solvable by playback, none of them can be beaten by just holding “right”,
   and each world only draws on the traps it has introduced. **Levels get
@@ -113,10 +114,10 @@ Progressive Web App with short skill, memory, reaction and logic games.
   figure – she keeps her size, so a jump is the same distance everywhere. That
   is the fix for the one complaint the finishers had, “the levels look alike”:
   one screen held two or three traps, 1240 units hold up to six, and the
-  number of possible levels goes up with it. Measured: **289 of the 290
+  number of possible levels goes up with it. Measured: **389 of the 390
   generated levels have a build nobody else has**, the closest repeat is 201
   levels apart, and no level is a single trap any more. The whole run of
-  290 generated levels is laid out in **one deterministic pass**, which
+  390 generated levels is laid out in **one deterministic pass**, which
   remembers what came before: an ordinary trap pairing cannot return for 50
   levels, no two neighbours share more than one trap, and no two neighbours
   carry the same name. The last stretch of a level is drawn from **five kinds
@@ -156,7 +157,26 @@ Progressive Web App with short skill, memory, reaction and logic games.
   that caves in behind you**, five plates each of which holds for one stride
   and not two; and **stepping stones over nothing** that fall the moment you
   land. Each world also teaches its own new trap on four fixed slots before
-  it turns up mixed with everything else. Traps compose through triggers and actions
+  it turns up mixed with everything else. **From level 301 the endgame
+  begins**: five more worlds – The Blade, The Boiler House, The Blackness,
+  The Gearworks, The Last Light – and there what used to be the exception is
+  the rule. Of those hundred levels **fifty are mean and thirty are
+  nightmares**; only four per world stay quiet, three of which teach that
+  world's new trap. Every nightmare gets a chase _and_ closing walls, not one
+  of the two. Levels run to two and a half screens and hold up to **seven
+  traps**, at least **six things move in every one** (17 on average), and the
+  blind traps are sprinkled half again as thickly as in the second hundred.
+  Six more segment builders arrive with them: **two saws** whose only clear
+  window needs both at once; **three gates** that slam down one after another
+  with spikes on their edges; a **floor where every second plate gives way**
+  and nothing tells you which; a **pincer** that drops in from both sides; and
+  two that turn the game upside down – one flips gravity as you enter so you
+  **walk on the ceiling** and jump _downward_ across a gap in it, the other
+  hangs its trigger above head height so that the flip catches you **in
+  mid-jump**: a wall blocks the floor, you have to jump it, and the jump ends
+  at the ceiling instead of the ground. A falling wall always carries spikes,
+  and a test enforces it: being caught has to kill, because a cage you cannot
+  die in is the one punishment this game never uses. Traps compose through triggers and actions
   (`zone → platform vanishes, spikes appear, gravity flips two seconds later`),
   so new worlds need no engine changes. Progress, deaths, best times, crystals
   and settings live in localStorage

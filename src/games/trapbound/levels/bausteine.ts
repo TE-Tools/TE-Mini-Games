@@ -23,7 +23,7 @@
  *      und kein Zeitfenster fair.
  */
 
-import type { LoesungsSchritt, Objekt } from '../types'
+import type { Aktion, LoesungsSchritt, Objekt } from '../types'
 
 export const BODEN_Y = 240
 export const BODEN_H = 30
@@ -1212,6 +1212,519 @@ export const bKippStufen: Baustein = (b) => {
   }
 }
 
+// ------------------------------------------ Ab Level 301: das Endspiel
+//
+// Was diese fünf verbindet: Sie verzeihen nichts. Die Bausteine davor haben
+// ein Zeitfenster oder eine Stelle, die man treffen muss; diese haben
+// zwei -- und die zweite kommt, während man die erste noch ausführt.
+// Thomas am 18.09.2026: "du sollst 100 neue machen", und zwar schwere.
+
+/**
+ * Zwei Blätter über einem Loch, gegeneinander versetzt.
+ *
+ * Das Pendel war eines: warten, bis es weg ist, springen. Hier hängen zwei
+ * übereinander und pendeln gegenläufig -- das untere versperrt den Absprung,
+ * das obere den Flugbogen. Es gibt ein Fenster, in dem beides frei ist, und
+ * das ist kurz.
+ */
+export const bDoppelSaege: Baustein = (b) => {
+  const a = `ds${b.nr}a`
+  const c = `ds${b.nr}c`
+  const links = 42
+  const spalt = 34
+  const strecke = Math.min(104, b.breite - links - spalt - 60)
+  const dauer = 0.9 - b.schwer * 0.22
+  const zoneX = b.x + links - 22
+  /*
+   * Das zweite Blatt steht drueben und ist genau so lange oben, wie der
+   * Sprung dauert.
+   *
+   * Der erste Anlauf liess beide waagerecht pendeln, gegeneinander versetzt.
+   * Das war nicht schwer, sondern unmoeglich: Wenn eines die Luecke raeumt,
+   * faehrt das andere hinein, und ein Fenster gab es nie. Jetzt gibt es
+   * zwei Bedingungen statt einer -- das Pendel muss fort sein *und* das
+   * Blatt drueben oben --, und beide treffen genau einmal zusammen.
+   */
+  const blattX = b.x + links + spalt + 22
+  /*
+   * Wie lange das Blatt drueben oben bleibt: ausgerechnet, nicht geraten.
+   *
+   * Warten, bis das Pendel fort ist, plus der Sprungbogen, plus der Weg vom
+   * Aufkommen bis hinter das Blatt -- und zwei Zehntel Luft. Mit einer
+   * geratenen Sekunde kam das Blatt herunter, waehrend die Figur noch
+   * darunter lief, und der Abschnitt war nicht zu schaffen.
+   */
+  const obenLang = dauer * 0.55 + 0.6 + (blattX + 29 - (b.x + links + spalt + 30)) / 138 + 0.2
+  return {
+    objekte: [
+      boden(b.x, links),
+      boden(b.x + links + spalt, b.breite - links - spalt),
+      // Das Pendel ueber der Luecke: in Sprunghoehe, wie beim Pendel-Baustein.
+      {
+        typ: 'saege',
+        id: a,
+        x: b.x + links - 4,
+        y: BODEN_Y - 50,
+        b: 20,
+        h: 20,
+        weg: { dx: strecke, dy: 0, dauer, warte: 0.3, wartetAufAusloeser: true },
+      },
+      // Und drueben, wo man aufkommt, faehrt eines auf und ab.
+      {
+        typ: 'saege',
+        id: c,
+        x: blattX,
+        y: BODEN_Y - 52,
+        b: 18,
+        h: 18,
+        weg: {
+          dx: 0,
+          dy: 46,
+          dauer: 0.42,
+          warte: obenLang,
+          wartetAufAusloeser: true,
+          // So gestellt, dass es beim Ausloesen gerade oben angekommen ist:
+          // Die Pause oben ist das Fenster, und sie laeuft ab dem ersten
+          // Augenblick.
+          start: 0.42 * 2 + obenLang,
+        },
+      },
+      {
+        typ: 'zone',
+        x: zoneX,
+        y: BODEN_Y - 50,
+        b: 8,
+        h: 50,
+        einmal: true,
+        loest: [
+          { tu: 'los', ziel: a },
+          { tu: 'los', ziel: c },
+        ],
+      },
+    ],
+    loesung: [
+      vor(b, { bisBoden: true, dauer: 1 }),
+      vor(b, { bisX: zoneX - 5 }),
+      // Gerade so lange, bis das Pendel die Luecke verlassen hat -- laenger
+      // nicht, sonst kommt das Blatt drueben schon wieder herunter.
+      { dauer: dauer * 0.55 },
+      vor(b, { sprung: true, dauer: 0.34 }),
+      vor(b, { bisBoden: true }),
+      vor(b, { bisX: b.x + b.breite - 14, dauer: 1.6 }),
+    ],
+  }
+}
+
+/**
+ * Drei Gitter, die nacheinander herunterkrachen.
+ *
+ * Man läuft hinein, hinter einem fällt das erste, und vorn sind schon zwei
+ * weitere unterwegs. Jedes hat Stacheln an der Unterkante: Wer zu langsam
+ * ist, wird nicht eingesperrt, sondern erwischt -- und ist eine halbe
+ * Sekunde später wieder im Spiel.
+ *
+ * Der erste Anlauf hatte ein Gitter hinter einem und eine Tür davor, die
+ * ein Knopf kurz öffnete. Das war ein Käfig ohne Ausweg: Wer die Tür
+ * verpasste, stand zwischen zwei Wänden, konnte nicht sterben und musste
+ * von Hand neu starten. Ein Knopf feuert in dieser Engine genau einmal --
+ * ein zweiter Versuch war gar nicht vorgesehen. Feststecken ist die
+ * schlechtere Strafe; hier kostet es einen Anlauf, nicht die Geduld.
+ */
+export const bFallgitter: Baustein = (b) => {
+  const anzahl = 3
+  const objekte: Objekt[] = [boden(b.x, b.breite)]
+  const loest: Aktion[] = [{ tu: 'beben', wert: 0.4 }]
+  const erste = b.x + 30
+  const abstand = Math.floor((b.breite - 60) / anzahl)
+  /*
+   * Wann ein Gitter losgeht: gerechnet, nicht geraten.
+   *
+   * Der Weg von der Auslöserzone bis hinter das Gitter, geteilt durch das
+   * Lauftempo, plus eine Handbreit Luft -- dieselbe Rechnung wie bei den
+   * Schiebewänden. Ohne sie stand das Gitter schon unten, bevor überhaupt
+   * jemand loslaufen konnte.
+   */
+  /*
+   * Die Luft muss die Übergabe mit abdecken.
+   *
+   * Zwischen zwei Bausteinen steht die Figur eine knappe Fünftelsekunde
+   * still, und danach braucht sie noch einmal so lange bis auf Tempo. Mit
+   * zwei Zehnteln Luft war das Gitter unten, bevor sie überhaupt losgelaufen
+   * war -- die Level 325 und 392 gingen genau daran kaputt. Das Zeitfenster
+   * wird dadurch nicht größer, es fängt nur später an.
+   */
+  const luft = 0.62 - b.schwer * 0.14
+  const fall = 0.42
+  for (let k = 0; k < anzahl; k++) {
+    const id = `fg${b.nr}_${k}`
+    const x = erste + k * abstand
+    const nach = Math.max(0, (x + 14 + 11 - (b.x + 10)) / 138 + luft - fall)
+    objekte.push({
+      typ: 'beweger',
+      id,
+      x,
+      y: BODEN_Y - 214,
+      b: 14,
+      h: 80,
+      weg: { dx: 0, dy: 134, dauer: fall, einweg: true, wartetAufAusloeser: true },
+    })
+    objekte.push({
+      typ: 'stachel',
+      id: `${id}s`,
+      x,
+      y: BODEN_Y - 136,
+      b: 14,
+      h: 10,
+      weg: { dx: 0, dy: 134, dauer: fall, einweg: true, wartetAufAusloeser: true },
+    })
+    loest.push({ tu: 'los', ziel: id, nach })
+    loest.push({ tu: 'los', ziel: `${id}s`, nach })
+  }
+  objekte.push({
+    typ: 'zone',
+    x: b.x + 10,
+    y: BODEN_Y - 50,
+    b: 8,
+    h: 50,
+    einmal: true,
+    loest,
+  })
+  return {
+    objekte,
+    // Durchlaufen. Wer stehenbleibt, um zu schauen, steht darunter.
+    loesung: [vor(b, { bisX: b.x + b.breite - 14, dauer: 3.5 })],
+  }
+}
+
+/**
+ * Boden, von dem nur die Hälfte trägt – und man sieht nicht, welche.
+ *
+ * Der blinde Bruchboden war eine Platte. Hier sind es sechs nebeneinander,
+ * und jede zweite hält nicht. Zu sehen ist nichts; man lernt die Strecke,
+ * indem man sie verliert. Fair bleibt das, weil der Neustart eine halbe
+ * Sekunde dauert und die Platten immer dieselben sind.
+ */
+export const bBlindWeg: Baustein = (b) => {
+  const links = 26
+  const rechts = 26
+  const strecke = b.breite - links - rechts
+  /*
+   * Sieben Platten, nicht sechs.
+   *
+   * Bei einer geraden Zahl war die letzte ein Loch, und der Abschnitt endete
+   * mit einem Sprung auf einen sechsundzwanzig Punkte schmalen Streifen --
+   * direkt davor begann schon der nächste Baustein. Die Level 343, 348 und
+   * 354 gingen genau daran kaputt. Ungerade trägt die letzte Platte.
+   */
+  const anzahl = 7
+  const platte = strecke / anzahl
+  const objekte: Objekt[] = [boden(b.x, links)]
+  const loesung: LoesungsSchritt[] = [vor(b, { bisBoden: true, dauer: 1 })]
+  for (let k = 0; k < anzahl; k++) {
+    const x = b.x + links + k * platte
+    if (k % 2 === 0) {
+      objekte.push({ typ: 'block', x, y: BODEN_Y, b: platte, h: BODEN_H })
+    } else {
+      // Nicht "bricht weg", sondern "war nie da": Die Platte verschwindet
+      // sofort, wenn man sie betritt. Ein Bruchboden mit Verzögerung liesse
+      // sich überrennen, und dann wäre das hier nur ein Laufstück.
+      objekte.push({
+        typ: 'bruch',
+        x,
+        y: BODEN_Y,
+        b: platte,
+        h: BODEN_H,
+        verzoegerung: 0.01,
+        heimlich: true,
+      })
+      // Und über jedes Loch muss gesprungen werden.
+      loesung.push(vor(b, { bisX: x - 15 }))
+      loesung.push(vor(b, { sprung: true, dauer: 0.3 }))
+      loesung.push(vor(b, { bisBoden: true, dauer: 1.2 }))
+    }
+  }
+  objekte.push(boden(b.x + links + strecke, rechts))
+  loesung.push(vor(b, { bisX: b.x + b.breite - 14, dauer: 1.6 }))
+  return { objekte, loesung }
+}
+
+/**
+ * Eine Zange: zwei Wände, die von beiden Seiten zufahren.
+ *
+ * Die Schiebewände kamen bisher von oben und von unten. Diese kommen von
+ * links und von rechts auf dieselbe Stelle zu, und dazwischen muss man
+ * hindurch, bevor sie sich treffen. Es geht genau einmal, und zwar sofort.
+ */
+export const bZange: Baustein = (b) => {
+  const l = `zg${b.nr}l`
+  const r = `zg${b.nr}r`
+  const mitte = b.x + Math.round(b.breite * 0.58)
+  const weit = 70
+  /*
+   * Sie kommen von oben aussen, nicht von der Seite.
+   *
+   * Der erste Anlauf liess sie waagerecht zufahren. Dann stand die linke
+   * Wand aber schon vor dem Ausloesen mitten im Weg, und der Abschnitt war
+   * nicht zu betreten. Jetzt haengen beide ueber Kopfhoehe und fahren
+   * schraeg herunter -- gefaehrlich werden sie erst auf den letzten
+   * Zehnteln.
+   */
+  const hoch = 200
+  const fallhoehe = hoch - 62
+  /** Ab wann die Unterkante unter Kopfhoehe ist: gemessen, nicht geraten. */
+  const gefaehrlichAb = (hoch - 62 - 17) / fallhoehe
+  /*
+   * Gemessen wird bis hinter die rechte Backe, nicht bis zur Mitte.
+   *
+   * Die rechte Wand kommt bei `mitte` an und ist sechzehn breit, die Figur
+   * elf -- wer bei `mitte + 22` steht, steht noch darin. Level 379 starb
+   * genau vier Punkte davor. Sechsundvierzig lässt Luft, ohne dass der
+   * Abschnitt geschenkt wäre: Stehenbleiben kostet immer noch den Anlauf.
+   */
+  const laufzeit = (mitte + 46 - (b.x + 12)) / 138
+  // So lange, dass man es im Lauf schafft -- und mit der Schwierigkeit
+  // schrumpft die Luft, die dabei bleibt.
+  // Dieselbe Rechnung wie beim Fallgitter: Die Übergabe zwischen zwei
+  // Bausteinen kostet rund drei Zehntel, und die müssen mit hinein.
+  const dauer = laufzeit / gefaehrlichAb + (0.58 - b.schwer * 0.14)
+  return {
+    objekte: [
+      boden(b.x, b.breite),
+      {
+        typ: 'beweger',
+        id: l,
+        x: mitte - weit - 16,
+        y: BODEN_Y - hoch,
+        b: 16,
+        h: 62,
+        weg: { dx: weit, dy: fallhoehe, dauer, einweg: true, wartetAufAusloeser: true },
+      },
+      {
+        typ: 'beweger',
+        id: r,
+        x: mitte + weit,
+        y: BODEN_Y - hoch,
+        b: 16,
+        h: 62,
+        weg: { dx: -weit, dy: fallhoehe, dauer, einweg: true, wartetAufAusloeser: true },
+      },
+      /*
+       * Stacheln an beiden Unterkanten.
+       *
+       * Ohne sie war die Zange ein Käfig: Wer zu spät kam, stand zwischen
+       * zwei Wänden, konnte nicht sterben und musste von Hand neu starten
+       * (Level 382). Feststecken ohne Ausweg ist die schlechtere Strafe --
+       * jetzt kostet es einen Anlauf.
+       */
+      {
+        typ: 'stachel',
+        id: `${l}s`,
+        x: mitte - weit - 16,
+        y: BODEN_Y - hoch + 62,
+        b: 16,
+        h: 10,
+        weg: { dx: weit, dy: fallhoehe, dauer, einweg: true, wartetAufAusloeser: true },
+      },
+      {
+        typ: 'stachel',
+        id: `${r}s`,
+        x: mitte + weit,
+        y: BODEN_Y - hoch + 62,
+        b: 16,
+        h: 10,
+        weg: { dx: -weit, dy: fallhoehe, dauer, einweg: true, wartetAufAusloeser: true },
+      },
+      {
+        typ: 'zone',
+        x: b.x + 12,
+        y: BODEN_Y - 50,
+        b: 8,
+        h: 50,
+        einmal: true,
+        loest: [
+          { tu: 'los', ziel: l },
+          { tu: 'los', ziel: r },
+          { tu: 'los', ziel: `${l}s` },
+          { tu: 'los', ziel: `${r}s` },
+          { tu: 'beben', wert: 0.35 },
+        ],
+      },
+    ],
+    // Durchlaufen. Wer stehenbleibt, um zu schauen, steht dazwischen.
+    loesung: [vor(b, { bisX: b.x + b.breite - 14, dauer: 3.5 })],
+  }
+}
+
+/**
+ * Kopfüber: Die Schwerkraft dreht sich um, und man läuft an der Decke.
+ *
+ * Das gab es bisher nur in einem einzigen handgebauten Level (Nummer 9).
+ * Für das Endspiel ist es der richtige Baustein: Alles, was man über Laufen
+ * und Springen gelernt hat, gilt weiter -- nur zeigt "unten" jetzt nach
+ * oben. Man fällt hinauf, läuft an der Decke entlang, springt dort über
+ * eine Lücke (der Sprung trägt einen nach unten, nicht nach oben) und wird
+ * am Ende wieder heruntergelassen.
+ *
+ * Der erste Anlauf war ein Steg, der schräg nach oben fuhr. Der ging an der
+ * Engine kaputt: Ein Block, der sich gleichzeitig seitwärts und nach oben
+ * bewegt, schiebt die Figur einmal heraus *und* nimmt sie als Boden mit --
+ * sie lief dem Steg vorn herunter. Hier bewegt sich nichts; es dreht sich
+ * nur.
+ */
+export const bKopfueber: Baustein = (b) => {
+  const hin = `ku${b.nr}a`
+  const zurueck = `ku${b.nr}b`
+  /** Wo die Decke ist, auf der man gleich steht. */
+  const deckeY = 40
+  const deckeH = 30
+  /*
+   * Wie weit der Fall trägt: gemessen, nicht geraten.
+   *
+   * Von den Füßen auf dem Hauptboden bis an die Decke sind es rund
+   * hundertfünfzig Punkte; bei 1400 Schwerkraft dauert das knapp eine halbe
+   * Sekunde, und in der Zeit trägt der Lauf rund siebzig Punkte weit. So
+   * viel Platz muss hinter jedem der beiden Drehpunkte liegen.
+   */
+  const flug = Math.ceil(Math.sqrt((2 * (BODEN_Y - deckeY - deckeH - 17)) / 1400) * 138) + 12
+  const dreh = b.x + 16
+  const zurueckX = Math.max(dreh + flug + 70, b.x + b.breite - flug - 30)
+  // Die Lücke in der Decke liegt zwischen den beiden Drehpunkten.
+  const luecke = Math.round((dreh + flug + zurueckX) / 2) - 20
+  const spalt = 38
+  return {
+    objekte: [
+      boden(b.x, b.breite),
+      // Die Decke, auf der man gleich steht -- mit einer Lücke darin.
+      { typ: 'block', x: b.x, y: deckeY, b: luecke - b.x, h: deckeH },
+      {
+        typ: 'block',
+        x: luecke + spalt,
+        y: deckeY,
+        b: b.x + b.breite - (luecke + spalt),
+        h: deckeH,
+      },
+      // Hin: Die Zone geht über die ganze Höhe, damit niemand daran vorbei
+      // kann.
+      {
+        typ: 'zone',
+        id: hin,
+        x: dreh,
+        y: 0,
+        b: 8,
+        h: BODEN_Y,
+        einmal: true,
+        loest: [
+          { tu: 'schwerkraft', wert: -1 },
+          { tu: 'beben', wert: 0.4 },
+        ],
+      },
+      // Und zurück.
+      {
+        typ: 'zone',
+        id: zurueck,
+        x: zurueckX,
+        y: 0,
+        b: 8,
+        h: BODEN_Y,
+        einmal: true,
+        loest: [
+          { tu: 'schwerkraft', wert: 1 },
+          { tu: 'beben', wert: 0.4 },
+        ],
+      },
+    ],
+    loesung: [
+      vor(b, { bisBoden: true, dauer: 1 }),
+      // Hinein und nach oben fallen.
+      vor(b, { bisX: dreh + 4 }),
+      vor(b, { bisBoden: true, dauer: 1.6 }),
+      // An der Decke entlang bis vor die Lücke.
+      vor(b, { bisX: luecke - 16, dauer: 2.4 }),
+      // Der Sprung trägt hier nach unten -- er hilft trotzdem hinüber.
+      vor(b, { sprung: true, dauer: 0.34 }),
+      vor(b, { bisBoden: true, dauer: 1.6 }),
+      // Weiter bis zur zweiten Drehung, dann wieder herunter.
+      vor(b, { bisX: zurueckX + 4, dauer: 2.4 }),
+      vor(b, { bisBoden: true, dauer: 1.6 }),
+      vor(b, { bisX: b.x + b.breite - 14, dauer: 1.6 }),
+    ],
+  }
+}
+
+/**
+ * Der Sprung, der an der Decke endet.
+ *
+ * Thomas am 20.09.2026: "auch mit auf dem Kopf laufen und solche Sachen,
+ * wenn man springt plötzlich an der Decke ist".
+ *
+ * Genau so ist es gebaut: Eine Mauer versperrt den Boden, man muss springen
+ * -- und oben im Bogen hängt der Bereich, der die Schwerkraft umdreht. Wer
+ * springt, fliegt nicht wieder herunter, sondern weiter hoch und kommt an
+ * der Decke auf. Wer nicht springt, steht vor der Mauer. Es gibt also keinen
+ * Weg vorbei, und beim ersten Mal rechnet damit niemand.
+ *
+ * Der Bereich hängt über Kopfhöhe: Eine stehende Figur reicht von 223 bis
+ * 240, der Bereich fängt bei 148 an. Im Sprung sind die Füße sechzig Punkte
+ * höher, und dann liegt der Kopf mitten darin.
+ */
+export const bSprungDreh: Baustein = (b) => {
+  const deckeY = 40
+  const deckeH = 30
+  /** Wie weit der Lauf trägt, während die Figur an die Decke fällt. */
+  const flug = Math.ceil(Math.sqrt((2 * (BODEN_Y - deckeY - deckeH - 17)) / 1400) * 138) + 12
+  const wandX = b.x + 42
+  const drehX = wandX + 20
+  const zurueckX = Math.max(drehX + flug + 60, b.x + b.breite - flug - 34)
+  return {
+    objekte: [
+      boden(b.x, b.breite),
+      // Die Decke, auf der man gleich steht.
+      { typ: 'block', x: b.x, y: deckeY, b: b.breite, h: deckeH },
+      // Die Mauer, an der der Weg unten endet. Dreißig Punkte hoch: Ein
+      // Sprung trägt sechzig, sie ist also kein Hindernis, sondern ein
+      // Zwang.
+      { typ: 'block', x: wandX, y: BODEN_Y - 30, b: 14, h: 30 },
+      // Und mitten im Sprungbogen dreht sich alles um.
+      {
+        typ: 'zone',
+        x: drehX,
+        y: BODEN_Y - 92,
+        b: 10,
+        h: 46,
+        einmal: true,
+        loest: [
+          { tu: 'schwerkraft', wert: -1 },
+          { tu: 'beben', wert: 0.45 },
+        ],
+      },
+      // Am Ende des Abschnitts geht es wieder herunter.
+      {
+        typ: 'zone',
+        x: zurueckX,
+        y: 0,
+        b: 8,
+        h: BODEN_Y,
+        einmal: true,
+        loest: [
+          { tu: 'schwerkraft', wert: 1 },
+          { tu: 'beben', wert: 0.4 },
+        ],
+      },
+    ],
+    loesung: [
+      vor(b, { bisBoden: true, dauer: 1 }),
+      // Bis kurz vor die Mauer, dann springen -- und oben dreht es sich.
+      vor(b, { bisX: wandX - 20 }),
+      vor(b, { sprung: true, dauer: 0.36 }),
+      vor(b, { bisBoden: true, dauer: 1.8 }),
+      // An der Decke weiter bis zum zweiten Drehpunkt.
+      vor(b, { bisX: zurueckX + 4, dauer: 2.6 }),
+      vor(b, { bisBoden: true, dauer: 1.8 }),
+      vor(b, { bisX: b.x + b.breite - 14, dauer: 1.6 }),
+    ],
+  }
+}
+
 export interface BausteinEintrag {
   name: string
   bau: Baustein
@@ -1249,4 +1762,10 @@ export const BAUSTEINE: Record<string, BausteinEintrag> = {
   dachweg: { name: 'dachweg', bau: bDachweg, min: 230 },
   einsturz: { name: 'einsturz', bau: bEinsturz, min: 170 },
   kippstufen: { name: 'kippstufen', bau: bKippStufen, min: 270 },
+  doppelsaege: { name: 'doppelsaege', bau: bDoppelSaege, min: 200 },
+  fallgitter: { name: 'fallgitter', bau: bFallgitter, min: 190 },
+  blindweg: { name: 'blindweg', bau: bBlindWeg, min: 300 },
+  zange: { name: 'zange', bau: bZange, min: 210 },
+  kopfueber: { name: 'kopfueber', bau: bKopfueber, min: 290 },
+  sprungdreh: { name: 'sprungdreh', bau: bSprungDreh, min: 260 },
 }
