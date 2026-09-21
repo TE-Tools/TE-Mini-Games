@@ -29,6 +29,21 @@ keine Portierung, sondern nur ein Layout, das mitwächst. Das Brett ist
 deshalb ein quadratisches Raster in relativen Einheiten und keine feste
 Pixelgröße.
 
+Eine Einschränkung dazu, seit dem 21.09.2026: Das Brett passt sich an, es
+muss aber nicht mehr ganz auf den Bildschirm passen. Eine Kante besteht aus
+neun Feldern und zwei Ecken zu je 1,35 Feldbreiten; auf einem Telefon blieben
+davon 26 Punkte je Feld und fünf Punkte Schriftgröße übrig, und die Namen
+standen abgeschnitten da. Vierzig Felder im Kreis geben das nicht her.
+
+Deshalb gilt jetzt: Ein Feld ist mindestens 44 Punkte breit -- das übliche
+Maß für etwas, das man mit dem Finger trifft. Reicht der Platz nicht, wird
+das Brett größer als sein Fenster und geschoben; der Ausschnitt folgt von
+selbst dem Feld, auf dem gerade etwas passiert. Zwei Knöpfe ändern die
+Größe, ein dritter zeigt wieder alles. Die Rechnung steht in
+`brettPositionen.ts` und wird in `tests/schuetzenopoly-raster.test.ts`
+geprüft; alle Maße auf einem Feld hängen an der gemessenen Feldbreite
+`--feld`, nicht an der Fensterbreite.
+
 ## 2. Architektur
 
 ```
@@ -52,8 +67,9 @@ src/games/schuetzenopoly/
 
 src/pages/play/
   SchuetzenopolyPage.tsx        Die Seite: Zustand halten, Engine rufen, animieren.
-  schuetzenopoly/Brett.tsx      Das 11×11-Raster.
-  schuetzenopoly/brettPositionen.ts  Wo welches Feld im Raster liegt.
+  schuetzenopoly/Brett.tsx      Das 11×11-Raster, Zoom und Schieben.
+  schuetzenopoly/brettPositionen.ts  Wo welches Feld im Raster liegt und wie
+                                     groß es sein muss.
   schuetzenopoly/Minispiele.tsx Die drei Schießstände.
   schuetzenopoly/FeldKarte.tsx  Die Feldkarte mit Gebührenstaffel und Fakt.
   schuetzenopoly/HandelDialog.tsx

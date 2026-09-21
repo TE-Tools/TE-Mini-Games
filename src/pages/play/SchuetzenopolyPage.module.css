@@ -25,12 +25,32 @@
   color: var(--color-text-muted);
 }
 
+/*
+ * Nur die Spielansicht darf breiter sein als die übrigen Spielseiten.
+ *
+ * `PlayShell.page` deckelt bei 32rem (512 Punkte) -- das gilt für alle
+ * Spiele und soll so bleiben. Ein Brett mit vierzig Feldern im Kreis braucht
+ * dort aber mehr: Bei 512 blieben auch am Rechner 42 Punkte je Feld übrig,
+ * und das Brett musste selbst auf einem großen Bildschirm geschoben werden.
+ */
+.breiteSeite {
+  max-width: 46rem;
+}
+
 .spielflaeche {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
   width: 100%;
-  max-width: 520px;
+  /*
+   * Breiter als vorher.
+   *
+   * Bei 520 Punkten blieben auch am Rechner nur 42 Punkte je Feld übrig, und
+   * das Brett musste selbst dort geschoben werden. Mit 720 passt es ganz auf
+   * den Schirm, mit 59 Punkten je Feld -- auf dem Telefon ändert sich nichts,
+   * da ist die Bildschirmbreite ohnehin kleiner.
+   */
+  max-width: 720px;
   margin: 0 auto;
   padding-bottom: var(--space-6);
 }
@@ -42,7 +62,8 @@
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(78px, 1fr));
+  /* 78 Punkte reichten für "10.000" und sonst nichts. */
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
   gap: var(--space-2);
 }
 
@@ -71,9 +92,17 @@
 .spielerKopf {
   font-weight: 700;
   color: var(--color-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /*
+   * Zwei Zeilen statt "Vereins…".
+   *
+   * Auf einem Telefon standen in der Mitspielerleiste drei Kacheln
+   * nebeneinander, und von "Vereinsheim" und "Festzelt-Wirt" blieb jeweils
+   * ein abgeschnittener Wortanfang übrig. Wer mitspielt, soll man lesen
+   * können; eine Zeile mehr kostet sechzehn Punkte Höhe.
+   */
+  overflow-wrap: break-word;
+  hyphens: auto;
+  line-height: 1.2;
 }
 
 .kiMarke {
@@ -92,10 +121,18 @@
 }
 
 /* --- Brettmitte --- */
+/*
+ * Die Maße hängen an `--feld`, der Feldbreite, die Brett.tsx misst.
+ *
+ * Vorher standen hier `vw`-Werte. Die beziehen sich auf das Fenster -- und
+ * seit das Brett größer sein darf als sein Fenster, sind das zwei
+ * verschiedene Dinge: Das Brett wuchs, die Schrift in seiner Mitte blieb
+ * klein.
+ */
 
 .mitteName {
   margin: 0;
-  font-size: clamp(0.75rem, 3.4vw, 1rem);
+  font-size: calc(var(--feld, 32px) * 0.5);
   font-weight: 800;
   color: #ffe9a8;
   white-space: nowrap;
@@ -110,7 +147,7 @@
 }
 
 .wuerfel {
-  font-size: clamp(1.6rem, 9vw, 3rem);
+  font-size: calc(var(--feld, 32px) * 1.5);
   line-height: 1;
   color: #fff;
   text-shadow: 0 2px 8px rgb(0 0 0 / 0.6);
@@ -118,14 +155,14 @@
 
 .mitteGeld {
   margin: 0;
-  font-size: clamp(0.7rem, 3vw, 0.95rem);
+  font-size: calc(var(--feld, 32px) * 0.44);
   color: var(--auf-brett);
   font-variant-numeric: tabular-nums;
 }
 
 .mitteRunde {
   margin: 0;
-  font-size: clamp(0.55rem, 2.4vw, 0.75rem);
+  font-size: calc(var(--feld, 32px) * 0.34);
   color: var(--auf-brett-leise);
 }
 
