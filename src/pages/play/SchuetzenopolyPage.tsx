@@ -231,11 +231,21 @@ export function SchuetzenopolyPage() {
 
   /* --------------------------------------------------------- Aktionen */
 
+  /*
+   * Beim Wechsel der Ansicht nach oben.
+   *
+   * Der Aufbaubildschirm ist länger als ein Telefon hoch ist. Wer unten auf
+   * "Partie starten" tippt, bekam danach die Seite an derselben Stelle zu
+   * sehen -- also ein halb abgeschnittenes Brett und keine Mitspielerleiste.
+   */
+  const nachOben = () => window.scrollTo({ top: 0, behavior: 'auto' })
+
   const starten = useCallback((spieler: SpielerEinrichtung[], rundenLimit: number) => {
     ergebnisGesichert.current = false
     letzterLogIndex.current = 0
     setZustand(erstellePartie({ spieler, rundenLimit }))
     setAnsicht('spiel')
+    nachOben()
   }, [])
 
   const fortsetzen = useCallback(() => {
@@ -244,6 +254,7 @@ export function SchuetzenopolyPage() {
     letzterLogIndex.current = fortsetzbar.protokoll.length
     setZustand(fortsetzbar)
     setAnsicht('spiel')
+    nachOben()
   }, [fortsetzbar])
 
   const anwenden = useCallback((f: (s: SpielZustand) => SpielZustand) => {
@@ -301,8 +312,8 @@ export function SchuetzenopolyPage() {
         <Kopf onZurueck={() => navigate('/')} ton={ton} onTon={tonUmschalten} />
         <section className={shell.section}>
           <p className={styles.willkommen}>
-            Kauf dir die schönsten Schützenfeste Deutschlands, bau Festzelte und
-            Königshäuser, kassier Standgeld – und schieß am Stand um Gold.
+            Kauf dir die schönsten Schützenfeste Deutschlands, bau Festzelte und Königshäuser,
+            kassier Standgeld – und schieß am Stand um Gold.
           </p>
           {fortsetzbar && (
             <button type="button" className={shell.primaryBtn} onClick={fortsetzen}>
@@ -400,7 +411,7 @@ export function SchuetzenopolyPage() {
   }
 
   return (
-    <main className={shell.page}>
+    <main className={`${shell.page} ${styles.breiteSeite}`}>
       <Kopf
         onZurueck={() => setAnsicht('menue')}
         ton={ton}
