@@ -1,17 +1,8 @@
 /**
  * Das Spielbrett als 11x11-Raster.
  *
- * Jedes Feld zeigt Farbstreifen der Gruppe, Symbol, Namen, die Ausbaustufe
- * als Punkte und den Besitzer als farbigen Rand. Die Figuren stehen als
- * kleine Marken auf ihrem Feld. Antippen öffnet die Feldkarte -- dort
- * stehen Preise, Gebühren und alles Übrige.
- *
- * Größe und Lesbarkeit
- * ---------------------
- * Das Brett darf größer sein als sein Fenster: Mindestmaß je Feld 56 px,
- * Zoom per Knöpfe und per Pinch. Das aktive Feld wird zentriert. Lange
- * Namen erscheinen nur in Kurzform auf dem Brett; die volle Bezeichnung
- * steht in der Feldkarte.
+ * Der Feldring ist dick, die grüne Mitte klein. Standard ist das ganze
+ * Brett im Fenster -- Zoomen bleibt optional über + / Pinch.
  */
 
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
@@ -40,7 +31,6 @@ interface BrettProps {
   besitz: Record<string, Besitz>
   spieler: Spieler[]
   aktiverSpielerId: string
-  /** Feld, das gerade hervorgehoben wird (Ziel der Bewegung). */
   hervorgehoben: number | null
   onFeldTippen: (feld: BrettFeld) => void
   children?: React.ReactNode
@@ -88,7 +78,6 @@ const Feld = memo(function Feld({
       aria-label={`${feld.name}${besitz?.besitzerId ? ', im Besitz' : ''}`}
       data-seite={seite}
       data-position={feld.position}
-      data-lang={anzeige.length > 9 ? 'ja' : undefined}
     >
       {farbe && (
         <span className={styles.streifen} style={{ background: farbe }} aria-hidden="true" />
@@ -130,7 +119,6 @@ export function Brett({
   const farbeJeSpieler = new Map(spieler.map((s) => [s.id, figur(s.figurId).farbe]))
   const rahmenRef = useRef<HTMLDivElement | null>(null)
   const fensterRef = useRef<HTMLDivElement | null>(null)
-  /** null heißt: Zoom noch nicht manuell gewählt. */
   const [zoom, setZoom] = useState<number | null>(null)
   const [fensterBreite, setFensterBreite] = useState(0)
   const pinchRef = useRef<{ startAbstand: number; startZoom: number } | null>(null)
@@ -148,6 +136,7 @@ export function Brett({
 
   const stufe = zoom ?? (fensterBreite > 0 ? standardZoom(fensterBreite) : 1)
   const brettBreite = fensterBreite > 0 ? fensterBreite * stufe : 0
+  const geschoben = stufe > ZOOM_MIN + 0.01
 
   useLayoutEffect(() => {
     const el = rahmenRef.current
@@ -175,22 +164,16 @@ export function Brett({
     hervorgehoben ?? spieler.find((s) => s.id === aktiverSpielerId)?.position ?? null
 
   useEffect(() => {
+    if (!geschoben) return
     if (aktivePosition === null || brettBreite <= 0) return
     zeigeFeld(aktivePosition)
-  }, [aktivePosition, brettBreite, zeigeFeld])
+  }, [aktivePosition, brettBreite, zeigeFeld, geschoben])
 
-  const setzeZoom = useCallback(
-    (neu: number) => {
-      const begrenzt = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(neu * 20) / 20))
-      setZoom(begrenzt)
-      if (aktivePosition !== null) {
-        window.setTimeout(() => zeigeFeld(aktivePosition), 60)
-      }
-    },
-    [aktivePosition, zeigeFeld],
-  )
+  const setzeZoom = useCallback((neu: number) => {
+    const begrenzt = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(neu * 20) / 20))
+    setZoom(begrenzt)
+  }, [])
 
-  // Pinch-to-Zoom auf dem Brettfenster.
   useEffect(() => {
     const el = fensterRef.current
     if (!el) return
@@ -231,9 +214,6 @@ export function Brett({
       el.removeEventListener('touchcancel', onEnd)
     }
   }, [stufe, setzeZoom])
-
-  const feldPx = brettBreite > 0 ? Math.round(feldGroesse(brettBreite)) : 0
-  const geschoben = stufe > ZOOM_MIN + 0.01
 
   return (
     <div className={styles.rahmen} ref={rahmenRef}>
@@ -296,10 +276,9 @@ export function Brett({
           +
         </button>
         <span className={styles.zoomMass} aria-live="polite">
-          {feldPx > 0 ? `${feldPx} px` : ''}
+          {geschoben ? 'Ausschnitt' : 'Ganzes Brett'}
         </span>
       </div>
-      <p className={styles.zoomHinweis}>Zwei Finger zum Zoomen · schieben zum Bewegen</p>
     </div>
   )
 }
