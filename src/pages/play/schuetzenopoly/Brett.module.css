@@ -1,41 +1,31 @@
 /*
- * Das Brett ist immer quadratisch. Es darf aber breiter sein als sein
- * Fenster -- dann wird geschoben.
+ * Dicker Feldring, kleine grüne Mitte.
  *
- * Warum: Eine Brettkante besteht aus neun Feldern und zwei Ecken zu je 1,35
- * Feldbreiten. Auf einem 360 Punkte breiten Telefon blieben davon 26 Punkte
- * je Feld übrig, und darin stand ein Name in fünf Punkt Schrift, abgeschnitten
- * nach acht Zeichen. Das lässt sich mit Typografie nicht retten; vierzig
- * Felder im Kreis brauchen Platz. Also bekommen sie ihn.
- *
- * Alle Maße darin hängen an `--feld`, der gemessenen Feldbreite in Punkten,
- * die Brett.tsx setzt. Vorher standen hier `vw`-Werte -- die meinen das
- * Fenster, und das ist seit dieser Änderung etwas anderes als das Brett.
+ * Raster: 3fr | 9×1fr | 3fr -- die Mitte ist 60 % der Kante statt 77 %.
+ * Standard ist das ganze Brett im Fenster, ohne Schieben.
  */
 
 .rahmen {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  --feld: 24px;
 }
 
 .fenster {
-  overflow: auto;
+  overflow: hidden;
   overscroll-behavior: contain;
-  /* Wischen schiebt; Pinch wird in JS gehandhabt. */
   touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
   border-radius: var(--radius-lg);
-  /* Mehr Brettfläche auf dem Handy: fast volle Breite und genug Höhe. */
   width: 100%;
-  height: min(100vw, calc(100dvh - 250px));
-  max-height: min(100vw, calc(100dvh - 250px));
+  aspect-ratio: 1;
+  max-height: min(100vw, calc(100dvh - 240px));
   background: #0e2317;
 }
 
 .fenster[data-geschoben='ja'] {
-  /* Ein angeschnittenes Brett soll man auch sehen: leichter Schatten an den
-     Rändern, damit klar ist, dass es weitergeht. */
+  overflow: auto;
   box-shadow:
     inset 12px 0 12px -12px rgb(0 0 0 / 0.45),
     inset -12px 0 12px -12px rgb(0 0 0 / 0.45);
@@ -51,14 +41,10 @@
   border-radius: 3px;
 }
 
-.rahmen {
-  --feld: 32px;
-}
-
 .brett {
   display: grid;
-  grid-template-columns: 1.35fr repeat(9, 1fr) 1.35fr;
-  grid-template-rows: 1.35fr repeat(9, 1fr) 1.35fr;
+  grid-template-columns: 3fr repeat(9, 1fr) 3fr;
+  grid-template-rows: 3fr repeat(9, 1fr) 3fr;
   gap: 2px;
   width: 100%;
   aspect-ratio: 1;
@@ -75,9 +61,9 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: calc(var(--feld) * 0.02);
+  gap: 1px;
   overflow: hidden;
-  padding: calc(var(--feld) * 0.24) 1px calc(var(--feld) * 0.04);
+  padding: 2px 1px;
   border: 1px solid #9a8f74;
   border-radius: 5px;
   background: linear-gradient(180deg, #fffdf6, #efe8d5);
@@ -85,23 +71,25 @@
   font-family: inherit;
   line-height: 1.05;
   cursor: pointer;
+  min-width: 0;
+  min-height: 0;
   transition: transform var(--transition-fast);
 }
 
 .feld:active {
-  transform: scale(0.94);
+  transform: scale(0.96);
 }
 
 .ecke {
   background: linear-gradient(180deg, #fff7dd, #f0d98f);
   border-color: var(--color-gold-deep);
-  padding-top: calc(var(--feld) * 0.1);
 }
 
 .aktiv {
   outline: 3px solid var(--color-gold);
   outline-offset: -3px;
   animation: pochen 900ms ease-in-out infinite;
+  z-index: 2;
 }
 
 @keyframes pochen {
@@ -122,19 +110,41 @@
 
 .streifen {
   position: absolute;
+  background-clip: padding-box;
+  border: 1px solid rgb(0 0 0 / 0.25);
+}
+
+.feld[data-seite='unten'] .streifen {
   inset: 0 0 auto 0;
-  height: calc(var(--feld) * 0.22);
+  height: 22%;
   border-radius: 4px 4px 0 0;
-  border-bottom: 1px solid rgb(0 0 0 / 0.3);
+}
+
+.feld[data-seite='oben'] .streifen {
+  inset: auto 0 0 0;
+  height: 22%;
+  border-radius: 0 0 4px 4px;
+}
+
+.feld[data-seite='links'] .streifen {
+  inset: 0 0 0 auto;
+  width: 18%;
+  border-radius: 0 4px 4px 0;
+}
+
+.feld[data-seite='rechts'] .streifen {
+  inset: 0 auto 0 0;
+  width: 18%;
+  border-radius: 4px 0 0 4px;
 }
 
 .icon {
-  font-size: calc(var(--feld) * 0.34);
+  font-size: clamp(10px, calc(var(--feld) * 0.42), 22px);
   line-height: 1;
 }
 
 .name {
-  font-size: calc(var(--feld) * 0.2);
+  font-size: clamp(8px, calc(var(--feld) * 0.28), 13px);
   font-weight: 700;
   text-align: center;
   width: 100%;
@@ -143,24 +153,55 @@
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
   hyphens: auto;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 
 .feld[data-seite='oben'] .name,
 .feld[data-seite='unten'] .name {
   -webkit-line-clamp: 3;
   line-clamp: 3;
+  font-size: clamp(8px, calc(var(--feld) * 0.26), 12px);
 }
 
-.feld[data-lang='ja'] .name {
-  font-size: calc(var(--feld) * 0.165);
-  letter-spacing: -0.02em;
+.feld[data-seite='oben'],
+.feld[data-seite='unten'] {
+  padding-top: 4px;
+  padding-bottom: 18%;
+}
+
+.feld[data-seite='oben'] {
+  padding-top: 18%;
+  padding-bottom: 4px;
+}
+
+.feld[data-seite='links'],
+.feld[data-seite='rechts'] {
+  flex-direction: row;
+  gap: 2px;
+  padding: 1px 18%;
+}
+
+.feld[data-seite='rechts'] {
+  flex-direction: row-reverse;
+}
+
+.feld[data-seite='links'] .name,
+.feld[data-seite='rechts'] .name {
+  writing-mode: horizontal-tb;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  text-align: left;
+}
+
+.feld[data-seite='links'] .icon,
+.feld[data-seite='rechts'] .icon {
+  font-size: clamp(10px, calc(var(--feld) * 0.38), 18px);
 }
 
 .stufen {
-  font-size: calc(var(--feld) * 0.18);
+  font-size: clamp(7px, calc(var(--feld) * 0.2), 11px);
   color: #7a1f1f;
   letter-spacing: 1px;
   line-height: 1;
@@ -172,16 +213,17 @@
   display: flex;
   justify-content: flex-end;
   gap: 1px;
+  pointer-events: none;
 }
 
 .figurMarke {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: calc(var(--feld) * 0.36);
-  height: calc(var(--feld) * 0.36);
+  width: clamp(12px, calc(var(--feld) * 0.42), 22px);
+  height: clamp(12px, calc(var(--feld) * 0.42), 22px);
   border-radius: 50%;
-  font-size: calc(var(--feld) * 0.2);
+  font-size: 0.65em;
   border: 1px solid rgb(0 0 0 / 0.45);
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.5);
 }
@@ -193,14 +235,14 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-2);
+  gap: 4px;
+  padding: 6px;
   text-align: center;
   overflow: hidden;
 }
 
 .mitteAussen {
-  --feld: 34px;
+  --feld: 28px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -221,7 +263,7 @@
 
 .zoomKnopf,
 .zoomGanz {
-  min-height: 48px;
+  min-height: 44px;
   padding: 0 var(--space-3);
   border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
@@ -234,7 +276,7 @@
 }
 
 .zoomKnopf {
-  min-width: 48px;
+  min-width: 44px;
   font-size: var(--text-lg);
   line-height: 1;
 }
@@ -250,46 +292,4 @@
   font-size: var(--text-xs);
   color: var(--color-text-muted);
   white-space: nowrap;
-}
-
-.zoomHinweis {
-  margin: 0;
-  text-align: center;
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-  line-height: 1.3;
-}
-
-/* Seitenfelder: senkrechte Schrift nutzt die Höhe statt der engen Breite. */
-.feld[data-seite='links'] .name,
-.feld[data-seite='rechts'] .name {
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  display: block;
-  max-height: 90%;
-  width: auto;
-  -webkit-line-clamp: unset;
-  line-clamp: unset;
-  overflow: hidden;
-  font-size: calc(var(--feld) * 0.22);
-  letter-spacing: 0.02em;
-}
-
-.feld[data-seite='links'] {
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  padding: 2px calc(var(--feld) * 0.08);
-}
-
-.feld[data-seite='rechts'] {
-  flex-direction: row-reverse;
-  align-items: center;
-  justify-content: center;
-  padding: 2px calc(var(--feld) * 0.08);
-}
-
-.feld[data-seite='links'] .icon,
-.feld[data-seite='rechts'] .icon {
-  font-size: calc(var(--feld) * 0.28);
 }
