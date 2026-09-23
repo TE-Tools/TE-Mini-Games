@@ -22,10 +22,15 @@
 .fenster {
   overflow: auto;
   overscroll-behavior: contain;
-  /* Wischen schiebt das Brett, statt die Seite zu scrollen. */
+  /* Wischen schiebt; Pinch wird in JS gehandhabt. */
   touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
   border-radius: var(--radius-lg);
+  /* Mehr Brettfläche auf dem Handy: fast volle Breite und genug Höhe. */
+  width: 100%;
+  height: min(100vw, calc(100dvh - 250px));
+  max-height: min(100vw, calc(100dvh - 250px));
+  background: #0e2317;
 }
 
 .fenster[data-geschoben='ja'] {
@@ -72,7 +77,6 @@
   justify-content: center;
   gap: calc(var(--feld) * 0.02);
   overflow: hidden;
-  /* Oben liegt der Farbstreifen; der Rest wird mittig gesetzt. */
   padding: calc(var(--feld) * 0.24) 1px calc(var(--feld) * 0.04);
   border: 1px solid #9a8f74;
   border-radius: 5px;
@@ -119,8 +123,6 @@
 .streifen {
   position: absolute;
   inset: 0 0 auto 0;
-  /* Kräftiger als vorher: Die Gruppenfarbe ist auf dem Handy das Erste, was
-     man erkennt -- lange bevor man den Namen liest. */
   height: calc(var(--feld) * 0.22);
   border-radius: 4px 4px 0 0;
   border-bottom: 1px solid rgb(0 0 0 / 0.3);
@@ -136,76 +138,25 @@
   font-weight: 700;
   text-align: center;
   width: 100%;
-  /* Zwei Zeilen statt "Reckling…": Auf einem Feld von 44 Punkten passen so
-     dreizehn Zeichen statt acht. */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  /*
-   * Erst trennen, dann umbrechen.
-   *
-   * `anywhere` allein brach "Musikzug" zu "Musikzu / g" und "Attendorn" zu
-   * "Attendo / rn". Mit `hyphens: auto` und lang="de" am Dokument setzt der
-   * Browser die Trennstriche dort, wo sie hingehören; `break-word` bleibt
-   * als Notnagel für Wörter, die auch getrennt nicht passen.
-   */
   overflow-wrap: break-word;
   hyphens: auto;
   letter-spacing: -0.01em;
 }
 
-/*
- * Die Felder an der linken und rechten Kante sind breit und flach.
- *
- * Sie sind so breit wie eine Ecke (1,35 Feldbreiten) und nur eine Feldbreite
- * hoch. Der Text wurde dort anfangs unten abgeschnitten ("München" endete
- * mitten im Buchstaben) -- nicht, weil zwei Zeilen nicht hineinpassen,
- * sondern weil Innenabstand und Symbol zu groß waren. Gerechnet auf ein
- * Feld von 44 Punkten Höhe: 8 Abstand oben, 13 Symbol, 17 für zwei Zeilen,
- * 2 unten -- vierzig. Es passt, das Symbol muss nur kleiner sein.
- */
-.feld[data-seite='links'] .name,
-.feld[data-seite='rechts'] .name {
-  font-size: calc(var(--feld) * 0.19);
-}
-
-.feld[data-seite='links'],
-.feld[data-seite='rechts'] {
-  padding-top: calc(var(--feld) * 0.2);
-}
-
-/*
- * Oben und unten ist Platz für eine dritte Zeile.
- *
- * Diese Felder sind eine Feldbreite breit und 1,35 hoch. Bei zwei Zeilen
- * stand dort "Deutscher…"; mit dreien geht auch "Deutscher Schützentag"
- * vollständig hinein. Gerechnet auf 61 Punkte Höhe: 11 Abstand, 15 Symbol,
- * 28 für drei Zeilen, 2 unten.
- */
 .feld[data-seite='oben'] .name,
 .feld[data-seite='unten'] .name {
   -webkit-line-clamp: 3;
   line-clamp: 3;
 }
 
-/*
- * Lange Namen kleiner setzen.
- *
- * "Deutscher Schützenbund" sind zweiundzwanzig Zeichen. Bei der normalen
- * Größe passen neun je Zeile, drei Zeilen reichen also knapp nicht -- auf
- * dem Brett stand "Deutsch / er / Schüt…". Eine Stufe kleiner passen elf,
- * und der Name steht ganz da.
- */
 .feld[data-lang='ja'] .name {
   font-size: calc(var(--feld) * 0.165);
   letter-spacing: -0.02em;
-}
-
-.feld[data-seite='links'] .icon,
-.feld[data-seite='rechts'] .icon {
-  font-size: calc(var(--feld) * 0.3);
 }
 
 .stufen {
@@ -215,14 +166,6 @@
   line-height: 1;
 }
 
-/*
- * Die Figuren liegen über dem Feld, nicht darunter.
- *
- * Auf den flachen Feldern an den Seiten wäre eine eigene Zeile für sie die
- * Zeile, die dem Namen fehlt. Sie sitzen deshalb als Marken in der unteren
- * Ecke und dürfen den Text ein Stück überdecken -- wo eine Figur steht, ist
- * ohnehin das Wichtigere, wer dort steht.
- */
 .figuren {
   position: absolute;
   inset: auto 1px 1px auto;
@@ -256,13 +199,6 @@
   overflow: hidden;
 }
 
-/*
- * Die Anzeige außerhalb des Bretts, wenn geschoben wird.
- *
- * Dieselben Kinder wie in der Brettmitte, nur woanders. Die Feldbreite wird
- * hier auf ein festes Maß gesetzt: Die Schrift in der Mitte wächst mit dem
- * Brett, und das wäre hier draußen zu groß.
- */
 .mitteAussen {
   --feld: 34px;
   display: flex;
@@ -277,8 +213,6 @@
   text-align: center;
 }
 
-/* --- Größe einstellen --- */
-
 .zoomLeiste {
   display: flex;
   align-items: center;
@@ -287,7 +221,7 @@
 
 .zoomKnopf,
 .zoomGanz {
-  min-height: 40px;
+  min-height: 48px;
   padding: 0 var(--space-3);
   border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
@@ -300,7 +234,7 @@
 }
 
 .zoomKnopf {
-  min-width: 44px;
+  min-width: 48px;
   font-size: var(--text-lg);
   line-height: 1;
 }
@@ -316,4 +250,46 @@
   font-size: var(--text-xs);
   color: var(--color-text-muted);
   white-space: nowrap;
+}
+
+.zoomHinweis {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  line-height: 1.3;
+}
+
+/* Seitenfelder: senkrechte Schrift nutzt die Höhe statt der engen Breite. */
+.feld[data-seite='links'] .name,
+.feld[data-seite='rechts'] .name {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  display: block;
+  max-height: 90%;
+  width: auto;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  overflow: hidden;
+  font-size: calc(var(--feld) * 0.22);
+  letter-spacing: 0.02em;
+}
+
+.feld[data-seite='links'] {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 2px calc(var(--feld) * 0.08);
+}
+
+.feld[data-seite='rechts'] {
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: center;
+  padding: 2px calc(var(--feld) * 0.08);
+}
+
+.feld[data-seite='links'] .icon,
+.feld[data-seite='rechts'] .icon {
+  font-size: calc(var(--feld) * 0.28);
 }
