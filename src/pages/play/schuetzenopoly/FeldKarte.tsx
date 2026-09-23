@@ -1,12 +1,32 @@
 /**
- * Die Feldkarte: alles, was auf dem winzigen Brettfeld keinen Platz hat --
- * Veranstaltung, Gruppe, Preis, Gebührenstaffel, Besitzer, Ausbau.
+ * Die Feldkarte – eine Besitzkarte, wie sie beim Brettspiel auf dem Tisch
+ * liegt.
  *
- * Hier steht auch der recherchierte Satz zur echten Veranstaltung. Wer
- * spielt, soll nebenbei etwas über die Feste erfahren; wer nachschlägt,
- * soll nichts Falsches finden.
+ * Thomas am 23.09.2026: "die Karten sollen ein bisschen besser angezeigt
+ * werden, nicht ganz so gequetscht, sondern sehr klein aber wie wirkliche
+ * Karten, alles klein geschrieben. Und immer wenn man auf einer Karte
+ * landet, soll sie schwingend nach vorne kommen, dann kann man kaufen usw.
+ * sagen, und dann geht sie zurück, wenn man fertig ist. Dass das Spiel
+ * mittig bleibt und man sieht, wo man drauf ist und was man machen kann."
+ *
+ * Daraus folgen drei Dinge:
+ *
+ * 1. Sie sieht aus wie eine Besitzkarte: Farbfahne oben, darunter die
+ *    Gebührenstaffel in einer schmalen Spalte, ganz klein gesetzt. Vorher
+ *    war es ein Dialog mit Kacheln und großen Überschriften -- viel Fläche
+ *    für wenig Inhalt, und die Staffel musste sich trotzdem quetschen.
+ * 2. Sie schwingt herein, statt zu erscheinen: Sie kippt um ihre Unterkante
+ *    nach vorn, wie eine Karte, die jemand auf den Tisch legt und aufstellt.
+ *    Beim Schließen kippt sie zurück.
+ * 3. Sie trägt, was man tun kann. Wer auf einem freien Feld landet, kauft
+ *    auf der Karte -- nicht in einer Leiste weiter unten, wo nicht steht,
+ *    worum es geht.
+ *
+ * Der Hintergrund bleibt absichtlich hell abgedunkelt: Das Brett soll
+ * durchscheinen, damit man sieht, wo die eigene Figur steht.
  */
 
+import { useEffect } from 'react'
 import {
   AUSBAU_FAKTOR,
   AUSBAU_NAMEN,
@@ -32,6 +52,10 @@ import styles from './FeldKarte.module.css'
 interface FeldKarteProps {
   feld: BrettFeld
   zustand: SpielZustand
+  /** Läuft die Karte gerade zurück? Dann spielt die Rückwärtsbewegung. */
+  geht?: boolean
+  /** Was man auf diesem Feld tun kann -- Kaufen, Stehen lassen, Weiter. */
+  aktionen?: React.ReactNode
   onSchliessen: () => void
 }
 
@@ -42,7 +66,12 @@ const ART_TEXT: Record<string, string> = {
   volksfest: 'Volksfest',
 }
 
-export function FeldKarte({ feld, zustand, onSchliessen }: FeldKarteProps) {
+/** Zahlen auf der Karte: immer mit Tausenderpunkt, nie mit Währungswort. */
+function zahl(n: number): string {
+  return Math.round(n).toLocaleString('de-DE')
+}
+
+export function FeldKarte({ feld, zustand, geht, aktionen, onSchliessen }: FeldKarteProps) {
   const feldId = feld.grundstueckId
   const besitz = feldId ? zustand.besitz[feldId] : undefined
   const besitzer = besitz?.besitzerId ? spielerMit(zustand, besitz.besitzerId) : null
@@ -51,97 +80,103 @@ export function FeldKarte({ feld, zustand, onSchliessen }: FeldKarteProps) {
   const komplett = feldId && istGrundstueck(feldId) ? gruppeKomplett(zustand, feldId) : false
   const gruppenFaktor = komplett ? (gr?.premium ? GRUPPEN_FAKTOR_PREMIUM : GRUPPEN_FAKTOR) : 1
 
+  // Mit der Escape-Taste geht die Karte zurück wie mit dem Knopf.
+  useEffect(() => {
+    const taste = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onSchliessen()
+    }
+    window.addEventListener('keydown', taste)
+    return () => window.removeEventListener('keydown', taste)
+  }, [onSchliessen])
+
   return (
-    <div className={styles.hintergrund} onClick={onSchliessen} role="presentation">
-      <div
-        className={styles.karte}
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-label={feld.name}
-      >
-        {gr && <span className={styles.kopfstreifen} style={{ background: gr.farbe }} />}
+    <div
+      className={`${styles.hintergrund} ${geht ? styles.hintergrundGeht : ''}`}
+      onClick={onSchliessen}
+      role="presentation"
+    >
+      <div className={styles.buehne}>
+        <article
+          className={`${styles.karte} ${geht ? styles.karteGeht : ''}`}
+          onClick={(e) => e.stopPropagation()}
+          role="dialog"
+          aria-label={feld.name}
+        >
+          <header className={styles.fahne} style={gr ? { background: gr.farbe } : undefined}>
+            <span className={styles.art}>
+              {g ? (ART_TEXT[g.art] ?? 'Veranstaltung') : feldArt(feld)}
+            </span>
+            <h3 className={styles.titel}>{g?.stadt ?? feld.name}</h3>
+            {g && <span className={styles.veranstaltung}>{g.veranstaltung}</span>}
+          </header>
 
-        <header className={styles.kopf}>
-          <span className={styles.icon} aria-hidden="true">
-            {feld.icon}
-          </span>
-          <div>
-            <h3 className={styles.titel}>{g?.veranstaltung ?? feld.name}</h3>
-            {g && (
-              <p className={styles.unterzeile}>
-                {ART_TEXT[g.art] ?? 'Veranstaltung'} · {gr?.name}
-              </p>
-            )}
-          </div>
-        </header>
-
-        {g && <p className={styles.fakt}>{g.fakt}</p>}
-
-        {feldId && besitz && (
-          <>
-            <dl className={styles.werte}>
-              <div>
-                <dt>Kaufpreis</dt>
-                <dd>{kaufpreis(feldId).toLocaleString('de-DE')} 🪙</dd>
-              </div>
-              {istGrundstueck(feldId) && (
-                <div>
-                  <dt>Ausbau je Stufe</dt>
-                  <dd>{baukosten(feldId).toLocaleString('de-DE')} 🪙</dd>
-                </div>
-              )}
-              <div>
-                <dt>Besitzer</dt>
-                <dd>{besitzer ? besitzer.name : 'noch frei'}</dd>
-              </div>
-              {istGrundstueck(feldId) && (
-                <div>
-                  <dt>Ausbaustufe</dt>
-                  <dd>{AUSBAU_NAMEN[besitz.stufe]}</dd>
-                </div>
-              )}
-            </dl>
-
-            {istGrundstueck(feldId) && g && (
-              <table className={styles.tabelle}>
-                <caption className={styles.tabellenTitel}>
-                  Gebühren{komplett ? ' (Gruppe komplett)' : ''}
-                </caption>
+          {feldId && besitz && istGrundstueck(feldId) && g && (
+            <>
+              <table className={styles.staffel}>
+                {/*
+                  Die Überschrift ist nötig, nicht Zierde: Die erste Zeile
+                  der Staffel heißt "Grundstück" (also unbebaut), und unten
+                  steht der Kaufpreis. Ohne "Standgeld" darüber standen
+                  zweimal dieselben Wörter für zwei verschiedene Zahlen.
+                */}
+                <caption className={styles.staffelTitel}>Standgeld</caption>
                 <tbody>
                   {AUSBAU_NAMEN.map((name, stufe) => (
                     <tr key={name} className={besitz.stufe === stufe ? styles.aktuell : undefined}>
                       <th scope="row">{name}</th>
                       <td>
-                        {Math.round(
-                          g.grundgebuehr * AUSBAU_FAKTOR[stufe as 0 | 1 | 2 | 3 | 4] * gruppenFaktor,
-                        ).toLocaleString('de-DE')}{' '}
-                        🪙
+                        {zahl(
+                          g.grundgebuehr *
+                            AUSBAU_FAKTOR[stufe as 0 | 1 | 2 | 3 | 4] *
+                            gruppenFaktor,
+                        )}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            )}
+              {komplett && <p className={styles.notiz}>Gruppe komplett – Gebühren erhöht.</p>}
+              <dl className={styles.fuss}>
+                <div>
+                  <dt>Kaufpreis</dt>
+                  <dd>{zahl(kaufpreis(feldId))}</dd>
+                </div>
+                <div>
+                  <dt>Ausbau je Stufe</dt>
+                  <dd>{zahl(baukosten(feldId))}</dd>
+                </div>
+              </dl>
+            </>
+          )}
 
-            {istSonderfeld(feldId) && (
-              <table className={styles.tabelle}>
-                <caption className={styles.tabellenTitel}>Gebühr nach Anzahl im Besitz</caption>
+          {feldId && besitz && istSonderfeld(feldId) && (
+            <>
+              <table className={styles.staffel}>
+                <caption className={styles.staffelTitel}>Standgeld</caption>
                 <tbody>
                   {SONDERFELD_GEBUEHR.slice(1).map((betrag, i) => (
                     <tr key={i}>
                       <th scope="row">
-                        {i + 1} Feld{i > 0 ? 'er' : ''}
+                        {i + 1} Feld{i > 0 ? 'er' : ''} im Besitz
                       </th>
-                      <td>{betrag.toLocaleString('de-DE')} 🪙</td>
+                      <td>{zahl(betrag)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            )}
+              <dl className={styles.fuss}>
+                <div>
+                  <dt>Kaufpreis</dt>
+                  <dd>{zahl(kaufpreis(feldId))}</dd>
+                </div>
+              </dl>
+            </>
+          )}
 
-            {istVerband(feldId) && (
-              <table className={styles.tabelle}>
-                <caption className={styles.tabellenTitel}>Gebühr nach Würfelsumme</caption>
+          {feldId && besitz && istVerband(feldId) && (
+            <>
+              <table className={styles.staffel}>
+                <caption className={styles.staffelTitel}>Standgeld</caption>
                 <tbody>
                   <tr>
                     <th scope="row">Ein Verband</th>
@@ -153,18 +188,69 @@ export function FeldKarte({ feld, zustand, onSchliessen }: FeldKarteProps) {
                   </tr>
                 </tbody>
               </table>
-            )}
-          </>
-        )}
+              <dl className={styles.fuss}>
+                <div>
+                  <dt>Kaufpreis</dt>
+                  <dd>{zahl(kaufpreis(feldId))}</dd>
+                </div>
+              </dl>
+            </>
+          )}
 
-        {!feldId && <p className={styles.fakt}>{beschreibeSonderfeld(feld)}</p>}
+          {feldId && besitz && (
+            <p className={styles.besitzZeile}>
+              {besitzer ? (
+                <>
+                  Im Besitz von <strong>{besitzer.name}</strong>
+                  {istGrundstueck(feldId) && besitz.stufe > 0 && ` · ${AUSBAU_NAMEN[besitz.stufe]}`}
+                </>
+              ) : (
+                'Noch frei'
+              )}
+            </p>
+          )}
 
-        <button type="button" className={styles.schliessen} onClick={onSchliessen}>
-          Schließen
-        </button>
+          {!feldId && <p className={styles.sonderText}>{beschreibeSonderfeld(feld)}</p>}
+
+          {g && <p className={styles.fakt}>{g.fakt}</p>}
+
+          <div className={styles.aktionen}>
+            {aktionen}
+            <button type="button" className={styles.schliessen} onClick={onSchliessen}>
+              {aktionen ? 'Karte weglegen' : 'Schließen'}
+            </button>
+          </div>
+        </article>
       </div>
     </div>
   )
+}
+
+/** Die Zeile über dem Namen, wenn es kein Grundstück ist. */
+function feldArt(feld: BrettFeld): string {
+  switch (feld.typ) {
+    case 'start':
+      return 'Festplatz'
+    case 'strafbank':
+    case 'zur_strafbank':
+      return 'Strafbank'
+    case 'freies_fest':
+      return 'Freies Fest'
+    case 'ereignis':
+      return 'Ereigniskarte'
+    case 'vereinskarte':
+      return 'Vereinskarte'
+    case 'minispiel':
+      return 'Schießstand'
+    case 'sonderfeld':
+      // Die vier Umzüge stehen an der Stelle, an der klassische Bretter
+      // Bahnhöfe haben. "Feld" stand hier vorher, und das sagt nichts.
+      return 'Umzug'
+    case 'verband':
+      return 'Verband'
+    default:
+      return 'Feld'
+  }
 }
 
 function beschreibeSonderfeld(feld: BrettFeld): string {

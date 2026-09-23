@@ -35,6 +35,32 @@ neun Feldern und zwei Ecken zu je 1,35 Feldbreiten; auf einem Telefon blieben
 davon 26 Punkte je Feld und fünf Punkte Schriftgröße übrig, und die Namen
 standen abgeschnitten da. Vierzig Felder im Kreis geben das nicht her.
 
+### Die Besitzkarte (seit 23.09.2026)
+
+Auf dem Brettfeld steht nur, was auf einen Daumennagel passt. Alles andere
+steht auf der Besitzkarte -- und die wird wie eine Karte behandelt, nicht wie
+ein Dialog:
+
+- **Sie sieht aus wie eine.** Farbfahne oben, darunter die Gebührenstaffel in
+  einer schmalen Spalte mit Punktlinien, alles in elf bis zwölf Punkt. Auf
+  einer Karte, die man in die Hand nimmt, steht nichts in Überschriftgröße.
+- **Sie schwingt herein.** Sie kippt um ihre Unterkante nach vorn, wie eine
+  Karte, die jemand auf den Tisch legt und aufstellt; beim Weglegen kippt sie
+  zurück. Der Hintergrund bleibt nur leicht abgedunkelt, damit man sieht, wo
+  die eigene Figur steht.
+- **Sie kommt von selbst.** Wer landet, bekommt sie zu sehen -- auch auf einem
+  fremden oder eigenen Feld, wo es nichts zu entscheiden gibt. Ausgenommen
+  bleibt, was schon eine eigene Anzeige hat: eine gezogene Karte, ein
+  Schießstand, eine offene Wahl.
+- **Auf ihr wird entschieden.** Kaufen und Stehenlassen stehen auf der Karte,
+  nicht in einer Leiste darunter. Vorher entschied man über etwas, das man
+  gerade nicht sah. Wer sie weglegt, ohne zu entscheiden, holt sie mit einem
+  Knopf in der Leiste zurück.
+
+`tests/schuetzenopoly-feldkarte.test.tsx` hält fest, dass wirklich alles
+darauf steht: die fünf Ausbaustufen, Kaufpreis und Ausbaukosten, Stadt,
+Veranstaltung und der Fakt.
+
 Deshalb gilt jetzt: Ein Feld ist mindestens 44 Punkte breit -- das übliche
 Maß für etwas, das man mit dem Finger trifft. Reicht der Platz nicht, wird
 das Brett größer als sein Fenster und geschoben; der Ausschnitt folgt von
@@ -71,7 +97,8 @@ src/pages/play/
   schuetzenopoly/brettPositionen.ts  Wo welches Feld im Raster liegt und wie
                                      groß es sein muss.
   schuetzenopoly/Minispiele.tsx Die drei Schießstände.
-  schuetzenopoly/FeldKarte.tsx  Die Feldkarte mit Gebührenstaffel und Fakt.
+  schuetzenopoly/FeldKarte.tsx  Die Besitzkarte: Staffel, Fakt und die
+                                Entscheidung dazu.
   schuetzenopoly/HandelDialog.tsx
   schuetzenopoly/Aktionen.tsx   Bauen und Kartenauswahl.
   schuetzenopoly/Spielaufbau.tsx
@@ -92,18 +119,18 @@ Objekt (`SpielZustand`). Kein verstecktes Wissen in Closures, keine Klassen
 mit Innenleben, jede Funktion nimmt einen Zustand und gibt einen neuen
 zurück.
 
-| Struktur | Was sie hält |
-|---|---|
-| `SpielZustand` | Phase, Spieler, Besitz, Würfel, Runde, Kartenstapel, Protokoll, Zufallszähler |
-| `Spieler` | Name, Mensch/KI, Rolle, Figur, Taler, Position, Strafbank, Handkarten, Einmal-Zähler, Statistik |
-| `Besitz` | Feld-ID, Position, Besitzer, Ausbaustufe, Schutzfrist |
-| `GrundstueckDaten` | Stadt, Veranstaltung, Art, Gruppe, Preis, Grundgebühr, geprüfte Aussage |
-| `GruppeDaten` | Name, Farbe, Baukosten, Premium-Kennzeichen |
-| `BrettFeld` | Position, Typ, Name, Symbol, Feld-ID, kaufbar |
-| `Karte` | Stapel, Titel, Text, `KartenWirkung` |
-| `RollenDaten` | Name, Beschreibung, `RollenBonus` |
-| `Handelsangebot` | Wer, an wen, welche Felder, welche Taler auf beiden Seiten |
-| `MinispielDaten` | Name, Anleitung, Punktschwellen für Bronze/Silber/Gold |
+| Struktur           | Was sie hält                                                                                    |
+| ------------------ | ----------------------------------------------------------------------------------------------- |
+| `SpielZustand`     | Phase, Spieler, Besitz, Würfel, Runde, Kartenstapel, Protokoll, Zufallszähler                   |
+| `Spieler`          | Name, Mensch/KI, Rolle, Figur, Taler, Position, Strafbank, Handkarten, Einmal-Zähler, Statistik |
+| `Besitz`           | Feld-ID, Position, Besitzer, Ausbaustufe, Schutzfrist                                           |
+| `GrundstueckDaten` | Stadt, Veranstaltung, Art, Gruppe, Preis, Grundgebühr, geprüfte Aussage                         |
+| `GruppeDaten`      | Name, Farbe, Baukosten, Premium-Kennzeichen                                                     |
+| `BrettFeld`        | Position, Typ, Name, Symbol, Feld-ID, kaufbar                                                   |
+| `Karte`            | Stapel, Titel, Text, `KartenWirkung`                                                            |
+| `RollenDaten`      | Name, Beschreibung, `RollenBonus`                                                               |
+| `Handelsangebot`   | Wer, an wen, welche Felder, welche Taler auf beiden Seiten                                      |
+| `MinispielDaten`   | Name, Anleitung, Punktschwellen für Bronze/Silber/Gold                                          |
 
 **Der Zufall gehört in den Zustand.** `seed` plus `rngZaehler` ergeben jeden
 Wurf reproduzierbar. Das hat drei Folgen, die alle wichtig sind: Ein
@@ -113,7 +140,7 @@ Server dieselbe Engine fahren, ohne dass der Client den Zufall kennt.
 
 Eine Nebenfolge, die eine bewusste Entscheidung ist: Die KI zieht ihre
 kleinen Launen (kauft sie dieses Feld oder nicht?) aus einem abgeleiteten
-Wert, der den Zähler *nicht* weiterdreht. Sonst würfelte eine Partie anders,
+Wert, der den Zähler _nicht_ weiterdreht. Sonst würfelte eine Partie anders,
 nur weil ein Rechner zwischendurch überlegt hat.
 
 ## 4. Das Spielbrett
@@ -121,18 +148,18 @@ nur weil ein Rechner zwischendurch überlegt hat.
 40 Felder: 22 Grundstücke, 4 Sonderfelder, 2 Verbandsfelder, 4 Ecken,
 3 Ereignis-, 3 Vereinskarten- und 2 Minispielfelder.
 
-| Pos | Feld | Pos | Feld | Pos | Feld | Pos | Feld |
-|-----|------|-----|------|-----|------|-----|------|
-| 0 | 🏠 **START** | 10 | 🚧 **Strafbank** | 20 | 🎉 **Freies Fest** | 30 | ⛔ **Zur Strafbank** |
-| 1 | Kevelaer | 11 | Sassenberg | 21 | Cloppenburg | 31 | M.gladbach |
-| 2 | 📜 Ereignis | 12 | 🎯 Schießsportverband | 22 | 🤝 Vereinskarte | 32 | München |
-| 3 | Grevenbroich | 13 | Recklinghausen | 23 | Vechta | 33 | 📜 Ereignis |
-| 4 | Krefeld | 14 | Werl | 24 | Lohne | 34 | Düsseldorf |
-| 5 | 🎪 Festzug | 15 | 🥁 Schützenumzug | 25 | 🎺 Musikzug | 35 | 👑 Königsfahrt |
-| 6 | Attendorn | 16 | Soest | 26 | Celle | 36 | 🤝 Vereinskarte |
-| 7 | 🤝 Vereinskarte | 17 | 📜 Ereignis | 27 | Wolfsburg | 37 | **Neuss** |
-| 8 | Iserlohn | 18 | Paderborn | 28 | 🏆 Deutscher Schützenbund | 38 | 🎯 Schießstand |
-| 9 | Olpe | 19 | 🎯 Schießstand | 29 | Peine | 39 | **Hannover** |
+| Pos | Feld            | Pos | Feld                  | Pos | Feld                      | Pos | Feld                 |
+| --- | --------------- | --- | --------------------- | --- | ------------------------- | --- | -------------------- |
+| 0   | 🏠 **START**    | 10  | 🚧 **Strafbank**      | 20  | 🎉 **Freies Fest**        | 30  | ⛔ **Zur Strafbank** |
+| 1   | Kevelaer        | 11  | Sassenberg            | 21  | Cloppenburg               | 31  | M.gladbach           |
+| 2   | 📜 Ereignis     | 12  | 🎯 Schießsportverband | 22  | 🤝 Vereinskarte           | 32  | München              |
+| 3   | Grevenbroich    | 13  | Recklinghausen        | 23  | Vechta                    | 33  | 📜 Ereignis          |
+| 4   | Krefeld         | 14  | Werl                  | 24  | Lohne                     | 34  | Düsseldorf           |
+| 5   | 🎪 Festzug      | 15  | 🥁 Schützenumzug      | 25  | 🎺 Musikzug               | 35  | 👑 Königsfahrt       |
+| 6   | Attendorn       | 16  | Soest                 | 26  | Celle                     | 36  | 🤝 Vereinskarte      |
+| 7   | 🤝 Vereinskarte | 17  | 📜 Ereignis           | 27  | Wolfsburg                 | 37  | **Neuss**            |
+| 8   | Iserlohn        | 18  | Paderborn             | 28  | 🏆 Deutscher Schützenbund | 38  | 🎯 Schießstand       |
+| 9   | Olpe            | 19  | 🎯 Schießstand        | 29  | Peine                     | 39  | **Hannover**         |
 
 Die Gruppen liegen bewusst nicht am Stück: Zwischen dem ersten und letzten
 Feld jeder Gruppe liegt immer mindestens ein fremdes Feld. Ein Test prüft
@@ -152,20 +179,20 @@ Königsfahrt. Auch das prüft ein Test.
 
 Alles steht in `config.ts`. Nichts anderes rechnet mit eingetippten Zahlen.
 
-| Größe | Wert |
-|---|---|
-| Startkapital | 10.000 🪙 |
-| START-Bonus | 2.000 🪙 |
-| Freies Fest | +500 🪙 |
-| Strafbank freikaufen | 750 🪙 |
-| Grundstückspreise | 400 – 3.500 🪙 |
-| Grundgebühr | rund 7 % des Preises |
-| Ausbaufaktor je Stufe | ×1, ×5, ×13, ×28, ×45 |
-| Gruppenbonus | ×1,5 (Königsklasse ×2) |
-| Sonderfelder | 250 / 500 / 1.000 / 2.000 🪙 |
-| Verbandsfelder | Würfelsumme ×4, mit beiden ×10 |
-| Minispiel | Bronze 500, Silber 1.500, Gold 3.000 🪙 |
-| Rundenlimit | 20 (einstellbar 5–60) |
+| Größe                 | Wert                                    |
+| --------------------- | --------------------------------------- |
+| Startkapital          | 10.000 🪙                               |
+| START-Bonus           | 2.000 🪙                                |
+| Freies Fest           | +500 🪙                                 |
+| Strafbank freikaufen  | 750 🪙                                  |
+| Grundstückspreise     | 400 – 3.500 🪙                          |
+| Grundgebühr           | rund 7 % des Preises                    |
+| Ausbaufaktor je Stufe | ×1, ×5, ×13, ×28, ×45                   |
+| Gruppenbonus          | ×1,5 (Königsklasse ×2)                  |
+| Sonderfelder          | 250 / 500 / 1.000 / 2.000 🪙            |
+| Verbandsfelder        | Würfelsumme ×4, mit beiden ×10          |
+| Minispiel             | Bronze 500, Silber 1.500, Gold 3.000 🪙 |
+| Rundenlimit           | 20 (einstellbar 5–60)                   |
 
 **Die Formel, die man vorlesen können soll:**
 `Gebühr = Grundgebühr × Ausbaufaktor × Gruppenfaktor`
@@ -178,11 +205,11 @@ hoch baute, gewann fast immer. Die gewählte Kurve liegt dazwischen.
 
 **Zwei Regeln, die nicht offensichtlich sind, aber viel tragen:**
 
-*Bauen nur mit kompletter Gruppe, und gleichmäßig.* Ohne diese Regeln
+_Bauen nur mit kompletter Gruppe, und gleichmäßig._ Ohne diese Regeln
 gewinnt, wer zufällig früh auf dem teuersten Feld stand. Mit ihnen wird
 Sammeln und Handeln zur eigentlichen Aufgabe.
 
-*Vermögen zählt Besitz zum vollen Preis.* Daraus folgt etwas, das erst beim
+_Vermögen zählt Besitz zum vollen Preis._ Daraus folgt etwas, das erst beim
 Simulieren auffiel: Taler in Grundstücke umzuwandeln kostet nichts – es
 bringt sogar, weil Besitz Gebühren einträgt. Eine große Barreserve ist also
 kein vorsichtiges Spiel, sondern ein schlechtes. Die KI-Stufen sind darauf
@@ -210,11 +237,11 @@ darin, wie weit sie denken:
 
 Gemessen über 200 Partien mit je einem Gegner jeder Stufe (Zufall wäre 66,7):
 
-| Stufe | Siege von 200 |
-|---|---|
-| Leicht | 47 |
-| Normal | 76 |
-| Schwer | 77 |
+| Stufe  | Siege von 200 |
+| ------ | ------------- |
+| Leicht | 47            |
+| Normal | 76            |
+| Schwer | 77            |
 
 Eine echte, aber nicht erdrückende Rangfolge. Genau das war das Ziel: Die
 schwere KI soll ein Gegner sein, kein Hindernis.
