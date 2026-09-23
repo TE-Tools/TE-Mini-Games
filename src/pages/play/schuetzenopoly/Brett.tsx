@@ -8,22 +8,10 @@
  *
  * Größe und Lesbarkeit
  * ---------------------
- * Thomas am 21.09.2026: "die Felder sind auf einem Handy zu klein". Das war
- * nachrechenbar: Auf 360 Punkten Bildschirmbreite blieben 26 Punkte je Feld
- * und fünf Punkte Schriftgröße. Ein Brett, das immer ganz auf den Schirm
- * passt, kann nicht anders -- vierzig Felder im Kreis geben das nicht her.
- *
- * Deshalb darf das Brett jetzt breiter sein als sein Fenster: Es startet so
- * groß, dass ein Feld mindestens 44 Punkte misst (das übliche Maß für
- * etwas, das man mit dem Finger trifft), und wird geschoben. Zwei Knöpfe
- * ändern die Größe, ein dritter zeigt wieder das ganze Brett. Wohin
- * gescrollt wird, entscheidet das Spiel selbst: Das Feld, auf dem gerade
- * etwas passiert, wird von allein in die Mitte geholt.
- *
- * Alle Maße auf dem Feld hängen an `--feld`, der gemessenen Feldbreite in
- * Punkten. Vorher standen dort `vw`-Werte -- die beziehen sich auf das
- * Fenster und waren damit falsch, sobald das Brett größer wurde als das
- * Fenster.
+ * Das Brett darf größer sein als sein Fenster: Mindestmaß je Feld 56 px,
+ * Zoom per Knöpfe und per Pinch. Das aktive Feld wird zentriert. Lange
+ * Namen erscheinen nur in Kurzform auf dem Brett; die volle Bezeichnung
+ * steht in der Feldkarte.
  */
 
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
@@ -39,6 +27,7 @@ import {
 import {
   ZOOM_MAX,
   ZOOM_MIN,
+  brettKurzname,
   feldGroesse,
   kante,
   rasterplatz,
@@ -83,6 +72,7 @@ const Feld = memo(function Feld({
   const farbe = farbeVon(feld)
   const seite = kante(feld.position)
   const istEcke = feld.position % 10 === 0
+  const anzeige = brettKurzname(feld.name)
 
   return (
     <button
@@ -98,9 +88,7 @@ const Feld = memo(function Feld({
       aria-label={`${feld.name}${besitz?.besitzerId ? ', im Besitz' : ''}`}
       data-seite={seite}
       data-position={feld.position}
-      // Lange Namen bekommen eine kleinere Schrift, sonst bleibt von
-      // "Deutscher Schützenbund" nur "Deutsch / er / Schüt…" übrig.
-      data-lang={feld.name.length > 16 ? 'ja' : undefined}
+      data-lang={anzeige.length > 9 ? 'ja' : undefined}
     >
       {farbe && (
         <span className={styles.streifen} style={{ background: farbe }} aria-hidden="true" />
@@ -108,7 +96,7 @@ const Feld = memo(function Feld({
       <span className={styles.icon} aria-hidden="true">
         {feld.icon}
       </span>
-      <span className={styles.name}>{feld.name}</span>
+      <span className={styles.name}>{anzeige}</span>
       {besitz && besitz.stufe > 0 && (
         <span className={styles.stufen} aria-hidden="true">
           {'▪'.repeat(besitz.stufe)}
@@ -142,11 +130,11 @@ export function Brett({
   const farbeJeSpieler = new Map(spieler.map((s) => [s.id, figur(s.figurId).farbe]))
   const rahmenRef = useRef<HTMLDivElement | null>(null)
   const fensterRef = useRef<HTMLDivElement | null>(null)
-  /** null heißt: Das Fenster ist noch nicht gemessen. */
+  /** null heißt: Zoom noch nicht manuell gewählt. */
   const [zoom, setZoom] = useState<number | null>(null)
   const [fensterBreite, setFensterBreite] = useState(0)
+  const pinchRef = useRef<{ startAbstand: number; startZoom: number } | null>(null)
 
-  // Das Fenster messen -- daraus folgt, wie groß das Brett anfangs sein muss.
   useLayoutEffect(() => {
     const el = fensterRef.current
     if (!el) return
@@ -158,28 +146,15 @@ export function Brett({
     return () => beobachter.disconnect()
   }, [])
 
-  /*
-   * Solange niemand an der Größe gedreht hat, ergibt sie sich aus der
-   * Messung -- abgeleitet, nicht gespeichert. `null` heißt "noch nicht
-   * gewählt"; sobald der Spieler einen Knopf drückt, gilt seine Wahl.
-   */
   const stufe = zoom ?? (fensterBreite > 0 ? standardZoom(fensterBreite) : 1)
   const brettBreite = fensterBreite > 0 ? fensterBreite * stufe : 0
 
-  /*
-   * Die Feldbreite als CSS-Variable.
-   *
-   * Damit hängen Schrift, Symbol und Figurenmarken an der wirklichen Größe
-   * des Feldes und nicht an der Fensterbreite. Sobald das Brett größer ist
-   * als sein Fenster, sind das zwei verschiedene Dinge.
-   */
   useLayoutEffect(() => {
     const el = rahmenRef.current
     if (!el || brettBreite <= 0) return
     el.style.setProperty('--feld', `${feldGroesse(brettBreite).toFixed(2)}px`)
   }, [brettBreite])
 
-  /** Das Feld, auf dem gerade etwas passiert, in die Mitte holen. */
   const zeigeFeld = useCallback((position: number) => {
     const fenster = fensterRef.current
     if (!fenster) return
@@ -204,16 +179,61 @@ export function Brett({
     zeigeFeld(aktivePosition)
   }, [aktivePosition, brettBreite, zeigeFeld])
 
-  const setzeZoom = (neu: number) => {
-    setZoom(neu)
-    if (aktivePosition !== null) {
-      // Nach dem Umschalten wieder dorthin, wo gespielt wird.
-      window.setTimeout(() => zeigeFeld(aktivePosition), 60)
+  const setzeZoom = useCallback(
+    (neu: number) => {
+      const begrenzt = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(neu * 20) / 20))
+      setZoom(begrenzt)
+      if (aktivePosition !== null) {
+        window.setTimeout(() => zeigeFeld(aktivePosition), 60)
+      }
+    },
+    [aktivePosition, zeigeFeld],
+  )
+
+  // Pinch-to-Zoom auf dem Brettfenster.
+  useEffect(() => {
+    const el = fensterRef.current
+    if (!el) return
+
+    const abstand = (a: Touch, b: Touch) => {
+      const dx = a.clientX - b.clientX
+      const dy = a.clientY - b.clientY
+      return Math.hypot(dx, dy)
     }
-  }
+
+    const onStart = (e: TouchEvent) => {
+      if (e.touches.length !== 2) return
+      pinchRef.current = {
+        startAbstand: abstand(e.touches[0], e.touches[1]),
+        startZoom: stufe,
+      }
+    }
+    const onMove = (e: TouchEvent) => {
+      if (e.touches.length !== 2 || !pinchRef.current) return
+      e.preventDefault()
+      const jetzt = abstand(e.touches[0], e.touches[1])
+      if (pinchRef.current.startAbstand < 8) return
+      const faktor = jetzt / pinchRef.current.startAbstand
+      setzeZoom(pinchRef.current.startZoom * faktor)
+    }
+    const onEnd = () => {
+      pinchRef.current = null
+    }
+
+    el.addEventListener('touchstart', onStart, { passive: true })
+    el.addEventListener('touchmove', onMove, { passive: false })
+    el.addEventListener('touchend', onEnd, { passive: true })
+    el.addEventListener('touchcancel', onEnd, { passive: true })
+    return () => {
+      el.removeEventListener('touchstart', onStart)
+      el.removeEventListener('touchmove', onMove)
+      el.removeEventListener('touchend', onEnd)
+      el.removeEventListener('touchcancel', onEnd)
+    }
+  }, [stufe, setzeZoom])
 
   const feldPx = brettBreite > 0 ? Math.round(feldGroesse(brettBreite)) : 0
-  const geschoben = stufe > ZOOM_MIN
+  const geschoben = stufe > ZOOM_MIN + 0.01
 
   return (
     <div className={styles.rahmen} ref={rahmenRef}>
@@ -227,7 +247,6 @@ export function Brett({
           {BRETT.map((feld) => {
             const b = feld.grundstueckId ? besitz[feld.grundstueckId] : undefined
             const figuren = spieler.filter((s) => !s.insolvent && s.position === feld.position)
-            // Der Spieler am Zug steht vorn, damit man ihn nicht sucht.
             figuren.sort((a, b2) =>
               a.id === aktiverSpielerId ? -1 : b2.id === aktiverSpielerId ? 1 : 0,
             )
@@ -243,21 +262,10 @@ export function Brett({
               />
             )
           })}
-          {/*
-            Solange das ganze Brett zu sehen ist, steht die Anzeige in seiner
-            Mitte -- so, wie bei einem Brettspiel auf dem Tisch.
-          */}
           {!geschoben && <div className={styles.mitte}>{children}</div>}
         </div>
       </div>
 
-      {/*
-        Sobald geschoben wird, wandert sie heraus.
-
-        Die Mitte des Bretts ist dann nur noch halb zu sehen -- der Ausschnitt
-        folgt der Figur, und die steht am Rand. Würfel und Kassenstand wären
-        also genau dann abgeschnitten, wenn man sie braucht.
-      */}
       {geschoben && <div className={styles.mitteAussen}>{children}</div>}
 
       <div className={styles.zoomLeiste}>
@@ -288,9 +296,10 @@ export function Brett({
           +
         </button>
         <span className={styles.zoomMass} aria-live="polite">
-          {feldPx > 0 ? `${feldPx} px je Feld` : ''}
+          {feldPx > 0 ? `${feldPx} px` : ''}
         </span>
       </div>
+      <p className={styles.zoomHinweis}>Zwei Finger zum Zoomen · schieben zum Bewegen</p>
     </div>
   )
 }
