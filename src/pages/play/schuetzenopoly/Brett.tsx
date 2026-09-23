@@ -3,6 +3,13 @@
  *
  * Der Feldring ist dick, die grüne Mitte klein. Standard ist das ganze
  * Brett im Fenster -- Zoomen bleibt optional über + / Pinch.
+ *
+ * Wem ein Feld gehört, sagt ein Farbband an seiner Außenkante -- innen liegt
+ * schon der Gruppenstreifen. Auf einem Telefon ist ein Feld knapp 28 Punkte
+ * groß; eine Figur wäre darin bloß ein Fleck, deshalb kommt sie erst dazu,
+ * wenn hineingezoomt wurde und das Feld sie tragen kann. Die Farbe ist
+ * dieselbe wie in der Mitspielerleiste, und wer es genau wissen will, tippt
+ * das Feld an: Auf der Karte stehen Farbe, Figur und Name.
  */
 
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
@@ -46,14 +53,17 @@ function farbeVon(feld: BrettFeld): string | null {
 const Feld = memo(function Feld({
   feld,
   besitz,
-  besitzerFarbe,
+  besitzer,
+  besitzFigur,
   figuren,
   hervorgehoben,
   onTippen,
 }: {
   feld: BrettFeld
   besitz: Besitz | undefined
-  besitzerFarbe: string | null
+  besitzer: Spieler | null
+  /** Ist das Feld groß genug, um die Figur des Besitzers zu tragen? */
+  besitzFigur: boolean
   figuren: Spieler[]
   hervorgehoben: boolean
   onTippen: () => void
@@ -63,6 +73,7 @@ const Feld = memo(function Feld({
   const seite = kante(feld.position)
   const istEcke = feld.position % 10 === 0
   const anzeige = brettKurzname(feld.name)
+  const marke = besitzer ? figur(besitzer.figurId) : null
 
   return (
     <button
@@ -71,16 +82,29 @@ const Feld = memo(function Feld({
       style={{
         gridRow: platz.zeile,
         gridColumn: platz.spalte,
-        borderColor: besitzerFarbe ?? undefined,
-        borderWidth: besitzerFarbe ? 2 : undefined,
+        borderColor: marke?.farbe ?? undefined,
+        borderWidth: marke ? 2 : undefined,
       }}
       onClick={onTippen}
-      aria-label={`${feld.name}${besitz?.besitzerId ? ', im Besitz' : ''}`}
+      aria-label={`${feld.name}${besitzer ? `, gehört ${besitzer.name}` : ''}`}
       data-seite={seite}
       data-position={feld.position}
     >
       {farbe && (
         <span className={styles.streifen} style={{ background: farbe }} aria-hidden="true" />
+      )}
+      {marke && besitzer && (
+        <span
+          className={styles.besitzBand}
+          style={{ background: marke.farbe }}
+          aria-hidden="true"
+          title={besitzer.name}
+        />
+      )}
+      {marke && besitzer && besitzFigur && (
+        <span className={styles.besitzFigur} style={{ background: marke.farbe }} aria-hidden="true">
+          {marke.icon}
+        </span>
       )}
       <span className={styles.icon} aria-hidden="true">
         {feld.icon}
@@ -116,7 +140,7 @@ export function Brett({
   onFeldTippen,
   children,
 }: BrettProps) {
-  const farbeJeSpieler = new Map(spieler.map((s) => [s.id, figur(s.figurId).farbe]))
+  const spielerJeId = new Map(spieler.map((s) => [s.id, s]))
   const rahmenRef = useRef<HTMLDivElement | null>(null)
   const fensterRef = useRef<HTMLDivElement | null>(null)
   const [zoom, setZoom] = useState<number | null>(null)
@@ -137,6 +161,9 @@ export function Brett({
   const stufe = zoom ?? (fensterBreite > 0 ? standardZoom(fensterBreite) : 1)
   const brettBreite = fensterBreite > 0 ? fensterBreite * stufe : 0
   const geschoben = stufe > ZOOM_MIN + 0.01
+  // Erst ab dieser Feldgröße trägt ein Feld die Figur des Besitzers, ohne
+  // dass sie zum Fleck wird. Gemessen: 28 Punkte zu klein, 40 reichen.
+  const besitzFigur = brettBreite > 0 && feldGroesse(brettBreite) >= 40
 
   useLayoutEffect(() => {
     const el = rahmenRef.current
@@ -244,7 +271,8 @@ export function Brett({
                 key={feld.position}
                 feld={feld}
                 besitz={b}
-                besitzerFarbe={b?.besitzerId ? (farbeJeSpieler.get(b.besitzerId) ?? null) : null}
+                besitzer={b?.besitzerId ? (spielerJeId.get(b.besitzerId) ?? null) : null}
+                besitzFigur={besitzFigur}
                 figuren={figuren}
                 hervorgehoben={hervorgehoben === feld.position}
                 onTippen={() => onFeldTippen(feld)}

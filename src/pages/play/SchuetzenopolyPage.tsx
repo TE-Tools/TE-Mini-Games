@@ -61,7 +61,7 @@ import { trySyncNow } from '@/services/remoteSync'
 import { spielerNameOderDu } from '@/services/spielername'
 import { spiele, setzeTon, tonAn, vibriere } from '@/services/sound'
 import { Brett } from './schuetzenopoly/Brett'
-import { FeldKarte } from './schuetzenopoly/FeldKarte'
+import { FeldKarte, type KartenAktion } from './schuetzenopoly/FeldKarte'
 import { HandelDialog } from './schuetzenopoly/HandelDialog'
 import { Minispiel } from './schuetzenopoly/Minispiele'
 import { Spielaufbau } from './schuetzenopoly/Spielaufbau'
@@ -72,6 +72,24 @@ import styles from './SchuetzenopolyPage.module.css'
 /** Wie lange die Figur je Feld braucht und wie lange die KI „überlegt". */
 const SCHRITT_MS = 90
 const KI_PAUSE_MS = 550
+/*
+ * Der Zug des Rechners auf der Karte.
+ *
+ * Thomas am 23.09.2026: "auch bei KI-Gegner Karte hochkommen lassen und
+ * Animation, welcher Button gedrückt wird."
+ *
+ * Also dieselbe Karte wie beim Menschen, nur bedient sie sich selbst:
+ * erst Lesezeit, dann drückt der Rechner sichtbar einen Knopf, dann
+ * schwingt die Karte zurück und erst danach greift der Zug. Wer zusieht,
+ * soll mitbekommen, was der Gegner gekauft hat -- und nicht nur die Zeile
+ * im Protokoll hinterher lesen.
+ */
+const KI_LESEN_MS = 850
+const KI_DRUECKT_MS = 430
+/** Wie lange der eigene Knopf gedrückt aussieht, bevor die Karte zurückgeht. */
+const DRUCK_MS = 180
+/** Dieselbe Dauer wie die Rückwärtsbewegung in FeldKarte.module.css. */
+const KARTE_ZURUECK_MS = 220
 
 type Ansicht = 'laden' | 'menue' | 'aufbau' | 'spiel'
 
@@ -85,14 +103,79 @@ export function SchuetzenopolyPage() {
   const [feldKarte, setFeldKarte] = useState<BrettFeld | null>(null)
   /** Schwingt die Karte gerade zurück? Dann bleibt sie noch kurz stehen. */
   const [karteGeht, setKarteGeht] = useState(false)
+  /** Welcher Knopf auf der Karte gerade gedrückt wird -- meiner oder der des Rechners. */
+  const [gedrueckt, setGedrueckt] = useState<string | null>(null)
   const [handelOffen, setHandelOffen] = useState(false)
   const [bauOffen, setBauOffen] = useState(false)
   const [laufPosition, setLaufPosition] = useState<number | null>(null)
   const [ton, setTonAn] = useState(tonAn())
   /** Der jeweils letzte Spielzustand -- für Aufrufe aus Zeitgebern heraus. */
   const zustandMerker = useRef<SpielZustand | null>(null)
+  /** Verzögerte Schritte. Wer die Seite verlässt, soll sie nicht nachholen. */
+  const zeitgeber = useRef<number[]>([])
   const ergebnisGesichert = useRef(false)
   const letzterLogIndex = useRef(0)
+
+  /**
+   * Ein Schritt später -- und er verfällt, wenn die Seite verlassen wird.
+   *
+   * Karte, Knopfdruck und Zug hängen zeitlich aneinander; ein
+   * liegengebliebener Zeitgeber würde in eine schon beendete Partie
+   * hineingreifen.
+   */
+  const spaeter = useCallback((tun: () => void, ms: number) => {
+    const id = window.setTimeout(() => {
+      zeitgeber.current = zeitgeber.current.filter((x) => x !== id)
+      tun()
+    }, ms)
+    zeitgeber.current.push(id)
+  }, [])
+
+  useEffect(
+    () => () => {
+      for (const id of zeitgeber.current) window.clearTimeout(id)
+      zeitgeber.current = []
+    },
+    [],
+  )
+
+  /*
+   * Die Karte zurücklegen -- und erst danach handeln.
+   *
+   * Das Kaufen ändert den Spielzustand, und mit ihm wäre die Karte in
+   * demselben Bild verschwunden. Also erst die Rückwärtsbewegung, dann der
+   * Zug. Die Dauer ist dieselbe wie in FeldKarte.module.css; läuft sie dort
+   * einmal anders, sieht man hier höchstens ein Zucken.
+   */
+  const karteZurueck = useCallback(
+    (danach?: () => void) => {
+      setKarteGeht(true)
+      spaeter(() => {
+        setKarteGeht(false)
+        setGedrueckt(null)
+        setFeldKarte(null)
+        danach?.()
+      }, KARTE_ZURUECK_MS)
+    },
+    [spaeter],
+  )
+
+  /**
+   * Einen Knopf auf der Karte drücken.
+   *
+   * Der Druck ist kurz zu sehen, bevor die Karte zurückschwingt -- beim
+   * Menschen als Bestätigung, beim Rechner als das Einzige, was von seiner
+   * Entscheidung zu sehen ist. Deshalb geht beides denselben Weg.
+   */
+  const knopfDruck = useCallback(
+    (id: string, danach: () => void) => {
+      setGedrueckt(id)
+      spiele('knopf')
+      vibriere(15)
+      spaeter(() => karteZurueck(danach), DRUCK_MS)
+    },
+    [karteZurueck, spaeter],
+  )
 
   /* ------------------------------------------------------------- Laden */
 
@@ -158,10 +241,13 @@ export function SchuetzenopolyPage() {
     if (!alt || alt.phase !== 'bewegen') return
     const neu = ankommen(alt)
     setZustand(neu)
-    const spieler = aktiverSpieler(neu)
-    if (spieler.typ === 'mensch' && !neu.offenesMinispiel && !neu.offeneKarte && !neu.offeneWahl) {
+    // Auch beim Rechner: Man soll sehen, wo er gelandet ist und was er
+    // dort entscheidet. Ausgenommen bleibt, was schon eine eigene Anzeige
+    // hat -- gezogene Karte, Schießstand, offene Wahl.
+    if (!neu.offenesMinispiel && !neu.offeneKarte && !neu.offeneWahl) {
       setKarteGeht(false)
-      setFeldKarte(feldAn(spieler.position))
+      setGedrueckt(null)
+      setFeldKarte(feldAn(aktiverSpieler(neu).position))
     }
   }, [])
 
@@ -196,6 +282,34 @@ export function SchuetzenopolyPage() {
     if (!zustand || zustand.phase === 'ende' || zustand.phase === 'bewegen') return
     const spieler = aktiverSpieler(zustand)
     if (spieler.typ !== 'ki') return
+
+    /*
+     * Liegt die Karte des Rechners auf dem Tisch, hat sie Vorrang.
+     *
+     * Erst Lesezeit, dann drückt er seinen Knopf sichtbar, dann geht die
+     * Karte zurück und erst danach greift der Zug -- sonst wäre die Karte
+     * im selben Bild verschwunden, in dem der Kauf sie verändert hat.
+     * Steht dort nichts zu entscheiden, geht sie nach der Lesezeit zurück
+     * und der gewohnte Weg unten übernimmt.
+     */
+    if (feldKarte) {
+      const uhr = window.setTimeout(() => {
+        const jetzt = zustandMerker.current
+        if (!jetzt || jetzt.phase === 'ende' || aktiverSpieler(jetzt).typ !== 'ki') return
+        const schritt = kiSchritt(jetzt)
+        if (schritt.aktion === 'kaufen' || schritt.aktion === 'ablehnen') {
+          setGedrueckt(schritt.aktion)
+          spiele('knopf')
+          spaeter(() => {
+            karteZurueck(() => setZustand(schritt.state))
+          }, KI_DRUECKT_MS)
+        } else {
+          karteZurueck()
+        }
+      }, KI_LESEN_MS)
+      return () => window.clearTimeout(uhr)
+    }
+
     // Ein Minispiel der KI wird nicht gespielt, sondern ausgewürfelt --
     // sonst müsste ein Mensch für den Rechner zielen.
     const uhr = window.setTimeout(() => {
@@ -206,7 +320,7 @@ export function SchuetzenopolyPage() {
       })
     }, KI_PAUSE_MS)
     return () => window.clearTimeout(uhr)
-  }, [zustand])
+  }, [zustand, feldKarte, karteZurueck, spaeter])
 
   /* ------------------------------------------------------- Speichern */
 
@@ -295,23 +409,6 @@ export function SchuetzenopolyPage() {
 
   const anwenden = useCallback((f: (s: SpielZustand) => SpielZustand) => {
     setZustand((alt) => (alt ? f(alt) : alt))
-  }, [])
-
-  /*
-   * Die Karte zurücklegen -- und erst danach handeln.
-   *
-   * Das Kaufen ändert den Spielzustand, und mit ihm wäre die Karte in
-   * demselben Bild verschwunden. Also erst die Rückwärtsbewegung, dann der
-   * Zug. Die Dauer ist dieselbe wie in FeldKarte.module.css; läuft sie dort
-   * einmal anders, sieht man hier höchstens ein Zucken.
-   */
-  const karteZurueck = useCallback((danach?: () => void) => {
-    setKarteGeht(true)
-    window.setTimeout(() => {
-      setKarteGeht(false)
-      setFeldKarte(null)
-      danach?.()
-    }, 220)
   }, [])
 
   const wuerfelKlick = useCallback(() => {
@@ -462,6 +559,35 @@ export function SchuetzenopolyPage() {
       </main>
     )
   }
+
+  /*
+   * Die Knöpfe auf der Karte.
+   *
+   * Dieselben Knöpfe für Mensch und Rechner -- nur bekommt der Rechner
+   * keinen `onKlick`, dann sind sie zu sehen, aber nicht zu bedienen. So
+   * sieht man beim Zug des Gegners, worüber er entscheidet, ohne für ihn
+   * entscheiden zu können.
+   */
+  const kaufKarte =
+    feldKarte && zustand.kaufAngebot && zustand.kaufAngebot.position === feldKarte.position
+      ? zustand.kaufAngebot
+      : null
+  const kartenAktionen: KartenAktion[] | undefined = kaufKarte
+    ? [
+        {
+          id: 'kaufen',
+          text: `Kaufen · ${kaufKarte.preis.toLocaleString('de-DE')} 🪙`,
+          haupt: true,
+          gesperrt: aktiv.taler < kaufKarte.preis,
+          onKlick: mensch ? () => knopfDruck('kaufen', () => anwenden(kaufen)) : undefined,
+        },
+        {
+          id: 'ablehnen',
+          text: 'Stehen lassen',
+          onKlick: mensch ? () => knopfDruck('ablehnen', () => anwenden(kaufAblehnen)) : undefined,
+        },
+      ]
+    : undefined
 
   return (
     <main className={`${shell.page} ${styles.breiteSeite}`}>
@@ -719,23 +845,19 @@ export function SchuetzenopolyPage() {
           feld={feldKarte}
           zustand={zustand}
           geht={karteGeht}
-          aktionen={
-            mensch && zustand.kaufAngebot && zustand.kaufAngebot.position === feldKarte.position ? (
-              <>
-                <button
-                  type="button"
-                  data-haupt="ja"
-                  disabled={aktiv.taler < zustand.kaufAngebot.preis}
-                  onClick={() => karteZurueck(() => anwenden(kaufen))}
-                >
-                  Kaufen · {zustand.kaufAngebot.preis.toLocaleString('de-DE')} 🪙
-                </button>
-                <button type="button" onClick={() => karteZurueck(() => anwenden(kaufAblehnen))}>
-                  Stehen lassen
-                </button>
-              </>
-            ) : undefined
+          gedrueckt={gedrueckt}
+          akteur={
+            // Nur beim Rechner: Sonst stünde auf der eigenen Karte, dass man
+            // selbst hier steht -- das sieht man auf dem Brett.
+            mensch
+              ? undefined
+              : {
+                  name: aktiv.name,
+                  icon: figur(aktiv.figurId).icon,
+                  farbe: figur(aktiv.figurId).farbe,
+                }
           }
+          aktionen={kartenAktionen}
           onSchliessen={() => karteZurueck()}
         />
       )}

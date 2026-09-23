@@ -24,6 +24,19 @@
  *
  * Der Hintergrund bleibt absichtlich hell abgedunkelt: Das Brett soll
  * durchscheinen, damit man sieht, wo die eigene Figur steht.
+ *
+ * Thomas am 23.09.2026, nachgereicht: "bitte kleines Farbsymbol, wem welche
+ * Karte gehört, damit man Bescheid weiß. Und auch bei KI-Gegnern Karte
+ * hochkommen lassen und Animation, welcher Button gedrückt wird."
+ *
+ * Daher zwei weitere Dinge:
+ *
+ * 4. Die Besitzzeile trägt die Farbe und die Figur des Besitzers -- dieselbe
+ *    Marke wie auf dem Brett. Ein Name allein verlangt, dass man sich merkt,
+ *    wer welche Farbe hat.
+ * 5. Die Knöpfe sind Daten, kein fertiger Baum. Nur so kann die Seite sagen,
+ *    welcher gerade gedrückt wird -- und das gilt für den Menschen wie für
+ *    den Rechner, der seinen Knopf selbst drückt, während man zusieht.
  */
 
 import { useEffect } from 'react'
@@ -36,6 +49,7 @@ import {
   VERBAND_FAKTOR_BEIDE,
   VERBAND_FAKTOR_EINER,
   baukosten,
+  figur,
   grundstueck,
   gruppe,
   gruppeKomplett,
@@ -49,13 +63,41 @@ import {
 } from '@/games/schuetzenopoly'
 import styles from './FeldKarte.module.css'
 
+/**
+ * Ein Knopf auf der Karte.
+ *
+ * Absichtlich Daten und kein fertiges JSX: Die Karte muss einen Knopf auch
+ * dann als gedrückt zeigen können, wenn ihn niemand angetippt hat -- beim
+ * Zug des Rechners. Ohne `onKlick` ist der Knopf nur zu sehen, nicht zu
+ * bedienen; so schaut man der KI zu, ohne für sie entscheiden zu können.
+ */
+export interface KartenAktion {
+  id: string
+  text: string
+  /** Der gemeinte Knopf -- golden statt hell. */
+  haupt?: boolean
+  gesperrt?: boolean
+  onKlick?: () => void
+}
+
+/** Wer gerade auf dem Feld steht. Steht nur auf der Karte, wenn es nicht man selbst ist. */
+export interface KartenAkteur {
+  name: string
+  icon: string
+  farbe: string
+}
+
 interface FeldKarteProps {
   feld: BrettFeld
   zustand: SpielZustand
   /** Läuft die Karte gerade zurück? Dann spielt die Rückwärtsbewegung. */
   geht?: boolean
   /** Was man auf diesem Feld tun kann -- Kaufen, Stehen lassen, Weiter. */
-  aktionen?: React.ReactNode
+  aktionen?: KartenAktion[]
+  /** Welcher Knopf gerade gedrückt wird -- der eigene oder der des Rechners. */
+  gedrueckt?: string | null
+  /** Der Rechner, dem die Karte gerade vorgelegt wird. */
+  akteur?: KartenAkteur
   onSchliessen: () => void
 }
 
@@ -71,7 +113,15 @@ function zahl(n: number): string {
   return Math.round(n).toLocaleString('de-DE')
 }
 
-export function FeldKarte({ feld, zustand, geht, aktionen, onSchliessen }: FeldKarteProps) {
+export function FeldKarte({
+  feld,
+  zustand,
+  geht,
+  aktionen,
+  gedrueckt,
+  akteur,
+  onSchliessen,
+}: FeldKarteProps) {
   const feldId = feld.grundstueckId
   const besitz = feldId ? zustand.besitz[feldId] : undefined
   const besitzer = besitz?.besitzerId ? spielerMit(zustand, besitz.besitzerId) : null
@@ -201,6 +251,17 @@ export function FeldKarte({ feld, zustand, geht, aktionen, onSchliessen }: FeldK
             <p className={styles.besitzZeile}>
               {besitzer ? (
                 <>
+                  {/*
+                    Dieselbe Marke wie auf dem Brett: Farbe und Figur. Ein Name
+                    allein verlangt, dass man sich merkt, wer welche Farbe hat.
+                  */}
+                  <span
+                    className={styles.besitzMarke}
+                    style={{ background: figur(besitzer.figurId).farbe }}
+                    aria-hidden="true"
+                  >
+                    {figur(besitzer.figurId).icon}
+                  </span>
                   Im Besitz von <strong>{besitzer.name}</strong>
                   {istGrundstueck(feldId) && besitz.stufe > 0 && ` · ${AUSBAU_NAMEN[besitz.stufe]}`}
                 </>
@@ -214,10 +275,46 @@ export function FeldKarte({ feld, zustand, geht, aktionen, onSchliessen }: FeldK
 
           {g && <p className={styles.fakt}>{g.fakt}</p>}
 
-          <div className={styles.aktionen}>
-            {aktionen}
+          {/*
+            Beim Zug des Rechners sind die Knöpfe gesperrt -- man soll ihm
+            zusehen, nicht für ihn entscheiden. Blass wie ein unerreichbarer
+            Knopf sollen sie deshalb trotzdem nicht aussehen; das regelt
+            `data-fremd` in der CSS.
+          */}
+          <div className={styles.aktionen} data-fremd={akteur ? 'ja' : undefined}>
+            {akteur && (
+              <p className={styles.amZug}>
+                <span
+                  className={styles.besitzMarke}
+                  style={{ background: akteur.farbe }}
+                  aria-hidden="true"
+                >
+                  {akteur.icon}
+                </span>
+                {aktionen?.length ? `${akteur.name} entscheidet …` : `${akteur.name} steht hier.`}
+              </p>
+            )}
+            {aktionen?.map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                data-haupt={a.haupt ? 'ja' : undefined}
+                /*
+                 * Der gedrückte Knopf bleibt sichtbar gedrückt, bis die Karte
+                 * zurückgeschwungen ist -- sonst wäre beim Zug des Rechners
+                 * nie zu sehen, wofür er sich entschieden hat. Als Merkmal
+                 * und nicht als Klasse, damit auch ein Test danach greifen
+                 * kann; die Gestaltung hängt in der CSS daran.
+                 */
+                data-gedrueckt={gedrueckt === a.id ? 'ja' : undefined}
+                disabled={a.gesperrt || !a.onKlick}
+                onClick={a.onKlick}
+              >
+                {a.text}
+              </button>
+            ))}
             <button type="button" className={styles.schliessen} onClick={onSchliessen}>
-              {aktionen ? 'Karte weglegen' : 'Schließen'}
+              {aktionen?.length ? 'Karte weglegen' : 'Schließen'}
             </button>
           </div>
         </article>

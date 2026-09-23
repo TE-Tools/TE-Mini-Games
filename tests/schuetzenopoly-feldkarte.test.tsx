@@ -18,6 +18,7 @@ import {
   BRETT,
   baukosten,
   erstellePartie,
+  figur,
   grundstueck,
   kaufpreis,
 } from '@/games/schuetzenopoly'
@@ -30,6 +31,12 @@ function partie() {
     ],
     rundenLimit: 20,
   })
+}
+
+/** jsdom schreibt Farben als rgb() zurück, nicht als Hexwert. */
+function alsRgb(hex: string): string {
+  const n = parseInt(hex.slice(1), 16)
+  return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`
 }
 
 /** Das erste kaufbare Grundstück auf dem Brett. */
@@ -73,11 +80,7 @@ describe('Die Besitzkarte', () => {
       <FeldKarte
         feld={grundstueckFeld}
         zustand={zustand}
-        aktionen={
-          <button type="button" onClick={gekauft}>
-            Kaufen
-          </button>
-        }
+        aktionen={[{ id: 'kaufen', text: 'Kaufen', haupt: true, onKlick: gekauft }]}
         onSchliessen={() => {}}
       />,
     )
@@ -94,6 +97,57 @@ describe('Die Besitzkarte', () => {
     render(<FeldKarte feld={grundstueckFeld} zustand={zustand} onSchliessen={zu} />)
     await userEvent.keyboard('{Escape}')
     expect(zu).toHaveBeenCalled()
+  })
+
+  it('zeigt mit Farbe und Figur, wem das Feld gehört', () => {
+    const zustand = partie()
+    const id = grundstueckFeld.grundstueckId!
+    const kaeufer = zustand.spieler[1]!
+    const mitBesitzer = {
+      ...zustand,
+      besitz: { ...zustand.besitz, [id]: { ...zustand.besitz[id]!, besitzerId: kaeufer.id } },
+    }
+    render(<FeldKarte feld={grundstueckFeld} zustand={mitBesitzer} onSchliessen={() => {}} />)
+
+    const zeile = screen.getByText(/Im Besitz von/)
+    expect(zeile).toHaveTextContent(kaeufer.name)
+    // Der Name allein verlangt, dass man sich merkt, wer welche Farbe hat.
+    // Also dieselbe Marke wie auf dem Brett: Farbe und Figur.
+    const marke = zeile.querySelector('span')
+    expect(marke?.textContent).toBe(figur(kaeufer.figurId).icon)
+    expect((marke as HTMLElement).style.background).toBe(alsRgb(figur(kaeufer.figurId).farbe))
+  })
+
+  it('zeigt beim Zug des Rechners dessen Knöpfe, ohne sie freizugeben', () => {
+    const zustand = partie()
+    const rechner = zustand.spieler[1]!
+    render(
+      <FeldKarte
+        feld={grundstueckFeld}
+        zustand={zustand}
+        akteur={{
+          name: rechner.name,
+          icon: figur(rechner.figurId).icon,
+          farbe: figur(rechner.figurId).farbe,
+        }}
+        aktionen={[
+          { id: 'kaufen', text: 'Kaufen', haupt: true },
+          { id: 'ablehnen', text: 'Stehen lassen' },
+        ]}
+        gedrueckt="kaufen"
+        onSchliessen={() => {}}
+      />,
+    )
+
+    expect(screen.getByText(new RegExp(`${rechner.name} entscheidet`))).toBeInTheDocument()
+    // Zu sehen, aber nicht zu bedienen -- man schaut zu, entscheidet nicht mit.
+    const kaufen = screen.getByRole('button', { name: 'Kaufen' })
+    expect(kaufen).toBeDisabled()
+    // Und man sieht, welchen Knopf er drückt.
+    expect(kaufen).toHaveAttribute('data-gedrueckt', 'ja')
+    expect(screen.getByRole('button', { name: 'Stehen lassen' })).not.toHaveAttribute(
+      'data-gedrueckt',
+    )
   })
 
   it('erklärt auch die Felder ohne Besitzer', () => {
