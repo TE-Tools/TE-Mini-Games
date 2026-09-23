@@ -184,17 +184,26 @@ export function Brett({
       return Math.hypot(dx, dy)
     }
 
+    const zweiFinger = (e: TouchEvent): [Touch, Touch] | null => {
+      const a = e.touches.item(0)
+      const b = e.touches.item(1)
+      if (!a || !b) return null
+      return [a, b]
+    }
+
     const onStart = (e: TouchEvent) => {
-      if (e.touches.length !== 2) return
+      const paar = zweiFinger(e)
+      if (!paar) return
       pinchRef.current = {
-        startAbstand: abstand(e.touches[0], e.touches[1]),
+        startAbstand: abstand(paar[0], paar[1]),
         startZoom: stufe,
       }
     }
     const onMove = (e: TouchEvent) => {
-      if (e.touches.length !== 2 || !pinchRef.current) return
+      const paar = zweiFinger(e)
+      if (!paar || !pinchRef.current) return
       e.preventDefault()
-      const jetzt = abstand(e.touches[0], e.touches[1])
+      const jetzt = abstand(paar[0], paar[1])
       if (pinchRef.current.startAbstand < 8) return
       const faktor = jetzt / pinchRef.current.startAbstand
       setzeZoom(pinchRef.current.startZoom * faktor)
