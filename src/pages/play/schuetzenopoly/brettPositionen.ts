@@ -38,30 +38,18 @@ export function kante(position: number): 'unten' | 'links' | 'oben' | 'rechts' {
  * Wie groß ein Feld sein muss, damit man es auf dem Handy treffen und lesen
  * kann.
  *
- * Thomas am 21.09.2026: "bei Schützenopoly sind die Felder auf einem Handy
- * zu klein, bitte alles größer machen und besser sichtbar."
- *
- * Nachgemessen auf einem 360 Punkte breiten Telefon: Ein Feld war 26 breit
- * und 35 hoch, der Name darin 5 Punkte groß und auf "Reckling…" abgeschnitten.
- * Das ist keine Frage der Schriftgröße, sondern der Geometrie: Eine Brettkante
- * besteht aus neun gewöhnlichen Feldern und zwei Ecken zu je 1,35 Feldbreiten.
- * Wer Felder von 44 Punkten will -- das ist das übliche Mindestmaß für etwas,
- * das man mit dem Finger trifft --, braucht ein Brett von 515 Punkten. Auf
- * ein Telefon passt das nicht; also wird das Brett größer als der Bildschirm
- * und lässt sich schieben.
+ * 21.09.: 44 px Mindestmaß. 23.09.: immer noch zu klein und unhandlich zu
+ * zoomen -- Mindestmaß auf 56 angehoben, Zoom bis 3,2, kürzere Brettnamen.
  */
 
 /** Aus so vielen Feldbreiten besteht eine Kante: neun Felder plus zwei Ecken. */
 export const KANTEN_EINHEITEN = 9 + 2 * 1.35
 
-/** So breit soll ein gewöhnliches Feld mindestens sein. */
-export const FELD_MINDEST = 44
+/** So breit soll ein gewöhnliches Feld mindestens sein (Finger + Lesbarkeit). */
+export const FELD_MINDEST = 56
 
 /**
  * Was vom Brett keine Feldfläche ist: zehn Fügen, Innenabstand und Rand.
- *
- * Ohne diese dreißig Punkte rechnet man sich das Brett schön: Die Vorgabe
- * lautete 44, gemessen kamen 41 heraus.
  */
 export const BRETT_ZUSATZ = 30
 
@@ -80,18 +68,49 @@ export function feldGroesse(brettBreite: number): number {
 export function standardZoom(fensterBreite: number, hoechstens = ZOOM_MAX): number {
   if (!Number.isFinite(fensterBreite) || fensterBreite <= 0) return 1
   const noetig = (FELD_MINDEST * KANTEN_EINHEITEN + BRETT_ZUSATZ) / fensterBreite
-  // Auf Zwanzigstel aufgerundet, damit die Zahl nicht bei jedem Pixel
-  // wackelt -- aufgerundet, weil Abrunden das Mindestmaß knapp verfehlt
-  // (gemessen: 43,97 statt 44).
+  // Auf Zwanzigstel aufgerundet, damit die Zahl nicht bei jedem Pixel wackelt.
   return Math.min(hoechstens, Math.max(1, Math.ceil(noetig * 20) / 20))
 }
 
 export const ZOOM_MIN = 1
-export const ZOOM_MAX = 2.4
-export const ZOOM_SCHRITT = 0.2
+export const ZOOM_MAX = 3.2
+export const ZOOM_SCHRITT = 0.25
 
 /** Die nächste Stufe, sauber begrenzt. */
 export function zoomStufe(jetzt: number, richtung: 1 | -1): number {
   const neu = Math.round((jetzt + richtung * ZOOM_SCHRITT) * 20) / 20
   return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, neu))
+}
+
+/**
+ * Kurzer Name nur fürs Brett -- die volle Bezeichnung steht in der Feldkarte.
+ * Lange Wörter brachen bisher mitten im Wort um ("Musikzu g", "Attendorn n").
+ */
+const KURZ: Record<string, string> = {
+  'Deutscher Schützenbund': 'DSB',
+  Schießsportverband: 'Verband',
+  Schützenumzug: 'Umzug',
+  Vereinskarte: 'Verein',
+  'Freies Fest': 'Frei',
+  'Zur Strafbank': 'Raus',
+  Strafbank: 'Bank',
+  Schießstand: 'Stand',
+  Königsfahrt: 'König',
+  Musikzug: 'Musik',
+  Festzug: 'Zug',
+  Ereignis: 'Ereignis',
+  Cloppenburg: 'Cloppenb.',
+  Recklinghausen: 'Recklingh.',
+  Grevenbroich: 'Grevenbr.',
+  Gelsenkirchen: 'Gelsenk.',
+}
+
+export function brettKurzname(name: string): string {
+  if (KURZ[name]) return KURZ[name]
+  if (name.length <= 10) return name
+  // Wortgrenze bevorzugen, sonst hart kürzen.
+  const schnitt = name.slice(0, 9)
+  const leer = schnitt.lastIndexOf(' ')
+  if (leer >= 5) return name.slice(0, leer)
+  return schnitt.trimEnd() + '…'
 }
