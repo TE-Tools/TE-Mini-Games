@@ -1,31 +1,92 @@
+/*
+ * Die Besitzkarte.
+ *
+ * Maße wie bei einer echten Karte: schmal und hoch, alles klein gesetzt,
+ * dünne Linien statt Kacheln. Die Schrift liegt bei elf bis zwölf Punkten --
+ * auf einer Karte, die man in die Hand nimmt, steht nichts in
+ * Überschriftgröße, und trotzdem kann man alles lesen.
+ *
+ * Vorher war es ein Dialog mit Kacheln, großen Überschriften und einer
+ * Tabelle, die sich zwischen ihnen quetschen musste.
+ */
+
 .hintergrund {
   position: fixed;
   inset: 0;
   z-index: 40;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   padding: var(--space-3);
-  background: rgb(0 0 0 / 0.65);
-  animation: einblenden 160ms ease-out;
+  /* Nur leicht abgedunkelt: Das Brett soll durchscheinen, damit man sieht,
+     wo die eigene Figur steht. */
+  background: rgb(0 0 0 / 0.42);
+  animation: einblenden 200ms ease-out;
+}
+
+.hintergrundGeht {
+  animation: ausblenden 220ms ease-in forwards;
+}
+
+/* Die Bühne gibt der Karte ihre Tiefe -- ohne sie kippt nichts. */
+.buehne {
+  perspective: 1100px;
+  perspective-origin: 50% 70%;
 }
 
 .karte {
-  position: relative;
-  width: 100%;
-  max-width: 440px;
-  max-height: 85dvh;
+  width: min(82vw, 252px);
+  max-height: 86dvh;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  padding-top: var(--space-5);
-  border-radius: var(--radius-xl);
-  background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-strong);
-  box-shadow: var(--shadow-lg);
-  animation: hochschieben 200ms ease-out;
+  border-radius: 10px;
+  background: #fffdf6;
+  color: #1b2117;
+  border: 1px solid #8d8468;
+  box-shadow:
+    0 18px 40px rgb(0 0 0 / 0.5),
+    0 2px 0 rgb(255 255 255 / 0.5) inset;
+  font-size: 12px;
+  line-height: 1.35;
+  /*
+   * Sie kippt um ihre Unterkante nach vorn -- wie eine Karte, die jemand
+   * auf den Tisch legt und aufstellt.
+   */
+  transform-origin: 50% 88%;
+  animation: schwingtVor 380ms cubic-bezier(0.22, 1.2, 0.36, 1) both;
+}
+
+.karteGeht {
+  animation: schwingtZurueck 220ms ease-in forwards;
+}
+
+@keyframes schwingtVor {
+  0% {
+    transform: translateY(26px) rotateX(-82deg) scale(0.78);
+    opacity: 0;
+  }
+  55% {
+    opacity: 1;
+  }
+  70% {
+    transform: translateY(0) rotateX(7deg) scale(1.02);
+  }
+  100% {
+    transform: translateY(0) rotateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes schwingtZurueck {
+  0% {
+    transform: translateY(0) rotateX(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(22px) rotateX(-70deg) scale(0.82);
+    opacity: 0;
+  }
 }
 
 @keyframes einblenden {
@@ -34,132 +95,205 @@
   }
 }
 
-@keyframes hochschieben {
-  from {
-    transform: translateY(24px);
+@keyframes ausblenden {
+  to {
+    opacity: 0;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .hintergrund,
-  .karte {
-    animation: none;
+  .hintergrundGeht,
+  .karte,
+  .karteGeht {
+    animation-duration: 1ms;
   }
 }
 
-.kopfstreifen {
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 8px;
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+/* --- Kopf --- */
+
+.fahne {
+  padding: var(--space-2) var(--space-3) var(--space-2);
+  border-bottom: 2px solid rgb(0 0 0 / 0.55);
+  background: #c9c2ad;
+  text-align: center;
+  color: #12180f;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.35);
 }
 
-.kopf {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.icon {
-  font-size: var(--text-3xl);
+.art {
+  display: block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.8;
 }
 
 .titel {
-  margin: 0;
-  font-size: var(--text-lg);
-  color: var(--color-text);
+  margin: 1px 0 0;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+}
+
+.veranstaltung {
+  display: block;
+  margin-top: 2px;
+  font-size: 9.5px;
   line-height: 1.25;
+  opacity: 0.85;
 }
 
-.unterzeile {
-  margin: 2px 0 0;
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-}
+/* --- Gebührenstaffel --- */
 
-.fakt {
-  margin: 0;
-  padding: var(--space-3);
-  border-radius: var(--radius-sm);
-  background: var(--grad-primary-soft);
-  border-left: 3px solid var(--color-gold);
-  font-size: var(--text-sm);
-  line-height: 1.5;
-  color: var(--color-text);
-}
-
-.werte {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-2);
-  margin: 0;
-}
-
-.werte div {
-  padding: var(--space-2);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-}
-
-.werte dt {
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-}
-
-.werte dd {
-  margin: 2px 0 0;
-  font-size: var(--text-sm);
+.staffelTitel {
+  padding: var(--space-2) var(--space-3) 2px;
+  font-size: 9px;
   font-weight: 700;
-  color: var(--color-text);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6f6b58;
+  text-align: left;
 }
 
-.tabelle {
+.staffel {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--text-sm);
-}
-
-.tabellenTitel {
-  text-align: left;
-  padding-bottom: var(--space-1);
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-}
-
-.tabelle th,
-.tabelle td {
-  padding: var(--space-2);
-  border-bottom: 1px solid var(--color-border);
-  text-align: left;
-}
-
-.tabelle td {
-  text-align: right;
+  margin: 0;
   font-variant-numeric: tabular-nums;
 }
 
-.tabelle th {
-  font-weight: 500;
-  color: var(--color-text-muted);
+.staffel th,
+.staffel td {
+  padding: 3px var(--space-3);
+  font-size: 11.5px;
+  font-weight: 400;
+  text-align: left;
+  /* Punktlinie zwischen Bezeichnung und Betrag -- wie auf einer gedruckten
+     Karte, und man verrutscht nicht in der Zeile. */
+  border-bottom: 1px dotted #c8c0a6;
 }
 
-.aktuell {
-  background: var(--grad-primary-soft);
+.staffel td {
+  text-align: right;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .aktuell th,
 .aktuell td {
-  color: var(--color-gold);
-  font-weight: 700;
+  background: #fdf0c2;
+  color: #6b4a06;
+  font-weight: 800;
 }
 
+.notiz {
+  margin: 3px var(--space-3) 0;
+  font-size: 9.5px;
+  color: #6b4a06;
+}
+
+/* --- Fußwerte --- */
+
+.fuss {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px var(--space-3);
+  margin: var(--space-2) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid #ded6bd;
+  background: #f6f1e2;
+}
+
+.fuss div {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.fuss dt {
+  font-size: 10px;
+  color: #5d5a4a;
+}
+
+.fuss dd {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.besitzZeile {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid #ded6bd;
+  font-size: 11px;
+  text-align: center;
+}
+
+.sonderText,
+.fakt {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid #ded6bd;
+  font-size: 10.5px;
+  line-height: 1.45;
+  color: #4a4738;
+}
+
+.fakt {
+  font-style: italic;
+}
+
+/* --- Was man tun kann --- */
+
+.aktionen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-top: 2px solid rgb(0 0 0 / 0.5);
+  background: #efe9d8;
+}
+
+/*
+ * Die Knöpfe gehören zur Karte, nicht zur App.
+ *
+ * Die Seite reicht sie als gewöhnliche `button` herein -- CSS-Module lassen
+ * sich nicht über Dateigrenzen hinweg vergeben. Sie werden hier gestaltet,
+ * damit sie zur Karte passen und nicht wie App-Knöpfe aussehen, die zufällig
+ * darauf liegen. `data-haupt` kennzeichnet den, der gemeint ist.
+ */
+.aktionen button,
 .schliessen {
-  min-height: var(--touch-min);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border-strong);
-  background: var(--grad-surface);
-  color: var(--color-text);
-  font-size: var(--text-base);
+  min-height: 38px;
+  padding: 0 var(--space-3);
+  border-radius: 6px;
+  border: 1px solid #8d8468;
+  background: #fffdf6;
+  color: #1b2117;
+  font-size: 12px;
   font-family: inherit;
+  font-weight: 600;
   cursor: pointer;
+}
+
+.aktionen button[data-haupt='ja'] {
+  background: linear-gradient(180deg, #f3d271, #d9a92f);
+  border-color: #8a6a12;
+  color: #33240a;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.aktionen button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.aktionen button:active,
+.schliessen:active {
+  transform: scale(0.97);
 }

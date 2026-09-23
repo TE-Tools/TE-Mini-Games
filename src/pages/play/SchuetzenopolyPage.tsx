@@ -83,10 +83,14 @@ export function SchuetzenopolyPage() {
   const [spielerName, setSpielerName] = useState('Du')
 
   const [feldKarte, setFeldKarte] = useState<BrettFeld | null>(null)
+  /** Schwingt die Karte gerade zurück? Dann bleibt sie noch kurz stehen. */
+  const [karteGeht, setKarteGeht] = useState(false)
   const [handelOffen, setHandelOffen] = useState(false)
   const [bauOffen, setBauOffen] = useState(false)
   const [laufPosition, setLaufPosition] = useState<number | null>(null)
   const [ton, setTonAn] = useState(tonAn())
+  /** Der jeweils letzte Spielzustand -- für Aufrufe aus Zeitgebern heraus. */
+  const zustandMerker = useRef<SpielZustand | null>(null)
   const ergebnisGesichert = useRef(false)
   const letzterLogIndex = useRef(0)
 
@@ -125,7 +129,41 @@ export function SchuetzenopolyPage() {
     }
   }, [zustand])
 
+  // Den Merker nachführen. Er wird nur aus Zeitgebern gelesen, nie beim
+  // Zeichnen -- deshalb gehört er in einen Effekt und nicht in den Rumpf.
+  useEffect(() => {
+    zustandMerker.current = zustand
+  }, [zustand])
+
   /* --------------------------------------------- Figur laufen lassen */
+
+  /*
+   * Ankommen: das Feld auswerten und die Karte aufschlagen.
+   *
+   * Thomas am 23.09.2026: "immer wenn man auf einer Karte landet, soll sie
+   * schwingend nach vorne kommen, dann kann man kaufen usw. sagen, und dann
+   * geht sie zurück, wenn man fertig ist."
+   *
+   * Es hängt am Ende der Bewegung, nicht an der Phase danach: Auf einem
+   * eigenen oder fremden Feld steht das Spiel gleich wieder auf `zug_ende`,
+   * und auch dort will man sehen, wo man gelandet ist und was das Feld
+   * kostet. Ausgenommen bleibt, was schon eine eigene Anzeige hat -- eine
+   * gezogene Karte, ein Schießstand, eine offene Wahl.
+   */
+  const ankunft = useCallback(() => {
+    // Über den Merker und nicht über die Aktualisierungsfunktion von
+    // `setZustand`: Die muss frei von Nebenwirkungen bleiben, sonst schlüge
+    // die Karte im StrictMode zweimal auf.
+    const alt = zustandMerker.current
+    if (!alt || alt.phase !== 'bewegen') return
+    const neu = ankommen(alt)
+    setZustand(neu)
+    const spieler = aktiverSpieler(neu)
+    if (spieler.typ === 'mensch' && !neu.offenesMinispiel && !neu.offeneKarte && !neu.offeneWahl) {
+      setKarteGeht(false)
+      setFeldKarte(feldAn(spieler.position))
+    }
+  }, [])
 
   useEffect(() => {
     if (!zustand || zustand.phase !== 'bewegen' || zustand.zielPosition === null) return
@@ -135,9 +173,7 @@ export function SchuetzenopolyPage() {
     // Eine Karte kann auf das Feld schicken, auf dem die Figur schon steht.
     // Dann gibt es nichts zu laufen, aber das Feld muss trotzdem wirken.
     if (schritte === 0) {
-      const sofort = window.setTimeout(() => {
-        setZustand((alt) => (alt && alt.phase === 'bewegen' ? ankommen(alt) : alt))
-      }, 0)
+      const sofort = window.setTimeout(ankunft, 0)
       return () => window.clearTimeout(sofort)
     }
 
@@ -148,11 +184,11 @@ export function SchuetzenopolyPage() {
       spiele('tick')
       if (getan >= schritte) {
         window.clearInterval(uhr)
-        setZustand((alt) => (alt && alt.phase === 'bewegen' ? ankommen(alt) : alt))
+        ankunft()
       }
     }, SCHRITT_MS)
     return () => window.clearInterval(uhr)
-  }, [zustand])
+  }, [zustand, ankunft])
 
   /* ------------------------------------------------------ KI am Zug */
 
@@ -259,6 +295,23 @@ export function SchuetzenopolyPage() {
 
   const anwenden = useCallback((f: (s: SpielZustand) => SpielZustand) => {
     setZustand((alt) => (alt ? f(alt) : alt))
+  }, [])
+
+  /*
+   * Die Karte zurücklegen -- und erst danach handeln.
+   *
+   * Das Kaufen ändert den Spielzustand, und mit ihm wäre die Karte in
+   * demselben Bild verschwunden. Also erst die Rückwärtsbewegung, dann der
+   * Zug. Die Dauer ist dieselbe wie in FeldKarte.module.css; läuft sie dort
+   * einmal anders, sieht man hier höchstens ein Zucken.
+   */
+  const karteZurueck = useCallback((danach?: () => void) => {
+    setKarteGeht(true)
+    window.setTimeout(() => {
+      setKarteGeht(false)
+      setFeldKarte(null)
+      danach?.()
+    }, 220)
   }, [])
 
   const wuerfelKlick = useCallback(() => {
@@ -510,34 +563,26 @@ export function SchuetzenopolyPage() {
             </>
           )}
 
-          {mensch && zustand.phase === 'feld' && zustand.kaufAngebot && (
+          {/*
+            Gekauft wird auf der Karte, nicht hier.
+            
+            Vorher standen Preis und Knöpfe in dieser Leiste, und die Karte
+            mit den Gebühren war ein eigener Dialog daneben -- man entschied
+            über etwas, das man gerade nicht sah. Jetzt trägt die Karte
+            beides. Bleibt hier nur der Weg zurück, falls sie weggelegt
+            wurde.
+          */}
+          {mensch && zustand.phase === 'feld' && zustand.kaufAngebot && !feldKarte && (
             <>
               <p className={styles.hinweisZeile}>
                 {feld.name} ist noch frei – {zustand.kaufAngebot.preis.toLocaleString('de-DE')} 🪙
               </p>
-              <div className={styles.nebenKnoepfe}>
-                <button
-                  type="button"
-                  className={styles.hauptKnopf}
-                  disabled={aktiv.taler < zustand.kaufAngebot.preis}
-                  onClick={() => anwenden(kaufen)}
-                >
-                  Kaufen
-                </button>
-                <button
-                  type="button"
-                  className={styles.nebenKnopf}
-                  onClick={() => anwenden(kaufAblehnen)}
-                >
-                  Stehen lassen
-                </button>
-              </div>
               <button
                 type="button"
-                className={styles.textKnopf}
+                className={styles.hauptKnopf}
                 onClick={() => setFeldKarte(feldAn(zustand.kaufAngebot!.position))}
               >
-                Was bringt das Feld?
+                🪪 Karte ansehen
               </button>
             </>
           )}
@@ -670,7 +715,29 @@ export function SchuetzenopolyPage() {
       )}
 
       {feldKarte && (
-        <FeldKarte feld={feldKarte} zustand={zustand} onSchliessen={() => setFeldKarte(null)} />
+        <FeldKarte
+          feld={feldKarte}
+          zustand={zustand}
+          geht={karteGeht}
+          aktionen={
+            mensch && zustand.kaufAngebot && zustand.kaufAngebot.position === feldKarte.position ? (
+              <>
+                <button
+                  type="button"
+                  data-haupt="ja"
+                  disabled={aktiv.taler < zustand.kaufAngebot.preis}
+                  onClick={() => karteZurueck(() => anwenden(kaufen))}
+                >
+                  Kaufen · {zustand.kaufAngebot.preis.toLocaleString('de-DE')} 🪙
+                </button>
+                <button type="button" onClick={() => karteZurueck(() => anwenden(kaufAblehnen))}>
+                  Stehen lassen
+                </button>
+              </>
+            ) : undefined
+          }
+          onSchliessen={() => karteZurueck()}
+        />
       )}
     </main>
   )
