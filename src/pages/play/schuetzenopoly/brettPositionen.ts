@@ -35,41 +35,29 @@ export function kante(position: number): 'unten' | 'links' | 'oben' | 'rechts' {
 }
 
 /*
- * Wie groß ein Feld sein muss, damit man es auf dem Handy treffen und lesen
- * kann.
- *
- * 21.09.: 44 px Mindestmaß. 23.09.: immer noch zu klein und unhandlich zu
- * zoomen -- Mindestmaß auf 56 angehoben, Zoom bis 3,2, kürzere Brettnamen.
+ * Der äußere Ring ist 3 Feldbreiten dick, die neun Felder dazwischen je 1.
+ * Die grüne Mitte ist damit 9/15 der Kante -- vorher 9/11,7, also fast alles
+ * Grün und ein dünner Rand, den man nur mit Zoomen lesen konnte.
  */
 
-/** Aus so vielen Feldbreiten besteht eine Kante: neun Felder plus zwei Ecken. */
-export const KANTEN_EINHEITEN = 9 + 2 * 1.35
+/** Aus so vielen Feldbreiten besteht eine Kante: neun Felder plus zwei dicke Ecken. */
+export const RAND_ANTEIL = 3
+export const KANTEN_EINHEITEN = 9 + 2 * RAND_ANTEIL
 
-/** So breit soll ein gewöhnliches Feld mindestens sein (Finger + Lesbarkeit). */
-export const FELD_MINDEST = 56
-
-/**
- * Was vom Brett keine Feldfläche ist: zehn Fügen, Innenabstand und Rand.
- */
+/** Was vom Brett keine Feldfläche ist: Fugen, Innenabstand und Rand. */
 export const BRETT_ZUSATZ = 30
 
-/** Wie breit ein Feld bei dieser Brettbreite wird. */
+/** Wie breit ein gewöhnliches (1fr) Feld bei dieser Brettbreite wird. */
 export function feldGroesse(brettBreite: number): number {
   return Math.max(0, brettBreite - BRETT_ZUSATZ) / KANTEN_EINHEITEN
 }
 
 /**
- * Wie stark das Brett vergrößert werden muss, damit ein Feld groß genug ist.
- *
- * 1 heißt: Es passt ohnehin auf den Bildschirm. Darüber wird das Brett
- * breiter als sein Fenster und muss geschoben werden -- dafür kann man lesen,
- * was auf den Feldern steht.
+ * Standard: das ganze Brett auf den Schirm, nicht heranzoomen.
+ * Heranzoomen geht weiter über + / Pinch, startet aber nicht von allein.
  */
-export function standardZoom(fensterBreite: number, hoechstens = ZOOM_MAX): number {
-  if (!Number.isFinite(fensterBreite) || fensterBreite <= 0) return 1
-  const noetig = (FELD_MINDEST * KANTEN_EINHEITEN + BRETT_ZUSATZ) / fensterBreite
-  // Auf Zwanzigstel aufgerundet, damit die Zahl nicht bei jedem Pixel wackelt.
-  return Math.min(hoechstens, Math.max(1, Math.ceil(noetig * 20) / 20))
+export function standardZoom(_fensterBreite?: number): number {
+  return 1
 }
 
 export const ZOOM_MIN = 1
@@ -84,7 +72,6 @@ export function zoomStufe(jetzt: number, richtung: 1 | -1): number {
 
 /**
  * Kurzer Name nur fürs Brett -- die volle Bezeichnung steht in der Feldkarte.
- * Lange Wörter brachen bisher mitten im Wort um ("Musikzu g", "Attendorn n").
  */
 const KURZ: Record<string, string> = {
   'Deutscher Schützenbund': 'DSB',
@@ -108,7 +95,6 @@ const KURZ: Record<string, string> = {
 export function brettKurzname(name: string): string {
   if (KURZ[name]) return KURZ[name]
   if (name.length <= 10) return name
-  // Wortgrenze bevorzugen, sonst hart kürzen.
   const schnitt = name.slice(0, 9)
   const leer = schnitt.lastIndexOf(' ')
   if (leer >= 5) return name.slice(0, leer)
