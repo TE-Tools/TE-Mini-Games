@@ -12,9 +12,33 @@ import { pullRemoteState, type PullResult } from '@/services/remotePull'
 /** Upper bound for the XP of a single result – mirrors the RLS check. */
 const MAX_RESULT_XP = 20000
 
-function isPlausibleScore(score: unknown): score is number {
-  return typeof score === 'number' && score >= 0 && score <= 1000
+/**
+ * Obergrenze für die Punkte eines Ergebnisses -- dieselbe wie in der
+ * Datenbank (Migration 020).
+ *
+ * Sie stand bis zum 24.09.2026 bei 1000, aus einer Zeit, in der jedes Spiel
+ * in diesem Bereich zählte. Trapbound zählt 250 + Level * 12, Emberwake
+ * 300 + Level * 20, Schützenopoly das Endvermögen -- alles darüber wurde
+ * abgewiesen und nach fünf Versuchen weggeworfen. Damit kam auch die XP
+ * dieser Runden nie in der Rangliste an.
+ *
+ * Wer diese Zahl ändert, ändert auch die Prüfung in der Datenbank: Die
+ * strengere von beiden gewinnt, und zwar stillschweigend.
+ */
+export const MAX_RESULT_SCORE = 1_000_000
+
+/**
+ * Kommt dieser Punktestand durch? Ausdrücklich nach außen gegeben, damit
+ * `tests/punktedeckel.test.ts` prüfen kann, dass die Spiele hineinpassen --
+ * die Formeln wachsen mit den Leveln, die Grenze nicht von selbst.
+ */
+export function istHochladbarerPunktestand(score: unknown): score is number {
+  return (
+    typeof score === 'number' && Number.isFinite(score) && score >= 0 && score <= MAX_RESULT_SCORE
+  )
 }
+
+const isPlausibleScore = istHochladbarerPunktestand
 
 function isPlausibleLevel(level: unknown): level is number {
   return typeof level === 'number' && level >= 1 && level <= MAX_LEVEL
@@ -79,10 +103,8 @@ async function pushOutboxItem(item: {
           game_id: p.gameId,
           level: p.level,
           best_score: p.bestScore,
-          best_measurement:
-            typeof p.bestMeasurement === 'number' ? p.bestMeasurement : null,
-          achieved_at:
-            typeof p.achievedAt === 'string' ? p.achievedAt : new Date().toISOString(),
+          best_measurement: typeof p.bestMeasurement === 'number' ? p.bestMeasurement : null,
+          achieved_at: typeof p.achievedAt === 'string' ? p.achievedAt : new Date().toISOString(),
         },
         { onConflict: 'user_id,game_id,level' },
       )
@@ -94,8 +116,7 @@ async function pushOutboxItem(item: {
         {
           user_id: userId,
           achievement_id: p.achievementId,
-          unlocked_at:
-            typeof p.unlockedAt === 'string' ? p.unlockedAt : new Date().toISOString(),
+          unlocked_at: typeof p.unlockedAt === 'string' ? p.unlockedAt : new Date().toISOString(),
         },
         { onConflict: 'user_id,achievement_id', ignoreDuplicates: true },
       )
@@ -190,7 +211,14 @@ export async function trySyncNow(): Promise<void> {
  */
 export async function syncFullNow(): Promise<PullResult> {
   if (!isSupabaseConfigured) {
-    return { pulled: false, games: 0, records: 0, achievements: 0, profile: false, restoredLevel: 0 }
+    return {
+      pulled: false,
+      games: 0,
+      records: 0,
+      achievements: 0,
+      profile: false,
+      restoredLevel: 0,
+    }
   }
   await processSyncQueue()
   return pullRemoteState()

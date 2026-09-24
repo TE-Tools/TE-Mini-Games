@@ -15,6 +15,7 @@ import {
 import { isSupabaseConfigured } from '@/database/supabase'
 import { getAuthStatus } from '@/auth/authService'
 import { syncFullNow } from '@/services/remoteSync'
+import { holeVerloreneErgebnisseNach } from '@/services/nachtragen'
 import { getSyncPendingCount } from '@/services/sync'
 import type { GameId } from '@/games/types'
 import styles from './LeaderboardPage.module.css'
@@ -43,6 +44,8 @@ export function LeaderboardPage() {
   const [signedIn, setSignedIn] = useState<boolean | null>(null)
   /** Wie viele Ergebnisse liegen lokal und warten aufs Hochladen. */
   const [pending, setPending] = useState(0)
+  /** Wie viele Runden der alte Punktedeckel verschluckt hatte. */
+  const [nachgereicht, setNachgereicht] = useState(0)
   const [syncing, setSyncing] = useState(false)
   /** Bumped by the refresh button so the effect below runs again. */
   const [reloadKey, setReloadKey] = useState(0)
@@ -98,6 +101,18 @@ export function LeaderboardPage() {
   const refresh = async () => {
     setSyncing(true)
     try {
+      /*
+       * Erst nachreichen, dann hochladen.
+       *
+       * Bis Migration 020 nahm der Server nur Ergebnisse bis 1000 Punkte an;
+       * alles darüber -- Trapbound ab Level 63, Emberwake ab Level 36,
+       * Schützenopoly immer -- wurde nach fünf Versuchen weggeworfen. Auf dem
+       * Gerät liegen diese Runden noch, also gehen sie hier einmal wieder in
+       * die Warteschlange. Genau hier ist der richtige Ort dafür: Wer auf
+       * diesen Knopf tippt, wundert sich gerade über seine XP.
+       */
+      const nachtrag = await holeVerloreneErgebnisseNach()
+      setNachgereicht(nachtrag.ergebnisse)
       await syncFullNow()
       const status = await getAuthStatus()
       setSignedIn(status.signedIn)
@@ -113,7 +128,12 @@ export function LeaderboardPage() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <button type="button" className={styles.back} onClick={() => navigate('/')} aria-label="Zurück">
+        <button
+          type="button"
+          className={styles.back}
+          onClick={() => navigate('/')}
+          aria-label="Zurück"
+        >
           ←
         </button>
         <h1 className={styles.title}>Rangliste</h1>
@@ -216,9 +236,9 @@ export function LeaderboardPage() {
         <div className={styles.warning} role="status">
           <p className={styles.warningTitle}>Dir fehlt ein Benutzername</p>
           <p className={styles.warningText}>
-            Du bist angemeldet, aber in den Ranglisten steht der Benutzername – und über Google
-            wird keiner vergeben. Ohne ihn tauchst du hier nicht auf, auch wenn deine Runden
-            hochgeladen werden.
+            Du bist angemeldet, aber in den Ranglisten steht der Benutzername – und über Google wird
+            keiner vergeben. Ohne ihn tauchst du hier nicht auf, auch wenn deine Runden hochgeladen
+            werden.
           </p>
           <Link to="/auth" className={styles.warningBtn}>
             Benutzername festlegen
@@ -230,6 +250,18 @@ export function LeaderboardPage() {
         <p className={styles.hint}>
           {pending} {pending === 1 ? 'Eintrag wartet' : 'Einträge warten'} aufs Hochladen – tippe
           auf „Aktualisieren“.
+        </p>
+      )}
+
+      {/*
+        Sagen, was nachgereicht wurde. Wer wochenlang zugesehen hat, wie die
+        eigene XP stehen bleibt, soll den Grund erfahren und nicht nur ein
+        stilles Nachladen bemerken.
+      */}
+      {nachgereicht > 0 && (
+        <p className={styles.hint}>
+          {nachgereicht} {nachgereicht === 1 ? 'Runde wurde' : 'Runden wurden'} nachgereicht: Ihre
+          Punkte lagen über der alten Grenze von 1000 und waren nie angekommen.
         </p>
       )}
 
@@ -250,8 +282,8 @@ export function LeaderboardPage() {
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Gesamt-XP über alle Spiele</h2>
           <p className={styles.hint}>
-            Alle XP aus jeder Runde aller Spiele zusammengerechnet. Jede gespielte Runde zählt
-            mit, egal ob Rekord oder nicht.
+            Alle XP aus jeder Runde aller Spiele zusammengerechnet. Jede gespielte Runde zählt mit,
+            egal ob Rekord oder nicht.
           </p>
           {!isSupabaseConfigured ? (
             <p className={styles.hint}>
@@ -277,8 +309,7 @@ export function LeaderboardPage() {
                     <span className={styles.sub}>
                       {' '}
                       {e.playerLevel > 0 ? `Level ${e.playerLevel} · ` : ''}
-                      {e.playCount}{' '}
-                      {e.playCount === 1 ? 'Runde' : 'Runden'} · {e.gameCount}{' '}
+                      {e.playCount} {e.playCount === 1 ? 'Runde' : 'Runden'} · {e.gameCount}{' '}
                       {e.gameCount === 1 ? 'Spiel' : 'Spiele'}
                     </span>
                   </span>
@@ -315,8 +346,8 @@ export function LeaderboardPage() {
 
           <h2 className={styles.sectionTitle}>Beste Runden</h2>
           <p className={styles.hint}>
-            Sortiert nach Punkten – eine neue Runde taucht hier nur auf, wenn sie mehr Punkte
-            bringt als eine der {recent.length} besten hier.
+            Sortiert nach Punkten – eine neue Runde taucht hier nur auf, wenn sie mehr Punkte bringt
+            als eine der {recent.length} besten hier.
           </p>
           {recent.length === 0 ? (
             <p className={styles.empty}>Noch keine Ergebnisse.</p>
@@ -330,9 +361,7 @@ export function LeaderboardPage() {
                   </span>
                   <span className={styles.rowRight}>
                     <span className={styles.rowScore}>{e.score} Pkt.</span>
-                    {typeof e.xp === 'number' && (
-                      <span className={styles.rowXp}>+{e.xp} XP</span>
-                    )}
+                    {typeof e.xp === 'number' && <span className={styles.rowXp}>+{e.xp} XP</span>}
                   </span>
                 </li>
               ))}
@@ -341,8 +370,8 @@ export function LeaderboardPage() {
 
           <h2 className={styles.sectionTitle}>Gesamtpunkte je Spiel</h2>
           <p className={styles.hint}>
-            Aufsummiert über alle jemals gespielten Runden dieses Spiels – wächst bei jeder
-            Runde, unabhängig davon, ob sie ein neuer Rekord war.
+            Aufsummiert über alle jemals gespielten Runden dieses Spiels – wächst bei jeder Runde,
+            unabhängig davon, ob sie ein neuer Rekord war.
           </p>
           {totals.length === 0 ? (
             <p className={styles.empty}>Noch keine Ergebnisse.</p>
@@ -355,7 +384,9 @@ export function LeaderboardPage() {
                     <span className={styles.sub}> · {t.playCount} Runden</span>
                   </span>
                   <span className={styles.rowRight}>
-                    <span className={styles.rowScore}>{t.totalScore.toLocaleString('de-DE')} Pkt.</span>
+                    <span className={styles.rowScore}>
+                      {t.totalScore.toLocaleString('de-DE')} Pkt.
+                    </span>
                     <span className={styles.rowXp}>{t.totalXp.toLocaleString('de-DE')} XP</span>
                   </span>
                 </li>
@@ -369,8 +400,8 @@ export function LeaderboardPage() {
         <section className={styles.section}>
           {!isSupabaseConfigured && (
             <p className={styles.hint}>
-              Globale Ranglisten brauchen ein konfiguriertes Supabase-Projekt.
-              Bis dahin siehst du hier deine lokalen Werte unter „Meine Rekorde“.
+              Globale Ranglisten brauchen ein konfiguriertes Supabase-Projekt. Bis dahin siehst du
+              hier deine lokalen Werte unter „Meine Rekorde“.
             </p>
           )}
           {isSupabaseConfigured && myEntry && (
