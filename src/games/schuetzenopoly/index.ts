@@ -1,13 +1,7 @@
 export { schuetzenopolyGame, partieXp } from './definition'
 
 export * from './config'
-export {
-  GRUPPEN,
-  GRUNDSTUECKE,
-  grundstueck,
-  gruppe,
-  grundstueckeDerGruppe,
-} from './grundstuecke'
+export { GRUPPEN, GRUNDSTUECKE, grundstueck, gruppe, grundstueckeDerGruppe } from './grundstuecke'
 export type { GrundstueckDaten, GruppeDaten, GruppenId, VeranstaltungsArt } from './grundstuecke'
 
 export { BRETT, SONDERFELDER, VERBANDSFELDER, feldAn, kaufbareFelder, seiteVon } from './brett'
@@ -135,3 +129,6 @@ export {
 export type { MinispielDaten, ScheibenGroesse } from './minispiele'
 
 export { speicherePartie, ladePartie, loeschePartie } from './speichern'
+
+export { amZugSitz, eindeutigeNamen, sitzSpielerId, wendeAn, zustandAus } from './online'
+export type { OnlineAktion, OnlinePartie, ZugbuchEintrag } from './online'

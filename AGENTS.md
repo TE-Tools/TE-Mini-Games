@@ -34,7 +34,10 @@ corresponding feature; do not invent a competing design.
   `config.ts`. Die 22 Grundstücke stehen für reale Veranstaltungen; jede Aussage
   darüber ist in `docs/design/schuetzenopoly/grundstuecke.md` belegt. Wer die
   Liste ändert, führt den Beleg mit – erfundene Angaben über echte Feste sind
-  hier ein Fehler, kein Detail.
+  hier ein Fehler, kein Detail. Online (Migration `019_schuetzenopoly.sql`)
+  führt der Server nur ein Zugbuch: Startwert, Sitzordnung, Aktionen. Es steht
+  dort **keine** Regel, und es kommt auch keine hinein – die Mitspieler spielen
+  das Buch durch dieselbe Engine nach.
 - **Level map 1–500 („Zeitreise“):** `docs/design/level-map-500/` – five biomes of
   100 levels each (jungle → volcanic → rock desert → ice age → glacier peak),
   one winding vertical path, level 500 as the final ice palace.
