@@ -4,7 +4,7 @@
  * Thomas, 12.09.2026: "auf der Startseite einen Knopf offene Spiele gesamt,
  * wo man dann alle offenen Räume und alle Spieler sieht, wo man joinen kann."
  *
- * Die Seite fragt die fünf Online-Spiele nacheinander ab (jedes hat seine
+ * Die Seite fragt die Online-Spiele nacheinander ab (jedes hat seine
  * eigene Funktion `*_public_matches`) und zeigt je Raum, wer ihn aufgemacht
  * hat und wer schon drin sitzt. Beitreten führt auf die Spielseite mit dem
  * Code als Suchparameter -- dort öffnet sich der Online-Teil und tritt bei.
@@ -19,14 +19,16 @@ import { fetchOeffentlicheImposterRaeume } from '@/services/imposterOnline'
 import { fetchOeffentlicheWbiRaeume } from '@/services/werBinIchOnline'
 import { fetchOeffentlicheSlfRaeume } from '@/services/stadtLandFlussOnline'
 import { fetchOeffentlicheKniffelRaeume } from '@/services/kniffelOnline'
+import { fetchOeffentlicheSchopolyRaeume } from '@/services/schuetzenopolyOnline'
 import { OEFFENTLICH_ERNEUERN_MS, RAUM_PARAM, type OeffentlicherRaum } from '@/services/raeume'
 import { kachelFuer } from './spiele-katalog'
 import type { GameId } from '@/games/types'
 import shell from './play/PlayShell.module.css'
 import styles from './OffeneSpielePage.module.css'
 
-/** Die fünf Spiele mit Räumen -- in der Reihenfolge der Startseite. */
+/** Die Spiele mit Räumen -- in der Reihenfolge der Startseite. */
 const ONLINE_SPIELE: { id: GameId; laden: () => Promise<OeffentlicherRaum[]> }[] = [
+  { id: 'schuetzenopoly', laden: fetchOeffentlicheSchopolyRaeume },
   { id: 'kniffel', laden: fetchOeffentlicheKniffelRaeume },
   { id: 'schuetzenrunde', laden: fetchOeffentlicheSrRaeume },
   { id: 'finde-den-imposter', laden: fetchOeffentlicheImposterRaeume },

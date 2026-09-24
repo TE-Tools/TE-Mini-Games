@@ -10,46 +10,37 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  STRAFBANK_GEBUEHR,
   aktiverSpieler,
   ankommen,
   aufgeben,
   bauen,
   abreissen,
   anBankVerkaufen,
-  besitzVon,
-  duellAusloesen,
   endstand,
   erstellePartie,
   feldAn,
   figur,
-  freikarteEinsetzen,
   handelAusfuehren,
-  handkarten,
-  karteAnwenden,
-  karteNeuZiehen,
   kaufAblehnen,
   kaufen,
   kiSchritt,
-  koenigsaktion,
   ladePartie,
   loeschePartie,
   minispielAbschliessen,
   partieXp,
-  rolle as rolleMit,
   rollenBonus,
   speicherePartie,
   spielerMit,
-  strafbankFreikaufen,
   vermoegen,
   wahlBaustopp,
   wahlSchutz,
   wahlTausch,
   wahlUeberspringen,
-  wuerfeln,
-  zugBeenden,
+  wendeAn,
+  amZugSitz,
   XP_MINISPIEL,
   type BrettFeld,
+  type OnlineAktion,
   type Handelsangebot,
   type Medaille,
   type SpielZustand,
@@ -59,13 +50,16 @@ import { addXp, saveGameResult } from '@/offline'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
 import { spielerNameOderDu } from '@/services/spielername'
+import { RAUM_PARAM } from '@/services/raeume'
 import { spiele, setzeTon, tonAn, vibriere } from '@/services/sound'
 import { Brett } from './schuetzenopoly/Brett'
 import { FeldKarte, type KartenAktion } from './schuetzenopoly/FeldKarte'
 import { HandelDialog } from './schuetzenopoly/HandelDialog'
 import { Minispiel } from './schuetzenopoly/Minispiele'
 import { Spielaufbau } from './schuetzenopoly/Spielaufbau'
+import { SchuetzenopolyOnline } from './SchuetzenopolyOnline'
 import { BauPanel, WahlPanel } from './schuetzenopoly/Aktionen'
+import { BrettMitte, Handlungsleiste, Protokoll, SpielerLeiste } from './schuetzenopoly/Tisch'
 import shell from './PlayShell.module.css'
 import styles from './SchuetzenopolyPage.module.css'
 
@@ -91,7 +85,7 @@ const DRUCK_MS = 180
 /** Dieselbe Dauer wie die Rückwärtsbewegung in FeldKarte.module.css. */
 const KARTE_ZURUECK_MS = 220
 
-type Ansicht = 'laden' | 'menue' | 'aufbau' | 'spiel'
+type Ansicht = 'laden' | 'menue' | 'aufbau' | 'spiel' | 'online'
 
 export function SchuetzenopolyPage() {
   const navigate = useNavigate()
@@ -189,7 +183,10 @@ export function SchuetzenopolyPage() {
       if (abbruch) return
       setSpielerName(name)
       setFortsetzbar(gespeichert)
-      setAnsicht('menue')
+      // Von "Offene Spiele" mit ?raum=CODE gekommen: direkt in den Online-Teil,
+      // der tritt dann von selbst bei.
+      const raumCode = new URLSearchParams(window.location.search).get(RAUM_PARAM)
+      setAnsicht(raumCode ? 'online' : 'menue')
     })()
     return () => {
       abbruch = true
@@ -411,11 +408,23 @@ export function SchuetzenopolyPage() {
     setZustand((alt) => (alt ? f(alt) : alt))
   }, [])
 
-  const wuerfelKlick = useCallback(() => {
-    spiele('wuerfel')
-    vibriere(20)
-    anwenden(wuerfeln)
-  }, [anwenden])
+  /*
+   * Eine Absicht aus der Handlungsleiste ausführen.
+   *
+   * Die Leiste kennt keine Regel; sie meldet, was der Spieler will. Offline
+   * wendet das dieselbe Funktion an, die online das Zugbuch nachspielt --
+   * so kann die eine Seite nicht anders rechnen als die andere.
+   */
+  const fuehreAus = useCallback(
+    (aktion: OnlineAktion) => {
+      if (aktion.art === 'wuerfeln') {
+        spiele('wuerfel')
+        vibriere(20)
+      }
+      anwenden((s) => wendeAn(s, { nr: 0, seat: amZugSitz(s), aktion }))
+    },
+    [anwenden],
+  )
 
   const minispielFertig = useCallback(
     (medaille: Medaille) => {
@@ -477,12 +486,19 @@ export function SchuetzenopolyPage() {
           >
             🎲 Neue Partie
           </button>
+          <button type="button" className={shell.secondaryBtn} onClick={() => setAnsicht('online')}>
+            🌐 Online spielen
+          </button>
           <Link to="/" className={shell.homeLink}>
             Zum Menü
           </Link>
         </section>
       </main>
     )
+  }
+
+  if (ansicht === 'online') {
+    return <SchuetzenopolyOnline eigenerName={spielerName} onZurueck={() => setAnsicht('menue')} />
   }
 
   if (ansicht === 'aufbau') {
@@ -502,10 +518,6 @@ export function SchuetzenopolyPage() {
 
   const aktiv = aktiverSpieler(zustand)
   const mensch = aktiv.typ === 'mensch'
-  const feld = feldAn(aktiv.position)
-  const meineHandkarten = handkarten(zustand, aktiv.id)
-  const rollenDaten = rolleMit(aktiv.rolle)
-  const bonus = rollenBonus(aktiv.rolle)
 
   // Während die Figur läuft, steht sie optisch schon auf dem Zwischenfeld.
   // Der Wert gilt nur in der Bewegungsphase; danach zählt wieder der
@@ -599,29 +611,7 @@ export function SchuetzenopolyPage() {
       />
 
       <section className={styles.spielflaeche}>
-        <ul className={styles.spielerLeiste} aria-label="Mitspieler">
-          {zustand.spieler.map((s) => (
-            <li
-              key={s.id}
-              className={`${styles.spielerKachel} ${s.id === aktiv.id ? styles.amZug : ''} ${
-                s.insolvent ? styles.raus : ''
-              }`}
-              style={{ borderColor: figur(s.figurId).farbe }}
-            >
-              <span className={styles.spielerKopf}>
-                <span aria-hidden="true">{figur(s.figurId).icon}</span> {s.name}
-                {s.typ === 'ki' && <small className={styles.kiMarke}>🤖</small>}
-              </span>
-              <span className={styles.spielerGeld}>
-                {s.insolvent ? 'raus' : `${s.taler.toLocaleString('de-DE')} 🪙`}
-              </span>
-              <span className={styles.spielerBesitz}>
-                {besitzVon(zustand, s.id).length} Felder
-                {s.aufStrafbank && ' · 🚧'}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <SpielerLeiste zustand={zustand} />
 
         <Brett
           besitz={zustand.besitz}
@@ -633,155 +623,19 @@ export function SchuetzenopolyPage() {
           <BrettMitte zustand={zustand} />
         </Brett>
 
-        <div className={styles.protokoll} aria-live="polite">
-          {zustand.protokoll.slice(-3).map((eintrag, i) => (
-            <p key={`${zustand.protokoll.length}-${i}`} className={styles.logZeile}>
-              {eintrag.text}
-            </p>
-          ))}
-        </div>
+        <Protokoll zustand={zustand} />
 
-        {/* --- Handlungsleiste --- */}
-        <div className={styles.leiste}>
-          {!mensch && <p className={styles.wartet}>{aktiv.name} ist am Zug…</p>}
-
-          {mensch && zustand.phase === 'wuerfeln' && (
-            <>
-              {aktiv.aufStrafbank && (
-                <p className={styles.hinweisZeile}>
-                  Du sitzt auf der Strafbank (Versuch {aktiv.strafbankVersuche + 1} von 3). Ein
-                  Pasch bringt dich frei.
-                </p>
-              )}
-              <button type="button" className={styles.hauptKnopf} onClick={wuerfelKlick}>
-                🎲 Würfeln
-              </button>
-              {aktiv.aufStrafbank && (
-                <div className={styles.nebenKnoepfe}>
-                  {meineHandkarten.some((k) => k.wirkung.art === 'freikarte') && (
-                    <button
-                      type="button"
-                      className={styles.nebenKnopf}
-                      onClick={() => anwenden(freikarteEinsetzen)}
-                    >
-                      🎫 Fürsprache einsetzen
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    className={styles.nebenKnopf}
-                    disabled={aktiv.taler < STRAFBANK_GEBUEHR}
-                    onClick={() => anwenden(strafbankFreikaufen)}
-                  >
-                    Freikaufen · {STRAFBANK_GEBUEHR} 🪙
-                  </button>
-                </div>
-              )}
-              {bonus.koenigsaktion && !aktiv.koenigsaktionGenutzt && (
-                <button
-                  type="button"
-                  className={styles.nebenKnopf}
-                  onClick={() => anwenden(koenigsaktion)}
-                >
-                  👑 Königsaktion · +{bonus.koenigsaktion} 🪙
-                </button>
-              )}
-            </>
-          )}
-
-          {/*
-            Gekauft wird auf der Karte, nicht hier.
-            
-            Vorher standen Preis und Knöpfe in dieser Leiste, und die Karte
-            mit den Gebühren war ein eigener Dialog daneben -- man entschied
-            über etwas, das man gerade nicht sah. Jetzt trägt die Karte
-            beides. Bleibt hier nur der Weg zurück, falls sie weggelegt
-            wurde.
-          */}
-          {mensch && zustand.phase === 'feld' && zustand.kaufAngebot && !feldKarte && (
-            <>
-              <p className={styles.hinweisZeile}>
-                {feld.name} ist noch frei – {zustand.kaufAngebot.preis.toLocaleString('de-DE')} 🪙
-              </p>
-              <button
-                type="button"
-                className={styles.hauptKnopf}
-                onClick={() => setFeldKarte(feldAn(zustand.kaufAngebot!.position))}
-              >
-                🪪 Karte ansehen
-              </button>
-            </>
-          )}
-
-          {mensch && zustand.offeneKarte && (
-            <div className={styles.karte}>
-              <p className={styles.karteTitel}>
-                <span aria-hidden="true">{zustand.offeneKarte.icon}</span>{' '}
-                {zustand.offeneKarte.titel}
-              </p>
-              <p className={styles.karteText}>{zustand.offeneKarte.text}</p>
-              <div className={styles.nebenKnoepfe}>
-                <button
-                  type="button"
-                  className={styles.hauptKnopf}
-                  onClick={() => anwenden(karteAnwenden)}
-                >
-                  Weiter
-                </button>
-                {bonus.karteNeuJePartie && !aktiv.karteNeuGenutzt && (
-                  <button
-                    type="button"
-                    className={styles.nebenKnopf}
-                    onClick={() => anwenden(karteNeuZiehen)}
-                  >
-                    🃏 Neu ziehen
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {mensch && zustand.phase === 'zug_ende' && !zustand.offeneKarte && (
-            <>
-              <div className={styles.nebenKnoepfe}>
-                <button
-                  type="button"
-                  className={styles.nebenKnopf}
-                  onClick={() => setBauOffen(true)}
-                >
-                  🏗️ Bauen
-                </button>
-                <button
-                  type="button"
-                  className={styles.nebenKnopf}
-                  onClick={() => setHandelOffen(true)}
-                >
-                  🤝 Handeln
-                </button>
-                {bonus.duellJePartie && !aktiv.duellGenutzt && (
-                  <button
-                    type="button"
-                    className={styles.nebenKnopf}
-                    onClick={() => anwenden(duellAusloesen)}
-                  >
-                    ⚔️ Duell
-                  </button>
-                )}
-              </div>
-              <button
-                type="button"
-                className={styles.hauptKnopf}
-                onClick={() => anwenden(zugBeenden)}
-              >
-                {zustand.paschSerie > 0 ? 'Pasch – noch mal würfeln' : 'Zug beenden'}
-              </button>
-            </>
-          )}
-
-          <p className={styles.rollenZeile}>
-            {rollenDaten.icon} {rollenDaten.name}: {rollenDaten.beschreibung}
-          </p>
-        </div>
+        <Handlungsleiste
+          zustand={zustand}
+          darfZiehen={mensch}
+          onAktion={fuehreAus}
+          karteOffen={Boolean(feldKarte)}
+          onKarteAnsehen={() =>
+            zustand.kaufAngebot && setFeldKarte(feldAn(zustand.kaufAngebot.position))
+          }
+          onBauen={() => setBauOffen(true)}
+          onHandeln={() => setHandelOffen(true)}
+        />
 
         <button
           type="button"
@@ -895,29 +749,4 @@ function Kopf({
       </button>
     </header>
   )
-}
-
-/** Die Mitte des Bretts: Würfel und wer gerade dran ist. */
-function BrettMitte({ zustand }: { zustand: SpielZustand }) {
-  const aktiv = aktiverSpieler(zustand)
-  return (
-    <>
-      <p className={styles.mitteName}>
-        <span aria-hidden="true">{figur(aktiv.figurId).icon}</span> {aktiv.name}
-      </p>
-      <div className={styles.wuerfelPaar} aria-label="Würfel">
-        <span className={styles.wuerfel}>{zustand.wuerfel ? augen(zustand.wuerfel[0]) : '·'}</span>
-        <span className={styles.wuerfel}>{zustand.wuerfel ? augen(zustand.wuerfel[1]) : '·'}</span>
-      </div>
-      <p className={styles.mitteGeld}>{aktiv.taler.toLocaleString('de-DE')} 🪙</p>
-      <p className={styles.mitteRunde}>
-        Runde {zustand.runde} von {zustand.rundenLimit}
-      </p>
-    </>
-  )
-}
-
-const AUGEN = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅']
-function augen(wert: number): string {
-  return AUGEN[wert - 1] ?? '·'
 }

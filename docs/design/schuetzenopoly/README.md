@@ -326,9 +326,57 @@ Die Architektur steht dem nicht im Weg – zentral konfigurierbare Werte,
 getrennte Module, ein serialisierbarer Zustand –, aber nichts davon
 belastet V1.
 
-## 9. Für später vorgemerkt
+## 9. Online: das Zugbuch (seit 24.09.2026)
 
-- Online-Mehrspieler mit Lobby und Spielcode (die Engine ist vorbereitet)
+Zwei bis vier Menschen an getrennten Geräten, Tisch mit Spielcode, öffentlich
+unter „Offene Spiele". Kein Rechner am Tisch.
+
+**Der Server führt kein Spiel, sondern ein Buch.** Er kennt drei Dinge
+(Migration `019_schuetzenopoly.sql`):
+
+1. den **Startwert** des Zufalls – er würfelt ihn beim Start selbst, damit
+   ihn im Vorraum niemand kennt und danach niemand wählt,
+2. die **Sitzordnung**,
+3. das **Zugbuch**: die Aktionen der Reihe nach, jede mit ihrem Sitz.
+   Anhängen darf nur, wer gerade am Zug ist.
+
+Alles andere ergibt sich daraus: Jeder spielt dasselbe Buch durch dieselbe
+Engine (`src/games/schuetzenopoly/online.ts`) und kommt zwangsläufig auf
+denselben Stand. Würfel und Kartenstapel hängen am Startwert und am Zähler
+im Zustand, nicht am Zufall eines Geräts.
+
+**Warum nicht wie beim Kniffel gerechnet wird.** Dort rechnet der Server,
+weil der Würfel das ganze Spiel ist. Hier stünde dafür die gesamte Engine ein
+zweites Mal in SQL – Karten, Gebühren, Ausbaustufen, Rollen, Insolvenz,
+Minispiele. Zwei Fassungen derselben Regeln laufen auseinander, sobald jemand
+eine davon anfasst; und Abschnitt 2 dieses Dokuments hält fest, dass die
+Regeln nur an einer Stelle stehen.
+
+**Was das trägt – und was nicht.** Eine Aktion vom falschen Sitz bleibt
+wirkungslos: Der Server nimmt sie nicht an, und `wendeAn` lässt sie zusätzlich
+bei jedem Mitspieler liegen. Würfel lassen sich nicht wählen, Karten nicht
+umsortieren, fremdes Geld nicht anfassen. Nicht abgedeckt ist die Medaille aus
+dem Schießstand: Die meldet das Gerät, das gespielt hat. Ein
+Geschicklichkeitsspiel kann der Server nicht nachrechnen; unter Freunden ist
+das die richtige Grenze.
+
+Die Handlungsleiste steht seither nur noch einmal da
+(`src/pages/play/schuetzenopoly/Tisch.tsx`): Sie kennt keine Regel, sondern
+meldet eine Absicht als `OnlineAktion` – dieselbe Liste, die im Zugbuch steht.
+Offline wendet die Seite sie sofort an, online geht sie an den Server. Damit
+kann die eine Seite nicht anders rechnen als die andere.
+
+`supabase/migrations/pruefung/019_schuetzenopoly.pruefung.sql` spielt die
+Migration in ein beliebiges Postgres und prüft die Sperren durch: Gastgeber,
+Fremde, Beitreten nach dem Start, Ziehen außer der Reihe, Aufräumen.
+
+Kein Handel online: Ein Handel braucht ein Gegenüber, das annehmen oder
+ablehnen kann – das ist ein eigener Weg über den Server und kommt nicht
+nebenbei.
+
+## 10. Für später vorgemerkt
+
+- Handel zwischen Menschen im Online-Modus
 - Versteigerung abgelehnter Grundstücke
 - 5–6 Spieler (die Engine kennt die Grenze nur an einer Stelle)
 - Mehr Minispiele und Karten
