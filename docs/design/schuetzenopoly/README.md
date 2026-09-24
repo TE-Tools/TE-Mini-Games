@@ -57,9 +57,41 @@ ein Dialog:
   gerade nicht sah. Wer sie weglegt, ohne zu entscheiden, holt sie mit einem
   Knopf in der Leiste zurück.
 
+- **Auch der Rechner legt sie vor.** Landet ein KI-Gegner, kommt dieselbe
+  Karte hoch: erst Lesezeit, dann drückt er sichtbar seinen Knopf, dann
+  schwingt sie zurück -- und erst danach greift sein Zug. Seine Knöpfe sind zu
+  sehen, aber gesperrt: zusehen, nicht für ihn entscheiden. Vorher gehörte ihm
+  zwischen zwei Bildern plötzlich ein Feld, und nur das Protokoll verriet
+  hinterher, welches.
+- **Man sieht, welcher Knopf gedrückt wird.** Der gedrückte Knopf drückt sich
+  ein, leuchtet auf und behält seinen Rahmen, bis die Karte weg ist. Beim
+  Menschen bestätigt das den eigenen Griff, beim Rechner ist es das Einzige,
+  was von seiner Entscheidung zu sehen ist. Deshalb gehen beide denselben Weg
+  durch `knopfDruck`.
+
 `tests/schuetzenopoly-feldkarte.test.tsx` hält fest, dass wirklich alles
 darauf steht: die fünf Ausbaustufen, Kaufpreis und Ausbaukosten, Stadt,
-Veranstaltung und der Fakt.
+Veranstaltung und der Fakt. `tests/schuetzenopoly-oberflaeche.test.tsx` spielt
+einen Zug des Rechners durch die Seite und prüft die Reihenfolge: Karte,
+sichtbarer Knopfdruck, dann erst der Zug.
+
+### Wem gehört ein Feld (seit 23.09.2026)
+
+Jeder Spieler hat eine Farbe -- die seiner Figur. Sie steht an drei Stellen
+für ihn, und zwar überall gleich:
+
+- **Auf dem Brett** als Band an der Außenkante des Feldes. Innen liegt schon
+  der Gruppenstreifen, dazwischen bleibt der Name lesbar. Eine Figur steht
+  dort erst, wenn hineingezoomt wurde und ein Feld mindestens 40 Punkte misst
+  -- auf einem Telefon ist es knapp 28 groß, und ein Symbol darin wäre ein
+  Fleck.
+- **In der Mitspielerleiste** als Rahmen um die Kachel, mit Figur und Namen.
+  Das ist die Legende zum Brett.
+- **Auf der Besitzkarte** als runde Marke mit Farbe und Figur neben dem Namen
+  des Besitzers.
+
+Wer eine dieser Stellen ändert, ändert alle drei: Die Farbe taugt nur als
+Auskunft, solange sie überall dasselbe bedeutet.
 
 Deshalb gilt jetzt: Ein Feld ist mindestens 44 Punkte breit -- das übliche
 Maß für etwas, das man mit dem Finger trifft. Reicht der Platz nicht, wird

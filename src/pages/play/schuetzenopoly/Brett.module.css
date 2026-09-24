@@ -207,6 +207,84 @@
   line-height: 1;
 }
 
+/*
+ * Wem gehört das Feld?
+ *
+ * Ein Band in der Farbe des Besitzers, an der Außenkante -- innen liegt
+ * schon der Gruppenstreifen, und zwischen beiden bleibt der Name lesbar.
+ * Ein Symbol wäre hier ein Fleck: Ein Feld ist auf dem Telefon knapp 28
+ * Punkte groß. Die Farbe genügt, weil dieselbe Farbe in der
+ * Mitspielerleiste und auf der Besitzkarte neben dem Namen steht.
+ */
+.besitzBand {
+  position: absolute;
+  background-clip: padding-box;
+  border: 1px solid rgb(0 0 0 / 0.35);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.feld[data-seite='unten'] .besitzBand {
+  inset: auto 0 0 0;
+  height: 16%;
+  border-radius: 0 0 4px 4px;
+}
+
+.feld[data-seite='oben'] .besitzBand {
+  inset: 0 0 auto 0;
+  height: 16%;
+  border-radius: 4px 4px 0 0;
+}
+
+.feld[data-seite='links'] .besitzBand {
+  inset: 0 auto 0 0;
+  width: 14%;
+  border-radius: 4px 0 0 4px;
+}
+
+.feld[data-seite='rechts'] .besitzBand {
+  inset: 0 0 0 auto;
+  width: 14%;
+  border-radius: 0 4px 4px 0;
+}
+
+/*
+ * Die Figur des Besitzers -- nur auf großen Feldern, sonst ein Fleck.
+ * Sie sitzt an der Außenkante, die Spielfiguren stehen innen unten rechts;
+ * so überdeckt sich nie beides.
+ */
+.besitzFigur {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(13px, calc(var(--feld) * 0.34), 20px);
+  height: clamp(13px, calc(var(--feld) * 0.34), 20px);
+  border-radius: 50%;
+  font-size: 0.62em;
+  line-height: 1;
+  border: 1px solid rgb(0 0 0 / 0.5);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.feld[data-seite='unten'] .besitzFigur {
+  inset: auto auto 1px 1px;
+}
+
+.feld[data-seite='oben'] .besitzFigur {
+  inset: 1px auto auto 1px;
+}
+
+.feld[data-seite='links'] .besitzFigur {
+  inset: 1px auto auto 1px;
+}
+
+.feld[data-seite='rechts'] .besitzFigur {
+  inset: 1px 1px auto auto;
+}
+
 .figuren {
   position: absolute;
   inset: auto 1px 1px auto;
