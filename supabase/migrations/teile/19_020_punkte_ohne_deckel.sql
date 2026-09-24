@@ -1,4 +1,4 @@
--- 17_020_punkte_ohne_deckel.sql
+-- 19_020_punkte_ohne_deckel.sql
 -- Aus 020_punkte_ohne_deckel.sql. Nacheinander einfuegen, Reihenfolge der Dateinamen.
 -- Gefahrlos mehrfach ausfuehrbar. Erzeugt mit scripts/build-teile.mjs --
 -- die Begruendungen stehen in der Ursprungsdatei.

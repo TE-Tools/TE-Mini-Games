@@ -403,3 +403,151 @@
   font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);
 }
+
+/* --- Online: Vorraum und Beitreten -------------------------------- */
+
+/*
+ * Dieselben Maße wie im Vorraum der anderen Online-Spiele (KniffelPage):
+ * Wer schon einmal einem Kniffel-Raum beigetreten ist, soll hier nicht neu
+ * suchen müssen, wo der Code steht.
+ */
+.lobby {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  padding-bottom: var(--space-8);
+}
+
+.feldZeile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.codeEingabe {
+  min-height: var(--touch-min);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+  text-align: center;
+}
+
+.codeLabel {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.code {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: clamp(2.4rem, 14vw, 3.6rem);
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-indent: 0.18em;
+  color: var(--color-primary);
+}
+
+.spielerListe {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.spielerListe li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+.platz {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: var(--radius-full);
+  background: var(--grad-primary);
+  color: var(--color-primary-text);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.offeneListe h3 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.offeneListe ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.offeneListe button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--touch-min);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.offeneListe strong {
+  font-family: var(--font-mono);
+  letter-spacing: 0.1em;
+}
+
+.offeneListe span {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.fehler {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--grad-danger-soft);
+  border: 1px solid var(--color-danger);
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+  text-align: center;
+}
