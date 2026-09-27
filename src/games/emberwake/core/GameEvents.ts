@@ -21,6 +21,8 @@ export interface GameEvents {
 
   // Sammeln und Lager
   resource_gathered: { resource: ResourceId; amount: number; x: number; z: number }
+  /** Ein Hieb gegen einen Baum. `felled`: der Hieb, mit dem er fällt. */
+  tree_chopped: { x: number; z: number; felled: boolean }
   inventory_full: { resource: ResourceId }
   deposited: { items: Stock }
   camp_opened: { atWorkbench: boolean }

@@ -41,8 +41,27 @@ export class GreedyBot {
     const heavy = loadRatio(w) >= 0.85
     const coreLow = w.ember.charge < 30 && (w.camp.stock.wood ?? 0) > 0
     const dCamp2 = dist2(p.pos, CAMP_POS)
+    /*
+     * Am Lager bleiben, solange der Kern Holz annimmt.
+     *
+     * Nachgetragen am 27.09.2026: Seit Holz aus Bäumen kommt, gehen die
+     * Holzquellen nie aus -- der Wald ist überall. Vorher endete jede Runde
+     * damit, dass der Bot nichts mehr zu holen fand, am Lager stehen blieb
+     * und dabei den Kern vollmachte. Jetzt zieht er sofort zum nächsten
+     * Baum und nährt nur bis 30 Prozent, weil `coreLow` dort endet. Er
+     * sammelte 131 Holz und ließ den Kern bei 31 stehen.
+     *
+     * Ein Mensch am Lager kippt nach, bis der Kern satt ist. Genau das.
+     */
+    const coreHungry = dCamp2 <= 2.2 * 2.2 && w.ember.charge < 90 && (w.camp.stock.wood ?? 0) > 0
 
-    if (nightSoon || heavy || coreLow || (this.targetNodeId === null && !this.pickTarget())) {
+    if (
+      nightSoon ||
+      heavy ||
+      coreLow ||
+      coreHungry ||
+      (this.targetNodeId === null && !this.pickTarget())
+    ) {
       // Zurück zum Lager
       if (dCamp2 > 2.2 * 2.2) {
         this.moveToward(CAMP_POS.x, CAMP_POS.z, out)

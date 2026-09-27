@@ -1,4 +1,5 @@
 import type { World } from '@/games/emberwake/world/World'
+import { buildCollision } from '@/games/emberwake/world/WorldGen'
 import { updateClock } from './DayNightSystem'
 import { updatePlayer, type InputFrame } from './PlayerSystem'
 import { updateInteraction } from './InteractionSystem'
@@ -58,9 +59,20 @@ export class Simulation {
   }
 }
 
+/** Wie lange ein Baum zum Umfallen braucht. */
+const FALLDAUER = 1.1
+
 function decayVisuals(w: World, dt: number): void {
+  let baumGelandet = false
   for (let i = 0; i < w.nodes.length; i++) {
     const n = w.nodes[i]!
     if (n.shake > 0) n.shake = Math.max(0, n.shake - dt * 4)
+    if (n.form === 'baum' && n.fall > 0 && n.fall < 1) {
+      n.fall = Math.min(1, n.fall + dt / FALLDAUER)
+      // Erst wenn er liegt, gibt er den Weg frei -- vorher läuft man nicht
+      // durch einen Stamm, der noch kippt.
+      if (n.fall >= 1) baumGelandet = true
+    }
   }
+  if (baumGelandet) buildCollision(w)
 }

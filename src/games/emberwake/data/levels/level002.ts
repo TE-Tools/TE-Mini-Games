@@ -78,7 +78,7 @@ export const LEVEL_002: LevelDef = {
   },
 
   hints: [
-    { trigger: 'start', text: 'Sammle vor der Nacht' },
+    { trigger: 'start', text: 'Fälle Holz, bevor es dunkel wird' },
     { trigger: 'dusk', text: 'Es dämmert. Zurück zum Kern.' },
     { trigger: 'enemy_seen', text: 'Sie meiden das Licht' },
     { trigger: 'core_low', text: 'Kern schwach. Holz nachlegen.' },

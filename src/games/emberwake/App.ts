@@ -289,6 +289,27 @@ export class App {
     }
 
     this.unsubs.push(
+      /*
+       * Der Hieb gegen einen Baum -- Späne, und wenn er fällt, ein Krachen.
+       *
+       * Getrennt vom Sammeln, weil es sich anders anfühlen soll: Späne
+       * fliegen tief am Stamm, das Fallen schüttelt die Hand und schickt
+       * eine ganze Wolke.
+       */
+      ev.on('tree_chopped', ({ x, z, felled }) => {
+        const y = w.terrain.heightAt(x, z)
+        this.audio.play(felled ? 'hit' : 'swing')
+        this.haptics.play(felled ? 'hit' : 'gather')
+        this.view.particles.burst(
+          x,
+          y + (felled ? 0.9 : 0.7),
+          z,
+          0xb8895a,
+          felled ? 26 : 6,
+          2.2,
+          0.7,
+        )
+      }),
       ev.on('resource_gathered', ({ resource, x, z }) => {
         this.haptics.play('gather')
         this.audio.play('gather')
