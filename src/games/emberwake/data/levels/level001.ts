@@ -4,14 +4,14 @@ import type { LevelDef } from '../schema/types'
  * Level 1 — Erste Glut.
  * Tutorial ohne Textwände (LEVEL_DESIGN.md §4).
  * Keine Nacht, keine Gegner. Der Kern steht sichtbar niedrig — der
- * Spieler will ihn füllen. Holz liegt in Blickrichtung. Beim Aufsammeln
- * füllt sich der Ballastbalken. Zu schwer beladen wird er langsam.
+ * Spieler will ihn füllen. Der erste Baum steht in Blickrichtung. Beim
+ * Fällen füllt sich der Ballastbalken. Zu schwer beladen wird er langsam.
  */
 export const LEVEL_001: LevelDef = {
   id: 1,
   worldId: 1,
   name: 'Erste Glut',
-  subtitle: 'Nähre den Kern mit Zunderholz.',
+  subtitle: 'Fälle Bäume und nähre den Kern.',
   seed: 0x4e4d5231,
   difficulty: 1,
   targetDuration: 240,
@@ -66,7 +66,7 @@ export const LEVEL_001: LevelDef = {
   waves: [],
 
   objectives: {
-    // Zwei Touren nötig: sammeln, einlagern, nähren — der ganze Kreislauf.
+    // Der ganze Kreislauf: fällen, einlagern, nähren.
     primary: { kind: 'core_charge', threshold: 80, text: 'Bring den Kern auf 80 %' },
     secondary: { kind: 'time_under', seconds: 300, text: 'In unter fünf Minuten' },
   },
@@ -78,8 +78,8 @@ export const LEVEL_001: LevelDef = {
   },
 
   hints: [
-    { trigger: 'start', text: 'Sammle Zunderholz für den Kern' },
-    { trigger: 'first_pickup', text: 'Dein Ballast wächst' },
+    { trigger: 'start', text: 'Fälle einen Baum für den Kern' },
+    { trigger: 'first_pickup', text: 'Jeder Hieb ein Scheit – dein Ballast wächst' },
     { trigger: 'heavy', text: 'Zu schwer. Du wirst langsam.' },
     { trigger: 'at_core_with_loot', text: 'Einlagern und Kern nähren' },
   ],

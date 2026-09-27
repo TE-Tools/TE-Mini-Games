@@ -40,6 +40,8 @@ const _p = new THREE.Vector3()
 const _q = new THREE.Quaternion()
 const _s = new THREE.Vector3()
 const _axisY = new THREE.Vector3(0, 1, 0)
+const _qFall = new THREE.Quaternion()
+const _kippAchse = new THREE.Vector3()
 const _colA = new THREE.Color()
 const _colB = new THREE.Color()
 
@@ -58,6 +60,8 @@ export class GameView {
 
   private terrain: THREE.Mesh | null = null
   private treeTrunks: THREE.InstancedMesh[] = []
+  /** Bäume je Variante -- Holzknoten, die stehen, wackeln und fallen. */
+  private treeMeshes: (THREE.InstancedMesh | null)[] = [null, null, null]
   private rocks: THREE.InstancedMesh[] = []
   private nodeMeshes = new Map<ResourceId, THREE.InstancedMesh>()
   private stumps: THREE.InstancedMesh | null = null
@@ -175,32 +179,9 @@ export class GameView {
 
   private buildObstacles(w: World): void {
     const pal = w.worldDef.palette
-    const byVariant: Record<number, typeof w.obstacles> = { 0: [], 1: [], 2: [] }
-    const rocks: typeof w.obstacles = []
-    for (const o of w.obstacles) {
-      if (o.kind === 'tree') byVariant[o.variant]!.push(o)
-      else rocks.push(o)
-    }
-
-    for (let v = 0; v < 3; v++) {
-      const list = byVariant[v]!
-      if (list.length === 0) continue
-      const geo = treeGeometry(0x4a3b2c, pal.tree, pal.treeDark, v)
-      const mesh = new THREE.InstancedMesh(geo, this.staticMaterial, list.length)
-      mesh.castShadow = this.quality.shadows
-      mesh.receiveShadow = true
-      list.forEach((o, i) => {
-        _p.set(o.x, w.terrain.heightAt(o.x, o.z) - 0.05, o.z)
-        _q.setFromAxisAngle(_axisY, o.rotation)
-        _s.set(o.scale, o.scale * (0.9 + (i % 3) * 0.08), o.scale)
-        _m.compose(_p, _q, _s)
-        mesh.setMatrixAt(i, _m)
-      })
-      mesh.instanceMatrix.needsUpdate = true
-      this.scene.add(mesh)
-      this.treeTrunks.push(mesh)
-      this.disposables.push(geo)
-    }
+    // Bäume sind keine Kulisse mehr, sondern Holzknoten -- sie werden in
+    // buildNodes gebaut und in syncNodes bewegt, weil sie fallen können.
+    const rocks = w.obstacles
 
     if (rocks.length > 0) {
       const geo = rockGeometry(pal.rock, 0)
@@ -222,8 +203,27 @@ export class GameView {
   }
 
   private buildNodes(w: World): void {
+    const pal = w.worldDef.palette
+    // Bäume: eine Instanz-Gruppe je Variante. Sie stehen, wackeln beim Hieb
+    // und kippen -- deshalb werden ihre Matrizen jedes Bild neu gesetzt.
+    for (let v = 0; v < 3; v++) {
+      const anzahl = w.nodes.filter((n) => n.form === 'baum' && n.variant === v).length
+      if (anzahl === 0) continue
+      const geo = treeGeometry(0x4a3b2c, pal.tree, pal.treeDark, v)
+      const mesh = new THREE.InstancedMesh(geo, this.staticMaterial, anzahl)
+      mesh.castShadow = this.quality.shadows
+      mesh.receiveShadow = true
+      mesh.frustumCulled = false
+      this.scene.add(mesh)
+      this.treeMeshes[v] = mesh
+      this.disposables.push(geo)
+    }
+
     const groups = new Map<ResourceId, number>()
-    for (const n of w.nodes) groups.set(n.resource, (groups.get(n.resource) ?? 0) + 1)
+    for (const n of w.nodes) {
+      if (n.form === 'baum') continue
+      groups.set(n.resource, (groups.get(n.resource) ?? 0) + 1)
+    }
 
     for (const [resource, count] of groups) {
       let geo: THREE.BufferGeometry
@@ -261,9 +261,55 @@ export class GameView {
 
   private syncNodes(w: World): void {
     const counters = new Map<ResourceId, number>()
+    const baumZaehler = [0, 0, 0]
     let stumpCount = 0
     for (const n of w.nodes) {
       const y = w.terrain.heightAt(n.pos.x, n.pos.z)
+
+      /*
+       * Bäume.
+       *
+       * Solange sie stehen, wackeln sie beim Hieb. Nach dem letzten Hieb
+       * kippen sie um ihren Fuß zur Seite -- deshalb wird der Stamm um
+       * einen Punkt am Boden gedreht und nicht um seine Mitte. Liegt er,
+       * bleibt der Stumpf stehen und der Stamm verschwindet: Er hätte sonst
+       * eine Kollision, die es nicht mehr gibt.
+       */
+      if (n.form === 'baum') {
+        if (n.fall < 1) {
+          const mesh = this.treeMeshes[n.variant]
+          if (mesh) {
+            const i = baumZaehler[n.variant]!
+            baumZaehler[n.variant] = i + 1
+            const kippen = n.fall > 0 ? Math.min(1, n.fall) ** 1.6 * (Math.PI / 2) * 0.98 : 0
+            const zittern = n.shake > 0 ? Math.sin(n.shake * 34) * 0.035 * n.shake : 0
+            _p.set(n.pos.x, y - 0.05, n.pos.z)
+            _q.setFromAxisAngle(_axisY, n.rotation)
+            if (kippen > 0) {
+              _qFall.setFromAxisAngle(
+                _kippAchse.set(Math.sin(n.fallDir), 0, -Math.cos(n.fallDir)).normalize(),
+                kippen,
+              )
+              _q.premultiply(_qFall)
+            } else if (zittern !== 0) {
+              _qFall.setFromAxisAngle(_kippAchse.set(1, 0, 0), zittern)
+              _q.premultiply(_qFall)
+            }
+            _s.set(n.scale, n.scale, n.scale)
+            _m.compose(_p, _q, _s)
+            mesh.setMatrixAt(i, _m)
+          }
+        }
+        if (n.amount <= 0 && this.stumps) {
+          _p.set(n.pos.x, y, n.pos.z)
+          _q.setFromAxisAngle(_axisY, n.rotation)
+          _s.set(n.scale, n.scale, n.scale)
+          _m.compose(_p, _q, _s)
+          this.stumps.setMatrixAt(stumpCount++, _m)
+        }
+        continue
+      }
+
       if (n.amount <= 0) {
         if (this.stumps) {
           _p.set(n.pos.x, y, n.pos.z)
@@ -288,6 +334,12 @@ export class GameView {
     }
     for (const [resource, mesh] of this.nodeMeshes) {
       mesh.count = counters.get(resource) ?? 0
+      mesh.instanceMatrix.needsUpdate = true
+    }
+    for (let v = 0; v < 3; v++) {
+      const mesh = this.treeMeshes[v]
+      if (!mesh) continue
+      mesh.count = baumZaehler[v]!
       mesh.instanceMatrix.needsUpdate = true
     }
     if (this.stumps) {
@@ -365,13 +417,57 @@ export class GameView {
     this.player.group.rotation.y = -p.facing + Math.PI / 2
     this.player.group.visible = p.alive
 
-    const moving = Math.hypot(p.vel.x, p.vel.z) > 0.2
-    const bob = moving ? Math.sin(p.stride * 5) * 0.06 : 0
-    this.player.body.position.y = 0.05 + Math.abs(bob)
-    this.player.head.position.y = 1.5 + bob * 1.4
-    this.player.arm.rotation.z =
-      0.5 - p.attackAnim * 1.9 + (moving ? Math.sin(p.stride * 5) * 0.25 : 0)
-    this.player.arm.rotation.x = -p.attackAnim * 1.2
+    /*
+     * Der Schritt.
+     *
+     * Beine und Arme gehen gegengleich um Hüfte und Schulter -- das ist der
+     * ganze Trick an einem Gang, der nach Gehen aussieht. `stride` wächst mit
+     * der zurückgelegten Strecke, also passt die Schrittfrequenz von selbst
+     * zum Tempo, statt an einer Uhr zu hängen.
+     */
+    const speed = Math.hypot(p.vel.x, p.vel.z)
+    const moving = speed > 0.2
+    const schwung = moving ? Math.sin(p.stride * 5) : 0
+    const kraft = Math.min(1, speed / 3.4)
+    this.player.legLeft.rotation.z = schwung * 0.75 * kraft
+    this.player.legRight.rotation.z = -schwung * 0.75 * kraft
+    // Knie knicken nur nach hinten, und nur wenn das Bein nach hinten geht.
+    this.player.kneeLeft.rotation.z = Math.max(0, -schwung) * 0.9 * kraft
+    this.player.kneeRight.rotation.z = Math.max(0, schwung) * 0.9 * kraft
+
+    const bob = moving ? Math.abs(Math.sin(p.stride * 5)) * 0.05 * kraft : 0
+    this.player.torso.position.y = bob
+    this.player.torso.rotation.z = -0.04 * kraft + p.attackAnim * 0.12
+
+    /*
+     * Der Hieb.
+     *
+     * `attackAnim` läuft von 1 auf 0. Der Arm holt weit hinten aus und
+     * kommt nach vorn durch; der Oberkörper geht mit. Beim Sammeln und
+     * Fällen zählt `gatherProgress`: Aus dem stetigen Fortschritt wird ein
+     * Takt, damit man Hiebe sieht und nicht ein Drücken.
+     */
+    // Beim Hacken steht der Arm zu Beginn eines Hiebes oben und trifft,
+    // wenn der Fortschritt voll ist -- genau dann fällt auch das Scheit.
+    const hacken = w.interactable?.kind === 'node' && p.gatherProgress > 0
+    const hieb = Math.max(p.attackAnim, hacken ? 1 - p.gatherProgress : 0)
+    this.player.arm.rotation.z = -schwung * 0.55 * kraft
+    this.player.arm.rotation.x = 0.12
+    /*
+     * Ausholen heißt: über die Schulter nach hinten, nicht nach vorn.
+     *
+     * Mit positivem Winkel stand der Arm gerade vor dem Körper -- das sah
+     * aus wie angelegtes Gewehr, nicht wie Holzhacken (nachgesehen am
+     * 27.09. im Schauglas). Negativ dreht ihn nach hinten oben, und der
+     * Ellbogen knickt dabei ein, sodass die Axt hinter dem Kopf steht.
+     */
+    // Beim Treffer kommt die Axt vorn herunter, nicht neben dem Körper zur
+    // Ruhe -- sonst schlägt man neben den Baum.
+    const durchzug = hacken || p.attackAnim > 0 ? 1 - hieb : 0
+    this.player.armRight.rotation.z = schwung * 0.55 * kraft - hieb * 2.5 + durchzug * 0.55
+    this.player.armRight.rotation.x = 0
+    this.player.elbowRight.rotation.z = hieb * 1.3
+    this.player.axe.visible = p.tools.has('axe')
 
     const lantern = lanternRadius(w)
     this.lanternLight.position.set(px, py + 1.0, pz)
@@ -487,6 +583,7 @@ export class GameView {
     for (const m of [
       this.terrain,
       ...this.treeTrunks,
+      ...(this.treeMeshes.filter(Boolean) as THREE.InstancedMesh[]),
       ...this.rocks,
       ...this.nodeMeshes.values(),
       this.stumps,
@@ -500,6 +597,7 @@ export class GameView {
     this.disposables.length = 0
     this.terrain = null
     this.treeTrunks = []
+    this.treeMeshes = [null, null, null]
     this.rocks = []
     this.nodeMeshes.clear()
     this.stumps = null

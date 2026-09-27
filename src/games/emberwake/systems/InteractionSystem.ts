@@ -25,7 +25,17 @@ const SECRET_REACH = 2.4
 
 /** Sekunden je Einheit. */
 const GATHER_TIME = 0.85
+/**
+ * Bäume fällen dauert.
+ *
+ * Thomas am 27.09.2026: "Holz nicht rumliegen, sondern man muss Bäume
+ * fällen." Ein Hieb je Einheit Holz, und mit blosser Hand ist das zäh --
+ * die Axt ist damit nicht mehr nur schneller, sondern der Unterschied
+ * zwischen "geht" und "lohnt sich nicht".
+ */
+const CHOP_TIME = 1.35
 const AXE_FACTOR = 0.5
+const AXE_FACTOR_BAUM = 0.38
 
 export function updateInteraction(w: World, input: InputFrame, dt: number): void {
   const p = w.player
@@ -81,7 +91,11 @@ function findInteractable(w: World): Interactable | null {
     const d2 = dist2(n.pos, p.pos)
     if (d2 <= reach * reach && d2 < bestD2) {
       bestD2 = d2
-      best = { kind: 'node', id: n.id, label: `${ITEMS[n.resource].name} sammeln` }
+      best = {
+        kind: 'node',
+        id: n.id,
+        label: n.form === 'baum' ? 'Baum fällen' : `${ITEMS[n.resource].name} sammeln`,
+      }
     }
   }
 
@@ -136,8 +150,11 @@ function gather(w: World, nodeId: number, dt: number): void {
     return
   }
 
-  const factor = node.resource === 'wood' && p.tools.has('axe') ? AXE_FACTOR : 1
-  p.gatherProgress += dt / (GATHER_TIME * factor)
+  const baum = node.form === 'baum'
+  const hatAxt = p.tools.has('axe')
+  const grundzeit = baum ? CHOP_TIME : GATHER_TIME
+  const factor = hatAxt && node.resource === 'wood' ? (baum ? AXE_FACTOR_BAUM : AXE_FACTOR) : 1
+  p.gatherProgress += dt / (grundzeit * factor)
 
   if (p.gatherProgress >= 1) {
     p.gatherProgress = 0
@@ -151,6 +168,15 @@ function gather(w: World, nodeId: number, dt: number): void {
       x: node.pos.x,
       z: node.pos.z,
     })
+    if (baum) {
+      // Jeder Hieb ein Scheit -- der letzte bringt ihn zu Fall.
+      w.events.emit('tree_chopped', { x: node.pos.x, z: node.pos.z, felled: node.amount <= 0 })
+      if (node.amount <= 0 && node.fall === 0) {
+        node.fall = 0.0001
+        // Er kippt von dem weg, der ihn geschlagen hat.
+        node.fallDir = Math.atan2(node.pos.z - p.pos.z, node.pos.x - p.pos.x)
+      }
+    }
   }
 }
 

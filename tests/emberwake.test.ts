@@ -83,10 +83,19 @@ describe('Emberwake – Welt', () => {
     }
   })
 
-  it('macht jeden Ressourcenknoten auf gerader Linie vom Lager erreichbar', () => {
+  /*
+   * Seit dem 27.09.2026 kommt Holz aus Bäumen, und jeder Baum des Waldes ist
+   * ein Knoten. Für die kann die Garantie nicht gelten -- ein Wald, durch den
+   * von überall eine freie Linie zum Lager führt, wäre kein Wald.
+   *
+   * Sie gilt weiter für die Knoten, die das Level plant: Was dort ausgelegt
+   * ist, soll man erreichen, ohne sich durchs Unterholz zu schlagen.
+   */
+  it('macht jeden geplanten Ressourcenknoten auf gerader Linie erreichbar', () => {
     for (const level of LEVELS) {
       const w = generateWorld(level, getWorldForLevel(level), LEER)
-      for (const n of w.nodes) {
+      expect(w.nodes.filter((n) => n.geplant).length).toBeGreaterThan(0)
+      for (const n of w.nodes.filter((n) => n.geplant)) {
         for (let i = 1; i < 40; i++) {
           const t = i / 40
           const x = CAMP_POS.x + (n.pos.x - CAMP_POS.x) * t
@@ -181,5 +190,80 @@ describe('Emberwake – Level sind schaffbar', () => {
       )
     }
     expect(world.clock.nightsSurvived).toBe(1)
+  })
+})
+
+/**
+ * Holz kommt aus Bäumen.
+ *
+ * Thomas am 27.09.2026: "Holz nicht rumliegen, sondern man muss Bäume
+ * fällen." Der Test hält die Folgen fest: Es liegt nichts mehr herum, ein
+ * Baum steht im Weg, bis er gefällt ist, und jeder Hieb bringt ein Scheit.
+ */
+describe('Emberwake – Bäume fällen', () => {
+  function welt() {
+    const level = getLevel(1)!
+    return generateWorld(level, getWorldForLevel(level), LEER)
+  }
+
+  it('legt kein Holz mehr auf den Boden – alles Holz steht als Baum', () => {
+    for (const level of LEVELS) {
+      const w = generateWorld(level, getWorldForLevel(level), LEER)
+      const holz = w.nodes.filter((n) => n.resource === 'wood')
+      expect(holz.length, `Level ${level.id}`).toBeGreaterThan(0)
+      for (const n of holz) expect(n.form, `Level ${level.id}`).toBe('baum')
+      // Und die Bäume sind keine Kulisse mehr: Als Hindernis bleiben Felsen.
+      expect(w.obstacles.every((o) => o.kind === 'rock')).toBe(true)
+    }
+  })
+
+  it('macht den ganzen Wald zu Holz, nicht nur die geplanten Stellen', () => {
+    const w = welt()
+    const wald = w.nodes.filter((n) => n.resource === 'wood' && !n.geplant)
+    expect(wald.length).toBeGreaterThan(30)
+  })
+
+  it('versperrt den Weg, solange der Baum steht – und gibt ihn frei, wenn er liegt', () => {
+    const w = welt()
+    const baum = w.nodes.find((n) => n.form === 'baum')!
+    expect(w.collision.isFree(baum.pos.x, baum.pos.z, 0.42)).toBe(false)
+
+    const sim = new Simulation(w)
+    // Direkt davor stellen und draufhalten, bis er liegt.
+    w.player.pos.x = baum.pos.x - (baum.radius + 1)
+    w.player.pos.z = baum.pos.z
+    const input = { ...emptyInput(), actionHeld: true }
+    for (let i = 0; i < 60 * 40 && baum.fall < 1; i++) sim.step(input, STEP)
+
+    expect(baum.amount).toBe(0)
+    expect(baum.fall).toBe(1)
+    // Der Stamm liegt, der Weg ist frei.
+    expect(w.collision.isFree(baum.pos.x, baum.pos.z, 0.42)).toBe(true)
+    // Und das Holz ist beim Spieler gelandet.
+    expect(w.player.inventory.wood).toBeGreaterThanOrEqual(baum.maxAmount)
+  })
+
+  it('fällt denselben Baum mit der Axt in deutlich kürzerer Zeit', () => {
+    /** Sekunden, bis der Baum liegt. */
+    const zeitBisGefaellt = (mitAxt: boolean): number => {
+      const w = welt()
+      if (mitAxt) w.player.tools.add('axe')
+      const baum = w.nodes.find((n) => n.form === 'baum')!
+      const sim = new Simulation(w)
+      w.player.pos.x = baum.pos.x - (baum.radius + 1)
+      w.player.pos.z = baum.pos.z
+      const input = { ...emptyInput(), actionHeld: true }
+      let schritte = 0
+      while (baum.amount > 0 && schritte < 60 * 60) {
+        sim.step(input, STEP)
+        schritte++
+      }
+      return schritte * STEP
+    }
+    const ohne = zeitBisGefaellt(false)
+    const mit = zeitBisGefaellt(true)
+    expect(ohne).toBeGreaterThan(0)
+    // Ohne Axt ist Fällen zäh -- das ist der Sinn der Axt.
+    expect(mit).toBeLessThan(ohne * 0.6)
   })
 })

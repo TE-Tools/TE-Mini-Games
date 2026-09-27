@@ -153,49 +153,180 @@ export function genericNodeGeometry(hex: number): THREE.BufferGeometry {
   return merge([geo])
 }
 
-/** Der Spieler: Träger mit Mantel. Einzelne Meshes, damit sie animiert werden können. */
+/**
+ * Der Spieler: ein Träger mit Mantel, Kapuze, Rucksack -- und Gliedmaßen.
+ *
+ * Thomas am 27.09.2026: "die Figur echter machen." Vorher war es ein Kegel
+ * mit einem Kopf darauf und einem einzigen Arm für die Laterne: Es lief
+ * nichts, es schwang nichts, und beim Schlagen bewegte sich ein Stab.
+ *
+ * Jetzt hat sie Brustkorb, Becken, zwei Arme mit Ellbogen, zwei Beine mit
+ * Knien und Füßen. Jedes Glied ist ein eigener Knoten mit seinem Drehpunkt
+ * an der Schulter beziehungsweise Hüfte -- deshalb kann GameView damit einen
+ * Schritt und einen Axthieb spielen, statt Teile zu verschieben.
+ *
+ * Es bleibt Low-Poly mit Vertex-Farben: keine Texturen, keine Modelldateien
+ * (ARCHITECTURE.md §6). "Echter" heißt hier nicht "fotorealistisch", sondern
+ * "man erkennt, was sie tut".
+ */
 export interface PlayerModel {
   group: THREE.Group
+  /** Alles oberhalb der Hüfte -- kippt beim Schlagen nach vorn. */
+  torso: THREE.Group
   body: THREE.Mesh
   head: THREE.Mesh
+  /** Laternenarm (links). Dreht um die Schulter. */
+  arm: THREE.Group
+  /** Axtarm (rechts). Dreht um die Schulter. */
+  armRight: THREE.Group
+  /** Ellbogen des Axtarms -- knickt beim Ausholen. */
+  elbowRight: THREE.Group
+  legLeft: THREE.Group
+  legRight: THREE.Group
+  /** Knie. Knicken nur nach hinten, und nur im Rückschwung. */
+  kneeLeft: THREE.Group
+  kneeRight: THREE.Group
   lantern: THREE.Mesh
-  arm: THREE.Mesh
   lanternMaterial: THREE.MeshBasicMaterial
+  /** Die Axt in der rechten Hand -- nur sichtbar, wenn man eine hat. */
+  axe: THREE.Group
+}
+
+/** Ein Glied: Drehpunkt oben, Fleisch nach unten. */
+function limb(
+  material: THREE.Material,
+  laenge: number,
+  oben: number,
+  unten: number,
+): { pivot: THREE.Group; mesh: THREE.Mesh } {
+  const pivot = new THREE.Group()
+  const geo = new THREE.CylinderGeometry(oben, unten, laenge, 5)
+  geo.translate(0, -laenge / 2, 0)
+  const mesh = new THREE.Mesh(geo, material)
+  mesh.castShadow = true
+  pivot.add(mesh)
+  return { pivot, mesh }
 }
 
 export function playerModel(): PlayerModel {
   const group = new THREE.Group()
-  const mat = new THREE.MeshLambertMaterial({ color: 0x6b6f8a, flatShading: true })
+  const torso = new THREE.Group()
   const skin = new THREE.MeshLambertMaterial({ color: 0xd8b79a, flatShading: true })
   const coat = new THREE.MeshLambertMaterial({ color: 0x3f4763, flatShading: true })
+  const leder = new THREE.MeshLambertMaterial({ color: 0x5b4636, flatShading: true })
+  const hose = new THREE.MeshLambertMaterial({ color: 0x2f3547, flatShading: true })
 
-  const body = new THREE.Mesh(new THREE.ConeGeometry(0.42, 1.15, 6, 1), coat)
-  body.geometry.translate(0, 0.575, 0)
-  body.position.y = 0.05
+  // Brustkorb: oben breiter als unten, wie Schultern über der Taille.
+  const brust = new THREE.CylinderGeometry(0.34, 0.26, 0.62, 6)
+  brust.translate(0, 1.14, 0)
+  const body = new THREE.Mesh(brust, coat)
   body.castShadow = true
 
-  const shoulders = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.42, 0.35, 6), mat)
-  shoulders.position.y = 1.1
+  const guertel = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.12, 6), leder)
+  guertel.position.y = 0.8
 
-  const head = new THREE.Mesh(new THREE.IcosahedronGeometry(0.24, 0), skin)
-  head.position.y = 1.5
+  const becken = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.24, 0.24, 6), hose)
+  becken.position.y = 0.68
+
+  const hals = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.12, 5), skin)
+  hals.position.y = 1.48
+
+  const head = new THREE.Mesh(new THREE.IcosahedronGeometry(0.21, 0), skin)
+  head.position.y = 1.66
   head.castShadow = true
 
-  const hood = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.5, 6, 1), coat)
-  hood.position.y = 1.72
+  // Kapuze: sitzt hinten am Kopf, das Gesicht bleibt frei.
+  const kapuze = new THREE.Mesh(new THREE.SphereGeometry(0.25, 7, 5), coat)
+  kapuze.position.set(-0.05, 1.7, 0)
+  kapuze.scale.set(1, 0.95, 1.05)
 
-  const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.62, 5), coat)
-  arm.geometry.translate(0, -0.31, 0)
-  arm.position.set(0.38, 1.15, 0.08)
-  arm.rotation.z = 0.5
+  const rucksack = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.38, 0.22), leder)
+  rucksack.position.set(-0.3, 1.15, 0)
+  rucksack.castShadow = true
 
+  // Arme: Drehpunkt an der Schulter, Unterarm am Ellbogen.
+  const linkerArm = limb(coat, 0.38, 0.09, 0.075)
+  linkerArm.pivot.position.set(0, 1.4, 0.3)
+  const linkerUnterarm = limb(coat, 0.36, 0.075, 0.065)
+  linkerUnterarm.pivot.position.y = -0.38
+  linkerArm.pivot.add(linkerUnterarm.pivot)
+  const linkeHand = new THREE.Mesh(new THREE.IcosahedronGeometry(0.075, 0), skin)
+  linkeHand.position.y = -0.36
+  linkerUnterarm.pivot.add(linkeHand)
+
+  const rechterArm = limb(coat, 0.38, 0.09, 0.075)
+  rechterArm.pivot.position.set(0, 1.4, -0.3)
+  const rechterUnterarm = limb(coat, 0.36, 0.075, 0.065)
+  rechterUnterarm.pivot.position.y = -0.38
+  rechterArm.pivot.add(rechterUnterarm.pivot)
+  const rechteHand = new THREE.Mesh(new THREE.IcosahedronGeometry(0.075, 0), skin)
+  rechteHand.position.y = -0.36
+  rechterUnterarm.pivot.add(rechteHand)
+
+  // Beine: Drehpunkt an der Hüfte, Unterschenkel am Knie, Fuß darunter.
+  const beine: THREE.Group[] = []
+  const knie: THREE.Group[] = []
+  for (const seite of [1, -1]) {
+    const oberschenkel = limb(hose, 0.42, 0.13, 0.11)
+    oberschenkel.pivot.position.set(0, 0.72, seite * 0.13)
+    const unterschenkel = limb(hose, 0.4, 0.1, 0.085)
+    unterschenkel.pivot.position.y = -0.42
+    oberschenkel.pivot.add(unterschenkel.pivot)
+    const fuss = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.1, 0.14), leder)
+    fuss.position.set(0.04, -0.43, 0)
+    fuss.castShadow = true
+    unterschenkel.pivot.add(fuss)
+    beine.push(oberschenkel.pivot)
+    knie.push(unterschenkel.pivot)
+  }
+
+  // Die Laterne hängt in der linken Hand.
   const lanternMaterial = new THREE.MeshBasicMaterial({ color: 0xffb35c })
   const lantern = new THREE.Mesh(new THREE.OctahedronGeometry(0.11, 0), lanternMaterial)
-  lantern.position.set(0, -0.72, 0)
-  arm.add(lantern)
+  lantern.position.y = -0.14
+  const buegel = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.012, 4, 8), leder)
+  buegel.rotation.x = Math.PI / 2
+  buegel.position.y = -0.04
+  linkeHand.add(lantern, buegel)
 
-  group.add(body, shoulders, head, hood, arm)
-  return { group, body, head, lantern, arm, lanternMaterial }
+  // Die Axt in der rechten Hand. Der Stiel misst 42 Zentimeter: Mit 62
+  // schleifte das Blatt beim Gehen über den Boden (nachgesehen am 27.09.).
+  const axe = new THREE.Group()
+  const stiel = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.03, 0.42, 5), leder)
+  stiel.geometry.translate(0, -0.21, 0)
+  const blattGeo = new THREE.BoxGeometry(0.05, 0.16, 0.13)
+  blattGeo.translate(0.015, -0.4, 0.05)
+  const blatt = new THREE.Mesh(
+    blattGeo,
+    new THREE.MeshLambertMaterial({
+      color: 0x9aa3b0,
+      flatShading: true,
+    }),
+  )
+  blatt.castShadow = true
+  axe.add(stiel, blatt)
+  axe.visible = false
+  rechteHand.add(axe)
+
+  torso.add(body, guertel, becken, hals, head, kapuze, rucksack, linkerArm.pivot, rechterArm.pivot)
+  group.add(torso, beine[0]!, beine[1]!)
+
+  return {
+    group,
+    torso,
+    body,
+    head,
+    arm: linkerArm.pivot,
+    armRight: rechterArm.pivot,
+    elbowRight: rechterUnterarm.pivot,
+    legLeft: beine[0]!,
+    legRight: beine[1]!,
+    kneeLeft: knie[0]!,
+    kneeRight: knie[1]!,
+    lantern,
+    lanternMaterial,
+    axe,
+  }
 }
 
 export interface EnemyModel {

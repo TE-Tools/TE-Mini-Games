@@ -77,6 +77,15 @@ export interface EnemyState {
   attackAnim: number
 }
 
+/**
+ * Woher eine Ressource kommt.
+ *
+ * `baum` heißt: Sie steht, versperrt den Weg und muss gefällt werden.
+ * `haufen` ist das, was am Boden liegt und eingesammelt wird -- Stein,
+ * Nahrung, Harz. Holz liegt seit dem 27.09.2026 nicht mehr herum.
+ */
+export type NodeForm = 'haufen' | 'baum'
+
 export interface ResourceNodeState {
   id: number
   resource: ResourceId
@@ -86,6 +95,27 @@ export interface ResourceNodeState {
   radius: number
   /** Kurzes Wackeln nach dem Abbau, 1 → 0. */
   shake: number
+  form: NodeForm
+  /**
+   * Hat das Level diesen Knoten geplant?
+   *
+   * Geplante Knoten sind vom Lager aus auf gerader Linie erreichbar -- der
+   * Generator räumt ihnen den Weg frei. Für die Bäume des Waldes gilt das
+   * nicht: Der Wald darf Wald sein, man geht drumherum oder durch ihn
+   * hindurch.
+   */
+  geplant: boolean
+  /** Nur Bäume: Größe, Drehung und Form für die Anzeige. */
+  scale: number
+  rotation: number
+  variant: number
+  /**
+   * Der Fall, 0 → 1. Beginnt mit dem letzten Hieb.
+   * Bei 1 liegt der Baum, die Kollision ist weg und der Stumpf steht.
+   */
+  fall: number
+  /** Richtung, in die er kippt. Die des letzten Hiebes. */
+  fallDir: number
 }
 
 export interface Obstacle {

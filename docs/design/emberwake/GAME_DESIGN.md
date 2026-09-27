@@ -19,6 +19,19 @@ dich vom Lager entfernst, macht dein Lager dunkler.
 Das Spiel ist **keine Variante von „sammle Holz, überlebe die Nacht"**.
 Drei Dinge trennen es von allem, was es kopieren könnte:
 
+> **Nachtrag 27.09.2026 — Holz kommt jetzt aus Bäumen.**
+>
+> Thomas: „Holz nicht rumliegen, sondern man muss Bäume fällen." Damit wird
+> das Sammeln körperlicher: Ein Baum steht im Weg, kostet Hiebe und fällt
+> dann um. Es ist eine Anleihe bei den Wald-Überlebensspielen, und sie
+> widerspricht dem Satz oben **nicht**: Der Unterschied dieses Spiels liegt
+> nicht darin, woher das Holz kommt, sondern was es kostet, es zu holen --
+> Lichtschuld und Ballast (§2.1 und §2.2) gelten unverändert. Weiterhin
+> gibt es keinen Hungerbalken, kein Feuer-Nachlegen im Minutentakt und kein
+> „Sammle 10.000 Holz" (§10, §86).
+>
+> Was sich dadurch ändert, steht in §2.4.
+
 ### 2.1 Kernmechanik: Lichtschuld
 
 Im Zentrum des Lagers steht der **Kern** — ein Splitter des letzten Lichts.
@@ -83,6 +96,33 @@ verloren hat.
 Das Gegnerverhalten _ist_ die Geschichte. Keine Textwände nötig (§7).
 
 ---
+
+### 2.4 Der Wald ist das Holz (seit 27.09.2026)
+
+Jeder Baum ist ein Holzvorkommen. Es liegt nichts mehr am Boden, was man
+aufhebt; man stellt sich davor, holt aus und schlägt. Jeder Hieb bringt ein
+Scheit, der letzte bringt den Baum zu Fall -- er kippt von einem weg, gibt
+den Weg frei und lässt einen Stumpf zurück.
+
+Was daraus folgt:
+
+- **Bäume sind Hindernisse und Vorrat zugleich.** Solange einer steht,
+  versperrt er den Weg. Wer sich eine Schneise schlägt, verändert die Karte.
+- **Die Axt entscheidet.** Ohne sie dauert ein Hieb 1,35 Sekunden, mit ihr
+  0,51. Sie ist nicht mehr nur schneller, sondern der Unterschied zwischen
+  „geht" und „lohnt nicht".
+- **Ein Baum trägt mehr als ein Haufen.** Drei bis vier Scheite je nach
+  Größe; geplante Bäume so viel, wie das Level vorsieht.
+- **Rund ums Lager ist gerodet.** Der Wald beginnt erst elf Meter vom Kern
+  entfernt. Stünde das nächste Holz direkt daneben, wöge die Lichtschuld
+  nichts mehr -- sie lebt davon, dass Holz weit weg ist.
+- **Die Linie-zum-Lager-Garantie gilt nur noch für geplante Knoten**
+  (LEVEL_DESIGN §6). Ein Wald, durch den von überall eine freie Linie zum
+  Lager führt, wäre kein Wald.
+
+Die Figur hat dafür Arme und Beine bekommen: Sie geht mit gegengleichem
+Schwung, holt über die Schulter aus und schlägt nach vorn durch. Ohne
+sichtbaren Hieb wäre Fällen nur ein gedrückter Knopf.
 
 ## 3. Geschichte
 

@@ -406,7 +406,7 @@ export class UiRoot {
           <label class="btn is-ghost" style="cursor:pointer">Importieren<input type="file" accept=".ewsave,application/json" hidden data-act="import"></label>
         </div>
         <button class="btn is-ghost is-danger" data-act="reset">Alles zurücksetzen</button>
-        <p class="small center">Tastatur: WASD bewegen · E sammeln · Leertaste Angriff · Shift Sprint · Q abwerfen · Esc Pause</p>
+        <p class="small center">Tastatur: WASD bewegen · E fällen/sammeln · Leertaste Angriff · Shift Sprint · Q abwerfen · Esc Pause</p>
       </div>
     `,
     )
