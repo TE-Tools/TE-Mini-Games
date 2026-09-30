@@ -18,7 +18,6 @@ import {
   eintragen,
   endstand,
   erstellePartie,
-  gesamtpunkte,
   halten,
   kiSchritt,
   wuerfeln,
@@ -27,17 +26,14 @@ import {
   type KniffelZustand,
   type SpielerEinrichtung,
 } from '@/games/kniffel'
-import { addXp, saveGameResult } from '@/offline'
-import { processAfterResult } from '@/progression'
-import { trySyncNow } from '@/services/remoteSync'
-import { isKniffelOnlineAvailable, meldeKniffelSoloPartie } from '@/services/kniffelOnline'
+import { isKniffelOnlineAvailable } from '@/services/kniffelOnline'
 import { spielerNameOderDu } from '@/services/spielername'
 import { spiele, setzeTon, tonAn, vibriere } from '@/services/sound'
 import { Wuerfelreihe } from './kniffel/Wuerfelreihe'
 import { Kniffelblock, type BlockSpalte } from './kniffel/Kniffelblock'
 import { Bestenliste } from './kniffel/Bestenliste'
+import { buchePartie } from './kniffel/partieBuchen'
 import { KniffelOnline } from './KniffelOnline'
-import { partieXp } from '@/games/kniffel/definition'
 import shell from './PlayShell.module.css'
 import styles from './KniffelPage.module.css'
 
@@ -118,46 +114,11 @@ export function KniffelPage() {
   useEffect(() => {
     if (!zustand || zustand.phase !== 'ende' || ergebnisGesichert.current) return
     ergebnisGesichert.current = true
+    const partie = zustand
 
     void (async () => {
-      const mensch = zustand.spieler.find((s) => s.typ === 'mensch')
-      if (!mensch) return
-      const punkte = gesamtpunkte(mensch.block)
-      const gewonnen = zustand.siegerId === mensch.id
-      const xp = partieXp(punkte, gewonnen)
-      const gegner = zustand.spieler.filter((s) => s.id !== mensch.id)
-      const besterGegner = gegner.reduce((h, s) => Math.max(h, gesamtpunkte(s.block)), 0)
       try {
-        await saveGameResult({
-          gameId: 'kniffel',
-          level: 1,
-          score: punkte,
-          xp,
-          resultData: {
-            punkte,
-            gewonnen,
-            mitspieler: zustand.spieler.length,
-            kiStufe: zustand.spieler.find((s) => s.typ === 'ki')?.kiStufe ?? null,
-          },
-          stars: 0,
-          isPersonalRecord: gewonnen,
-        })
-        await addXp('guest', xp)
-        await processAfterResult({ gameId: 'kniffel', level: 1, isPersonalRecord: gewonnen })
-        /*
-         * Und in die Bestenliste. Wer gewonnen hat, rechnet der Server aus
-         * den beiden Punktzahlen aus -- gemeldet werden Zahlen, kein
-         * Urteil. Gegen niemanden gespielt wird nichts gemeldet; das fängt
-         * meldeKniffelSoloPartie ab.
-         */
-        await meldeKniffelSoloPartie({
-          partieId: partieId.current || crypto.randomUUID(),
-          punkte,
-          besterGegner,
-          mitspieler: zustand.spieler.length,
-          stufe: gegner.find((s) => s.kiStufe)?.kiStufe ?? null,
-        })
-        void trySyncNow()
+        await buchePartie(partie, partieId.current || crypto.randomUUID())
       } catch (err) {
         console.error('[kniffel] Ergebnis konnte nicht gespeichert werden', err)
       }
@@ -250,6 +211,13 @@ export function KniffelPage() {
               </small>
             </span>
           </button>
+
+          {/*
+            Die Rangliste gleich im Menü: Sie zeigt, worum gespielt wird,
+            bevor man sich für einen Modus entscheidet. Gezählt werden
+            beide Wege -- online und gegen den Rechner.
+          */}
+          <Bestenliste />
 
           <Link to="/" className={shell.homeLink}>
             Zum Menü
