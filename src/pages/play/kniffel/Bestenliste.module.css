@@ -1,0 +1,155 @@
+/*
+ * Die Kniffel-Bestenliste.
+ *
+ * Maße wie die übrigen Listen im Vorraum (offene Räume, offene Runden):
+ * Wer dort gerade hingeschaut hat, soll hier nicht neu suchen müssen.
+ */
+
+.kasten {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+}
+
+.kopf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.titel {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.schalter {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-full);
+  background: var(--color-bg);
+}
+
+.an,
+.anAktiv {
+  min-height: 34px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.anAktiv {
+  background: var(--grad-primary);
+  color: var(--color-primary-text);
+}
+
+.liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  counter-reset: platz;
+}
+
+.zeile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+.zeile:nth-child(odd) {
+  background: rgb(255 255 255 / 0.03);
+}
+
+/* Die eigene Zeile: Man sucht zuerst sich selbst. */
+.ich {
+  background: var(--grad-primary-soft, rgb(255 190 80 / 0.14));
+  outline: 1px solid var(--color-primary);
+}
+
+.platz {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-bg);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+/* Die ersten drei Plätze bekommen Farbe -- Gold, Silber, Bronze. */
+.zeile:nth-child(1) .platz {
+  background: linear-gradient(180deg, #f3d271, #d9a92f);
+  color: #33240a;
+}
+
+.zeile:nth-child(2) .platz {
+  background: linear-gradient(180deg, #e3e7ee, #aab2c0);
+  color: #2b2f38;
+}
+
+.zeile:nth-child(3) .platz {
+  background: linear-gradient(180deg, #e0b083, #ad7844);
+  color: #2e1c0a;
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.wert {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.wert strong {
+  font-size: var(--text-base);
+}
+
+.wert small {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.leise,
+.fussnote {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.fussnote {
+  text-align: center;
+  opacity: 0.8;
+}

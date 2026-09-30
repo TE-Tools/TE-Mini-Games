@@ -116,6 +116,57 @@ export async function fetchMyKniffelMatches(): Promise<KniffelOpenMatch[]> {
   return rpc<KniffelOpenMatch[]>('kniffel_my_matches', {})
 }
 
+/* ===================== Bestenliste (Migration 021) ==================== */
+
+export interface KniffelBestenEintrag {
+  username: string
+  siege: number
+  partien: number
+  /** Die höchste Punktzahl, mit der dieser Spieler eine Partie gewonnen hat. */
+  bester_sieg: number
+  /** Die höchste Punktzahl überhaupt -- auch aus verlorenen Partien. */
+  bestes_spiel: number
+  schnitt: number
+  zuletzt: string | null
+}
+
+export interface KniffelMeinePartie {
+  code: string
+  punkte: number
+  gewonnen: boolean
+  mitspieler: number
+  beendet_at: string
+}
+
+/**
+ * Die Bestenliste. Eine Abfrage für beide Listen: "wer gewinnt oft" sortiert
+ * nach Siegen, "wer gewinnt hoch" nach dem besten Sieg. Zwei Abfragen auf
+ * dieselben Zahlen wären zwei Gelegenheiten, sie verschieden zu zählen.
+ *
+ * Gezählt werden nur Online-Partien: Ein Sieg gegen den Rechner auf dem
+ * eigenen Gerät kann niemand nachprüfen.
+ */
+export async function fetchKniffelBestenliste(limit = 20): Promise<KniffelBestenEintrag[]> {
+  if (!supabase || !isSupabaseConfigured) return []
+  const { data, error } = await supabase
+    .from('kniffel_bestenliste')
+    .select('username, siege, partien, bester_sieg, bestes_spiel, schnitt, zuletzt')
+    .order('siege', { ascending: false })
+    .limit(limit)
+  if (error || !data) return []
+  return data as KniffelBestenEintrag[]
+}
+
+/** Die eigenen letzten Partien -- damit man sieht, was gezählt wurde. */
+export async function fetchMeineKniffelPartien(limit = 10): Promise<KniffelMeinePartie[]> {
+  if (!supabase || !isSupabaseConfigured) return []
+  try {
+    return await rpc<KniffelMeinePartie[]>('kniffel_meine_partien', { p_limit: limit })
+  } catch {
+    return []
+  }
+}
+
 /**
  * Auf Änderungen horchen. Der Server zählt bei jedem Zug eine Version
  * hoch; wir holen daraufhin den ganzen Zustand neu. Einzelne Felder

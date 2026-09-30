@@ -27,7 +27,10 @@ corresponding feature; do not invent a competing design.
   Die Online-Wertung in `supabase/migrations/017_kniffel.sql` ist eine zweite
   Fassung derselben Regeln -- notwendig, weil beim Kniffel der Würfel das
   Spiel ist und ein Client, der selbst würfelt, sich alles schreiben könnte.
-  Wer eine Regel ändert, ändert beide Seiten.
+  Wer eine Regel ändert, ändert beide Seiten. Die Bestenliste (Migration
+  `021_kniffel_bestenliste.sql`) rechnet nichts selbst: Sie archiviert beim
+  Partieende, was `kniffel_gesamt` ergibt, und zählt Siege. Gezählt werden
+  nur Online-Partien -- ein Sieg gegen den Rechner ist nicht nachprüfbar.
 - **Schützenopoly:** `docs/design/schuetzenopoly/` – Architektur, Datenmodell,
   Brettreihenfolge und Balancing des Brettspiels. Regeln gehören ausschließlich
   nach `src/games/schuetzenopoly/`, Balancingwerte ausschließlich in dessen
