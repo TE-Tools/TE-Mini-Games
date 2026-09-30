@@ -12,38 +12,62 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { sichtbar, sortiere } from '@/pages/play/kniffel/bestenlisteSortierung'
+import { sichtbar, sortiere, werte } from '@/pages/play/kniffel/bestenlisteSortierung'
 import type { KniffelBestenEintrag } from '@/services/kniffelOnline'
 
-const daten = vi.hoisted(() => ({ liste: [] as KniffelBestenEintrag[] }))
+const daten = vi.hoisted(() => ({
+  liste: [] as KniffelBestenEintrag[],
+  meinName: null as string | null,
+}))
 vi.mock('@/services/kniffelOnline', () => ({
+  isKniffelOnlineAvailable: true,
   fetchKniffelBestenliste: vi.fn(async () => daten.liste),
+  fetchMeinBestenlistenName: vi.fn(async () => daten.meinName),
 }))
 
 const { Bestenliste } = await import('@/pages/play/kniffel/Bestenliste')
 
 function eintrag(over: Partial<KniffelBestenEintrag>): KniffelBestenEintrag {
+  const siege = over.siege ?? 0
+  const partien = over.partien ?? 0
+  const bester = over.bester_sieg ?? 0
   return {
     username: 'wer',
-    siege: 0,
-    partien: 0,
-    bester_sieg: 0,
-    bestes_spiel: 0,
+    siege,
+    partien,
+    bester_sieg: bester,
+    bestes_spiel: bester,
     schnitt: 0,
     zuletzt: null,
+    // Ohne eigene Angabe kommt alles aus Online-Partien -- so sah jede
+    // Zeile vor Migration 022 aus.
+    siege_online: siege,
+    partien_online: partien,
+    bester_sieg_online: bester,
     ...over,
   }
 }
 
 /*
- * Drei Spieler, absichtlich gegenläufig:
+ * Vier Spieler, absichtlich gegenläufig:
  *
  *   vielspieler  viele Siege, aber keiner davon hoch
- *   glückspilz   ein einziger Sieg, dafür der höchste
+ *   glückspilz   ein einziger Sieg, dafür der höchste -- und der fiel
+ *                gegen den Rechner, also nur in der Gesamtliste
  *   ausdauernd   gleich viele Siege wie vielspieler, aus weniger Partien
+ *   neuling      hat gespielt, aber noch nie gewonnen
  */
 const VIELSPIELER = eintrag({ username: 'vielspieler', siege: 9, partien: 30, bester_sieg: 210 })
-const GLUECKSPILZ = eintrag({ username: 'glueckspilz', siege: 1, partien: 2, bester_sieg: 412 })
+const GLUECKSPILZ = eintrag({
+  username: 'glueckspilz',
+  siege: 1,
+  partien: 2,
+  bester_sieg: 412,
+  // Nur gegen den Rechner: online hat er nichts vorzuweisen.
+  siege_online: 0,
+  partien_online: 0,
+  bester_sieg_online: 0,
+})
 const AUSDAUERND = eintrag({ username: 'ausdauernd', siege: 9, partien: 12, bester_sieg: 260 })
 const NEULING = eintrag({ username: 'neuling', siege: 0, partien: 4, bester_sieg: 0 })
 
@@ -79,6 +103,7 @@ describe('Die Reihenfolge', () => {
 describe('Die Anzeige', () => {
   beforeEach(() => {
     daten.liste = [VIELSPIELER, GLUECKSPILZ, AUSDAUERND]
+    daten.meinName = null
   })
 
   it('zeigt beide Listen und schaltet zwischen ihnen um', async () => {
@@ -110,12 +135,79 @@ describe('Die Anzeige', () => {
   it('sagt es, wenn noch niemand gespielt hat', async () => {
     daten.liste = []
     render(<Bestenliste />)
-    expect(await screen.findByText(/Noch keine beendete Online-Partie/)).toBeInTheDocument()
+    expect(await screen.findByText(/Noch keine beendete Partie/)).toBeInTheDocument()
   })
 
   it('nennt, was gezählt wird', async () => {
     render(<Bestenliste />)
-    // Ohne diesen Satz fragt man sich, warum die Partien gegen den Rechner fehlen.
-    expect(await screen.findByText(/beendete Online-Partien/)).toBeInTheDocument()
+    // Ohne diesen Satz fragt man sich, was da eigentlich gezählt wurde.
+    expect(await screen.findByText(/online und gegen den Rechner/)).toBeInTheDocument()
+  })
+
+  it('findet die eigene Zeile auch ohne Zutun der Seite', async () => {
+    // Der Name kommt aus dem Konto. Vorher gab die Seite den Anzeigenamen
+    // hinein, die Liste steht aber auf dem Benutzernamen -- dann leuchtete
+    // die eigene Zeile nie.
+    daten.meinName = 'ausdauernd'
+    render(<Bestenliste />)
+    const meine = (await screen.findByText('ausdauernd')).closest('li')
+    expect(meine?.className).toMatch(/ich/)
+  })
+})
+
+describe('Online oder auch gegen den Rechner', () => {
+  beforeEach(() => {
+    daten.liste = [VIELSPIELER, GLUECKSPILZ, AUSDAUERND]
+    daten.meinName = null
+  })
+
+  it('zählt den Rechner von Anfang an mit', async () => {
+    // Thomas am 30.09.2026: "Bitte auch gegen Computer mit auswerten."
+    // Die Vorgabe ist also alles, nicht nur online.
+    render(<Bestenliste start="punkte" />)
+    const liste = await screen.findByRole('list')
+    expect(within(liste).getAllByRole('listitem')[0]).toHaveTextContent('glueckspilz')
+  })
+
+  it('lässt sich auf die nachprüfbaren Partien umschalten', async () => {
+    render(<Bestenliste start="punkte" />)
+    await screen.findByRole('list')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Nur Online' }))
+
+    const liste = screen.getByRole('list')
+    // Der hohe Wert war gegen den Rechner -- online führt jetzt ein anderer.
+    expect(within(liste).getAllByRole('listitem')[0]).toHaveTextContent('ausdauernd')
+    expect(liste).toHaveTextContent('260')
+    // Und wer nur gegen den Rechner gespielt hat, steht gar nicht mehr da:
+    // eine Zeile aus lauter Nullen wäre keine Auskunft.
+    expect(liste).not.toHaveTextContent('glueckspilz')
+    expect(screen.getByText(/nur beendete Online-Partien/)).toBeInTheDocument()
+  })
+
+  it('geht wieder zurück', async () => {
+    render(<Bestenliste start="punkte" />)
+    await screen.findByRole('list')
+    await userEvent.click(screen.getByRole('button', { name: 'Nur Online' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Rechner mitzählen' }))
+    expect(within(screen.getByRole('list')).getAllByRole('listitem')[0]).toHaveTextContent(
+      'glueckspilz',
+    )
+  })
+
+  it('zählt in der Siegerliste die Partien gegen den Rechner nicht zu den Online-Partien', () => {
+    // Die Falle: Wenn "Siege" alles zählt und "Partien" nur online, steht
+    // da irgendwann "9 Siege aus 3 Partien".
+    expect(werte(GLUECKSPILZ, 'alle')).toEqual({ siege: 1, partien: 2, bester_sieg: 412 })
+    expect(werte(GLUECKSPILZ, 'online')).toEqual({ siege: 0, partien: 0, bester_sieg: 0 })
+  })
+
+  it('sortiert online nach den Online-Zahlen', () => {
+    const reihe = sortiere([GLUECKSPILZ, VIELSPIELER, AUSDAUERND], 'punkte', 'online')
+    expect(reihe.map((e) => e.username)).toEqual(['ausdauernd', 'vielspieler', 'glueckspilz'])
+    expect(sichtbar(reihe, 'punkte', 'online').map((e) => e.username)).toEqual([
+      'ausdauernd',
+      'vielspieler',
+    ])
   })
 })

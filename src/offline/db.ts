@@ -62,7 +62,14 @@ export interface LocalAchievement {
 
 export interface SyncOutboxItem {
   id: string
-  type: 'game_result' | 'progress' | 'profile' | 'achievement' | 'personal_record'
+  type:
+    | 'game_result'
+    | 'progress'
+    | 'profile'
+    | 'achievement'
+    | 'personal_record'
+    /** Eine beendete Kniffel-Partie gegen den Rechner (Migration 022). */
+    | 'kniffel_partie'
   payload: Record<string, unknown>
   createdAt: string
   attempts: number

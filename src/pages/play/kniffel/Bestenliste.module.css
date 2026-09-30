@@ -153,3 +153,18 @@
   text-align: center;
   opacity: 0.8;
 }
+
+/*
+ * Der Umschalter für das, was gezählt wird. Bewusst klein und in der
+ * Fußnote: Die Vorgabe zählt alles mit -- wer genauer hinsehen will,
+ * findet ihn, ohne dass er jedem im Weg steht.
+ */
+.quelle {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-primary);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}

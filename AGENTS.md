@@ -29,8 +29,13 @@ corresponding feature; do not invent a competing design.
   Spiel ist und ein Client, der selbst würfelt, sich alles schreiben könnte.
   Wer eine Regel ändert, ändert beide Seiten. Die Bestenliste (Migration
   `021_kniffel_bestenliste.sql`) rechnet nichts selbst: Sie archiviert beim
-  Partieende, was `kniffel_gesamt` ergibt, und zählt Siege. Gezählt werden
-  nur Online-Partien -- ein Sieg gegen den Rechner ist nicht nachprüfbar.
+  Partieende, was `kniffel_gesamt` ergibt, und zählt Siege. Seit Migration
+  `022_kniffel_gegen_rechner.sql` zählen auf Wunsch auch Partien gegen den
+  Rechner mit. Die sind nicht nachprüfbar -- sie laufen auf dem Gerät, der
+  Server bekommt nur eine Meldung. Deshalb steht in jeder Zeile, woher sie
+  kommt (`gegen_computer`), die View führt die Online-Zahlen getrennt mit,
+  und die Liste kann darauf umschalten. Wer daran etwas ändert, lässt diese
+  Trennung stehen: Ohne sie ist die Rangliste eine Behauptung.
 - **Schützenopoly:** `docs/design/schuetzenopoly/` – Architektur, Datenmodell,
   Brettreihenfolge und Balancing des Brettspiels. Regeln gehören ausschließlich
   nach `src/games/schuetzenopoly/`, Balancingwerte ausschließlich in dessen

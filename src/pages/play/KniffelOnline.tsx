@@ -60,8 +60,6 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
   // Der Server weiss sonst nicht, wer würfelt.
   const [angemeldet, setAngemeldet] = useState<boolean | null>(null)
   const [oeffentlich, setOeffentlich] = useState(false)
-  /** Der eigene Kontoname -- damit man sich in der Bestenliste findet. */
-  const [meinName, setMeinName] = useState<string | null>(null)
   const letzteWurfNummer = useRef(0)
   /** Der Raum, an dem gerade gehorcht wird -- für verspätete Antworten. */
   const aktuellerRaum = useRef<string | null>(null)
@@ -96,11 +94,6 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
       if (abbruch) return
       setAngemeldet(Boolean(user))
       if (!user) return
-      void ermittleSpielerName()
-        .then((n) => {
-          if (!abbruch && istEchterName(n)) setMeinName(n)
-        })
-        .catch(() => undefined)
       try {
         const meine = await fetchMyKniffelMatches()
         if (!abbruch) setOffene(meine)
@@ -347,7 +340,7 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
           Kasten darüber.
         */}
         <section className={styles.lobby}>
-          <Bestenliste eigenerName={meinName} />
+          <Bestenliste />
         </section>
       </main>
     )
@@ -480,7 +473,7 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
             Die Zeile für diese Partie steht schon drin -- der Server
             archiviert sie in dem Moment, in dem der letzte Block voll ist.
           */}
-          <Bestenliste eigenerName={meinName} start={gewonnen ? 'punkte' : 'siege'} />
+          <Bestenliste start={gewonnen ? 'punkte' : 'siege'} />
           <Kniffelblock spalten={spalten} wuerfel={[]} eintragbar={false} onEintragen={() => {}} />
           <div className={shell.resultActions}>
             <button type="button" className={shell.primaryBtn} onClick={verlassen}>
