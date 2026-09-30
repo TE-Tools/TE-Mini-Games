@@ -188,6 +188,31 @@ async function pushOutboxItem(item: {
       if (error) throw error
       break
     }
+    case 'kniffel_partie': {
+      /*
+       * Eine Partie gegen den Rechner für die Kniffel-Bestenliste
+       * (Migration 022). Was der Server nicht selbst gesehen hat, prüft er
+       * wenigstens: Er rechnet aus den beiden Punktzahlen selbst aus, wer
+       * gewonnen hat, und weist zurück, was unmöglich ist.
+       *
+       * `false` heißt "nicht gezählt" und ist kein Fehler -- etwa nach der
+       * fünfzigsten Partie an einem Tag. Der Eintrag verlässt die
+       * Warteschlange trotzdem; ein zweiter Versuch käme zum selben
+       * Ergebnis.
+       */
+      const { data, error } = await supabase.rpc('kniffel_melde_solo', {
+        p_partie: p.partieId,
+        p_punkte: p.punkte,
+        p_bester_gegner: p.besterGegner,
+        p_mitspieler: p.mitspieler,
+        p_stufe: p.stufe ?? null,
+      })
+      if (error) throw error
+      if (data === false) {
+        console.info('[kniffel] Partie gegen den Rechner wurde nicht gezählt')
+      }
+      break
+    }
     default:
       break
   }

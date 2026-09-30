@@ -10,6 +10,8 @@
  */
 
 import { supabase, isSupabaseConfigured } from '@/database/supabase'
+import { enqueueOutbox } from '@/offline/outbox'
+import { getMyUsername } from '@/auth/authService'
 import { onlineFehlerText } from './onlineFehler'
 import { raumFunktionen } from './raeume'
 import type { Block } from '@/games/kniffel'
@@ -114,6 +116,129 @@ export async function fetchKniffelState(matchId: string): Promise<KniffelOnlineS
 
 export async function fetchMyKniffelMatches(): Promise<KniffelOpenMatch[]> {
   return rpc<KniffelOpenMatch[]>('kniffel_my_matches', {})
+}
+
+/* ===================== Bestenliste (Migration 021) ==================== */
+
+export interface KniffelBestenEintrag {
+  username: string
+  siege: number
+  partien: number
+  /** Die höchste Punktzahl, mit der dieser Spieler eine Partie gewonnen hat. */
+  bester_sieg: number
+  /** Die höchste Punktzahl überhaupt -- auch aus verlorenen Partien. */
+  bestes_spiel: number
+  schnitt: number
+  zuletzt: string | null
+  /* Dieselben drei Zahlen, aber nur aus Online-Partien (Migration 022). */
+  siege_online: number
+  partien_online: number
+  bester_sieg_online: number
+}
+
+export interface KniffelMeinePartie {
+  code: string
+  punkte: number
+  gewonnen: boolean
+  mitspieler: number
+  /** Lief diese Partie gegen den Rechner? */
+  gegen_computer: boolean
+  /** Gegen welche Stufe -- nur bei Partien gegen den Rechner gesetzt. */
+  ki_stufe: 'leicht' | 'normal' | 'schwer' | null
+  beendet_at: string
+}
+
+/**
+ * Die Bestenliste. Eine Abfrage für beide Listen: "wer gewinnt oft" sortiert
+ * nach Siegen, "wer gewinnt hoch" nach dem besten Sieg. Zwei Abfragen auf
+ * dieselben Zahlen wären zwei Gelegenheiten, sie verschieden zu zählen.
+ *
+ * Gezählt werden Online-Partien und Partien gegen den Rechner (Migration
+ * 022). Die Online-Zahlen kommen zusätzlich getrennt mit, weil nur sie
+ * nachprüfbar sind -- die Liste kann darauf umschalten.
+ */
+export async function fetchKniffelBestenliste(limit = 20): Promise<KniffelBestenEintrag[]> {
+  if (!supabase || !isSupabaseConfigured) return []
+  const sb = supabase
+  const spalten = 'username, siege, partien, bester_sieg, bestes_spiel, schnitt, zuletzt'
+  const { data, error } = await sb
+    .from('kniffel_bestenliste')
+    .select(`${spalten}, siege_online, partien_online, bester_sieg_online`)
+    .order('siege', { ascending: false })
+    .limit(limit)
+  if (!error && data) return data as KniffelBestenEintrag[]
+
+  // Datenbank noch auf dem Stand von 021: Dort gibt es die drei
+  // Online-Spalten nicht -- dort ist aber auch jede Zeile online, also
+  // sind die Gesamtzahlen genau die Online-Zahlen.
+  const alt = await sb
+    .from('kniffel_bestenliste')
+    .select(spalten)
+    .order('siege', { ascending: false })
+    .limit(limit)
+  if (alt.error || !alt.data) return []
+  return (
+    alt.data as Omit<
+      KniffelBestenEintrag,
+      'siege_online' | 'partien_online' | 'bester_sieg_online'
+    >[]
+  ).map((e) => ({
+    ...e,
+    siege_online: e.siege,
+    partien_online: e.partien,
+    bester_sieg_online: e.bester_sieg,
+  }))
+}
+
+/**
+ * Eine beendete Partie gegen den Rechner melden.
+ *
+ * ANLASS (30.09.2026, Thomas): "Bitte auch gegen Computer mit auswerten."
+ *
+ * Anders als online hat der Server hier nichts gesehen -- er bekommt eine
+ * Meldung. Deshalb geht sie durch `kniffel_melde_solo` (Migration 022) und
+ * nicht als Zeile in die Tabelle: Dort wird geprüft, was prüfbar ist, und
+ * der Server entscheidet aus den beiden Punktzahlen selbst, wer gewonnen
+ * hat.
+ *
+ * Der Weg führt über die Warteschlange, nicht direkt: Eine Partie gegen den
+ * Rechner kann man im Zug oder im Keller spielen. `partieId` ist dabei die
+ * Kennung, an der der Server einen zweiten Versuch als denselben erkennt.
+ */
+export async function meldeKniffelSoloPartie(partie: {
+  partieId: string
+  punkte: number
+  besterGegner: number
+  mitspieler: number
+  stufe: 'leicht' | 'normal' | 'schwer' | null
+}): Promise<void> {
+  if (!isSupabaseConfigured) return
+  // Eine Partie allein am Tisch zählt der Server nicht; dann bleibt sie
+  // auch der Warteschlange erspart.
+  if (partie.mitspieler < 2) return
+  await enqueueOutbox('kniffel_partie', { ...partie })
+}
+
+/**
+ * Unter welchem Namen man selbst in der Bestenliste steht.
+ *
+ * Das ist der Benutzername aus dem Konto, nicht der Anzeigename: Die View
+ * gruppiert über `profiles.username`, und der ist kleingeschrieben. Wer
+ * hier den Anzeigenamen hineingibt, findet seine eigene Zeile nicht.
+ */
+export async function fetchMeinBestenlistenName(): Promise<string | null> {
+  if (!isSupabaseConfigured) return null
+  return getMyUsername().catch(() => null)
+}
+
+/** Die eigenen letzten Partien -- damit man sieht, was gezählt wurde. */
+export async function fetchMeineKniffelPartien(limit = 10): Promise<KniffelMeinePartie[]> {
+  if (!supabase || !isSupabaseConfigured) return []
+  try {
+    return await rpc<KniffelMeinePartie[]>('kniffel_meine_partien', { p_limit: limit })
+  } catch {
+    return []
+  }
 }
 
 /**

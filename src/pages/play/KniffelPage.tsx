@@ -30,11 +30,12 @@ import {
 import { addXp, saveGameResult } from '@/offline'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
-import { isKniffelOnlineAvailable } from '@/services/kniffelOnline'
+import { isKniffelOnlineAvailable, meldeKniffelSoloPartie } from '@/services/kniffelOnline'
 import { spielerNameOderDu } from '@/services/spielername'
 import { spiele, setzeTon, tonAn, vibriere } from '@/services/sound'
 import { Wuerfelreihe } from './kniffel/Wuerfelreihe'
 import { Kniffelblock, type BlockSpalte } from './kniffel/Kniffelblock'
+import { Bestenliste } from './kniffel/Bestenliste'
 import { KniffelOnline } from './KniffelOnline'
 import { partieXp } from '@/games/kniffel/definition'
 import shell from './PlayShell.module.css'
@@ -73,6 +74,12 @@ export function KniffelPage() {
   const [rollt, setRollt] = useState(false)
   const [ton, setTonAn] = useState(tonAn())
   const ergebnisGesichert = useRef(false)
+  /*
+   * Die Kennung dieser Partie für die Bestenliste. Einmal je Partie
+   * gezogen, damit eine Meldung, die erst später durchkommt, nicht als
+   * zweite Partie zählt -- der Server erkennt sie daran wieder.
+   */
+  const partieId = useRef<string>('')
 
   useEffect(() => {
     let abbruch = false
@@ -118,6 +125,8 @@ export function KniffelPage() {
       const punkte = gesamtpunkte(mensch.block)
       const gewonnen = zustand.siegerId === mensch.id
       const xp = partieXp(punkte, gewonnen)
+      const gegner = zustand.spieler.filter((s) => s.id !== mensch.id)
+      const besterGegner = gegner.reduce((h, s) => Math.max(h, gesamtpunkte(s.block)), 0)
       try {
         await saveGameResult({
           gameId: 'kniffel',
@@ -135,6 +144,19 @@ export function KniffelPage() {
         })
         await addXp('guest', xp)
         await processAfterResult({ gameId: 'kniffel', level: 1, isPersonalRecord: gewonnen })
+        /*
+         * Und in die Bestenliste. Wer gewonnen hat, rechnet der Server aus
+         * den beiden Punktzahlen aus -- gemeldet werden Zahlen, kein
+         * Urteil. Gegen niemanden gespielt wird nichts gemeldet; das fängt
+         * meldeKniffelSoloPartie ab.
+         */
+        await meldeKniffelSoloPartie({
+          partieId: partieId.current || crypto.randomUUID(),
+          punkte,
+          besterGegner,
+          mitspieler: zustand.spieler.length,
+          stufe: gegner.find((s) => s.kiStufe)?.kiStufe ?? null,
+        })
         void trySyncNow()
       } catch (err) {
         console.error('[kniffel] Ergebnis konnte nicht gespeichert werden', err)
@@ -150,6 +172,7 @@ export function KniffelPage() {
       spieler.push({ name: `Rechner ${i + 1}`, typ: 'ki', kiStufe: stufe })
     }
     ergebnisGesichert.current = false
+    partieId.current = crypto.randomUUID()
     setZustand(erstellePartie({ spieler }))
     setAnsicht('solo')
   }, [spielerName, gegner, stufe])
@@ -327,6 +350,12 @@ export function KniffelPage() {
               </li>
             ))}
           </ol>
+          {/*
+            Gleich nach der Partie: Was hat sich an der Rangliste getan?
+            Diese Partie steht dort schon -- sofern jemand angemeldet ist,
+            sonst zählt sie nur auf diesem Gerät.
+          */}
+          <Bestenliste start={gewonnen ? 'punkte' : 'siege'} />
           <Kniffelblock spalten={spalten} wuerfel={[]} eintragbar={false} onEintragen={() => {}} />
           <div className={shell.resultActions}>
             <button type="button" className={shell.primaryBtn} onClick={starten}>
