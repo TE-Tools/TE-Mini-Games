@@ -31,6 +31,7 @@ import {
 import { spiele, vibriere } from '@/services/sound'
 import { HERZSCHLAG_MS, RAUM_GESCHLOSSEN_TEXT, RAUM_PARAM, istRaumWeg } from '@/services/raeume'
 import { Wuerfelreihe } from './kniffel/Wuerfelreihe'
+import { auswahlErledigt, mitEigenerAuswahl, type EigeneAuswahl } from './kniffel/eigeneAuswahl'
 import { Kniffelblock, type BlockSpalte } from './kniffel/Kniffelblock'
 import { Bestenliste } from './kniffel/Bestenliste'
 import { OeffentlicheRaeume } from './OeffentlicheRaeume'
@@ -63,11 +64,19 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
   const letzteWurfNummer = useRef(0)
   /** Der Raum, an dem gerade gehorcht wird -- für verspätete Antworten. */
   const aktuellerRaum = useRef<string | null>(null)
+  /**
+   * Was ich angetippt habe und der Server noch nicht bestätigt hat.
+   * Ohne das nimmt der nächste Abruf die Markierung wieder weg -- siehe
+   * kniffel/eigeneAuswahl.ts.
+   */
+  const meineAuswahl = useRef<EigeneAuswahl | null>(null)
 
   const laden = useCallback(async (id: string) => {
     try {
       const neu = await fetchKniffelState(id)
-      setState(neu)
+      const angewandt = mitEigenerAuswahl(neu, meineAuswahl.current)
+      if (auswahlErledigt(neu, meineAuswahl.current)) meineAuswahl.current = null
+      setState(angewandt)
       setFehler(null)
     } catch (err) {
       // Der Server löscht Räume, in denen zwanzig Minuten niemand mehr war
@@ -153,6 +162,8 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
       await was()
       if (matchId) await laden(matchId)
     } catch (err) {
+      // Hat der Server abgelehnt, ist meine vorgezogene Anzeige hinfällig.
+      meineAuswahl.current = null
       setFehler(err instanceof Error ? err.message : 'Das hat nicht geklappt.')
     } finally {
       setLaeuft(false)
@@ -368,7 +379,10 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
     const neu = [...match.gehalten]
     neu[index] = !neu[index]
     spiele('tick')
-    // Sofort anzeigen, dann bestätigen lassen -- sonst fühlt es sich träge an.
+    // Sofort anzeigen, dann bestätigen lassen -- sonst fühlt es sich träge
+    // an. Bis die Bestätigung da ist, gilt die Auswahl auch gegenüber
+    // einem Abruf, der zwischendurch hereinkommt.
+    meineAuswahl.current = { wurf: match.wurf_nummer, gehalten: neu }
     setState({ ...state, match: { ...match, gehalten: neu } })
     void versuche(() => haltenOnline(matchId, neu))
   }

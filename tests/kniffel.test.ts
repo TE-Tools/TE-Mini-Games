@@ -112,6 +112,9 @@ describe('Würfeln', () => {
     s = wuerfeln(s)
     expect(s.wuerfel[0]).toBe(vorher[0])
     expect(s.wuerfel[2]).toBe(vorher[2])
+    // Und die Häkchen bleiben stehen: Wer zwei Sechsen behält, will sie
+    // beim nächsten Wurf nicht neu antippen müssen.
+    expect(s.gehalten).toEqual([true, false, true, false, false])
   })
 
   it('würfelt beim ersten Wurf alles neu, auch Gehaltenes', () => {
