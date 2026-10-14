@@ -1,0 +1,374 @@
+/*
+ * Der Pokertisch.
+ *
+ * Gebaut für ein Telefon im Hochformat: oben die Gegner, in der Mitte die
+ * Gemeinschaftskarten und der Topf, unten die eigenen Karten und die
+ * Knöpfe. Die Knöpfe sitzen am unteren Rand, weil der Daumen dort ist --
+ * und sie bleiben an ihrem Platz, damit man nicht hinsehen muss.
+ */
+
+.menue {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+.einleitung {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.spielgeld {
+  margin: 0;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  opacity: 0.8;
+}
+
+.grosserKnopf {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-elevated);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+  color: var(--color-text);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.grosserKnopf strong {
+  display: block;
+  font-size: var(--text-base);
+}
+
+.grosserKnopf small {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.knopfIcon {
+  font-size: 1.8rem;
+}
+
+.ueberschrift {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.gruppe {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.gruppe legend {
+  padding: 0 0 var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.knopfreihe {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.wahlAn,
+.wahlAus {
+  flex: 1;
+  min-height: 48px;
+  border: 0;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.wahlAus {
+  background: var(--color-bg-elevated);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+  color: var(--color-text);
+}
+
+.wahlAn {
+  background: var(--grad-primary);
+  color: var(--color-primary-text);
+}
+
+.erklaerung {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.start {
+  min-height: 56px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--grad-primary);
+  color: var(--color-primary-text);
+  font-family: inherit;
+  font-size: var(--text-base);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.tonKnopf {
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-elevated);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+/* ------------------------------------------------------------- Tisch */
+
+.tisch {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
+.gegner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.gegnerKarte {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas:
+    'karten name chips'
+    'karten einsatz einsatz';
+  align-items: center;
+  gap: 0 var(--space-2);
+  min-width: 9.5rem;
+  flex: 1 1 9.5rem;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-elevated);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+.gegnerKarte[data-zug='ja'] {
+  box-shadow: inset 0 0 0 2px var(--color-primary);
+}
+
+.gegnerKarte[data-weg='ja'] {
+  opacity: 0.45;
+}
+
+.gegnerKarten {
+  grid-area: karten;
+  display: flex;
+  gap: 2px;
+}
+
+.rausText {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.gegnerName {
+  grid-area: name;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.gegnerChips {
+  grid-area: chips;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.gegnerEinsatz {
+  grid-area: einsatz;
+  font-size: var(--text-xs);
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.allin {
+  grid-area: einsatz;
+  justify-self: end;
+  font-size: var(--text-xs);
+  font-weight: 800;
+  color: #b3261e;
+}
+
+/* Die Mitte: Tischtuch, Karten, Topf. */
+.mitte {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-2);
+  border-radius: var(--radius-lg);
+  background: radial-gradient(ellipse at center, #1f6b4a, #14432f);
+  box-shadow: inset 0 0 0 2px rgb(0 0 0 / 0.25);
+}
+
+.board {
+  display: flex;
+  gap: var(--space-1, 4px);
+}
+
+.topf {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: 0;
+  color: #fff;
+}
+
+.topfZahl {
+  font-size: var(--text-xl);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.topfWort {
+  font-size: var(--text-xs);
+  opacity: 0.8;
+}
+
+.stufe {
+  margin: 0;
+  color: rgb(255 255 255 / 0.7);
+  font-size: var(--text-xs);
+}
+
+.ergebnis {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--grad-primary-soft, rgb(255 190 80 / 0.14));
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+  text-align: center;
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+/* Unten: eigene Karten und Knöpfe. */
+.unten {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.ichZeile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.meineKarten {
+  display: flex;
+  gap: var(--space-1, 4px);
+}
+
+.meinStand {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.meineChips {
+  font-size: var(--text-xl);
+  font-variant-numeric: tabular-nums;
+}
+
+.meinEinsatz {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.weggeworfen {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: #b3261e;
+}
+
+.wartet {
+  margin: 0;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.protokoll {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+/* ------------------------------------------------------------- Ende */
+
+.endstand {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.endEintrag {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-elevated);
+  font-size: var(--text-sm);
+}
+
+.endPlatz {
+  width: 1.6rem;
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+.endName {
+  flex: 1;
+  font-weight: 600;
+}
+
+.endWert {
+  font-variant-numeric: tabular-nums;
+}
+
+.handZahl {
+  margin: 0;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}

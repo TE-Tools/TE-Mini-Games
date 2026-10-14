@@ -53,6 +53,13 @@ export const SPIELE_KACHELN: readonly KachelEintrag[] = [
   { id: 'emberwake', name: 'Emberwake', pfad: '/play/emberwake', icon: '🔥', art: 'Survival' },
   { id: 'kniffel', name: 'Kniffel', pfad: '/play/kniffel', icon: '🎲', art: 'Würfeln' },
   {
+    id: 'texas-holdem',
+    name: "Texas Hold'em",
+    pfad: '/play/texas-holdem',
+    icon: '🃏',
+    art: 'Karten',
+  },
+  {
     id: 'schuetzenopoly',
     name: 'Schützenopoly',
     pfad: '/play/schuetzenopoly',

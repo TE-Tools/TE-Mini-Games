@@ -8,6 +8,7 @@ Verbindliche Gestaltungs- und Umsetzungsvorgaben.
 | **Schützenopoly** | umgesetzt | [schuetzenopoly/](./schuetzenopoly/) |
 | **Emberwake** | umgesetzt (Vertical Slice) | [emberwake/](./emberwake/) |
 | **Sudoku** | umgesetzt | [sudoku/](./sudoku/) |
+| **Texas Hold'em** | umgesetzt | [texas-holdem/](./texas-holdem/) |
 
 ## Levelkarte 1–500 (Kurz)
 
@@ -38,3 +39,16 @@ Faktencheck: [`schuetzenopoly/grundstuecke.md`](./schuetzenopoly/grundstuecke.md
 - Bei Schwer werden Fehler nie angezeigt, damit Raten nicht funktioniert
 
 Details: [`sudoku/README.md`](./sudoku/README.md)
+
+## Texas Hold'em (Kurz)
+
+- Sit-and-Go gegen den Rechner: ein Tisch, 2–6 Spieler, gleiche Stapel, steigende Blinds,
+  bis einer alles hat. No-Limit nach den üblichen Regeln
+- **Spielgeld.** Nichts zu kaufen, nichts zu gewinnen – der Satz steht auch im Spiel
+- Regeln vollständig in `src/games/texas-holdem/`, Balancing in `config.ts`;
+  die Oberfläche zeigt an, was `moeglichkeiten()` hergibt, und entscheidet nichts
+- Die drei üblichen Fehlerquellen sind ausdrücklich gelöst: Ende der Setzrunde,
+  Mindesterhöhung, Nebenpots
+- Die Stufen der Gegner unterscheiden sich im Mut, nicht im Wissen
+
+Details: [`texas-holdem/README.md`](./texas-holdem/README.md)
