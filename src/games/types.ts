@@ -23,6 +23,7 @@ export type GameId =
   | 'trapbound'
   | 'emberwake'
   | 'sudoku'
+  | 'texas-holdem'
 
 export interface GameLevelConfig {
   level: number

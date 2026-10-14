@@ -304,3 +304,36 @@ describe('Wenn der Mensch draussen ist', () => {
     expect(menschlicherPlatz(state)).toBe(ich.platz)
   })
 })
+
+describe('Wie der Tisch spricht', () => {
+  it('spricht den Menschen in der zweiten Person an', () => {
+    /*
+     * „Du schiebt" stand im Protokoll, weil jede Zeile `${name} schiebt`
+     * lautete und der Mensch ohne Konto „Du" heisst. Im Browser der erste
+     * Satz, den man liest.
+     */
+    let state = erstellePartie({
+      seed: 3,
+      spieler: [
+        { name: 'Du', mensch: true },
+        { name: 'Ida', mensch: false, kiStufe: 'normal' },
+      ],
+    })
+    // Heads-up beginnt der Geber -- hier Ida. Erst sie, dann ich.
+    while (!state.spieler[state.amZug]!.mensch) state = handle(state, kiAktion(state))
+    state = handle(state, moeglichkeiten(state).schieben ? { art: 'schieben' } : { art: 'mitgehen' })
+
+    const meine = state.protokoll.filter((z) => z.startsWith('Du '))
+    expect(meine.length).toBeGreaterThan(0)
+    for (const zeile of meine) {
+      expect(zeile).not.toMatch(/^Du (schiebt|geht|wirft|setzt|erhöht|ist)\b/)
+    }
+  })
+
+  it('sagt die gewonnene Hand in der Form an, die nach „mit" steht', () => {
+    const fertig = handle(amRiver(), { art: 'schieben' })
+    // „mit zwei Paaren", nicht „mit Zwei Paare".
+    expect(fertig.ergebnis!.text).toContain('mit zwei Paaren')
+    expect(fertig.ergebnis!.text).not.toContain('mit Zwei Paare')
+  })
+})

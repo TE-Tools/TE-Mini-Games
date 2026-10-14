@@ -24,7 +24,7 @@
 
 import { createRng } from '@/games/rng'
 import { gemischtesDeck, karteText, type Karte } from './karten'
-import { besteHand, handText, vergleicheHand, type Handwert } from './wertung'
+import { besteHand, handTextMit, vergleicheHand, type Handwert } from './wertung'
 import { BLIND_STUFEN, HAENDE_JE_STUFE, MAX_SPIELER, MIN_SPIELER, START_CHIPS } from './config'
 
 export type SpielerStatus = 'aktiv' | 'gefoldet' | 'allin' | 'raus'
@@ -165,6 +165,22 @@ function kopie(state: TexasZustand): TexasZustand {
   }
 }
 
+/** Wie jemand im Protokoll heisst: Der Mensch ist „Du", nicht sein Name. */
+function wer(s: TexasSpieler): string {
+  return s.mensch ? 'Du' : s.name
+}
+
+/**
+ * „Du schiebst" oder „Ida schiebt".
+ *
+ * Die zweite Person ist im Deutschen eine andere Form. Ohne diese
+ * Unterscheidung stand im Protokoll „Du schiebt" und „Du wirft weg" --
+ * im Browser sofort zu sehen, im Test nie.
+ */
+function sagt(s: TexasSpieler, du: string, andere: string): string {
+  return s.mensch ? `Du ${du}` : `${s.name} ${andere}`
+}
+
 function notiere(state: TexasZustand, zeile: string): void {
   state.protokoll.push(zeile)
   if (state.protokoll.length > 60) state.protokoll.shift()
@@ -281,7 +297,7 @@ export function teileAus(vorher: TexasZustand): TexasZustand {
 
   notiere(
     state,
-    `Hand ${state.handNr} · Blinds ${klein}/${gross} · ${state.spieler[sbPlatz]!.name} und ${state.spieler[bbPlatz]!.name} zahlen`,
+    `Hand ${state.handNr} · Blinds ${klein}/${gross} · ${wer(state.spieler[sbPlatz]!)} und ${wer(state.spieler[bbPlatz]!)} zahlen`,
   )
 
   // Vor dem Flop beginnt der Platz nach dem grossen Blind -- heads-up ist
@@ -347,20 +363,20 @@ export function handle(vorher: TexasZustand, aktion: Aktion): TexasZustand {
     case 'folden': {
       s.status = 'gefoldet'
       s.gehandelt = true
-      notiere(state, `${s.name} wirft weg`)
+      notiere(state, sagt(s, 'wirfst weg', 'wirft weg'))
       break
     }
     case 'schieben': {
       if (!moegl.schieben) return vorher
       s.gehandelt = true
-      notiere(state, `${s.name} schiebt`)
+      notiere(state, sagt(s, 'schiebst', 'schiebt'))
       break
     }
     case 'mitgehen': {
       if (moegl.mitgehen === null) return vorher
       const gezahlt = setze(state, platz, moegl.mitgehen)
       s.gehandelt = true
-      notiere(state, `${s.name} geht mit ${gezahlt}`)
+      notiere(state, sagt(s, `gehst mit ${gezahlt}`, `geht mit ${gezahlt}`))
       break
     }
     case 'erhoehen': {
@@ -380,8 +396,12 @@ export function handle(vorher: TexasZustand, aktion: Aktion): TexasZustand {
       notiere(
         state,
         vorherHoechst === 0
-          ? `${s.name} setzt ${state.hoechsterEinsatz}`
-          : `${s.name} erhöht auf ${state.hoechsterEinsatz}`,
+          ? sagt(s, `setzt ${state.hoechsterEinsatz}`, `setzt ${state.hoechsterEinsatz}`)
+          : sagt(
+              s,
+              `erhöhst auf ${state.hoechsterEinsatz}`,
+              `erhöht auf ${state.hoechsterEinsatz}`,
+            ),
       )
       break
     }
@@ -561,8 +581,10 @@ function beendeHand(vorher: TexasZustand, gezeigt: boolean): TexasZustand {
   const text = gewinner
     .map((a) => {
       const s = spielerMit(state, a.spielerId)
-      const wer = s?.mensch ? 'Du gewinnst' : `${s?.name} gewinnt`
-      return gezeigt && a.hand ? `${wer} ${a.betrag} mit ${handText(a.hand)}` : `${wer} ${a.betrag}`
+      const anrede = s?.mensch ? 'Du gewinnst' : `${s?.name} gewinnt`
+      return gezeigt && a.hand
+        ? `${anrede} ${a.betrag} mit ${handTextMit(a.hand)}`
+        : `${anrede} ${a.betrag}`
     })
     .join(' · ')
 
@@ -582,7 +604,7 @@ function beendeHand(vorher: TexasZustand, gezeigt: boolean): TexasZustand {
     sortiert.forEach((s, i) => {
       s.status = 'raus'
       s.platz = uebrig + sortiert.length - i
-      notiere(state, `${s.name} ist raus (Platz ${s.platz})`)
+      notiere(state, sagt(s, `bist raus (Platz ${s.platz})`, `ist raus (Platz ${s.platz})`))
     })
   }
 

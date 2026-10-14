@@ -10,7 +10,13 @@
 import { describe, it, expect } from 'vitest'
 import { gemischtesDeck, kartenAus } from '@/games/texas-holdem/karten'
 import { createRng } from '@/games/rng'
-import { HandKlasse, besteHand, handText, vergleicheHand } from '@/games/texas-holdem/wertung'
+import {
+  HandKlasse,
+  besteHand,
+  handText,
+  handTextMit,
+  vergleicheHand,
+} from '@/games/texas-holdem/wertung'
 
 const hand = (text: string) => besteHand(kartenAus(text))
 const klasse = (text: string) => hand(text).klasse
@@ -131,5 +137,25 @@ describe('Der kurze Weg gibt dasselbe wie der lange', () => {
       expect(kurz.karten).toHaveLength(5)
       for (const k of kurz.karten) expect(sieben).toContain(k)
     }
+  })
+})
+
+describe('Wie die Hand angesagt wird', () => {
+  it('nennt sie für sich und nach „mit" in der richtigen Form', () => {
+    /*
+     * Im Deutschen ändert sich die Form: Es heisst „Zwei Paare", aber
+     * „mit zwei Paaren". Am Tisch stand deshalb „Du gewinnst 40 mit Zwei
+     * Paare, Siebenen und Sechsen" -- im Browser sofort zu lesen, in
+     * keinem Test.
+     */
+    const zweiPaare = hand('Qs Qh 7d 7c Ks 2h 3d')
+    expect(handText(zweiPaare)).toBe('Zwei Paare, Damen und Siebenen')
+    expect(handTextMit(zweiPaare)).toBe('zwei Paaren, Damen und Siebenen')
+
+    expect(handTextMit(hand('As Ks Qs Js Ts 2h 3d'))).toBe('einem Royal Flush')
+    expect(handTextMit(hand('7s 7h 7d 7c Ks 2h 3d'))).toBe('einem Vierling Siebenen')
+    expect(handTextMit(hand('9s 9h 9d 4s 4h 4d Kc'))).toBe('einem Full House, Neunen über Vieren')
+    expect(handTextMit(hand('9h 8d 7c 6s 5h 2d 3c'))).toBe('einer Straße bis Neun')
+    expect(handTextMit(hand('Qs Qh 2d 5c Ks 9h 3d'))).toBe('einem Paar Damen')
   })
 })

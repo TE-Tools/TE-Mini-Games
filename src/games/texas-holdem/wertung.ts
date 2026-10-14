@@ -230,6 +230,38 @@ export function vergleicheHand(a: Handwert, b: Handwert): number {
   return 0
 }
 
+/**
+ * Dieselbe Hand, wie sie nach „mit" steht.
+ *
+ * Im Deutschen ändert sich dabei die Form: Es heisst „Zwei Paare", aber
+ * „mit zwei Paaren". Ohne diese zweite Fassung stand am Tisch „Du
+ * gewinnst 40 mit Zwei Paare, Siebenen und Sechsen" -- im Browser
+ * aufgefallen, nicht im Test.
+ */
+export function handTextMit(h: Handwert): string {
+  const [erst = 0, zweit = 0] = h.werte
+  switch (h.klasse) {
+    case HandKlasse.StraightFlush:
+      return erst === 14 ? 'einem Royal Flush' : `einem Straight Flush bis ${wertName(erst)}`
+    case HandKlasse.Vierling:
+      return `einem Vierling ${wertMehrzahl(erst)}`
+    case HandKlasse.FullHouse:
+      return `einem Full House, ${wertMehrzahl(erst)} über ${wertMehrzahl(zweit)}`
+    case HandKlasse.Flush:
+      return `einem Flush bis ${wertName(erst)}`
+    case HandKlasse.Strasse:
+      return erst === 5 ? 'einer Straße bis Fünf' : `einer Straße bis ${wertName(erst)}`
+    case HandKlasse.Drilling:
+      return `einem Drilling ${wertMehrzahl(erst)}`
+    case HandKlasse.ZweiPaare:
+      return `zwei Paaren, ${wertMehrzahl(erst)} und ${wertMehrzahl(zweit)}`
+    case HandKlasse.Paar:
+      return `einem Paar ${wertMehrzahl(erst)}`
+    default:
+      return `${wertName(erst)} hoch`
+  }
+}
+
 /** Wie die Hand am Tisch angesagt wird. */
 export function handText(h: Handwert): string {
   const [erst = 0, zweit = 0] = h.werte

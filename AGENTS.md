@@ -36,6 +36,13 @@ corresponding feature; do not invent a competing design.
   kommt (`gegen_computer`), die View führt die Online-Zahlen getrennt mit,
   und die Liste kann darauf umschalten. Wer daran etwas ändert, lässt diese
   Trennung stehen: Ohne sie ist die Rangliste eine Behauptung.
+- **Texas Hold'em:** `docs/design/texas-holdem/` – Turnierform, Setzrunden,
+  Nebenpots, KI und Wertung. Regeln gehören ausschließlich nach
+  `src/games/texas-holdem/`, Balancingwerte ausschließlich in dessen
+  `config.ts`; die Oberfläche entscheidet nichts, sie zeigt an, was
+  `moeglichkeiten()` hergibt. Gespielt wird mit Spielgeld: Es gibt nichts
+  zu kaufen und nichts zu gewinnen, und dieser Satz steht auch im Spiel.
+  Wer daran etwas ändert, lässt ihn stehen.
 - **Schützenopoly:** `docs/design/schuetzenopoly/` – Architektur, Datenmodell,
   Brettreihenfolge und Balancing des Brettspiels. Regeln gehören ausschließlich
   nach `src/games/schuetzenopoly/`, Balancingwerte ausschließlich in dessen

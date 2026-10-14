@@ -325,7 +325,12 @@ export function TexasHoldemPage() {
         </div>
 
         <ol className={styles.protokoll} aria-label="Was bisher geschah">
+          {/*
+            Das Ergebnis steht gleich darunter gross im Kasten -- im
+            Protokoll wäre es dieselbe Zeile zweimal untereinander.
+          */}
           {zustand.protokoll
+            .filter((zeile) => zeile !== zustand.ergebnis?.text)
             .slice(-4)
             .reverse()
             .map((zeile, i) => (
