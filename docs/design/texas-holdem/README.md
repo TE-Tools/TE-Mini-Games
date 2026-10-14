@@ -80,14 +80,26 @@ solange Karten kommen.
 
 Die Stufen unterscheiden sich **nicht im Wissen, sondern im Mut**:
 
-| Stufe  | Verhalten                              |
-| ------ | -------------------------------------- |
-| Leicht | geht fast immer mit, erhöht selten     |
-| Normal | rechnet mit dem Topf, spielt solide    |
-| Schwer | rechnet knapp, setzt Druck auf, blufft |
+| Stufe  | Verhalten                                | erhöht | wirft weg |
+| ------ | ---------------------------------------- | ------ | --------- |
+| Leicht | geht fast immer mit, erhöht selten       | 3 %    | 30 %      |
+| Normal | spielt mit, erhöht ab der Hälfte, blufft | 17 %   | 39 %      |
+| Schwer | rechnet knapp, setzt Druck auf           | 21 %   | 47 %      |
 
 Eine KI, die nur besser rechnet, fühlt sich am Tisch nicht anders an.
 Eine, die anders setzt, schon.
+
+Die Zahlen sind gemessen, nicht geschätzt: 60 durchgespielte Turniere zu
+sechst, gezählt über alle Entscheidungen. Anlass war Thomas am
+14.10.2026: „normal ist zu zahm bitte etwas mutiger machen" — davor
+erhöhte „Normal" in 7,5 Prozent seiner Entscheidungen und warf 46
+Prozent weg. Zu dritt, der üblichen Tischgrösse, erhöht es jetzt in 21
+Prozent der Fälle und wirft nur 23 Prozent weg; mit weniger Gegnern
+lohnt sich mehr.
+
+Wer die Werte nachstellt, misst nach. `tests/texas-engine.test.ts` hält
+nur die Reihenfolge fest (leicht < normal ≤ schwer) und dass „Normal"
+wirklich mitspielt — die genauen Prozente dürfen sich bewegen.
 
 ## Der Tisch
 

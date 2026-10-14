@@ -276,32 +276,40 @@ describe('Wenn der Mensch draussen ist', () => {
      * Hand „Die anderen spielen die Hand zu Ende", ohne je anzuhalten.
      * Aufgefallen ist das beim Durchspielen im Browser -- an einem Lauf,
      * der nicht endete.
+     *
+     * Gesucht wird ein Startwert, bei dem ich als Erster von dreien
+     * rausfliege; welcher das ist, hängt an der KI und darf sich mit ihr
+     * ändern. Der Test hängt deshalb an der Regel, nicht an der Zahl.
      */
-    let state = erstellePartie({
-      seed: 5,
-      startChips: 200,
-      spieler: [
-        { name: 'Du', mensch: true },
-        { name: 'Ida', mensch: false, kiStufe: 'schwer' },
-        { name: 'Bruno', mensch: false, kiStufe: 'schwer' },
-      ],
-    })
+    let gefunden = 0
+    for (let seed = 1; seed <= 60 && gefunden < 3; seed++) {
+      let state = erstellePartie({
+        seed,
+        startChips: 200,
+        spieler: [
+          { name: 'Du', mensch: true },
+          { name: 'Ida', mensch: false, kiStufe: 'schwer' },
+          { name: 'Bruno', mensch: false, kiStufe: 'schwer' },
+        ],
+      })
+      for (let i = 0; i < 4000 && state.phase !== 'ende'; i++) {
+        state = state.phase === 'showdown' ? naechsteHand(state) : handle(state, kiAktion(state))
+      }
+      expect(state.phase).toBe('ende')
 
-    for (let i = 0; i < 4000 && state.phase !== 'ende'; i++) {
-      state = state.phase === 'showdown' ? naechsteHand(state) : handle(state, kiAktion(state))
+      const ich = state.spieler.find((s) => s.mensch)!
+      // Jeder hat einen Platz -- auch die, die noch Chips haben.
+      const plaetze = state.spieler.map((s) => s.platz).sort((a, b) => (a ?? 0) - (b ?? 0))
+      expect(plaetze).toEqual([1, 2, 3])
+      expect(menschlicherPlatz(state)).toBe(ich.platz)
+
+      if (ich.platz !== 3) continue
+      gefunden++
+      // Und genau daran hängt es: Es sitzen noch ZWEI mit Chips da.
+      // Liefe der Tisch weiter, bliebe am Ende einer mit allem übrig.
+      expect(state.spieler.filter((s) => s.chips > 0)).toHaveLength(2)
     }
-
-    expect(state.phase).toBe('ende')
-    const ich = state.spieler.find((s) => s.mensch)!
-    // Mit diesem Startwert fliege ich als Erster raus (Hand 18).
-    expect(ich.platz).toBe(3)
-    // Und genau daran hängt es: Es sitzen noch ZWEI mit Chips da. Liefe
-    // der Tisch weiter, bliebe am Ende einer mit allem übrig.
-    expect(state.spieler.filter((s) => s.chips > 0)).toHaveLength(2)
-    // Jeder hat trotzdem einen Platz -- auch die, die noch Chips haben.
-    const plaetze = state.spieler.map((s) => s.platz).sort((a, b) => (a ?? 0) - (b ?? 0))
-    expect(plaetze).toEqual([1, 2, 3])
-    expect(menschlicherPlatz(state)).toBe(ich.platz)
+    expect(gefunden).toBeGreaterThan(0)
   })
 })
 
@@ -360,5 +368,60 @@ describe('Welche fünf Karten gelten', () => {
     expect(vomBrett.length + ausDerHand.length).toBe(5)
     // A hält 9♠ 7♥ auf 2♣ 7♦ 9♥ B♠ 4♠: zwei Paare, beide Karten zählen.
     expect(ausDerHand).toHaveLength(2)
+  })
+})
+
+describe('Wie mutig die Stufen spielen', () => {
+  /** Spielt Turniere und zählt, was die Stufen tun. */
+  function stilProbe(stufen: ('leicht' | 'normal' | 'schwer')[], runden: number) {
+    const zaehler = new Map<string, { erhoeht: number; gesamt: number; weg: number }>()
+    for (const s of stufen) zaehler.set(s, { erhoeht: 0, gesamt: 0, weg: 0 })
+
+    for (let r = 0; r < runden; r++) {
+      let state = erstellePartie({
+        seed: 5000 + r,
+        spieler: stufen.map((s, i) => ({ name: `${s}${i}`, mensch: false, kiStufe: s })),
+      })
+      for (let i = 0; i < 20_000 && state.phase !== 'ende'; i++) {
+        if (state.phase === 'showdown') {
+          state = naechsteHand(state)
+          continue
+        }
+        const stufe = state.spieler[state.amZug]!.kiStufe ?? 'normal'
+        const aktion = kiAktion(state)
+        const w = zaehler.get(stufe)!
+        w.gesamt++
+        if (aktion.art === 'erhoehen') w.erhoeht++
+        if (aktion.art === 'folden') w.weg++
+        state = handle(state, aktion)
+      }
+    }
+    const anteil = (stufe: string) => {
+      const w = zaehler.get(stufe)!
+      return { erhoeht: w.erhoeht / w.gesamt, weg: w.weg / w.gesamt }
+    }
+    return anteil
+  }
+
+  it('erhöht von leicht nach schwer immer öfter', () => {
+    /*
+     * Thomas am 14.10.2026: "normal ist zu zahm bitte etwas mutiger
+     * machen." Gemessen war das belegt -- „normal" erhöhte in 7,5
+     * Prozent seiner Entscheidungen und warf 46 Prozent weg. Dieser
+     * Test hält die Reihenfolge fest, damit niemand die Stufen beim
+     * nächsten Nachstellen wieder ineinander schiebt.
+     */
+    const anteil = stilProbe(['leicht', 'normal', 'schwer'], 8)
+
+    expect(anteil('leicht').erhoeht).toBeLessThan(anteil('normal').erhoeht)
+    expect(anteil('normal').erhoeht).toBeLessThanOrEqual(anteil('schwer').erhoeht + 0.02)
+    // Und „normal" muss wirklich mitspielen, nicht nur zusehen.
+    expect(anteil('normal').erhoeht).toBeGreaterThan(0.12)
+    expect(anteil('normal').weg).toBeLessThan(0.4)
+  })
+
+  it('lässt „leicht" zu oft mitgehen -- das ist der Anfängerfehler, der dort hingehört', () => {
+    const anteil = stilProbe(['leicht', 'leicht', 'normal'], 6)
+    expect(anteil('leicht').weg).toBeLessThan(anteil('normal').weg)
   })
 })

@@ -155,13 +155,30 @@ interface Zuschnitt {
   bluff: number
 }
 
+/*
+ * Die drei Zuschnitte, nachgemessen statt geschätzt.
+ *
+ * Thomas am 14.10.2026: „normal ist zu zahm bitte etwas mutiger machen."
+ * Das war belegt: In 60 durchgespielten Turnieren zu sechst erhöhte
+ * „normal" in 7,5 Prozent seiner Entscheidungen und warf 46 Prozent
+ * weg -- zusammen mit dem Schieben also 84 Prozent, in denen nichts
+ * passierte. Am Tisch fühlt sich das an wie Alleinspielen.
+ *
+ * Jetzt (dieselbe Messung): erhöht 17 Prozent, wirft 39 Prozent weg; zu
+ * dritt sogar 21 Prozent Erhöhungen bei 23 Prozent Würfen. Das ist ein
+ * Gegner, der um Töpfe kämpft.
+ *
+ * Die Reihenfolge der Stufen hält `tests/texas-engine.test.ts` fest.
+ */
 const STUFEN: Record<KiStufe, Zuschnitt> = {
   // Geht fast immer mit, erhöht fast nie -- der klassische Anfängerfehler,
   // und für den Menschen am Tisch gut auszurechnen.
   leicht: { aufschlag: -0.12, erhoehenAb: 0.82, bluff: 0.02 },
-  normal: { aufschlag: 0.02, erhoehenAb: 0.68, bluff: 0.08 },
-  // Rechnet knapp und setzt Druck auf, wenn es billig ist.
-  schwer: { aufschlag: 0.06, erhoehenAb: 0.6, bluff: 0.16 },
+  // Spielt mit: geht etwas unter den Pot Odds mit, erhöht ab der Hälfte
+  // und blufft in jedem sechsten freien Topf.
+  normal: { aufschlag: -0.03, erhoehenAb: 0.52, bluff: 0.18 },
+  // Rechnet knapp und setzt Druck auf, wo es billig ist.
+  schwer: { aufschlag: 0.0, erhoehenAb: 0.46, bluff: 0.3 },
 }
 
 /** Ein eigener Zufall je Entscheidung -- damit dieselbe Lage gleich ausgeht. */
