@@ -31,6 +31,7 @@ import {
 import { spielerNameOderDu } from '@/services/spielername'
 import { spiele, setzeTon, tonAn } from '@/services/sound'
 import { Kartenplatz, Spielkarte } from './texas/Spielkarte'
+import { Chipstapel } from './texas/Chips'
 import { Einsatzleiste } from './texas/Einsatzleiste'
 import { buchePartie } from './texas/partieBuchen'
 import shell from './PlayShell.module.css'
@@ -45,6 +46,90 @@ const STUFEN: { id: KiStufe; label: string; erklaerung: string }[] = [
 ]
 
 const GEGNER_NAMEN = ['Ida', 'Bruno', 'Lotte', 'Hans', 'Mira']
+
+interface Platz {
+  /** Prozent der Tischbreite. */
+  x: number
+  /** Prozent der Tischhöhe. */
+  y: number
+}
+
+/**
+ * Wo die Gegner sitzen -- je nachdem, wie viele es sind.
+ *
+ * Von Hand gesetzt statt auf der Ellipse ausgerechnet: Gerechnete Plätze
+ * liegen mathematisch richtig und sehen trotzdem falsch aus, weil die
+ * Namenskästchen verschieden breit sind und sich an den Seiten
+ * überschneiden. Der Mensch sitzt immer unten, ausserhalb des Filzes.
+ */
+const SITZE: Record<number, Platz[]> = {
+  1: [{ x: 50, y: 22 }],
+  2: [
+    { x: 28, y: 24 },
+    { x: 72, y: 24 },
+  ],
+  3: [
+    { x: 14, y: 39 },
+    { x: 50, y: 19 },
+    { x: 86, y: 39 },
+  ],
+  4: [
+    { x: 13, y: 40 },
+    { x: 33, y: 20 },
+    { x: 67, y: 20 },
+    { x: 87, y: 40 },
+  ],
+  5: [
+    { x: 12, y: 41 },
+    { x: 29, y: 21 },
+    { x: 50, y: 17 },
+    { x: 71, y: 21 },
+    { x: 88, y: 41 },
+  ],
+}
+
+/** Der eigene Platz -- unten am Rand des Filzes. */
+const MEIN_PLATZ: Platz = { x: 50, y: 90 }
+
+/**
+ * Wo die eigenen Jetons landen.
+ *
+ * Nicht über `einsatzPunkt` gerechnet, sondern gesetzt: Von unten führt
+ * der Weg geradewegs in die Mitte, und dort liegen schon Karten und
+ * Topf. Mein Einsatz liegt darunter, zwischen Topf und Tischkante.
+ */
+const MEIN_EINSATZ: Platz = { x: 50, y: 84 }
+
+/**
+ * Wo der Einsatz liegt: zwischen Spieler und Mitte.
+ *
+ * Deutlich mehr als die Hälfte des Weges -- bei weniger liegen die
+ * Jetons auf dem Namenskästchen statt davor. Im Browser ausgemessen.
+ */
+function einsatzPunkt(p: Platz): Platz {
+  return { x: p.x + (50 - p.x) * 0.62, y: p.y + (50 - p.y) * 0.62 }
+}
+
+/** Der Geberknopf liegt dichter am Platz als die Jetons -- sonst stapelt sich beides. */
+function geberPunkt(p: Platz): Platz {
+  return { x: p.x + (50 - p.x) * 0.2, y: p.y + (50 - p.y) * 0.2 }
+}
+
+/**
+ * Aus welcher Richtung die Jetons angeflogen kommen.
+ *
+ * Von der Seite des Spielers, 26 Punkte weit. Die Animation beginnt dort
+ * und endet auf dem Einsatzpunkt -- das ist das „in die Mitte werfen".
+ */
+function wurfVersatz(p: Platz): { '--wurf-x': string; '--wurf-y': string } {
+  const dx = p.x - 50
+  const dy = p.y - 50
+  const laenge = Math.hypot(dx, dy) || 1
+  return {
+    '--wurf-x': `${((dx / laenge) * 26).toFixed(1)}px`,
+    '--wurf-y': `${((dy / laenge) * 26).toFixed(1)}px`,
+  }
+}
 
 export function TexasHoldemPage() {
   const navigate = useNavigate()
@@ -228,7 +313,6 @@ export function TexasHoldemPage() {
   if (!zustand) return null
 
   const ich = zustand.spieler.find((s) => s.mensch)
-  const gegnerliste = zustand.spieler.filter((s) => !s.mensch)
   const { klein, gross } = blinds(zustand.blindStufe)
   const laufend = zustand.spieler.reduce((n, s) => n + s.einsatz, 0)
   const topf = zustand.pot + laufend
@@ -239,6 +323,31 @@ export function TexasHoldemPage() {
   )
   const moegl = moeglichkeiten(zustand)
   const platz = menschlicherPlatz(zustand)
+
+  /* Wer sitzt wo -- und wessen Jetons liegen gerade in der Mitte. */
+  const gegnerMitPlatz = zustand.spieler
+    .map((spieler, index) => ({ spieler, index }))
+    .filter((e) => !e.spieler.mensch)
+    .map((e, i) => ({
+      ...e,
+      platz: SITZE[zustand.spieler.length - 1]?.[i] ?? { x: 50, y: 16 },
+    }))
+
+  const platzVon = (index: number): Platz =>
+    zustand.spieler[index]?.mensch
+      ? MEIN_PLATZ
+      : (gegnerMitPlatz.find((e) => e.index === index)?.platz ?? MEIN_PLATZ)
+
+  const einsaetze = zustand.spieler
+    .map((spieler, index) => ({
+      id: spieler.id,
+      betrag: spieler.einsatz,
+      platz: platzVon(index),
+      punkt: zustand.spieler[index]?.mensch ? MEIN_EINSATZ : einsatzPunkt(platzVon(index)),
+    }))
+    .filter((e) => e.betrag > 0)
+
+  const geberPlatz = geberPunkt(platzVon(zustand.dealer))
 
   /* ------------------------------------------------------ Partie vorbei */
 
@@ -294,34 +403,80 @@ export function TexasHoldemPage() {
       <Kopf onZurueck={() => setAnsicht('menue')} ton={ton} onTon={tonUmschalten} />
 
       <section className={styles.tisch}>
-        <div className={styles.gegner}>
-          {gegnerliste.map((s) => (
-            <GegnerKarte
-              key={s.id}
-              spieler={s}
-              amZug={zustand.spieler[zustand.amZug]?.id === s.id}
-              offen={gezeigt}
-            />
-          ))}
-        </div>
+        {/*
+          Der Tisch: aussen die Bande, innen der Filz. Die Plätze liegen
+          absolut auf dem Filz, die Einsätze zwischen Platz und Mitte --
+          so sieht man, wessen Jetons da liegen.
+        */}
+        <div className={styles.bande}>
+          <div className={styles.filz}>
+            <div className={styles.mitte} role="group" aria-label="Tischmitte">
+              <div className={styles.board} role="group" aria-label="Gemeinschaftskarten">
+                {[0, 1, 2, 3, 4].map((i) =>
+                  zustand.board[i] ? (
+                    <Spielkarte key={i} karte={zustand.board[i]} groesse="tisch" />
+                  ) : (
+                    <Kartenplatz key={i} groesse="tisch" />
+                  ),
+                )}
+              </div>
+              <p className={styles.topf}>
+                {/* Der Schlüssel ist der Betrag: Wächst der Topf, entsteht
+                    der Stapel neu und wächst sichtbar mit. */}
+                <span key={topf} className={styles.topfChips}>
+                  <Chipstapel betrag={topf} zahl="keine" hoechstens={6} />
+                </span>
+                <span className={styles.topfZahl}>{topf}</span>
+                <span className={styles.topfWort}>im Topf</span>
+              </p>
+              <p className={styles.stufe}>
+                Hand {zustand.handNr} · Blinds {klein}/{gross}
+              </p>
+            </div>
 
-        <div className={styles.mitte} role="group" aria-label="Tischmitte">
-          <div className={styles.board} role="group" aria-label="Gemeinschaftskarten">
-            {[0, 1, 2, 3, 4].map((i) =>
-              zustand.board[i] ? (
-                <Spielkarte key={i} karte={zustand.board[i]} />
-              ) : (
-                <Kartenplatz key={i} />
-              ),
+            {gegnerMitPlatz.map(({ spieler, platz }) => (
+              <div
+                key={spieler.id}
+                className={styles.sitz}
+                style={{ left: `${platz.x}%`, top: `${platz.y}%` }}
+              >
+                <GegnerKarte
+                  spieler={spieler}
+                  amZug={zustand.spieler[zustand.amZug]?.id === spieler.id}
+                  offen={gezeigt}
+                />
+              </div>
+            ))}
+
+            {/* Die Einsätze. Der Schlüssel enthält den Betrag -- bei jeder
+                Erhöhung fliegen die Jetons neu ein. */}
+            {einsaetze.map(({ id, betrag, platz, punkt }) => {
+              return (
+                <span
+                  key={`${id}-${betrag}`}
+                  className={styles.einsatzMarke}
+                  style={{
+                    left: `${punkt.x}%`,
+                    top: `${punkt.y}%`,
+                    ...wurfVersatz(platz),
+                  }}
+                >
+                  <Chipstapel betrag={betrag} klein />
+                </span>
+              )
+            })}
+
+            {geberPlatz && (
+              <span
+                className={styles.geberKnopf}
+                style={{ left: `${geberPlatz.x}%`, top: `${geberPlatz.y}%` }}
+                title="Geber"
+                aria-label="Geber"
+              >
+                D
+              </span>
             )}
           </div>
-          <p className={styles.topf}>
-            <span className={styles.topfZahl}>{topf}</span>
-            <span className={styles.topfWort}>im Topf</span>
-          </p>
-          <p className={styles.stufe}>
-            Hand {zustand.handNr} · Blinds {klein}/{gross}
-          </p>
         </div>
 
         <ol className={styles.protokoll} aria-label="Was bisher geschah">
@@ -419,13 +574,22 @@ function GegnerKarte({
         {raus ? (
           <span className={styles.rausText}>raus</span>
         ) : (
-          spieler.karten.map((k, i) => <Spielkarte key={i} karte={k} zu={!offen || weg} klein />)
+          spieler.karten.map((k, i) => (
+            <Spielkarte key={i} karte={k} zu={!offen || weg} groesse="klein" />
+          ))
         )}
       </div>
       <span className={styles.gegnerName}>{spieler.name}</span>
-      <span className={styles.gegnerChips}>{spieler.chips}</span>
-      {spieler.einsatz > 0 && <span className={styles.gegnerEinsatz}>{spieler.einsatz}</span>}
-      {spieler.status === 'allin' && <span className={styles.allin}>all-in</span>}
+      <span className={styles.gegnerChips}>
+        {spieler.status === 'allin' ? (
+          <span className={styles.allin}>all-in</span>
+        ) : (
+          <>
+            <Chipstapel betrag={spieler.chips} klein zahl="keine" hoechstens={3} />
+            <span className={styles.gegnerZahl}>{spieler.chips}</span>
+          </>
+        )}
+      </span>
     </div>
   )
 }

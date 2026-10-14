@@ -22,6 +22,12 @@
   user-select: none;
 }
 
+.tisch {
+  width: 2.05rem;
+  height: 2.85rem;
+  border-radius: 0.34rem;
+}
+
 .klein {
   width: 1.7rem;
   height: 2.4rem;
@@ -43,6 +49,12 @@
   font-size: 0.72rem;
 }
 
+.tisch .ecke {
+  top: 0.12rem;
+  left: 0.16rem;
+  font-size: 0.6rem;
+}
+
 .klein .ecke {
   top: 0.1rem;
   left: 0.14rem;
@@ -52,6 +64,11 @@
 .zeichen {
   font-size: 1.5rem;
   transform: translateY(0.18rem);
+}
+
+.tisch .zeichen {
+  font-size: 1.2rem;
+  transform: translateY(0.14rem);
 }
 
 .klein .zeichen {

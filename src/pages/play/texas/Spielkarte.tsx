@@ -10,12 +10,21 @@
 import { FARB_ROT, FARB_ZEICHEN, wertKurz, wertName, type Karte } from '@/games/texas-holdem'
 import styles from './Spielkarte.module.css'
 
+/**
+ * Drei Grössen, und jede hat ihren Grund:
+ *
+ *   normal  die eigenen Karten unten -- die liest man genau
+ *   tisch   die fünf in der Mitte; sie müssen nebeneinander zwischen
+ *           die Plätze passen, ohne sie zu überdecken
+ *   klein   die Blätter der Gegner am Rand
+ */
+export type Kartengroesse = 'normal' | 'tisch' | 'klein'
+
 interface Props {
   karte?: Karte | null
   /** Verdeckt: die Rückseite. */
   zu?: boolean
-  /** Kleiner, für die Gegner am Tischrand. */
-  klein?: boolean
+  groesse?: Kartengroesse
   /** Gehört zur gewinnenden Hand -- wird hervorgehoben. */
   zaehlt?: boolean
 }
@@ -27,8 +36,12 @@ const FARB_NAME: Record<string, string> = {
   kreuz: 'Kreuz',
 }
 
-export function Spielkarte({ karte, zu = false, klein = false, zaehlt = false }: Props) {
-  const klassen = [styles.karte, klein ? styles.klein : '', zaehlt ? styles.zaehlt : ''].join(' ')
+export function Spielkarte({ karte, zu = false, groesse = 'normal', zaehlt = false }: Props) {
+  const klassen = [
+    styles.karte,
+    groesse === 'klein' ? styles.klein : groesse === 'tisch' ? styles.tisch : '',
+    zaehlt ? styles.zaehlt : '',
+  ].join(' ')
 
   if (zu || !karte) {
     return (
@@ -55,6 +68,7 @@ export function Spielkarte({ karte, zu = false, klein = false, zaehlt = false }:
 }
 
 /** Ein leerer Platz auf dem Tisch -- da kommt noch eine Karte hin. */
-export function Kartenplatz({ klein = false }: { klein?: boolean }) {
-  return <span className={`${styles.karte} ${klein ? styles.klein : ''} ${styles.platz}`} />
+export function Kartenplatz({ groesse = 'normal' }: { groesse?: Kartengroesse }) {
+  const mass = groesse === 'klein' ? styles.klein : groesse === 'tisch' ? styles.tisch : ''
+  return <span className={`${styles.karte} ${mass} ${styles.platz}`} />
 }
