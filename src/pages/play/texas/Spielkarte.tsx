@@ -5,6 +5,16 @@
  * Geräten gar nicht vorhanden und auf den übrigen unterschiedlich gross.
  * Hier stehen Wert und Farbe als Text -- damit lässt sich die Karte
  * einfärben, skalieren und vorlesen.
+ *
+ * Der WERT steht gross in der Mitte, die Farbe kleiner darunter.
+ *
+ * Zuerst war es umgekehrt -- ein grosses Farbzeichen, der Wert winzig in
+ * der Ecke. Auf einem Telefon sah man damit auf einen Blick, dass da ein
+ * Herz liegt, und musste hinsehen, ob es eine Sieben oder eine Neun ist.
+ * Beim Poker ist aber der Wert die Auskunft: Die Farbe zählt nur beim
+ * Flush, der Wert in jeder einzelnen Hand. Also hat der Wert den Platz
+ * bekommen (14.10.2026, Thomas: „die Karten sollen besser sichtbar
+ * sein").
  */
 
 import { FARB_ROT, FARB_ZEICHEN, wertKurz, wertName, type Karte } from '@/games/texas-holdem'
@@ -57,7 +67,7 @@ export function Spielkarte({ karte, zu = false, groesse = 'normal', zaehlt = fal
       role="img"
       aria-label={`${wertName(karte.wert)} ${FARB_NAME[karte.farbe] ?? ''}`}
     >
-      <span className={styles.ecke} aria-hidden="true">
+      <span className={styles.wert} aria-hidden="true">
         {wertKurz(karte.wert)}
       </span>
       <span className={styles.zeichen} aria-hidden="true">

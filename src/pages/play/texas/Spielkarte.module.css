@@ -1,86 +1,88 @@
 /*
- * Karten. Die Masse sind am Telefon ausgemessen: Fünf Gemeinschaftskarten
- * plus Abstände müssen nebeneinander auf 360 Punkte Breite passen, sonst
- * bricht der Tisch um.
+ * Karten.
+ *
+ * Drei Grössen, und alle drei müssen auf einem Telefon lesbar sein: Fünf
+ * Gemeinschaftskarten nebeneinander dürfen die Plätze am Rand nicht
+ * überdecken, und die eigenen beiden unten liest man genau.
+ *
+ * Der Wert steht gross in der Mitte, die Farbe kleiner darunter -- beim
+ * Poker ist der Wert die Auskunft, die Farbe zählt nur beim Flush.
  */
 
 .karte {
   position: relative;
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 2.6rem;
-  height: 3.6rem;
+  gap: 0.05em;
+  width: 3.1rem;
+  height: 4.3rem;
   flex-shrink: 0;
-  border-radius: 0.4rem;
-  background: #fdfdfb;
+  border-radius: 0.42rem;
+  background: #fffefb;
   box-shadow:
-    0 1px 2px rgb(0 0 0 / 0.25),
-    inset 0 0 0 1px rgb(0 0 0 / 0.1);
+    0 2px 4px rgb(0 0 0 / 0.3),
+    inset 0 0 0 1px rgb(0 0 0 / 0.12);
   font-weight: 800;
   line-height: 1;
   user-select: none;
 }
 
 .tisch {
-  width: 2.05rem;
-  height: 2.85rem;
-  border-radius: 0.34rem;
+  width: 2.45rem;
+  height: 3.4rem;
+  border-radius: 0.36rem;
 }
 
 .klein {
-  width: 1.7rem;
-  height: 2.4rem;
+  width: 1.85rem;
+  height: 2.55rem;
   border-radius: 0.3rem;
 }
 
+/* Kräftiges Rot statt Signalrot: auf Weiss lesbar, auf Grün ruhig. */
 .rot {
-  color: #c0252b;
+  color: #c62026;
 }
 
 .schwarz {
   color: #16181d;
 }
 
-.ecke {
-  position: absolute;
-  top: 0.18rem;
-  left: 0.22rem;
-  font-size: 0.72rem;
+.wert {
+  font-size: 1.6rem;
+  letter-spacing: -0.02em;
 }
 
-.tisch .ecke {
-  top: 0.12rem;
-  left: 0.16rem;
-  font-size: 0.6rem;
-}
-
-.klein .ecke {
-  top: 0.1rem;
-  left: 0.14rem;
-  font-size: 0.56rem;
-}
-
+/* Die Farbe darf nicht zur Verzierung schrumpfen -- beim Flush ist sie
+   die ganze Auskunft. */
 .zeichen {
-  font-size: 1.5rem;
-  transform: translateY(0.18rem);
+  font-size: 1.25rem;
+  line-height: 0.9;
+}
+
+.tisch .wert {
+  font-size: 1.3rem;
 }
 
 .tisch .zeichen {
-  font-size: 1.2rem;
-  transform: translateY(0.14rem);
+  font-size: 1.05rem;
+}
+
+.klein .wert {
+  font-size: 0.95rem;
 }
 
 .klein .zeichen {
-  font-size: 1rem;
-  transform: translateY(0.12rem);
+  font-size: 0.8rem;
 }
 
-/* Die Rückseite: ein ruhiges Muster, das sich vom Tischtuch abhebt. */
+/* Die Rückseite: ein ruhiges Muster, das sich vom Filz abhebt. */
 .rueckseite {
   background: linear-gradient(135deg, #3b4a8c, #212a52);
   box-shadow:
-    0 1px 2px rgb(0 0 0 / 0.3),
+    0 2px 4px rgb(0 0 0 / 0.35),
     inset 0 0 0 1px rgb(255 255 255 / 0.18);
 }
 

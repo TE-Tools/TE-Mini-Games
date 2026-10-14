@@ -24,6 +24,7 @@ import {
   moeglichkeiten,
   naechsteHand,
   type Aktion,
+  type Karte,
   type KiStufe,
   type TexasSpieler,
   type TexasZustand,
@@ -349,6 +350,20 @@ export function TexasHoldemPage() {
 
   const geberPlatz = geberPunkt(platzVon(zustand.dealer))
 
+  /*
+   * Welche fünf Karten die Hand ausmachen. Nach dem Showdown bekommen sie
+   * einen Ring -- sonst sieht man zwar, dass jemand gewonnen hat, aber
+   * nicht, womit. Die Engine gibt die Karten als dieselben Objekte zurück,
+   * die auch auf dem Tisch liegen; deshalb genügt ein Vergleich der
+   * Verweise.
+   */
+  const gewinnerHand =
+    zustand.phase === 'showdown'
+      ? (zustand.ergebnis?.anteile.find((a) => a.hand)?.hand ?? null)
+      : null
+  const zaehltMit = (k?: Karte | null): boolean =>
+    Boolean(k && gezeigt && gewinnerHand?.karten.includes(k))
+
   /* ------------------------------------------------------ Partie vorbei */
 
   if (zustand.phase === 'ende') {
@@ -414,7 +429,12 @@ export function TexasHoldemPage() {
               <div className={styles.board} role="group" aria-label="Gemeinschaftskarten">
                 {[0, 1, 2, 3, 4].map((i) =>
                   zustand.board[i] ? (
-                    <Spielkarte key={i} karte={zustand.board[i]} groesse="tisch" />
+                    <Spielkarte
+                      key={i}
+                      karte={zustand.board[i]}
+                      groesse="tisch"
+                      zaehlt={zaehltMit(zustand.board[i])}
+                    />
                   ) : (
                     <Kartenplatz key={i} groesse="tisch" />
                   ),
@@ -444,6 +464,7 @@ export function TexasHoldemPage() {
                   spieler={spieler}
                   amZug={zustand.spieler[zustand.amZug]?.id === spieler.id}
                   offen={gezeigt}
+                  zaehltMit={zaehltMit}
                 />
               </div>
             ))}
@@ -503,7 +524,7 @@ export function TexasHoldemPage() {
           <div className={styles.ichZeile}>
             <div className={styles.meineKarten} role="group" aria-label="Deine Karten">
               {ich?.karten.length ? (
-                ich.karten.map((k, i) => <Spielkarte key={i} karte={k} />)
+                ich.karten.map((k, i) => <Spielkarte key={i} karte={k} zaehlt={zaehltMit(k)} />)
               ) : (
                 <>
                   <Kartenplatz />
@@ -557,10 +578,12 @@ function GegnerKarte({
   spieler,
   amZug,
   offen,
+  zaehltMit,
 }: {
   spieler: TexasSpieler
   amZug: boolean
   offen: boolean
+  zaehltMit: (k?: Karte | null) => boolean
 }) {
   const raus = spieler.status === 'raus'
   const weg = spieler.status === 'gefoldet'
@@ -575,7 +598,13 @@ function GegnerKarte({
           <span className={styles.rausText}>raus</span>
         ) : (
           spieler.karten.map((k, i) => (
-            <Spielkarte key={i} karte={k} zu={!offen || weg} groesse="klein" />
+            <Spielkarte
+              key={i}
+              karte={k}
+              zu={!offen || weg}
+              groesse="klein"
+              zaehlt={zaehltMit(k)}
+            />
           ))
         )}
       </div>
