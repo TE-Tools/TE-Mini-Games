@@ -552,6 +552,20 @@
   --kachel-farbe: #4d7c0f;
 }
 
+.kachel[data-game='maumau'] {
+  /* Warmes Rot -- die Karte, die man am Kuechentisch umdreht. */
+  --kachel-ton: color-mix(in srgb, #b3302c 13%, #ffffff);
+  --kachel-rahmen: color-mix(in srgb, #b3302c 30%, transparent);
+  --kachel-farbe: #b3302c;
+}
+
+.kachel[data-game='letzte-karte'] {
+  /* Kraeftiges Orange: bunt, aber im Raster noch nicht vergeben. */
+  --kachel-ton: color-mix(in srgb, #c96a12 13%, #ffffff);
+  --kachel-rahmen: color-mix(in srgb, #c96a12 30%, transparent);
+  --kachel-farbe: #c96a12;
+}
+
 .kachel[data-game='texas-holdem'] {
   /* Tischgruen -- die einzige Kachel in dieser Richtung, und beim Poker
      die Farbe, an die jeder denkt. */

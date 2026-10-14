@@ -52,6 +52,14 @@ export const SPIELE_KACHELN: readonly KachelEintrag[] = [
   { id: 'trapbound', name: 'Trapbound', pfad: '/play/trapbound', icon: '🕳️', art: 'Jump and Run' },
   { id: 'emberwake', name: 'Emberwake', pfad: '/play/emberwake', icon: '🔥', art: 'Survival' },
   { id: 'kniffel', name: 'Kniffel', pfad: '/play/kniffel', icon: '🎲', art: 'Würfeln' },
+  { id: 'maumau', name: 'Mau-Mau', pfad: '/play/maumau', icon: '🂡', art: 'Karten' },
+  {
+    id: 'letzte-karte',
+    name: 'Letzte Karte',
+    pfad: '/play/letzte-karte',
+    icon: '🎴',
+    art: 'Karten',
+  },
   {
     id: 'texas-holdem',
     name: "Texas Hold'em",

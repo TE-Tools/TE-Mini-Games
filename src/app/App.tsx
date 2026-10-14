@@ -22,6 +22,7 @@ import { SquishyDumplingsPage } from '@/pages/play/SquishyDumplingsPage'
 import { TrapboundPage } from '@/pages/play/TrapboundPage'
 import { SudokuPage } from '@/pages/play/SudokuPage'
 import { TexasHoldemPage } from '@/pages/play/TexasHoldemPage'
+import { MauMauPage } from '@/pages/play/MauMauPage'
 import { OffeneSpielePage } from '@/pages/OffeneSpielePage'
 import { FamilyPage } from '@/pages/family/FamilyPage'
 
@@ -155,6 +156,8 @@ export function App() {
           <Route path="/play/schuetzenopoly" element={<SchuetzenopolyPage />} />
           <Route path="/play/kniffel" element={<KniffelPage />} />
           <Route path="/play/texas-holdem" element={<TexasHoldemPage />} />
+          <Route path="/play/maumau" element={<MauMauPage spiel="maumau" />} />
+          <Route path="/play/letzte-karte" element={<MauMauPage spiel="letzte-karte" />} />
           <Route path="/play/bienen-flow" element={<BienenFlowPage />} />
           <Route path="/play/squishy-dumplings" element={<SquishyDumplingsPage />} />
           <Route path="/play/trapbound" element={<TrapboundPage />} />

@@ -24,6 +24,8 @@ export type GameId =
   | 'emberwake'
   | 'sudoku'
   | 'texas-holdem'
+  | 'maumau'
+  | 'letzte-karte'
 
 export interface GameLevelConfig {
   level: number

@@ -18,6 +18,7 @@ import { trapboundGame } from './trapbound'
 import { emberwakeGame } from './emberwake/definition'
 import { sudokuGame } from './sudoku'
 import { texasHoldemGame } from './texas-holdem'
+import { letzteKarteGame, mauMauGame } from './maumau'
 
 /** Register all built-in games. Call once at app startup. */
 export function registerAllGames(): void {
@@ -40,4 +41,6 @@ export function registerAllGames(): void {
   registerGame(emberwakeGame)
   registerGame(sudokuGame)
   registerGame(texasHoldemGame)
+  registerGame(mauMauGame)
+  registerGame(letzteKarteGame)
 }
