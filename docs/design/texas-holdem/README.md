@@ -89,6 +89,34 @@ Die Stufen unterscheiden sich **nicht im Wissen, sondern im Mut**:
 Eine KI, die nur besser rechnet, fühlt sich am Tisch nicht anders an.
 Eine, die anders setzt, schon.
 
+## Der Tisch
+
+Anlass (14.10.2026, Thomas): „einen schönen Tisch, dass man an einem
+Poker Tisch spielt und Geld in die Mitte schmeißt."
+
+Aussen die Bande, innen der Filz, beides als Ellipse — ein Pokertisch ist
+kein Rechteck, und sobald die Rundung da ist, sitzt man wirklich daran.
+Die Plätze liegen absolut auf dem Filz (`SITZE` in
+`src/pages/play/TexasHoldemPage.tsx`), der Mensch immer unten.
+
+Die Plätze sind von Hand gesetzt, nicht auf der Ellipse ausgerechnet:
+Gerechnete Plätze liegen mathematisch richtig und sehen trotzdem falsch
+aus, weil die Namenskästchen verschieden breit sind. Wer sie ändert,
+prüft das im Browser nach, nicht auf dem Papier.
+
+**Beträge sind Jetons, keine Zahlen.** `chipStueckelung()` zerlegt einen
+Betrag in die üblichen Werte (weiss 1, rot 5, grün 25, schwarz 100,
+violett 500, orange 1000) und zeigt höchstens eine Handvoll Scheiben; die
+Zahl daneben sagt den Rest. So sieht man, wer viel hat, ohne zu lesen.
+
+**Der Einsatz fliegt in die Mitte.** Jeder Einsatz liegt zwischen Platz
+und Tischmitte und kommt von der Seite seines Spielers angeflogen
+(`@keyframes wurf`). Ausgelöst wird das ohne eine Zeile JavaScript: Der
+Schlüssel des Elements enthält den Betrag, also entsteht es bei jeder
+Erhöhung neu — und was neu entsteht, spielt seine Animation. Dasselbe
+beim Topf: Sein Schlüssel ist die Summe, also wächst er sichtbar, sobald
+die Einsätze eingesammelt sind.
+
 ## Wertung
 
 `partiePunkte(chips, platz, spielerzahl) = chips + (spielerzahl − platz) × 250`

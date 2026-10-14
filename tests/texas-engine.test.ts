@@ -321,7 +321,10 @@ describe('Wie der Tisch spricht', () => {
     })
     // Heads-up beginnt der Geber -- hier Ida. Erst sie, dann ich.
     while (!state.spieler[state.amZug]!.mensch) state = handle(state, kiAktion(state))
-    state = handle(state, moeglichkeiten(state).schieben ? { art: 'schieben' } : { art: 'mitgehen' })
+    state = handle(
+      state,
+      moeglichkeiten(state).schieben ? { art: 'schieben' } : { art: 'mitgehen' },
+    )
 
     const meine = state.protokoll.filter((z) => z.startsWith('Du '))
     expect(meine.length).toBeGreaterThan(0)
@@ -335,5 +338,27 @@ describe('Wie der Tisch spricht', () => {
     // „mit zwei Paaren", nicht „mit Zwei Paare".
     expect(fertig.ergebnis!.text).toContain('mit zwei Paaren')
     expect(fertig.ergebnis!.text).not.toContain('mit Zwei Paare')
+  })
+})
+
+describe('Welche fünf Karten gelten', () => {
+  it('nennt dieselben Karten, die auf dem Tisch liegen -- nicht Kopien davon', () => {
+    /*
+     * Die Oberfläche legt nach dem Showdown einen Ring um die fünf
+     * Karten, die die Hand ausmachen, und erkennt sie am Verweis. Würde
+     * die Engine hier Kopien zurückgeben, verschwänden die Ringe --
+     * ohne Fehlermeldung, nur still.
+     */
+    const fertig = handle(amRiver(), { art: 'schieben' })
+    const hand = fertig.ergebnis!.anteile.find((a) => a.hand)!.hand!
+    const sieger = fertig.spieler.find((s) => s.id === 'a')!
+
+    const vomBrett = hand.karten.filter((k) => fertig.board.includes(k))
+    const ausDerHand = hand.karten.filter((k) => sieger.karten.includes(k))
+
+    expect(hand.karten).toHaveLength(5)
+    expect(vomBrett.length + ausDerHand.length).toBe(5)
+    // A hält 9♠ 7♥ auf 2♣ 7♦ 9♥ B♠ 4♠: zwei Paare, beide Karten zählen.
+    expect(ausDerHand).toHaveLength(2)
   })
 })
