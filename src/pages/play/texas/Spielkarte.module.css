@@ -1,0 +1,93 @@
+/*
+ * Karten. Die Masse sind am Telefon ausgemessen: Fünf Gemeinschaftskarten
+ * plus Abstände müssen nebeneinander auf 360 Punkte Breite passen, sonst
+ * bricht der Tisch um.
+ */
+
+.karte {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  height: 3.6rem;
+  flex-shrink: 0;
+  border-radius: 0.4rem;
+  background: #fdfdfb;
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.25),
+    inset 0 0 0 1px rgb(0 0 0 / 0.1);
+  font-weight: 800;
+  line-height: 1;
+  user-select: none;
+}
+
+.klein {
+  width: 1.7rem;
+  height: 2.4rem;
+  border-radius: 0.3rem;
+}
+
+.rot {
+  color: #c0252b;
+}
+
+.schwarz {
+  color: #16181d;
+}
+
+.ecke {
+  position: absolute;
+  top: 0.18rem;
+  left: 0.22rem;
+  font-size: 0.72rem;
+}
+
+.klein .ecke {
+  top: 0.1rem;
+  left: 0.14rem;
+  font-size: 0.56rem;
+}
+
+.zeichen {
+  font-size: 1.5rem;
+  transform: translateY(0.18rem);
+}
+
+.klein .zeichen {
+  font-size: 1rem;
+  transform: translateY(0.12rem);
+}
+
+/* Die Rückseite: ein ruhiges Muster, das sich vom Tischtuch abhebt. */
+.rueckseite {
+  background: linear-gradient(135deg, #3b4a8c, #212a52);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.3),
+    inset 0 0 0 1px rgb(255 255 255 / 0.18);
+}
+
+.muster {
+  position: absolute;
+  inset: 0.22rem;
+  border-radius: 0.25rem;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgb(255 255 255 / 0.14) 0,
+    rgb(255 255 255 / 0.14) 2px,
+    transparent 2px,
+    transparent 5px
+  );
+}
+
+/* Ein leerer Platz -- da liegt noch nichts. */
+.platz {
+  background: rgb(255 255 255 / 0.07);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
+}
+
+/* Die Karten, die die Hand ausmachen. */
+.zaehlt {
+  outline: 2px solid var(--color-primary, #f0b429);
+  outline-offset: 1px;
+}
