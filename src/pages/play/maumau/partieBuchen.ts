@@ -40,7 +40,8 @@ export async function buchePartie(
     xp,
     resultData: {
       partieId,
-      art: zustand.art,
+      art: zustand.regeln.art,
+      hausregeln: zustand.regeln.konter,
       platz,
       spieler: zustand.spieler.length,
       eigenePunkte,

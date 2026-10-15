@@ -14,8 +14,18 @@ export {
 } from './karten'
 export type { Karte, Wirkung } from './karten'
 
-export { SPIELARTEN, handPunkte, passt, spielbare } from './regeln'
-export type { Regeln, Spielart } from './regeln'
+export {
+  KEIN_KONTER,
+  SPIELARTEN,
+  VOLLER_KONTER,
+  aktiveRegeln,
+  blattVon,
+  handPunkte,
+  kontert,
+  passt,
+  spielbare,
+} from './regeln'
+export type { AktiveRegeln, Konter, Spielart, Spielartbeschreibung } from './regeln'
 
 export {
   MAX_SPIELER,
