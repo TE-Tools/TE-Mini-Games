@@ -35,6 +35,7 @@ import type { GameId } from '@/games/types'
 import { spielerNameOderDu } from '@/services/spielername'
 import { spiele, setzeTon, tonAn, vibriere } from '@/services/sound'
 import { Blattkarte, Farbwunsch, Ziehstapel } from './maumau/Blattkarte'
+import { Handfaecher } from './maumau/Handfaecher'
 import { buchePartie } from './maumau/partieBuchen'
 import shell from './PlayShell.module.css'
 import styles from './MauMauPage.module.css'
@@ -341,55 +342,78 @@ export function MauMauPage({ spiel }: Props) {
 
   /* ----------------------------------------------------------------- Tisch */
 
+  /*
+   * Woher die zuletzt gelegte Karte kommt. Die Engine sagt, wer sie
+   * gelegt hat; daraus wird die Richtung, aus der sie angeflogen kommt.
+   * Ausgelöst wird die Bewegung ohne Zustand: Der Schlüssel der Karte
+   * ändert sich, also entsteht das Element neu und spielt seine
+   * Animation.
+   */
+  const legerPlatz = gegnerliste.findIndex((s) => s.id === zustand.letzterLeger)
+  const vonMir = zustand.letzterLeger === ich?.id
+  const flugX = vonMir ? 0 : (legerPlatz - (gegnerliste.length - 1) / 2) * 92
+  const flugY = vonMir ? 150 : -120
+
   return (
     <main className={shell.page}>
       <Kopf titel={titel} onZurueck={() => setAnsicht('menue')} ton={ton} onTon={tonUmschalten} />
 
       <section className={styles.tisch}>
-        {/*
-          Tisch und Protokoll stehen zusammen in der freien Fläche; die
-          Hand bleibt unten, wo der Daumen ist. Ohne diese Klammer hing
-          der Tisch oben und darunter war ein Loch.
-        */}
-        <div className={styles.oben}>
-          <div className={styles.gegner}>
-            {gegnerliste.map((s) => (
-              <Gegner key={s.id} spieler={s} amZug={amZugSpieler(zustand).id === s.id} />
-            ))}
-          </div>
-
-          <div className={styles.mitte} role="group" aria-label="Tischmitte">
-            <Ziehstapel
-              anzahl={zustand.stapel.length}
-              gesperrt={!meinZug || Boolean(zustand.gezogene)}
-              onClick={() => {
-                spiele('tick')
-                setZustand((alt) => (alt ? ziehen(alt) : alt))
-              }}
-            />
-            <div className={styles.ablage}>
-              <Blattkarte karte={obersteKarte} />
-            </div>
-            <div className={styles.lage}>
-              {zustand.wunsch && <Farbwunsch farbe={zustand.wunsch} />}
-              {zustand.strafe > 0 && (
-                <span className={styles.strafe}>{zustand.strafe} Karten im Raum</span>
-              )}
-              <span className={styles.richtung} aria-hidden="true">
-                {zustand.richtung === 1 ? '↻' : '↺'}
-              </span>
-            </div>
-          </div>
-
-          <ol className={styles.protokoll} aria-label="Was bisher geschah">
-            {zustand.protokoll
-              .slice(-3)
-              .reverse()
-              .map((zeile, i) => (
-                <li key={`${zustand.protokoll.length}-${i}`}>{zeile}</li>
+        {/* Bande aussen, Filz innen -- die Mitspieler sitzen mit am Tisch. */}
+        <div className={styles.bande}>
+          <div className={styles.filz}>
+            <div className={styles.gegner}>
+              {gegnerliste.map((s) => (
+                <Gegner key={s.id} spieler={s} amZug={amZugSpieler(zustand).id === s.id} />
               ))}
-          </ol>
+            </div>
+
+            <div className={styles.mitte} role="group" aria-label="Tischmitte">
+              <Ziehstapel
+                anzahl={zustand.stapel.length}
+                gesperrt={!meinZug || Boolean(zustand.gezogene)}
+                onClick={() => {
+                  spiele('tick')
+                  setZustand((alt) => (alt ? ziehen(alt) : alt))
+                }}
+              />
+              <div className={styles.ablage}>
+                <span
+                  key={obersteKarte.id}
+                  className={styles.geflogen}
+                  style={
+                    {
+                      '--von-x': `${flugX}px`,
+                      '--von-y': `${flugY}px`,
+                    } as React.CSSProperties
+                  }
+                >
+                  <Blattkarte karte={obersteKarte} />
+                </span>
+                {zustand.wunsch && (
+                  <span className={styles.wunschBand}>
+                    <Farbwunsch farbe={zustand.wunsch} />
+                  </span>
+                )}
+              </div>
+              <div className={styles.lage}>
+                {zustand.strafe > 0 && <span className={styles.strafe}>+{zustand.strafe}</span>}
+                <span className={styles.richtung} aria-hidden="true">
+                  {zustand.richtung === 1 ? '↻' : '↺'}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
+
+        <ol className={styles.protokoll} aria-label="Was bisher geschah">
+          {zustand.protokoll
+            .slice(-2)
+            .reverse()
+            .map((zeile, i) => (
+              <li key={`${zustand.protokoll.length}-${i}`}>{zeile}</li>
+            ))}
+        </ol>
 
         <div className={styles.unten}>
           {wunschFuer ? (
@@ -435,9 +459,8 @@ export function MauMauPage({ spiel }: Props) {
 
               {zustand.gezogene && meinZug && (
                 /*
-                  Die gezogene Karte steht hier und nicht nur in der Hand:
-                  Bei zwölf Karten lag sie sonst ausserhalb des Bildes, und
-                  man suchte, was man gerade gezogen hat.
+                  Die gezogene Karte steht hier und nicht nur im Fächer:
+                  Bei einer langen Hand sucht man sie sonst.
                 */
                 <div className={styles.gezogen}>
                   <span>Gezogen – legen?</span>
@@ -461,20 +484,12 @@ export function MauMauPage({ spiel }: Props) {
                 </div>
               )}
 
-              <div className={styles.hand} role="group" aria-label="Deine Karten">
-                {ich?.hand.map((k) => {
-                  const kannLegen = meinZug && darfLegen(zustand, k)
-                  return (
-                    <Blattkarte
-                      key={k.id}
-                      karte={k}
-                      spielbar={kannLegen}
-                      blass={meinZug && !kannLegen}
-                      onClick={kannLegen ? () => karteKlick(k) : undefined}
-                    />
-                  )
-                })}
-              </div>
+              <Handfaecher
+                karten={ich?.hand ?? []}
+                istSpielbar={(k) => darfLegen(zustand, k)}
+                onLegen={karteKlick}
+                amZug={meinZug}
+              />
 
               {meinZug && spielbar.length === 0 && !zustand.gezogene && (
                 <p className={styles.hinweis}>Nichts passt – zieh eine Karte vom Stapel.</p>
@@ -491,8 +506,14 @@ function Gegner({ spieler, amZug }: { spieler: MauSpieler; amZug: boolean }) {
   return (
     <div className={styles.gegnerKarte} data-zug={amZug ? 'ja' : undefined}>
       <div className={styles.gegnerBlatt} aria-hidden="true">
-        {spieler.hand.slice(0, 5).map((k) => (
-          <Blattkarte key={k.id} zu klein />
+        {spieler.hand.slice(0, 5).map((k, i) => (
+          <span
+            key={k.id}
+            className={styles.gegnerkarte}
+            style={{ '--i': i, zIndex: i } as React.CSSProperties}
+          >
+            <Blattkarte zu klein />
+          </span>
         ))}
       </div>
       <span className={styles.gegnerName}>{spieler.name}</span>

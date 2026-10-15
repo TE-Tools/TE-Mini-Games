@@ -131,20 +131,49 @@
   flex: 1;
   width: 100%;
   align-self: stretch;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  /* Unten der Rand des Geräts: Ohne diese Zeile lag der Fächer unter der
+     Navigationsleiste des Telefons und war angeschnitten. */
+  padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+}
+
+/*
+ * Bande und Filz. Ein Kartentisch ist kein weisser Kasten -- aussen das
+ * Holz, innen der Filz, und die Mitspieler sitzen mit daran.
+ */
+.bande {
+  /* Der Tisch füllt den Platz, der oben frei ist -- sonst klebt er unter
+     der Kopfzeile und darunter steht ein Loch. */
+  flex: 1;
+  min-height: 14rem;
+  display: flex;
+  padding: 0.5rem;
+  border-radius: 1.6rem;
+  background: linear-gradient(160deg, #7a4a24, #4a2a13 55%, #6b3f1e);
+  box-shadow:
+    0 6px 16px rgb(0 0 0 / 0.3),
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    inset 0 -2px 6px rgb(0 0 0 / 0.4);
+}
+
+.filz {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-3);
+  border-radius: 1.2rem;
+  background: radial-gradient(ellipse 90% 70% at 50% 18%, #2f8a5d 0%, #1d6343 55%, #12402b 100%);
+  box-shadow:
+    inset 0 0 0 2px rgb(0 0 0 / 0.28),
+    inset 0 10px 24px rgb(0 0 0 / 0.3);
 }
 
-.oben {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: var(--space-3);
-}
-
+/* Die Mitspieler sitzen auf dem Filz. */
 .gegner {
   display: flex;
   flex-wrap: wrap;
@@ -156,30 +185,35 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 1px;
+  min-width: 6.5rem;
   padding: var(--space-2);
   border-radius: var(--radius-md);
-  background: var(--color-bg-elevated);
-  box-shadow: inset 0 0 0 1px var(--color-border);
+  background: rgb(0 0 0 / 0.26);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
+  color: #fff;
 }
 
 .gegnerKarte[data-zug='ja'] {
-  box-shadow: inset 0 0 0 2px var(--color-primary);
+  background: rgb(0 0 0 / 0.38);
+  box-shadow:
+    inset 0 0 0 2px #f0c040,
+    0 0 12px rgb(240 192 64 / 0.4);
 }
 
-/* Die Blätter der anderen liegen aufgefächert -- man sieht die Menge. */
+/* Das Blatt der anderen liegt gefächert -- man sieht die Menge. */
 .gegnerBlatt {
-  display: flex;
+  position: relative;
+  height: 2.9rem;
+  width: 4.4rem;
 }
 
-.gegnerBlatt > * {
-  /* Überlappen, aber jede Karte bleibt sichtbar -- man soll die Menge
-     sehen, nicht einen Klotz. */
-  margin-right: -1rem;
-}
-
-.gegnerBlatt > *:last-child {
-  margin-right: 0;
+.gegnerkarte {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(calc(-50% + (var(--i) - 2) * 0.55rem)) rotate(calc((var(--i) - 2) * 6deg));
+  transform-origin: 50% 150%;
 }
 
 .gegnerName {
@@ -189,29 +223,66 @@
 
 .gegnerZahl {
   font-size: var(--text-xs);
-  color: var(--color-text-muted);
+  opacity: 0.8;
 }
 
 /* Die Mitte: Stapel, Ablage, Lage. */
 .mitte {
+  /* Nimmt den Platz unter den Mitspielern und setzt die Stapel in dessen
+     Mitte -- nicht an den unteren Rand des Filzes. */
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-4);
-  padding: var(--space-5, 1.5rem) var(--space-3);
-  border-radius: var(--radius-lg);
-  background: radial-gradient(ellipse 80% 70% at 50% 45%, #2b7d55, #14472f);
-  box-shadow: inset 0 0 0 2px rgb(0 0 0 / 0.25);
+  padding: var(--space-2) 0;
 }
 
 .ablage {
+  position: relative;
   display: flex;
+}
+
+/*
+ * Die gelegte Karte kommt von dem Platz geflogen, der sie gelegt hat.
+ * Ausgelöst wird das ohne Zustand: Der Schlüssel ist die Kartenkennung,
+ * also entsteht das Element neu, sobald eine andere Karte oben liegt.
+ */
+.geflogen {
+  display: block;
+  animation: legen 320ms cubic-bezier(0.2, 0.8, 0.3, 1.1);
+}
+
+@keyframes legen {
+  from {
+    transform: translate(var(--von-x, 0px), var(--von-y, -100px)) rotate(-14deg) scale(0.82);
+    opacity: 0.25;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .geflogen {
+    animation: none;
+  }
+}
+
+/* Der Farbwunsch klebt an der Ablage, nicht irgendwo daneben. */
+.wunschBand {
+  position: absolute;
+  left: 50%;
+  bottom: -0.7rem;
+  transform: translateX(-50%);
+  white-space: nowrap;
 }
 
 .lage {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-2);
   color: #fff;
 }
@@ -221,19 +292,19 @@
   border-radius: var(--radius-full);
   background: #b3261e;
   color: #fff;
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   font-weight: 800;
 }
 
 .richtung {
-  font-size: 1.4rem;
-  opacity: 0.8;
+  font-size: 1.5rem;
+  opacity: 0.85;
 }
 
 .protokoll {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 var(--space-1, 4px);
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -243,9 +314,10 @@
 
 /* Unten: die eigene Hand. */
 .unten {
+  margin-top: auto;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1, 4px);
 }
 
 .handZeile {
@@ -253,7 +325,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  min-height: 2.2rem;
+  min-height: 2.4rem;
 }
 
 .handTitel {
@@ -284,18 +356,6 @@
 .mauAn {
   background: var(--grad-primary);
   color: var(--color-primary-text);
-}
-
-.hand {
-  display: flex;
-  gap: var(--space-2);
-  padding: 0.5rem 0 0.2rem;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.hand::-webkit-scrollbar {
-  display: none;
 }
 
 .hinweis {
@@ -378,7 +438,7 @@
 }
 .farbknopf[data-farbe='herz'],
 .farbknopf[data-farbe='karo'] {
-  background: #c62026;
+  background: #c1121f;
 }
 .farbknopf[data-farbe='pik'],
 .farbknopf[data-farbe='kreuz'] {
