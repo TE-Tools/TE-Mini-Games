@@ -2,13 +2,14 @@
 
 Verbindliche Gestaltungs- und Umsetzungsvorgaben.
 
-| Thema | Status | Ordner |
-|-------|--------|--------|
-| **Levelkarte 1–500 („Zeitreise“)** | umgesetzt | [level-map-500/](./level-map-500/) |
-| **Schützenopoly** | umgesetzt | [schuetzenopoly/](./schuetzenopoly/) |
-| **Emberwake** | umgesetzt (Vertical Slice) | [emberwake/](./emberwake/) |
-| **Sudoku** | umgesetzt | [sudoku/](./sudoku/) |
-| **Texas Hold'em** | umgesetzt | [texas-holdem/](./texas-holdem/) |
+| Thema                              | Status                     | Ordner                               |
+| ---------------------------------- | -------------------------- | ------------------------------------ |
+| **Levelkarte 1–500 („Zeitreise“)** | umgesetzt                  | [level-map-500/](./level-map-500/)   |
+| **Schützenopoly**                  | umgesetzt                  | [schuetzenopoly/](./schuetzenopoly/) |
+| **Emberwake**                      | umgesetzt (Vertical Slice) | [emberwake/](./emberwake/)           |
+| **Sudoku**                         | umgesetzt                  | [sudoku/](./sudoku/)                 |
+| **Texas Hold'em**                  | umgesetzt                  | [texas-holdem/](./texas-holdem/)     |
+| **Mau-Mau / Letzte Karte**         | umgesetzt                  | [maumau/](./maumau/)                 |
 
 ## Levelkarte 1–500 (Kurz)
 
@@ -52,3 +53,13 @@ Details: [`sudoku/README.md`](./sudoku/README.md)
 - Die Stufen der Gegner unterscheiden sich im Mut, nicht im Wissen
 
 Details: [`texas-holdem/README.md`](./texas-holdem/README.md)
+
+## Mau-Mau und Letzte Karte (Kurz)
+
+- Zwei Kacheln, eine Engine: französisches Blatt (Mau-Mau) und buntes Blatt
+  (Letzte Karte, Spielarten Bunt und Extrem)
+- Die Unterschiede der Spielarten sind Daten in `regeln.ts`, keine Sonderfälle im Ablauf
+- „Mau" wird **vor** dem Legen angesagt; wer es vergisst, zieht zwei
+- Eigene Karten, Farben und Texte – Regeln sind nicht geschützt, ein Markenname schon
+
+Details: [`maumau/README.md`](./maumau/README.md)

@@ -1,0 +1,435 @@
+/*
+ * Mau-Mau und Letzte Karte.
+ *
+ * Oben die Mitspieler, in der Mitte Stapel und Ablage, unten die eigene
+ * Hand -- so liegt ein Kartentisch, und so greift der Daumen. Die Hand
+ * scrollt waagerecht, wenn sie lang wird; nichts schrumpft, damit die
+ * Karten lesbar bleiben.
+ */
+
+.menue {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+.einleitung {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.grosserKnopf {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-elevated);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+  color: var(--color-text);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.grosserKnopf strong {
+  display: block;
+  font-size: var(--text-base);
+}
+
+.grosserKnopf small {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.knopfIcon {
+  font-size: 1.8rem;
+}
+
+.ueberschrift {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.gruppe {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.gruppe legend {
+  padding: 0 0 var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.knopfreihe {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.wahlAn,
+.wahlAus {
+  flex: 1;
+  min-height: 48px;
+  border: 0;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.wahlAus {
+  background: var(--color-bg-elevated);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+  color: var(--color-text);
+}
+
+.wahlAn {
+  background: var(--grad-primary);
+  color: var(--color-primary-text);
+}
+
+.erklaerung {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.start {
+  min-height: 56px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--grad-primary);
+  color: var(--color-primary-text);
+  font-family: inherit;
+  font-size: var(--text-base);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.tonKnopf {
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-elevated);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+/* ------------------------------------------------------------- Tisch */
+
+.tisch {
+  flex: 1;
+  width: 100%;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
+.oben {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.gegner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.gegnerKarte {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-elevated);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+.gegnerKarte[data-zug='ja'] {
+  box-shadow: inset 0 0 0 2px var(--color-primary);
+}
+
+/* Die Blätter der anderen liegen aufgefächert -- man sieht die Menge. */
+.gegnerBlatt {
+  display: flex;
+}
+
+.gegnerBlatt > * {
+  /* Überlappen, aber jede Karte bleibt sichtbar -- man soll die Menge
+     sehen, nicht einen Klotz. */
+  margin-right: -1rem;
+}
+
+.gegnerBlatt > *:last-child {
+  margin-right: 0;
+}
+
+.gegnerName {
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.gegnerZahl {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* Die Mitte: Stapel, Ablage, Lage. */
+.mitte {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-5, 1.5rem) var(--space-3);
+  border-radius: var(--radius-lg);
+  background: radial-gradient(ellipse 80% 70% at 50% 45%, #2b7d55, #14472f);
+  box-shadow: inset 0 0 0 2px rgb(0 0 0 / 0.25);
+}
+
+.ablage {
+  display: flex;
+}
+
+.lage {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: #fff;
+}
+
+.strafe {
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-full);
+  background: #b3261e;
+  color: #fff;
+  font-size: var(--text-xs);
+  font-weight: 800;
+}
+
+.richtung {
+  font-size: 1.4rem;
+  opacity: 0.8;
+}
+
+.protokoll {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+/* Unten: die eigene Hand. */
+.unten {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.handZeile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 2.2rem;
+}
+
+.handTitel {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+/* Der Mau-Knopf: vor dem Legen zu drücken, sonst kostet es zwei Karten. */
+.mau,
+.mauAn {
+  min-height: 40px;
+  padding: 0 var(--space-4);
+  border: 0;
+  border-radius: var(--radius-full);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.mau {
+  background: var(--color-bg-elevated);
+  box-shadow: inset 0 0 0 2px var(--color-primary);
+  color: var(--color-text);
+}
+
+.mauAn {
+  background: var(--grad-primary);
+  color: var(--color-primary-text);
+}
+
+.hand {
+  display: flex;
+  gap: var(--space-2);
+  padding: 0.5rem 0 0.2rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.hand::-webkit-scrollbar {
+  display: none;
+}
+
+.hinweis {
+  margin: 0;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.gezogen {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--grad-primary-soft, rgb(255 190 80 / 0.14));
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.klein,
+.abbruch {
+  min-height: 38px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-elevated);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Die Farbwahl nach einem Buben. */
+.farbwahl {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.farbfrage {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.farbknoepfe {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.farbknopf {
+  min-height: 56px;
+  border: 0;
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-family: inherit;
+  font-size: var(--text-base);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.farbknopf[data-farbe='rot'] {
+  background: #d8373a;
+}
+.farbknopf[data-farbe='blau'] {
+  background: #2f6fc4;
+}
+.farbknopf[data-farbe='gruen'] {
+  background: #2f9450;
+}
+.farbknopf[data-farbe='gelb'] {
+  background: #e0ae27;
+  color: #3a2a04;
+}
+.farbknopf[data-farbe='herz'],
+.farbknopf[data-farbe='karo'] {
+  background: #c62026;
+}
+.farbknopf[data-farbe='pik'],
+.farbknopf[data-farbe='kreuz'] {
+  background: #23262d;
+}
+
+/* ------------------------------------------------------------- Ende */
+
+.endstand {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.endEintrag {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-elevated);
+  font-size: var(--text-sm);
+}
+
+.endPlatz {
+  width: 1.6rem;
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+.endName {
+  flex: 1;
+  font-weight: 600;
+}
+
+.endWert {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.punktzeile {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.punktzeile strong {
+  font-size: var(--text-xl);
+  color: var(--color-text);
+}

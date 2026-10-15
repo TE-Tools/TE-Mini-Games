@@ -36,6 +36,13 @@ corresponding feature; do not invent a competing design.
   kommt (`gegen_computer`), die View führt die Online-Zahlen getrennt mit,
   und die Liste kann darauf umschalten. Wer daran etwas ändert, lässt diese
   Trennung stehen: Ohne sie ist die Rangliste eine Behauptung.
+- **Mau-Mau / Letzte Karte:** `docs/design/maumau/` – zwei Kacheln, eine
+  Engine. Regeln gehören ausschließlich nach `src/games/maumau/`, die
+  Unterschiede der Spielarten stehen in `regeln.ts` als Daten, nicht als
+  Sonderfälle im Ablauf. Die zweite Kachel heißt „Letzte Karte" und hat
+  eigene Karten, Farben und Texte: Regeln eines Kartenspiels sind nicht
+  geschützt, ein Markenname schon. Wer daran etwas ändert, übernimmt von
+  keinem Handelsprodukt Namen oder Gestaltung.
 - **Texas Hold'em:** `docs/design/texas-holdem/` – Turnierform, Setzrunden,
   Nebenpots, KI und Wertung. Regeln gehören ausschließlich nach
   `src/games/texas-holdem/`, Balancingwerte ausschließlich in dessen
