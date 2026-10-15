@@ -40,14 +40,43 @@ und Emberwake: die Idee ja, das Produkt nein.
 **Bunt, 7 Karten:** Farbe oder Aufdruck muss passen; dazu Aussetzen,
 Richtungswechsel, +2 je Farbe sowie schwarze Wunsch- und +4-Karten.
 
-**Extrem:** wie Bunt, aber
+**Extrem:** wie Bunt, aber alle Hausregeln an — siehe unten.
 
-- Strafkarten lassen sich weiterreichen (+2 auf +2, +4 auf alles),
-- es wird gezogen, bis eine Karte passt — **höchstens vier**,
-- die Null schiebt alle Hände einen Platz weiter.
+## Hausregeln einzeln
 
-Die Vier ist dabei bewusst nicht konterbar durch eine Zwei: Sonst wäre
-die teuerste Karte des Spiels die schwächste.
+Anlass (15.10.2026, Thomas): „man kann entscheiden, ob 2 auf plus 2
+geht, 4 auf plus 4 geht, schwarze Karte auf schwarze Karte geht ... das
+als Auswahlmöglichkeit."
+
+Die Spielart ist nur noch die **Voreinstellung**; jede Regel lässt sich
+davor einzeln umlegen. Deshalb steht das Kontern nicht als ein Schalter
+im Code, sondern als fünf (`Konter` in `regeln.ts`):
+
+| Schalter            | Bedeutung                                         |
+| ------------------- | ------------------------------------------------- |
+| `zweiAufZwei`       | +2 auf +2 (beim französischen Blatt: **7 auf 7**) |
+| `vierAufVier`       | +4 auf +4                                         |
+| `zweiAufVier`       | +2 auf +4                                         |
+| `vierAufZwei`       | +4 auf +2                                         |
+| `schwarzAufSchwarz` | die Wunschkarte kontert                           |
+
+Dazu zwei weitere: _Ziehen, bis es passt_ (höchstens vier Karten) und
+_Null tauscht die Hände_.
+
+**Schwarz auf Schwarz** verdient eine eigene Zeile: Die Wunschkarte
+zieht selbst nichts. Wer mit ihr kontert, zieht also nicht — aber der
+Nächste steht vor derselben Zahl. Die Strafe wird weitergereicht, nicht
+erhöht und nicht aufgelöst. Würde sie dabei verfallen, wäre die
+Wunschkarte ein Freifahrtschein.
+
+Ob „+2 auf +4" eine gute Regel ist, entscheidet nicht der Code: Sie
+macht die teuerste Karte des Spiels kontersicher — oder eben nicht. Das
+ist genau die Art Streit, die an den Tisch gehört und nicht in die
+Engine, deshalb steht sie als Schalter da.
+
+Eine laufende Partie trägt ihre Regeln **im Zustand** mit
+(`MauZustand.regeln`), nicht als Verweis auf eine Tabelle: Sonst hinge
+sie daran, wie der nächste Tisch sie stellt.
 
 ## „Mau" ist keine Zierde
 

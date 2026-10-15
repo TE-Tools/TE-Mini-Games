@@ -39,7 +39,10 @@ corresponding feature; do not invent a competing design.
 - **Mau-Mau / Letzte Karte:** `docs/design/maumau/` – zwei Kacheln, eine
   Engine. Regeln gehören ausschließlich nach `src/games/maumau/`, die
   Unterschiede der Spielarten stehen in `regeln.ts` als Daten, nicht als
-  Sonderfälle im Ablauf. Die zweite Kachel heißt „Letzte Karte" und hat
+  Sonderfälle im Ablauf. Die Spielart ist dabei nur die Voreinstellung:
+  Jede Hausregel (Kontern von +2/+4, Schwarz auf Schwarz, Ziehen bis es
+  passt, Null tauscht die Hände) lässt sich einzeln umlegen, und eine
+  laufende Partie trägt ihre Regeln im Zustand mit. Die zweite Kachel heißt „Letzte Karte" und hat
   eigene Karten, Farben und Texte: Regeln eines Kartenspiels sind nicht
   geschützt, ein Markenname schon. Wer daran etwas ändert, übernimmt von
   keinem Handelsprodukt Namen oder Gestaltung.

@@ -12,7 +12,10 @@
  */
 import { describe, it, expect } from 'vitest'
 import {
+  KEIN_KONTER,
   SPIELARTEN,
+  VOLLER_KONTER,
+  aktiveRegeln,
   amZugSpieler,
   behalten,
   darfLegen,
@@ -105,7 +108,7 @@ describe('Eine Runde spielt sich zu Ende', () => {
 describe('Was passt', () => {
   const franz = franzoesischesBlatt()
   const k = (id: string) => franz.find((c) => c.id === id)!
-  const klassisch = SPIELARTEN.klassisch
+  const klassisch = aktiveRegeln('klassisch')
 
   it('lässt Farbe auf Farbe und Wert auf Wert', () => {
     expect(passt(k('herz-9'), k('herz-K'), null, 0, klassisch)).toBe(true)
@@ -127,15 +130,15 @@ describe('Was passt', () => {
     expect(passt(k('pik-7'), k('herz-7'), null, 2, klassisch)).toBe(false)
   })
 
-  it('lässt im Extremspiel die Strafe weiterreichen', () => {
+  it('lässt im Extremspiel jede Strafkarte weiterreichen', () => {
     const bunt = buntesBlatt()
     const b = (id: string) => bunt.find((c) => c.id === id)!
-    const extrem = SPIELARTEN.extrem
+    const extrem = aktiveRegeln('extrem')
     expect(passt(b('blau-zwei-1'), b('rot-zwei-1'), null, 2, extrem)).toBe(true)
     expect(passt(b('vier-1'), b('rot-zwei-1'), null, 2, extrem)).toBe(true)
-    // Eine Zwei auf eine Vier geht nicht -- sonst wäre die Vier nichts wert.
-    expect(passt(b('blau-zwei-1'), b('vier-1'), null, 4, extrem)).toBe(false)
-    // Und eine gewöhnliche Karte schon gar nicht.
+    expect(passt(b('blau-zwei-1'), b('vier-1'), null, 4, extrem)).toBe(true)
+    expect(passt(b('vier-2'), b('vier-1'), null, 4, extrem)).toBe(true)
+    // Eine gewöhnliche Karte kontert nie.
     expect(passt(b('rot-5-1'), b('rot-zwei-1'), null, 2, extrem)).toBe(false)
   })
 })
@@ -316,5 +319,134 @@ describe('Wer zuletzt gelegt hat', () => {
       state = zug.art === 'ziehen' ? ziehen(state) : behalten(state)
     }
     throw new Error('In vierzig Zügen hat niemand gelegt')
+  })
+})
+
+describe('Hausregeln einzeln', () => {
+  /*
+   * Thomas am 15.10.2026: "man kann entscheiden, ob 2 auf plus 2 geht,
+   * 4 auf plus 4 geht, schwarze Karte auf schwarze Karte geht ... das
+   * als Auswahlmöglichkeit."
+   *
+   * Fünf Schalter, und jeder muss für sich wirken: Wer nur „2 auf 2"
+   * anmacht, darf keine Vier dazulegen können. Deshalb wird hier jede
+   * Regel einzeln angeschaltet und beide Richtungen geprüft.
+   */
+  const bunt = buntesBlatt()
+  const b = (id: string) => bunt.find((c) => c.id === id)!
+  const zwei = () => b('blau-zwei-1')
+  const andereZwei = () => b('rot-zwei-1')
+  const vier = () => b('vier-1')
+  const andereVier = () => b('vier-2')
+  const wunsch = () => b('wunsch-1')
+
+  const mit = (an: Partial<typeof KEIN_KONTER>) => aktiveRegeln('bunt', { konter: an })
+
+  it('zwei auf zwei', () => {
+    const regeln = mit({ zweiAufZwei: true })
+    expect(passt(zwei(), andereZwei(), null, 2, regeln)).toBe(true)
+    // Nur diese eine Regel: Eine Vier geht damit noch nicht.
+    expect(passt(vier(), andereZwei(), null, 2, regeln)).toBe(false)
+  })
+
+  it('vier auf vier', () => {
+    const regeln = mit({ vierAufVier: true })
+    expect(passt(vier(), andereVier(), null, 4, regeln)).toBe(true)
+    expect(passt(zwei(), andereVier(), null, 4, regeln)).toBe(false)
+  })
+
+  it('zwei auf vier und vier auf zwei sind zwei verschiedene Regeln', () => {
+    const nurZweiAufVier = mit({ zweiAufVier: true })
+    expect(passt(zwei(), vier(), null, 4, nurZweiAufVier)).toBe(true)
+    expect(passt(vier(), zwei(), null, 2, nurZweiAufVier)).toBe(false)
+
+    const nurVierAufZwei = mit({ vierAufZwei: true })
+    expect(passt(vier(), zwei(), null, 2, nurVierAufZwei)).toBe(true)
+    expect(passt(zwei(), vier(), null, 4, nurVierAufZwei)).toBe(false)
+  })
+
+  it('schwarz auf schwarz: die Wunschkarte kontert, ohne zu erhöhen', () => {
+    const regeln = mit({ schwarzAufSchwarz: true })
+    expect(passt(wunsch(), vier(), null, 4, regeln)).toBe(true)
+    expect(passt(wunsch(), zwei(), null, 2, regeln)).toBe(true)
+    // Ohne die Regel geht sie nicht.
+    expect(passt(wunsch(), vier(), null, 4, mit({}))).toBe(false)
+  })
+
+  it('ohne Konter wird gezogen, auch mit passender Farbe auf der Hand', () => {
+    const ohne = aktiveRegeln('bunt')
+    expect(ohne.konter).toEqual(KEIN_KONTER)
+    expect(passt(zwei(), andereZwei(), null, 2, ohne)).toBe(false)
+    expect(passt(b('rot-5-1'), andereZwei(), null, 2, ohne)).toBe(false)
+  })
+
+  it('Extrem hat alle fünf an, Bunt keine', () => {
+    expect(aktiveRegeln('extrem').konter).toEqual(VOLLER_KONTER)
+    expect(aktiveRegeln('bunt').konter).toEqual(KEIN_KONTER)
+    // Und die Spielart bleibt nur die Voreinstellung.
+    expect(aktiveRegeln('extrem', { konter: { zweiAufVier: false } }).konter.zweiAufVier).toBe(
+      false,
+    )
+    expect(aktiveRegeln('extrem', { konter: { zweiAufVier: false } }).konter.vierAufVier).toBe(true)
+  })
+
+  it('trägt die Hausregeln in der laufenden Partie mit', () => {
+    // Sonst hinge eine Partie an einer Tabelle, die der nächste Tisch
+    // anders stellt.
+    const state = erstellePartie({
+      art: 'bunt',
+      seed: 1,
+      hausregeln: { konter: { zweiAufZwei: true }, ziehenBisPassend: true },
+      spieler: [
+        { name: 'Du', mensch: true },
+        { name: 'Ida', mensch: false, kiStufe: 'normal' },
+      ],
+    })
+    expect(state.regeln.konter.zweiAufZwei).toBe(true)
+    expect(state.regeln.konter.vierAufVier).toBe(false)
+    expect(state.regeln.ziehenBisPassend).toBe(true)
+    expect(state.regeln.art).toBe('bunt')
+  })
+})
+
+describe('Schwarz auf Schwarz im Spiel', () => {
+  it('gibt die offene Strafe weiter, ohne sie zu erhöhen', () => {
+    /*
+     * Die Wunschkarte zieht selbst nichts. Wer mit ihr kontert, zieht
+     * also nicht -- aber der Nächste steht vor derselben Zahl. Genau das
+     * macht die Regel aus; würde die Strafe dabei verfallen, wäre die
+     * Wunschkarte ein Freifahrtschein.
+     */
+    const bunt = buntesBlatt()
+    const b = (id: string) => bunt.find((c) => c.id === id)!
+    const wunsch = b('wunsch-1')
+
+    let state = erstellePartie({
+      art: 'bunt',
+      seed: 2,
+      hausregeln: { konter: { schwarzAufSchwarz: true } },
+      spieler: [
+        { name: 'Du', mensch: true },
+        { name: 'Ida', mensch: false, kiStufe: 'normal' },
+      ],
+    })
+    // Lage stellen: Eine Vier liegt, vier Karten stehen im Raum, ich
+    // halte die Wunschkarte.
+    state = {
+      ...state,
+      ablage: [...state.ablage, b('vier-1')],
+      strafe: 4,
+      amZug: 0,
+      spieler: state.spieler.map((s, i) => (i === 0 ? { ...s, hand: [wunsch, b('rot-5-1')] } : s)),
+    }
+
+    expect(darfLegen(state, wunsch)).toBe(true)
+    const nachher = legen(mauSagen(state), wunsch, 'blau')
+
+    expect(nachher.strafe).toBe(4)
+    expect(nachher.wunsch).toBe('blau')
+    expect(nachher.amZug).toBe(1)
+    // Ich habe nichts gezogen.
+    expect(nachher.spieler[0]!.hand).toHaveLength(1)
   })
 })

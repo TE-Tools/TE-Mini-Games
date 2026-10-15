@@ -98,3 +98,64 @@ describe('Letzte Karte', () => {
     expect(karten).toBe(7)
   })
 })
+
+describe('Hausregeln im Aufbau', () => {
+  /*
+   * Thomas am 15.10.2026: "man kann entscheiden, ob 2 auf plus 2 geht,
+   * 4 auf plus 4 geht, schwarze Karte auf schwarze Karte geht ... das
+   * als Auswahlmöglichkeit."
+   */
+  async function zumAufbau(spiel: 'maumau' | 'letzte-karte') {
+    render(
+      <MemoryRouter>
+        <MauMauPage spiel={spiel} />
+      </MemoryRouter>,
+    )
+    await userEvent.click(screen.getByRole('button', { name: /Gegen den Rechner/ }))
+  }
+
+  const schalter = (name: string) => screen.getByRole('button', { name, pressed: undefined })
+
+  it('zeigt die fünf Konterregeln einzeln', async () => {
+    await zumAufbau('letzte-karte')
+    for (const name of [
+      '+2 auf +2',
+      '+4 auf +4',
+      '+2 auf +4',
+      '+4 auf +2',
+      'Schwarz auf Schwarz',
+    ]) {
+      expect(schalter(name)).toHaveAttribute('aria-pressed', 'false')
+    }
+  })
+
+  it('legt bei Extrem alle um und bei Bunt wieder zurück', async () => {
+    await zumAufbau('letzte-karte')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Extrem' }))
+    expect(schalter('+2 auf +2')).toHaveAttribute('aria-pressed', 'true')
+    expect(schalter('Schwarz auf Schwarz')).toHaveAttribute('aria-pressed', 'true')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Bunt' }))
+    expect(schalter('+2 auf +2')).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('lässt jede Regel für sich umlegen', async () => {
+    await zumAufbau('letzte-karte')
+    await userEvent.click(screen.getByRole('button', { name: 'Extrem' }))
+
+    // Eine aus -- die anderen bleiben an. Darum geht es bei der Wahl.
+    await userEvent.click(schalter('+2 auf +4'))
+    expect(schalter('+2 auf +4')).toHaveAttribute('aria-pressed', 'false')
+    expect(schalter('+4 auf +2')).toHaveAttribute('aria-pressed', 'true')
+    expect(schalter('+4 auf +4')).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('zeigt beim französischen Blatt nur, was es dort gibt', async () => {
+    await zumAufbau('maumau')
+    // Die Sieben ist dort die Ziehkarte -- und es gibt keine Vier.
+    expect(schalter('7 auf 7')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '+4 auf +4' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Schwarz auf Schwarz' })).not.toBeInTheDocument()
+  })
+})

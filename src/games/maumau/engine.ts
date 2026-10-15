@@ -21,7 +21,16 @@
 
 import { createRng } from '@/games/rng'
 import { gemischt, karteKurz, type Karte } from './karten'
-import { SPIELARTEN, handPunkte, passt, spielbare, type Regeln, type Spielart } from './regeln'
+import {
+  aktiveRegeln,
+  blattVon,
+  handPunkte,
+  passt,
+  spielbare,
+  type AktiveRegeln,
+  type Konter,
+  type Spielart,
+} from './regeln'
 
 export type KiStufe = 'leicht' | 'normal'
 
@@ -68,7 +77,13 @@ export interface MauZustand {
   protokoll: string[]
   seed: number
   zaehler: number
-  art: Spielart
+  /**
+   * Wonach gespielt wird -- vollständig im Zustand, nicht nur als Name
+   * der Spielart. Die Hausregeln lassen sich einzeln umlegen, also muss
+   * eine laufende Partie sie mit sich führen; sonst hinge sie an einer
+   * Tabelle, die der nächste Tisch anders stellt.
+   */
+  regeln: AktiveRegeln
 }
 
 export interface SpielerEinrichtung {
@@ -81,14 +96,20 @@ export interface PartieOptionen {
   spieler: SpielerEinrichtung[]
   art: Spielart
   seed?: number
+  /** Einzelne Hausregeln abweichend von der Spielart. */
+  hausregeln?: {
+    konter?: Partial<Konter>
+    ziehenBisPassend?: boolean
+    haendeWandern?: boolean
+  }
 }
 
 export const MIN_SPIELER = 2
 export const MAX_SPIELER = 4
 export const ZUSTAND_VERSION = 1
 
-export function regelnVon(state: MauZustand): Regeln {
-  return SPIELARTEN[state.art]
+export function regelnVon(state: MauZustand): AktiveRegeln {
+  return state.regeln
 }
 
 export function oberste(state: MauZustand): Karte {
@@ -169,10 +190,10 @@ export function erstellePartie(opt: PartieOptionen): MauZustand {
   if (opt.spieler.length < MIN_SPIELER) throw new Error(`Mindestens ${MIN_SPIELER} Spieler nötig`)
   if (opt.spieler.length > MAX_SPIELER) throw new Error(`Höchstens ${MAX_SPIELER} Spieler`)
 
-  const regeln = SPIELARTEN[opt.art]
+  const regeln = aktiveRegeln(opt.art, opt.hausregeln)
   const seed = opt.seed ?? Math.floor(Math.random() * 1_000_000)
   const rng = createRng(`${seed}:start`)
-  const stapel = gemischt(regeln.karten(), rng)
+  const stapel = gemischt(blattVon(opt.art), rng)
 
   const state: MauZustand = {
     spieler: opt.spieler.map((e, i) => ({
@@ -199,7 +220,7 @@ export function erstellePartie(opt: PartieOptionen): MauZustand {
     protokoll: [],
     seed,
     zaehler: 0,
-    art: opt.art,
+    regeln,
   }
 
   for (let i = 0; i < regeln.handkarten; i++) {

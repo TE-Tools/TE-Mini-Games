@@ -12,6 +12,7 @@ import {
   FARB_NAME,
   MAX_SPIELER,
   SPIELARTEN,
+  aktiveRegeln,
   amZugSpieler,
   behalten,
   darfLegen,
@@ -27,6 +28,7 @@ import {
   ziehen,
   type Karte,
   type KiStufe,
+  type Konter,
   type MauSpieler,
   type MauZustand,
   type Spielart,
@@ -46,6 +48,58 @@ const KI_PAUSE_MS = 850
 type Ansicht = 'menue' | 'aufbau' | 'tisch'
 
 const GEGNER_NAMEN = ['Ida', 'Bruno', 'Lotte']
+
+/**
+ * Die Hausregeln, über die sich Tische streiten.
+ *
+ * Thomas am 15.10.2026: „man kann entscheiden, ob 2 auf plus 2 geht, 4
+ * auf plus 4 geht, schwarze Karte auf schwarze Karte geht ... das als
+ * Auswahlmöglichkeit."
+ *
+ * Beim französischen Blatt gibt es nur die Sieben, also heisst dieselbe
+ * Regel dort anders -- die Namen stehen deshalb hier und nicht in der
+ * Engine.
+ */
+const KONTER_REGELN: {
+  id: keyof Konter
+  name: string
+  buntName?: string
+  erklaerung: string
+  /** Gibt es diese Karte im französischen Blatt überhaupt? */
+  auchKlassisch: boolean
+}[] = [
+  {
+    id: 'zweiAufZwei',
+    name: '7 auf 7',
+    buntName: '+2 auf +2',
+    erklaerung: 'Die Strafe wandert weiter und wächst.',
+    auchKlassisch: true,
+  },
+  {
+    id: 'vierAufVier',
+    name: '+4 auf +4',
+    erklaerung: 'Vier und vier macht acht für den Nächsten.',
+    auchKlassisch: false,
+  },
+  {
+    id: 'zweiAufVier',
+    name: '+2 auf +4',
+    erklaerung: 'Auch die kleine Karte darf auf die grosse.',
+    auchKlassisch: false,
+  },
+  {
+    id: 'vierAufZwei',
+    name: '+4 auf +2',
+    erklaerung: 'Und umgekehrt.',
+    auchKlassisch: false,
+  },
+  {
+    id: 'schwarzAufSchwarz',
+    name: 'Schwarz auf Schwarz',
+    erklaerung: 'Die Wunschkarte kontert: Du ziehst nicht, der Nächste steht vor derselben Zahl.',
+    auchKlassisch: false,
+  },
+]
 
 const STUFEN: { id: KiStufe; label: string; erklaerung: string }[] = [
   {
@@ -77,6 +131,29 @@ export function MauMauPage({ spiel }: Props) {
   const [gegner, setGegner] = useState(2)
   const [stufe, setStufe] = useState<KiStufe>('normal')
   const [art, setArt] = useState<Spielart>(klassisch ? 'klassisch' : 'bunt')
+  /*
+   * Die Spielart setzt die Hausregeln, danach darf jede einzeln umgelegt
+   * werden. Deshalb liegen sie hier als eigener Zustand und nicht als
+   * abgeleiteter Wert.
+   */
+  const [hausregeln, setHausregeln] = useState(() => {
+    const vorlage = aktiveRegeln(klassisch ? 'klassisch' : 'bunt')
+    return {
+      konter: vorlage.konter,
+      ziehenBisPassend: vorlage.ziehenBisPassend,
+      haendeWandern: vorlage.haendeWandern,
+    }
+  })
+
+  const waehleArt = useCallback((neu: Spielart) => {
+    setArt(neu)
+    const vorlage = aktiveRegeln(neu)
+    setHausregeln({
+      konter: vorlage.konter,
+      ziehenBisPassend: vorlage.ziehenBisPassend,
+      haendeWandern: vorlage.haendeWandern,
+    })
+  }, [])
   const [zustand, setZustand] = useState<MauZustand | null>(null)
   const [wunschFuer, setWunschFuer] = useState<Karte | null>(null)
   const [ton, setTonAn] = useState(tonAn())
@@ -143,6 +220,7 @@ export function MauMauPage({ spiel }: Props) {
     setZustand(
       erstellePartie({
         art,
+        hausregeln,
         spieler: [
           { name: spielerName || 'Du', mensch: true },
           ...GEGNER_NAMEN.slice(0, gegner).map((name) => ({ name, mensch: false, kiStufe: stufe })),
@@ -150,7 +228,7 @@ export function MauMauPage({ spiel }: Props) {
       }),
     )
     setAnsicht('tisch')
-  }, [art, gegner, spielerName, stufe])
+  }, [art, gegner, hausregeln, spielerName, stufe])
 
   const karteKlick = useCallback((karte: Karte) => {
     if (karte.farbe === null || karte.wirkung === 'wunsch') {
@@ -230,7 +308,7 @@ export function MauMauPage({ spiel }: Props) {
                     key={a}
                     type="button"
                     className={art === a ? styles.wahlAn : styles.wahlAus}
-                    onClick={() => setArt(a)}
+                    onClick={() => waehleArt(a)}
                   >
                     {SPIELARTEN[a].name}
                   </button>
@@ -239,6 +317,49 @@ export function MauMauPage({ spiel }: Props) {
               <p className={styles.erklaerung}>{SPIELARTEN[art].erklaerung}</p>
             </fieldset>
           )}
+
+          <fieldset className={styles.gruppe}>
+            <legend>Hausregeln</legend>
+            <ul className={styles.regelliste}>
+              {KONTER_REGELN.filter((r) => klassisch === false || r.auchKlassisch).map((r) => (
+                <li key={r.id}>
+                  <Schalter
+                    name={(klassisch ? r.name : (r.buntName ?? r.name)) as string}
+                    erklaerung={r.erklaerung}
+                    an={hausregeln.konter[r.id]}
+                    onUm={() =>
+                      setHausregeln((alt) => ({
+                        ...alt,
+                        konter: { ...alt.konter, [r.id]: !alt.konter[r.id] },
+                      }))
+                    }
+                  />
+                </li>
+              ))}
+              <li>
+                <Schalter
+                  name="Ziehen, bis es passt"
+                  erklaerung="Sonst zieht man eine Karte und ist fertig."
+                  an={hausregeln.ziehenBisPassend}
+                  onUm={() =>
+                    setHausregeln((alt) => ({ ...alt, ziehenBisPassend: !alt.ziehenBisPassend }))
+                  }
+                />
+              </li>
+              {!klassisch && (
+                <li>
+                  <Schalter
+                    name="Null tauscht die Hände"
+                    erklaerung="Alle geben ihr Blatt in Spielrichtung weiter."
+                    an={hausregeln.haendeWandern}
+                    onUm={() =>
+                      setHausregeln((alt) => ({ ...alt, haendeWandern: !alt.haendeWandern }))
+                    }
+                  />
+                </li>
+              )}
+            </ul>
+          </fieldset>
 
           <fieldset className={styles.gruppe}>
             <legend>Wie viele Mitspieler?</legend>
@@ -499,6 +620,37 @@ export function MauMauPage({ spiel }: Props) {
         </div>
       </section>
     </main>
+  )
+}
+
+/** Eine Hausregel: an oder aus, mit einem Satz dazu, warum. */
+function Schalter({
+  name,
+  erklaerung,
+  an,
+  onUm,
+}: {
+  name: string
+  erklaerung: string
+  an: boolean
+  onUm: () => void
+}) {
+  return (
+    <button
+      type="button"
+      className={styles.schalter}
+      onClick={onUm}
+      aria-pressed={an}
+      aria-label={name}
+    >
+      <span className={styles.schalterText}>
+        <strong>{name}</strong>
+        <small>{erklaerung}</small>
+      </span>
+      <span className={an ? styles.kipperAn : styles.kipper} aria-hidden="true">
+        <span className={styles.knubbel} />
+      </span>
+    </button>
   )
 }
 
