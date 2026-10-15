@@ -32,9 +32,7 @@ import { buntesBlatt, franzoesischesBlatt, type Karte } from '@/games/maumau/kar
 
 function alleKarten(state: MauZustand): number {
   return (
-    state.spieler.reduce((n, s) => n + s.hand.length, 0) +
-    state.stapel.length +
-    state.ablage.length
+    state.spieler.reduce((n, s) => n + s.hand.length, 0) + state.stapel.length + state.ablage.length
   )
 }
 
@@ -149,9 +147,24 @@ describe('Mau sagen', () => {
     const ich = amZugSpieler(state)
     // Von Hand gestellt: Herz 9 auf Herz 10 -- das passt immer.
     const liegt = state.ablage[0]!
-    const passende: Karte = { id: 'test-passt', farbe: liegt.farbe, text: '9', wirkung: 'keine', punkte: 9 }
-    const andere: Karte = { id: 'test-rest', farbe: liegt.farbe, text: '10', wirkung: 'keine', punkte: 10 }
-    state = { ...state, spieler: state.spieler.map((s) => (s.id === ich.id ? { ...s, hand: [passende, andere] } : s)) }
+    const passende: Karte = {
+      id: 'test-passt',
+      farbe: liegt.farbe,
+      text: '9',
+      wirkung: 'keine',
+      punkte: 9,
+    }
+    const andere: Karte = {
+      id: 'test-rest',
+      farbe: liegt.farbe,
+      text: '10',
+      wirkung: 'keine',
+      punkte: 10,
+    }
+    state = {
+      ...state,
+      spieler: state.spieler.map((s) => (s.id === ich.id ? { ...s, hand: [passende, andere] } : s)),
+    }
     return { state, karte: passende }
   }
 
@@ -208,9 +221,24 @@ describe('Zu zweit', () => {
      */
     let state = tisch('bunt', 2, 3)
     const liegt = state.ablage[0]!
-    const dreh: Karte = { id: 'test-dreh', farbe: liegt.farbe, text: '⇄', wirkung: 'richtung', punkte: 20 }
-    const rest: Karte = { id: 'test-rest', farbe: liegt.farbe, text: '3', wirkung: 'keine', punkte: 3 }
-    state = { ...state, spieler: state.spieler.map((s, i) => (i === 0 ? { ...s, hand: [dreh, rest] } : s)) }
+    const dreh: Karte = {
+      id: 'test-dreh',
+      farbe: liegt.farbe,
+      text: '⇄',
+      wirkung: 'richtung',
+      punkte: 20,
+    }
+    const rest: Karte = {
+      id: 'test-rest',
+      farbe: liegt.farbe,
+      text: '3',
+      wirkung: 'keine',
+      punkte: 3,
+    }
+    state = {
+      ...state,
+      spieler: state.spieler.map((s, i) => (i === 0 ? { ...s, hand: [dreh, rest] } : s)),
+    }
 
     const nachher = legen(mauSagen(state), dreh)
     expect(nachher.amZug).toBe(0)
@@ -253,10 +281,40 @@ describe('Hilfen', () => {
   it('zeigt nur die Karten, die wirklich passen', () => {
     const state = tisch('klassisch', 3, 8)
     const ich = amZugSpieler(state)
-    const liste = spielbare(ich.hand, oberste(state), state.wunsch, state.strafe, SPIELARTEN.klassisch)
+    const liste = spielbare(
+      ich.hand,
+      oberste(state),
+      state.wunsch,
+      state.strafe,
+      SPIELARTEN.klassisch,
+    )
     for (const k of liste) expect(darfLegen(state, k)).toBe(true)
     for (const k of ich.hand.filter((c) => !liste.includes(c))) {
       expect(darfLegen(state, k)).toBe(false)
     }
+  })
+})
+
+describe('Wer zuletzt gelegt hat', () => {
+  it('steht im Zustand -- die Oberfläche lässt die Karte von dort losfliegen', () => {
+    /*
+     * Ohne diese Angabe müsste die Anzeige aus dem Protokolltext raten,
+     * von welchem Platz die Karte kommt. Sie wird hier mitgeführt, weil
+     * nur die Engine es sicher weiss.
+     */
+    let state = tisch('klassisch', 3, 31)
+    expect(state.letzterLeger).toBeNull()
+
+    for (let i = 0; i < 40 && state.phase !== 'ende'; i++) {
+      const vorher = amZugSpieler(state).id
+      const zug = kiZug(state)
+      if (zug.art === 'legen') {
+        state = legen(zug.mau ? mauSagen(state) : state, zug.karte, zug.wunsch)
+        expect(state.letzterLeger).toBe(vorher)
+        return
+      }
+      state = zug.art === 'ziehen' ? ziehen(state) : behalten(state)
+    }
+    throw new Error('In vierzig Zügen hat niemand gelegt')
   })
 })

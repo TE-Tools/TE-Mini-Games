@@ -1,0 +1,39 @@
+/*
+ * Der Fächer.
+ *
+ * Jede Karte sitzt an derselben Stelle (Mitte unten) und wird von dort
+ * verschoben und gedreht. Der Drehpunkt liegt unterhalb der Karte --
+ * dadurch entsteht der Bogen, den eine Hand macht, statt einer schräg
+ * gestellten Reihe.
+ */
+
+.faecher {
+  position: relative;
+  /* Hoch genug für die gedrehten Karten an den Enden: Die tauchen unten
+     aus dem Bogen heraus und waren sonst angeschnitten. */
+  height: 7rem;
+  margin-top: 0.3rem;
+}
+
+.platz {
+  position: absolute;
+  left: 50%;
+  bottom: 0.7rem;
+  transform: translateX(calc(-50% + var(--x, 0px))) translateY(var(--y, 0px)) rotate(var(--w, 0deg));
+  transform-origin: 50% 165%;
+  transition:
+    transform 160ms ease-out,
+    filter 160ms ease-out;
+}
+
+/* Was gelegt werden darf, kommt aus dem Fächer heraus. */
+.hoch {
+  transform: translateX(calc(-50% + var(--x, 0px))) translateY(calc(var(--y, 0px) - 0.85rem))
+    rotate(var(--w, 0deg));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .platz {
+    transition: none;
+  }
+}

@@ -55,6 +55,14 @@ export interface MauZustand {
   gezogene: Karte | null
   /** Wie viele Runden lang niemand legen konnte -- die Notbremse. */
   leerlauf: number
+  /**
+   * Wer zuletzt gelegt hat.
+   *
+   * Die Engine braucht das nicht; die Oberfläche schon: Sie lässt die
+   * Karte von dem Platz losfliegen, der sie gelegt hat. Ohne diese
+   * Angabe müsste sie es aus dem Protokolltext raten.
+   */
+  letzterLeger: string | null
   phase: 'laeuft' | 'ende'
   siegerId: string | null
   protokoll: string[]
@@ -185,6 +193,7 @@ export function erstellePartie(opt: PartieOptionen): MauZustand {
     aussetzen: false,
     gezogene: null,
     leerlauf: 0,
+    letzterLeger: null,
     phase: 'laeuft',
     siegerId: null,
     protokoll: [],
@@ -293,6 +302,7 @@ export function legen(vorher: MauZustand, karte: Karte, wunschFarbe?: string): M
 
   spieler.hand = spieler.hand.filter((k) => k.id !== karte.id)
   state.ablage.push(karte)
+  state.letzterLeger = spieler.id
   state.gezogene = null
   state.wunsch = null
   state.leerlauf = 0

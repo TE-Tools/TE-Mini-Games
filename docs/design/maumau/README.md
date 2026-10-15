@@ -71,6 +71,39 @@ könnte — und er ist Absicht: Am Küchentisch passiert genau das.
 3. **Zu zweit wirkt der Richtungswechsel wie Aussetzen.** Sonst legt der
    Gegner, dreht zurück und ist sofort wieder dran.
 
+## Tisch, Fächer, Flug
+
+Anlass (15.10.2026, Thomas): „Bitte die Karten rund wie auf einer Hand
+halten bei einem selber damit man besser sieht und bei Gegner mit
+kleiner Animation beim Legen der Karten. Auch besseren Tisch und
+moderneres Design."
+
+**Der Tisch** ist aussen Holz, innen Filz, und die Mitspieler sitzen mit
+daran — ihr Blatt liegt gefächert auf dem Filz, wer dran ist, bekommt
+einen goldenen Ring. Kein weisser Kasten mehr über einem grünen Streifen.
+
+**Die eigene Hand ist ein Fächer** (`Handfaecher.tsx`). Vorher lag sie in
+einer Reihe, die waagerecht scrollte: Bei acht Karten war die Hälfte
+ausserhalb des Bildes. Im Fächer steht von jeder Karte die Ecke frei —
+und genau dafür ist die Ecke da. Schritt und Winkel ergeben sich aus der
+Kartenzahl, nicht aus einer Tabelle: je mehr Karten, desto enger und
+flacher. Nachgemessen bis zwanzig.
+
+**Die Karten** sind gezeichnet wie Spielkarten: Eckzeichen oben links,
+dasselbe auf dem Kopf unten rechts, in der Mitte das grosse Zeichen. Das
+bunte Blatt trägt die Farbe als Fläche mit weissem Rand und hellem Oval —
+so sehen diese Karten aus, und auf einem Telefon erkennt man eine Fläche
+schneller als ein Zeichen.
+
+**Die gelegte Karte kommt geflogen**, und zwar von dem Platz, der sie
+gelegt hat. Dafür führt die Engine `letzterLeger` mit; ohne diese Angabe
+müsste die Anzeige aus dem Protokolltext raten. Ausgelöst wird die
+Bewegung ohne Zustand und ohne Timer: Der Schlüssel des Elements ist die
+Kartenkennung, also entsteht es neu, sobald eine andere Karte oben liegt
+— und was neu entsteht, spielt seine Animation. Im Browser nachgemessen:
+nach dem eigenen Zug `--von-y: 150px` (von unten), nach dem linken
+Mitspieler `--von-x: -46px, --von-y: -120px`.
+
 ## Wertung
 
 ```
