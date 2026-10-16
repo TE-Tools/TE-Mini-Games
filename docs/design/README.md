@@ -2,14 +2,15 @@
 
 Verbindliche Gestaltungs- und Umsetzungsvorgaben.
 
-| Thema                              | Status                     | Ordner                               |
-| ---------------------------------- | -------------------------- | ------------------------------------ |
-| **Levelkarte 1–500 („Zeitreise“)** | umgesetzt                  | [level-map-500/](./level-map-500/)   |
-| **Schützenopoly**                  | umgesetzt                  | [schuetzenopoly/](./schuetzenopoly/) |
-| **Emberwake**                      | umgesetzt (Vertical Slice) | [emberwake/](./emberwake/)           |
-| **Sudoku**                         | umgesetzt                  | [sudoku/](./sudoku/)                 |
-| **Texas Hold'em**                  | umgesetzt                  | [texas-holdem/](./texas-holdem/)     |
-| **Mau-Mau / Letzte Karte**         | umgesetzt                  | [maumau/](./maumau/)                 |
+| Thema                              | Status                     | Ordner                                         |
+| ---------------------------------- | -------------------------- | ---------------------------------------------- |
+| **Levelkarte 1–500 („Zeitreise“)** | umgesetzt                  | [level-map-500/](./level-map-500/)             |
+| **Schützenopoly**                  | umgesetzt                  | [schuetzenopoly/](./schuetzenopoly/)           |
+| **Emberwake**                      | umgesetzt (Vertical Slice) | [emberwake/](./emberwake/)                     |
+| **Sudoku**                         | umgesetzt                  | [sudoku/](./sudoku/)                           |
+| **Texas Hold'em**                  | umgesetzt                  | [texas-holdem/](./texas-holdem/)               |
+| **Mau-Mau / Letzte Karte**         | umgesetzt                  | [maumau/](./maumau/)                           |
+| **Kartenspiele online**            | umgesetzt                  | [kartenspiele-online/](./kartenspiele-online/) |
 
 ## Levelkarte 1–500 (Kurz)
 
@@ -29,6 +30,19 @@ Details: [`level-map-500/README.md`](./level-map-500/README.md)
 
 Details: [`schuetzenopoly/README.md`](./schuetzenopoly/README.md) ·
 Faktencheck: [`schuetzenopoly/grundstuecke.md`](./schuetzenopoly/grundstuecke.md)
+
+## Kartenspiele online (Kurz)
+
+- Bei verdeckten Händen mischt und prüft der **Server** (wie Kniffel), nicht der
+  Client – ein gemeinsamer Startwert wie bei Schützenopoly würde jedem Client
+  alle Hände verraten
+- `*_get_state` gibt jedem nur die eigene Hand, von den anderen nur die Anzahl
+- Der Preis: die Regeln stehen zweimal da (TypeScript und SQL). Zusammengehalten
+  wird das nicht durch Sorgfalt, sondern durch `scripts/pruefe-sql-regeln.mjs` –
+  es schickt dieselbe Lage durch beide Fassungen und vergleicht
+- Lobby, Code, Beitreten, öffentliche Räume: unverändert aus `services/raeume.ts`
+
+Details: [`kartenspiele-online/README.md`](./kartenspiele-online/README.md)
 
 ## Sudoku (Kurz)
 

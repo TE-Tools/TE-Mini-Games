@@ -20,6 +20,10 @@ import { fetchOeffentlicheWbiRaeume } from '@/services/werBinIchOnline'
 import { fetchOeffentlicheSlfRaeume } from '@/services/stadtLandFlussOnline'
 import { fetchOeffentlicheKniffelRaeume } from '@/services/kniffelOnline'
 import { fetchOeffentlicheSchopolyRaeume } from '@/services/schuetzenopolyOnline'
+import {
+  fetchOeffentlicheLetzteKarteRaeume,
+  fetchOeffentlicheMauMauRaeume,
+} from '@/services/maumauOnline'
 import { OEFFENTLICH_ERNEUERN_MS, RAUM_PARAM, type OeffentlicherRaum } from '@/services/raeume'
 import { kachelFuer } from './spiele-katalog'
 import type { GameId } from '@/games/types'
@@ -30,6 +34,8 @@ import styles from './OffeneSpielePage.module.css'
 const ONLINE_SPIELE: { id: GameId; laden: () => Promise<OeffentlicherRaum[]> }[] = [
   { id: 'schuetzenopoly', laden: fetchOeffentlicheSchopolyRaeume },
   { id: 'kniffel', laden: fetchOeffentlicheKniffelRaeume },
+  { id: 'maumau', laden: fetchOeffentlicheMauMauRaeume },
+  { id: 'letzte-karte', laden: fetchOeffentlicheLetzteKarteRaeume },
   { id: 'schuetzenrunde', laden: fetchOeffentlicheSrRaeume },
   { id: 'finde-den-imposter', laden: fetchOeffentlicheImposterRaeume },
   { id: 'wer-bin-ich', laden: fetchOeffentlicheWbiRaeume },

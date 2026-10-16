@@ -153,3 +153,22 @@ glatte Null nimmt dem Abend den Rest.
   die Mau-Strafe und das Neumischen.
 - `tests/maumau-seite.test.tsx` — die Seite zeigt nur an, was erlaubt
   ist, und teilt die richtige Zahl Karten aus.
+
+## Online
+
+Mau-Mau und Letzte Karte lassen sich auch gegen andere Menschen spielen:
+Tisch aufmachen, Code weitergeben oder über „Offene Spiele" beitreten – bis
+zu vier am Tisch. Beide Kacheln teilen sich dabei Tabellen und Funktionen
+(eine Engine), aber nicht die Lobby-Liste: Ein Tisch für „Letzte Karte"
+steht nicht in der Mau-Mau-Liste, dort liegt ein anderes Blatt.
+
+Online mischt der Server und prüft jeden Zug (Migration
+`023_kartenspiele_online.sql`). Das ist nicht Vorsicht, sondern die
+Bedingung dafür, dass verdeckte Karten verdeckt sind – die Begründung und
+was daraus folgt steht in
+[`../kartenspiele-online/README.md`](../kartenspiele-online/README.md).
+
+Die Hausregeln sind online dieselben wie am Küchentisch und werden im
+Warteraum gesetzt. Ändern darf sie der Gastgeber; bei den anderen stehen
+die Schalter da, sind aber gesperrt – so sieht jeder vor dem Start, woran
+er ist, statt es im ersten Zug zu merken.
