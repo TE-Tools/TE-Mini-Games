@@ -25,17 +25,27 @@ export interface Buchung {
   bestwert: boolean
 }
 
-export async function buchePartie(
-  zustand: TexasZustand,
-  partieId: string,
-): Promise<Buchung | null> {
-  const ich = zustand.spieler.find((s) => s.mensch)
-  if (!ich) return null
+/** Ein Turnierergebnis -- woher es kommt, ist dafür gleichgültig. */
+interface Ergebnis {
+  partieId: string
+  chips: number
+  platz: number
+  spieler: number
+  haende: number
+  dazu: Record<string, unknown>
+}
 
-  const platz = menschlicherPlatz(zustand) ?? zustand.spieler.length
-  const spieler = zustand.spieler.length
-  const punkte = partiePunkte(ich.chips, platz, spieler)
-  const gewonnen = platz === 1
+/**
+ * Der eine Weg, auf dem ein Turnier in die Statistik kommt.
+ *
+ * Gegen den Rechner und online teilen ihn sich. Zwei Buchungen wären
+ * zwei Formeln, und sobald eine davon anders rechnet, stehen im Verlauf
+ * zwei Arten von Punkten -- das merkt man erst, wenn sich jemand über
+ * seinen Bestwert wundert.
+ */
+async function buche(e: Ergebnis): Promise<Buchung> {
+  const punkte = partiePunkte(e.chips, e.platz, e.spieler)
+  const gewonnen = e.platz === 1
   const xp = partieXp(punkte, gewonnen)
 
   const gespeichert = await saveGameResult({
@@ -44,13 +54,13 @@ export async function buchePartie(
     score: punkte,
     xp,
     resultData: {
-      partieId,
-      chips: ich.chips,
-      platz,
-      spieler,
-      haende: zustand.handNr,
+      partieId: e.partieId,
+      chips: e.chips,
+      platz: e.platz,
+      spieler: e.spieler,
+      haende: e.haende,
       gewonnen,
-      kiStufe: zustand.spieler.find((s) => !s.mensch)?.kiStufe ?? null,
+      ...e.dazu,
     },
     stars: 0,
   })
@@ -65,12 +75,42 @@ export async function buchePartie(
 
   return {
     punkte,
-    chips: ich.chips,
-    platz,
-    spieler,
-    haende: zustand.handNr,
+    chips: e.chips,
+    platz: e.platz,
+    spieler: e.spieler,
+    haende: e.haende,
     gewonnen,
     xp,
     bestwert: gespeichert.isPersonalRecord,
   }
+}
+
+export async function buchePartie(
+  zustand: TexasZustand,
+  partieId: string,
+): Promise<Buchung | null> {
+  const ich = zustand.spieler.find((s) => s.mensch)
+  if (!ich) return null
+  return buche({
+    partieId,
+    chips: ich.chips,
+    platz: menschlicherPlatz(zustand) ?? zustand.spieler.length,
+    spieler: zustand.spieler.length,
+    haende: zustand.handNr,
+    dazu: { kiStufe: zustand.spieler.find((s) => !s.mensch)?.kiStufe ?? null },
+  })
+}
+
+/**
+ * Ein Online-Turnier verbuchen.
+ *
+ * Online gibt es keinen TexasZustand im Browser -- der Server hält die
+ * Partie, und der Client kennt nur die eigene Sicht. Gebucht wird
+ * trotzdem dasselbe: Chips am Ende, Platz, Mitspieler, Hände.
+ */
+export async function bucheOnlinePartie(
+  partieId: string,
+  e: { platz: number; spieler: number; chips: number; haende: number },
+): Promise<Buchung | null> {
+  return buche({ ...e, partieId, dazu: { online: true } })
 }

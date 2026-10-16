@@ -303,25 +303,28 @@ begin
   -- wenn sie passen würde.
   perform set_config('test.uid',
     (select user_id from public.mm_players where match_id = v_m and seat = v_am_zug)::text, false);
+  -- Eine Karte, die nachweislich einem anderen gehört. Vorher stand hier
+  -- eine feste Kennung mit einem „falls er sie doch hat"-Zweig -- das ist
+  -- keine Prüfung, sondern eine Prüfung, die sich selbst abschalten kann.
+  select k ->> 'id' into v_karte
+  from public.mm_players p, jsonb_array_elements(p.hand) k
+  where p.match_id = v_m and p.seat <> v_am_zug
+  limit 1;
+  if v_karte is null then
+    raise exception 'FEHLER: Kein Mitspieler hat Karten – die Prüfung liefe ins Leere';
+  end if;
   begin
-    perform public.mm_legen(v_m, 'rot-5-1');
-    -- Hat der Spieler die Karte doch, ist das kein Fehler. Dann prüfen
-    -- wir mit einer, die sicher nicht existiert.
-    if exists (
-      select 1 from public.mm_players p, jsonb_array_elements(p.hand) k
-      where p.match_id = v_m and p.seat = v_am_zug and k ->> 'id' = 'rot-5-1'
-    ) then
-      null;
-    else
-      raise exception 'FEHLER: Eine fremde Karte liess sich legen';
-    end if;
+    perform public.mm_legen(v_m, v_karte);
+    raise exception 'FEHLER: Die fremde Karte % liess sich legen', v_karte;
   exception when others then
     if sqlerrm like 'FEHLER:%' then raise; end if;
+    if sqlerrm not like '%passt hier nicht%' then raise; end if;
   end;
   begin
     perform public.mm_legen(v_m, 'diese-karte-gibt-es-nicht');
     raise exception 'FEHLER: Eine erfundene Karte liess sich legen';
   exception when others then
+    if sqlerrm like 'FEHLER:%' then raise; end if;
     if sqlerrm not like '%passt hier nicht%' then raise; end if;
   end;
 
@@ -374,7 +377,17 @@ begin
 
   /* ================= 6. Wer mitten in der Partie geht ================== */
 
-  if (select phase from public.mm_matches where id = v_m) = 'spiel' then
+  /*
+   * Mitten in der Partie aussteigen. Das `if` ist hier kein Vorbehalt:
+   * Nach vierzig Zügen MUSS die Partie noch laufen (108 Karten, vier
+   * Hände) -- tut sie es nicht, stimmt etwas anderes nicht, und dann soll
+   * diese Prüfung nicht stillschweigend übersprungen werden.
+   */
+  if (select phase from public.mm_matches where id = v_m) <> 'spiel' then
+    raise exception 'FEHLER: Die Partie war nach 40 Zügen schon vorbei – '
+      'der Austritt mitten im Spiel wurde nicht geprüft';
+  end if;
+  if true then
     perform set_config('test.uid', dora::text, false);
     perform public.mm_leave_match(v_m);
 

@@ -234,8 +234,29 @@ function kern(z) {
   }
 }
 
+/**
+ * Gleich, ohne auf die Reihenfolge der Schlüssel zu achten.
+ *
+ * Postgres gibt jsonb-Objekte nach eigener Ordnung heraus (kurze
+ * Schlüssel zuerst). Ein Vergleich über JSON.stringify hielte
+ * {"folden":true,"schieben":false} und {"schieben":false,"folden":true}
+ * für verschieden -- und hätte diese Prüfung mit einer Meldung
+ * beschäftigt, in der beide Seiten dasselbe sagen.
+ */
+function norm(x) {
+  if (Array.isArray(x)) return x.map(norm)
+  if (x && typeof x === 'object') {
+    return Object.fromEntries(
+      Object.keys(x)
+        .sort()
+        .map((k) => [k, norm(x[k])]),
+    )
+  }
+  return x
+}
+
 function gleich(a, b) {
-  return JSON.stringify(a) === JSON.stringify(b)
+  return JSON.stringify(norm(a)) === JSON.stringify(norm(b))
 }
 
 /** Weniger Partien, wenn es nur um einen schnellen Durchlauf geht. */

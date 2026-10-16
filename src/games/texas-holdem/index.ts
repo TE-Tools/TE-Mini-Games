@@ -25,7 +25,7 @@ export {
 } from './karten'
 export type { Farbe, Karte } from './karten'
 
-export { HandKlasse, besteHand, handText, klasseName, vergleicheHand } from './wertung'
+export { HandKlasse, besteHand, handText, handTextMit, klasseName, vergleicheHand } from './wertung'
 export type { Handwert } from './wertung'
 
 export {

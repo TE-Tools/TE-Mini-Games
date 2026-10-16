@@ -149,3 +149,40 @@ was man im Turnier wirklich erreicht hat.
 
 Eine Regel, die nur in einem von tausend Blättern bricht, fällt beim
 Durchklicken nie auf. Deshalb wird gespielt, nicht gelesen.
+
+## Online
+
+Hold'em lässt sich auch gegen andere Menschen spielen: Tisch aufmachen,
+Code weitergeben oder über „Offene Spiele" beitreten – bis zu sechs am
+Tisch, jeder mit denselben Startchips, bis einer alles hat.
+
+Online mischt der Server, hält die zwei verdeckten Karten jedes Spielers,
+prüft jeden Einsatz und rechnet den Showdown aus (Migration
+`024_texas_online.sql`). Die Begründung und was daraus folgt steht in
+[`../kartenspiele-online/README.md`](../kartenspiele-online/README.md); hier
+nur, was für Hold'em besonders ist:
+
+- **Die Balancingwerte bleiben in `config.ts`.** Startchips, Blindstufen und
+  Hände je Stufe gehen beim Eröffnen mit und stehen dann in der Partie. Der
+  Server prüft nur Grenzen (aufsteigende Blinds, positive Beträge) – er
+  bestimmt keine Werte. In SQL steht keine Zahl aus dem Balancing.
+- **Die deutschen Handnamen bleiben in `wertung.ts`.** Der Server rechnet
+  aus, _wer_ gewinnt und wie viel; wie das Blatt heißt („… mit einem Full
+  House, Damen über Siebenen"), formuliert die Oberfläche aus den
+  aufgedeckten Karten. Beim Showdown liegen die ohnehin offen, und eine
+  zweite Fassung der deutschen Beugung wäre eine Fehlerquelle ohne
+  Gegenwert.
+- **Aufgedeckt wird nur, was aufgedeckt gehört.** Beim Showdown zeigen die,
+  die mitgegangen sind – wer weggeworfen hat, zeigt nicht. Der Reststapel
+  verlässt den Server nie: Wer ihn kennt, kennt den Flop.
+- **Ein Unterschied zum Solospiel ist Absicht.** Gegen den Rechner endet das
+  Turnier, sobald der Mensch ausgeschieden ist – sonst sähe man dem Rechner
+  beim Alleinsein zu. Online sitzen nur Menschen am Tisch, also läuft es
+  weiter, bis einer alles hat; wer draußen ist, hat seinen Platz und kann
+  zusehen.
+- **Wer mitten im Turnier geht**, gilt als ausgeschieden: Chips, die schon im
+  Pot liegen, bleiben dort (wie bei jedem, der wegwirft), und der Sitz bleibt
+  stehen, damit sich die Sitzordnung nicht verschiebt.
+
+Die KI bleibt im Solospiel. Online spielen Menschen gegeneinander; in SQL
+steht kein `ki.ts`.
