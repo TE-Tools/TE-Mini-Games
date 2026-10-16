@@ -20,3 +20,11 @@ do $$ begin
   if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if;
   if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if;
 end $$;
+
+-- Das hier ist nicht Beiwerk, sondern der Punkt: In Supabase darf
+-- `authenticated` das Schema `public` benutzen. Ohne diese Zeile ist der
+-- Nachbau STRENGER als die Wirklichkeit -- jede Prüfung, ob ein Fremder an
+-- eine Funktion herankommt, wäre dann still erfolgreich, weil er schon am
+-- Schema scheitert. Postgres gibt `execute` auf neue Funktionen
+-- standardmäßig an PUBLIC; genau das muss prüfbar sein.
+grant usage on schema public to anon, authenticated;

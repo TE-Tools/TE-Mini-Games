@@ -80,6 +80,15 @@ begin
 end;
 $$;
 
+revoke all on function public.mm_lade(uuid) from public, anon, authenticated;
+revoke all on function public.mm_sichere(uuid, jsonb) from public, anon, authenticated;
+revoke all on function public.mm_touch(uuid) from public, anon, authenticated;
+revoke all on function public.mm_zug_vorlauf(uuid) from public, anon, authenticated;
+revoke all on function public.mm_index_von(uuid, integer) from public, anon, authenticated;
+revoke all on function public.mm_is_member(uuid) from public, anon, authenticated;
+revoke all on function public.mm_new_code() from public, anon, authenticated;
+revoke all on function public.mm_cleanup() from public, anon, authenticated;
+
 grant execute on function public.mm_create_match(text, text, jsonb, text) to authenticated;
 grant execute on function public.mm_set_regeln(uuid, text, jsonb) to authenticated;
 grant execute on function public.mm_join_match(text, text) to authenticated;

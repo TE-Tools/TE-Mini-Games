@@ -73,6 +73,67 @@ begin
   end if;
 end $$;
 
+/* ============ 1b. Die inneren Helfer sind nicht aufrufbar ============== */
+
+/*
+ * Das ist nicht Feinschliff, sondern dieselbe Zusage wie oben, nur von der
+ * anderen Seite: Postgres gibt `execute` auf eine neue Funktion
+ * standardmäßig an PUBLIC. `mm_lade` gibt die Lage MIT allen Händen
+ * zurück, `mm_sichere` schreibt eine beliebige Lage in eine beliebige
+ * Partie, und beide sind `security definer` -- laufen also mit den Rechten
+ * des Eigentümers.
+ *
+ * Gemessen, nicht vermutet: Vor der Korrektur bekam ein angemeldeter
+ * Fremder über `mm_lade` beide Hände zu fünf Karten, und `mm_sichere`
+ * nahm seine Lage an. Dass die Tabellen gesperrt sind, hat daran nichts
+ * geändert -- er hat keine angefasst.
+ */
+do $$
+declare
+  r record;
+begin
+  for r in
+    select f.fn, a.rolname
+    from (values
+      ('public.mm_lade(uuid)'),
+      ('public.mm_sichere(uuid, jsonb)'),
+      ('public.mm_zug_vorlauf(uuid)'),
+      ('public.mm_touch(uuid)'),
+      ('public.mm_index_von(uuid, integer)'),
+      ('public.mm_cleanup()'),
+      ('public.mm_new_code()')
+    ) as f(fn)
+    cross join (select 'anon' as rolname union all select 'authenticated') a
+    where has_function_privilege(a.rolname, f.fn, 'execute')
+  loop
+    raise exception 'FEHLER: % darf % aufrufen -- das hebt das Sicherheitsmodell auf',
+      r.rolname, r.fn;
+  end loop;
+
+  -- Umgekehrt: Was der Client braucht, muss er auch dürfen.
+  for r in
+    select f.fn
+    from (values
+      ('public.mm_create_match(text, text, jsonb, text)'),
+      ('public.mm_join_match(text, text)'),
+      ('public.mm_start(uuid)'),
+      ('public.mm_legen(uuid, text, text)'),
+      ('public.mm_ziehen(uuid)'),
+      ('public.mm_behalten(uuid)'),
+      ('public.mm_mau(uuid)'),
+      ('public.mm_get_state(uuid)'),
+      ('public.mm_leave_match(uuid)'),
+      ('public.mm_heartbeat(uuid)'),
+      ('public.mm_set_public(uuid, boolean)'),
+      ('public.mm_public_matches(text)'),
+      ('public.mm_my_matches(text)')
+    ) as f(fn)
+    where not has_function_privilege('authenticated', f.fn, 'execute')
+  loop
+    raise exception 'FEHLER: authenticated darf % nicht aufrufen', r.fn;
+  end loop;
+end $$;
+
 /* ============== 2. Raum, Beitreten, Start, Rechte ====================== */
 
 do $$

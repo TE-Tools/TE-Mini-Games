@@ -8973,7 +8973,35 @@ begin
 end;
 $$;
 
-/* =========================== Rechte ============================== */
+/* =========================== Rechte ==============================
+
+   ERST ZURÜCKNEHMEN, DANN GEBEN.
+
+   Postgres gibt `execute` auf eine neue Funktion standardmäßig an PUBLIC.
+   Bei den inneren Helfern ist das keine Kleinigkeit, sondern hebt das
+   ganze Sicherheitsmodell auf: `mm_lade` gibt die Lage MIT allen Händen
+   zurück, und `mm_sichere` schreibt eine beliebige Lage in eine beliebige
+   Partie. Beide sind `security definer`, laufen also mit den Rechten des
+   Eigentümers -- ein Mitspieler hätte sich damit jede fremde Hand ansehen
+   und sich selbst ein Blatt schreiben können, ohne eine einzige Tabelle
+   anzufassen.
+
+   Aufgefallen beim Entwurf von 024, nachgemessen in der Prüfung:
+   Ein Fremder konnte `mm_lade` aufrufen und bekam zwei Hände à fünf
+   Karten. Die Prüfung hält das jetzt fest.
+
+   Innen aufgerufene `security definer`-Funktionen brauchen kein Recht:
+   Sie laufen im Rahmen der aufrufenden Funktion.
+   ================================================================= */
+
+revoke all on function public.mm_lade(uuid) from public, anon, authenticated;
+revoke all on function public.mm_sichere(uuid, jsonb) from public, anon, authenticated;
+revoke all on function public.mm_touch(uuid) from public, anon, authenticated;
+revoke all on function public.mm_zug_vorlauf(uuid) from public, anon, authenticated;
+revoke all on function public.mm_index_von(uuid, integer) from public, anon, authenticated;
+revoke all on function public.mm_is_member(uuid) from public, anon, authenticated;
+revoke all on function public.mm_new_code() from public, anon, authenticated;
+revoke all on function public.mm_cleanup() from public, anon, authenticated;
 
 grant execute on function public.mm_create_match(text, text, jsonb, text) to authenticated;
 grant execute on function public.mm_set_regeln(uuid, text, jsonb) to authenticated;
