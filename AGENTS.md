@@ -46,6 +46,17 @@ corresponding feature; do not invent a competing design.
   eigene Karten, Farben und Texte: Regeln eines Kartenspiels sind nicht
   geschützt, ein Markenname schon. Wer daran etwas ändert, übernimmt von
   keinem Handelsprodukt Namen oder Gestaltung.
+- **Kartenspiele online (Mau-Mau, Letzte Karte, Texas Hold'em):**
+  `docs/design/kartenspiele-online/` – wer mischt und wer prüft. Weil die Hände
+  verdeckt sind, mischt der Server und prüft jeden Zug (Migration
+  `023_kartenspiele_online.sql`, `024_texas_online.sql`) – wie beim Kniffel und
+  aus demselben Grund, nicht wie das Zugbuch bei Schützenopoly: Ein gemeinsamer
+  Startwert müsste jedem Client alle Hände verraten. `*_get_state` gibt jedem nur
+  die eigene Hand, von den anderen die Anzahl; wer daran etwas ändert, lässt das
+  so. Damit stehen die Regeln zweimal da, in `src/games/` und in SQL – wer eine
+  ändert, ändert beide, und `scripts/pruefe-sql-regeln.mjs` rechnet beide
+  Fassungen gegeneinander nach (Lage für Lage, gegen ein echtes Postgres).
+  Die reinen Regelfunktionen in SQL fassen deshalb keine Tabelle an.
 - **Texas Hold'em:** `docs/design/texas-holdem/` – Turnierform, Setzrunden,
   Nebenpots, KI und Wertung. Regeln gehören ausschließlich nach
   `src/games/texas-holdem/`, Balancingwerte ausschließlich in dessen

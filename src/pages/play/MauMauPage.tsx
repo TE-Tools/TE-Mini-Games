@@ -9,9 +9,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  FARB_NAME,
   MAX_SPIELER,
-  SPIELARTEN,
   aktiveRegeln,
   amZugSpieler,
   behalten,
@@ -22,22 +20,21 @@ import {
   kiZug,
   legen,
   mauSagen,
-  meineSpielbaren,
   oberste,
   rundenPunkte,
   ziehen,
   type Karte,
   type KiStufe,
-  type Konter,
-  type MauSpieler,
   type MauZustand,
   type Spielart,
 } from '@/games/maumau'
 import type { GameId } from '@/games/types'
+import { RAUM_PARAM } from '@/services/raeume'
 import { spielerNameOderDu } from '@/services/spielername'
 import { spiele, setzeTon, tonAn, vibriere } from '@/services/sound'
-import { Blattkarte, Farbwunsch, Ziehstapel } from './maumau/Blattkarte'
-import { Handfaecher } from './maumau/Handfaecher'
+import { Hausregelwahl, Spielartwahl } from './maumau/Hausregeln'
+import { MauTisch } from './maumau/MauTisch'
+import { MauMauOnline } from './MauMauOnline'
 import { buchePartie } from './maumau/partieBuchen'
 import shell from './PlayShell.module.css'
 import styles from './MauMauPage.module.css'
@@ -45,61 +42,9 @@ import styles from './MauMauPage.module.css'
 /** Wie lange der Rechner „überlegt“. */
 const KI_PAUSE_MS = 850
 
-type Ansicht = 'menue' | 'aufbau' | 'tisch'
+type Ansicht = 'menue' | 'aufbau' | 'online' | 'tisch'
 
 const GEGNER_NAMEN = ['Ida', 'Bruno', 'Lotte']
-
-/**
- * Die Hausregeln, über die sich Tische streiten.
- *
- * Thomas am 15.10.2026: „man kann entscheiden, ob 2 auf plus 2 geht, 4
- * auf plus 4 geht, schwarze Karte auf schwarze Karte geht ... das als
- * Auswahlmöglichkeit."
- *
- * Beim französischen Blatt gibt es nur die Sieben, also heisst dieselbe
- * Regel dort anders -- die Namen stehen deshalb hier und nicht in der
- * Engine.
- */
-const KONTER_REGELN: {
-  id: keyof Konter
-  name: string
-  buntName?: string
-  erklaerung: string
-  /** Gibt es diese Karte im französischen Blatt überhaupt? */
-  auchKlassisch: boolean
-}[] = [
-  {
-    id: 'zweiAufZwei',
-    name: '7 auf 7',
-    buntName: '+2 auf +2',
-    erklaerung: 'Die Strafe wandert weiter und wächst.',
-    auchKlassisch: true,
-  },
-  {
-    id: 'vierAufVier',
-    name: '+4 auf +4',
-    erklaerung: 'Vier und vier macht acht für den Nächsten.',
-    auchKlassisch: false,
-  },
-  {
-    id: 'zweiAufVier',
-    name: '+2 auf +4',
-    erklaerung: 'Auch die kleine Karte darf auf die grosse.',
-    auchKlassisch: false,
-  },
-  {
-    id: 'vierAufZwei',
-    name: '+4 auf +2',
-    erklaerung: 'Und umgekehrt.',
-    auchKlassisch: false,
-  },
-  {
-    id: 'schwarzAufSchwarz',
-    name: 'Schwarz auf Schwarz',
-    erklaerung: 'Die Wunschkarte kontert: Du ziehst nicht, der Nächste steht vor derselben Zahl.',
-    auchKlassisch: false,
-  },
-]
 
 const STUFEN: { id: KiStufe; label: string; erklaerung: string }[] = [
   {
@@ -126,7 +71,11 @@ export function MauMauPage({ spiel }: Props) {
   /** Beim klassischen Blatt sagt man „Mau“, beim bunten „Letzte Karte“. */
   const ansage = klassisch ? 'Mau!' : 'Letzte Karte!'
 
-  const [ansicht, setAnsicht] = useState<Ansicht>('menue')
+  // Mit ?raum=CODE (von der Seite „Offene Spiele") geht es direkt in den
+  // Online-Teil; der tritt dann von selbst bei.
+  const [ansicht, setAnsicht] = useState<Ansicht>(() =>
+    new URLSearchParams(window.location.search).has(RAUM_PARAM) ? 'online' : 'menue',
+  )
   const [spielerName, setSpielerName] = useState('Du')
   const [gegner, setGegner] = useState(2)
   const [stufe, setStufe] = useState<KiStufe>('normal')
@@ -284,12 +233,34 @@ export function MauMauPage({ spiel }: Props) {
               <small>Bis zu drei Mitspieler</small>
             </span>
           </button>
+          <button
+            type="button"
+            className={styles.grosserKnopf}
+            onClick={() => setAnsicht('online')}
+          >
+            <span className={styles.knopfIcon} aria-hidden="true">
+              🌐
+            </span>
+            <span>
+              <strong>Online mit anderen</strong>
+              <small>Tisch aufmachen, Code weitergeben – oder beitreten</small>
+            </span>
+          </button>
           <Link to="/" className={shell.homeLink}>
             Zum Menü
           </Link>
         </section>
       </main>
     )
+  }
+
+  /*
+   * Online läuft über den Server (Migration 023): Er mischt, hält die
+   * Hände und prüft jeden Zug. Die Seite dafür steht für sich, weil sie
+   * einen anderen Zustand hat -- sie kennt die fremden Hände nicht.
+   */
+  if (ansicht === 'online') {
+    return <MauMauOnline spiel={spiel} onZurueck={() => setAnsicht('menue')} />
   }
 
   if (ansicht === 'aufbau') {
@@ -299,67 +270,9 @@ export function MauMauPage({ spiel }: Props) {
         <section className={shell.section}>
           <h2 className={styles.ueberschrift}>Gegen den Rechner</h2>
 
-          {!klassisch && (
-            <fieldset className={styles.gruppe}>
-              <legend>Wie wird gespielt?</legend>
-              <div className={styles.knopfreihe}>
-                {(['bunt', 'extrem'] as Spielart[]).map((a) => (
-                  <button
-                    key={a}
-                    type="button"
-                    className={art === a ? styles.wahlAn : styles.wahlAus}
-                    onClick={() => waehleArt(a)}
-                  >
-                    {SPIELARTEN[a].name}
-                  </button>
-                ))}
-              </div>
-              <p className={styles.erklaerung}>{SPIELARTEN[art].erklaerung}</p>
-            </fieldset>
-          )}
+          {!klassisch && <Spielartwahl art={art} onArt={waehleArt} />}
 
-          <fieldset className={styles.gruppe}>
-            <legend>Hausregeln</legend>
-            <ul className={styles.regelliste}>
-              {KONTER_REGELN.filter((r) => klassisch === false || r.auchKlassisch).map((r) => (
-                <li key={r.id}>
-                  <Schalter
-                    name={(klassisch ? r.name : (r.buntName ?? r.name)) as string}
-                    erklaerung={r.erklaerung}
-                    an={hausregeln.konter[r.id]}
-                    onUm={() =>
-                      setHausregeln((alt) => ({
-                        ...alt,
-                        konter: { ...alt.konter, [r.id]: !alt.konter[r.id] },
-                      }))
-                    }
-                  />
-                </li>
-              ))}
-              <li>
-                <Schalter
-                  name="Ziehen, bis es passt"
-                  erklaerung="Sonst zieht man eine Karte und ist fertig."
-                  an={hausregeln.ziehenBisPassend}
-                  onUm={() =>
-                    setHausregeln((alt) => ({ ...alt, ziehenBisPassend: !alt.ziehenBisPassend }))
-                  }
-                />
-              </li>
-              {!klassisch && (
-                <li>
-                  <Schalter
-                    name="Null tauscht die Hände"
-                    erklaerung="Alle geben ihr Blatt in Spielrichtung weiter."
-                    an={hausregeln.haendeWandern}
-                    onUm={() =>
-                      setHausregeln((alt) => ({ ...alt, haendeWandern: !alt.haendeWandern }))
-                    }
-                  />
-                </li>
-              )}
-            </ul>
-          </fieldset>
+          <Hausregelwahl klassisch={klassisch} stand={hausregeln} onStand={setHausregeln} />
 
           <fieldset className={styles.gruppe}>
             <legend>Wie viele Mitspieler?</legend>
@@ -408,7 +321,6 @@ export function MauMauPage({ spiel }: Props) {
   const ich = zustand.spieler.find((s) => s.mensch)
   const gegnerliste = zustand.spieler.filter((s) => !s.mensch)
   const meinZug = amZugSpieler(zustand).mensch && zustand.phase !== 'ende'
-  const spielbar = ich && meinZug ? meineSpielbaren(zustand, ich) : []
   const obersteKarte = oberste(zustand)
 
   /* --------------------------------------------------------- Runde vorbei */
@@ -464,215 +376,51 @@ export function MauMauPage({ spiel }: Props) {
   /* ----------------------------------------------------------------- Tisch */
 
   /*
-   * Woher die zuletzt gelegte Karte kommt. Die Engine sagt, wer sie
-   * gelegt hat; daraus wird die Richtung, aus der sie angeflogen kommt.
-   * Ausgelöst wird die Bewegung ohne Zustand: Der Schlüssel der Karte
-   * ändert sich, also entsteht das Element neu und spielt seine
-   * Animation.
+   * Der Tisch selbst steht in maumau/MauTisch.tsx und bekommt nur, was
+   * zu sehen ist. Online gibt es denselben Tisch mit denselben
+   * Animationen -- dort weiss der Client die fremden Hände aber nicht,
+   * sondern nur deren Anzahl. Deshalb kennt der Tisch den Zustand der
+   * Engine nicht.
    */
-  const legerPlatz = gegnerliste.findIndex((s) => s.id === zustand.letzterLeger)
-  const vonMir = zustand.letzterLeger === ich?.id
-  const flugX = vonMir ? 0 : (legerPlatz - (gegnerliste.length - 1) / 2) * 92
-  const flugY = vonMir ? 150 : -120
-
   return (
     <main className={shell.page}>
       <Kopf titel={titel} onZurueck={() => setAnsicht('menue')} ton={ton} onTon={tonUmschalten} />
-
-      <section className={styles.tisch}>
-        {/* Bande aussen, Filz innen -- die Mitspieler sitzen mit am Tisch. */}
-        <div className={styles.bande}>
-          <div className={styles.filz}>
-            <div className={styles.gegner}>
-              {gegnerliste.map((s) => (
-                <Gegner key={s.id} spieler={s} amZug={amZugSpieler(zustand).id === s.id} />
-              ))}
-            </div>
-
-            <div className={styles.mitte} role="group" aria-label="Tischmitte">
-              <Ziehstapel
-                anzahl={zustand.stapel.length}
-                gesperrt={!meinZug || Boolean(zustand.gezogene)}
-                onClick={() => {
-                  spiele('tick')
-                  setZustand((alt) => (alt ? ziehen(alt) : alt))
-                }}
-              />
-              <div className={styles.ablage}>
-                <span
-                  key={obersteKarte.id}
-                  className={styles.geflogen}
-                  style={
-                    {
-                      '--von-x': `${flugX}px`,
-                      '--von-y': `${flugY}px`,
-                    } as React.CSSProperties
-                  }
-                >
-                  <Blattkarte karte={obersteKarte} />
-                </span>
-                {zustand.wunsch && (
-                  <span className={styles.wunschBand}>
-                    <Farbwunsch farbe={zustand.wunsch} />
-                  </span>
-                )}
-              </div>
-              <div className={styles.lage}>
-                {zustand.strafe > 0 && <span className={styles.strafe}>+{zustand.strafe}</span>}
-                <span className={styles.richtung} aria-hidden="true">
-                  {zustand.richtung === 1 ? '↻' : '↺'}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <ol className={styles.protokoll} aria-label="Was bisher geschah">
-          {zustand.protokoll
-            .slice(-2)
-            .reverse()
-            .map((zeile, i) => (
-              <li key={`${zustand.protokoll.length}-${i}`}>{zeile}</li>
-            ))}
-        </ol>
-
-        <div className={styles.unten}>
-          {wunschFuer ? (
-            <div className={styles.farbwahl} role="group" aria-label="Farbe wünschen">
-              <p className={styles.farbfrage}>Welche Farbe?</p>
-              <div className={styles.farbknoepfe}>
-                {(klassisch
-                  ? (['herz', 'karo', 'pik', 'kreuz'] as const)
-                  : (['rot', 'blau', 'gruen', 'gelb'] as const)
-                ).map((f) => (
-                  <button
-                    key={f}
-                    type="button"
-                    className={styles.farbknopf}
-                    data-farbe={f}
-                    onClick={() => farbeGewaehlt(f)}
-                  >
-                    {FARB_NAME[f]}
-                  </button>
-                ))}
-              </div>
-              <button type="button" className={styles.abbruch} onClick={() => setWunschFuer(null)}>
-                Abbrechen
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className={styles.handZeile}>
-                <span className={styles.handTitel}>
-                  {meinZug ? 'Du bist dran' : `${amZugSpieler(zustand).name} ist dran …`}
-                </span>
-                {meinZug && ich && ich.hand.length === 2 && (
-                  <button
-                    type="button"
-                    className={ich.mauGesagt ? styles.mauAn : styles.mau}
-                    onClick={() => setZustand((alt) => (alt ? mauSagen(alt) : alt))}
-                    aria-pressed={ich.mauGesagt}
-                  >
-                    {ansage}
-                  </button>
-                )}
-              </div>
-
-              {zustand.gezogene && meinZug && (
-                /*
-                  Die gezogene Karte steht hier und nicht nur im Fächer:
-                  Bei einer langen Hand sucht man sie sonst.
-                */
-                <div className={styles.gezogen}>
-                  <span>Gezogen – legen?</span>
-                  <Blattkarte
-                    karte={zustand.gezogene}
-                    klein
-                    spielbar={darfLegen(zustand, zustand.gezogene)}
-                    onClick={
-                      darfLegen(zustand, zustand.gezogene)
-                        ? () => karteKlick(zustand.gezogene!)
-                        : undefined
-                    }
-                  />
-                  <button
-                    type="button"
-                    className={styles.klein}
-                    onClick={() => setZustand((alt) => (alt ? behalten(alt) : alt))}
-                  >
-                    Behalten
-                  </button>
-                </div>
-              )}
-
-              <Handfaecher
-                karten={ich?.hand ?? []}
-                istSpielbar={(k) => darfLegen(zustand, k)}
-                onLegen={karteKlick}
-                amZug={meinZug}
-              />
-
-              {meinZug && spielbar.length === 0 && !zustand.gezogene && (
-                <p className={styles.hinweis}>Nichts passt – zieh eine Karte vom Stapel.</p>
-              )}
-            </>
-          )}
-        </div>
-      </section>
+      <MauTisch
+        gegner={gegnerliste.map((s) => ({
+          id: s.id,
+          name: s.name,
+          karten: s.hand.length,
+          amZug: amZugSpieler(zustand).id === s.id,
+        }))}
+        stapel={zustand.stapel.length}
+        oberste={obersteKarte}
+        wunsch={zustand.wunsch}
+        strafe={zustand.strafe}
+        richtung={zustand.richtung}
+        letzterLeger={zustand.letzterLeger}
+        ichId={ich?.id ?? null}
+        protokoll={zustand.protokoll}
+        hand={ich?.hand ?? []}
+        istSpielbar={(k) => darfLegen(zustand, k)}
+        amZug={meinZug}
+        amZugName={amZugSpieler(zustand).name}
+        gezogene={zustand.gezogene}
+        mauMoeglich={(ich?.hand.length ?? 0) === 2}
+        mauGesagt={ich?.mauGesagt ?? false}
+        ansage={ansage}
+        klassisch={klassisch}
+        wunschFuer={wunschFuer}
+        onZiehen={() => {
+          spiele('tick')
+          setZustand((alt) => (alt ? ziehen(alt) : alt))
+        }}
+        onLegen={karteKlick}
+        onBehalten={() => setZustand((alt) => (alt ? behalten(alt) : alt))}
+        onMau={() => setZustand((alt) => (alt ? mauSagen(alt) : alt))}
+        onFarbe={farbeGewaehlt}
+        onWunschAbbruch={() => setWunschFuer(null)}
+      />
     </main>
-  )
-}
-
-/** Eine Hausregel: an oder aus, mit einem Satz dazu, warum. */
-function Schalter({
-  name,
-  erklaerung,
-  an,
-  onUm,
-}: {
-  name: string
-  erklaerung: string
-  an: boolean
-  onUm: () => void
-}) {
-  return (
-    <button
-      type="button"
-      className={styles.schalter}
-      onClick={onUm}
-      aria-pressed={an}
-      aria-label={name}
-    >
-      <span className={styles.schalterText}>
-        <strong>{name}</strong>
-        <small>{erklaerung}</small>
-      </span>
-      <span className={an ? styles.kipperAn : styles.kipper} aria-hidden="true">
-        <span className={styles.knubbel} />
-      </span>
-    </button>
-  )
-}
-
-function Gegner({ spieler, amZug }: { spieler: MauSpieler; amZug: boolean }) {
-  return (
-    <div className={styles.gegnerKarte} data-zug={amZug ? 'ja' : undefined}>
-      <div className={styles.gegnerBlatt} aria-hidden="true">
-        {spieler.hand.slice(0, 5).map((k, i) => (
-          <span
-            key={k.id}
-            className={styles.gegnerkarte}
-            style={{ '--i': i, zIndex: i } as React.CSSProperties}
-          >
-            <Blattkarte zu klein />
-          </span>
-        ))}
-      </div>
-      <span className={styles.gegnerName}>{spieler.name}</span>
-      <span className={styles.gegnerZahl}>
-        {spieler.hand.length} {spieler.hand.length === 1 ? 'Karte' : 'Karten'}
-      </span>
-    </div>
   )
 }
 

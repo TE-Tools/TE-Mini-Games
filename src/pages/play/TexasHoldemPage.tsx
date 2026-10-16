@@ -26,19 +26,20 @@ import {
   type Aktion,
   type Karte,
   type KiStufe,
-  type TexasSpieler,
   type TexasZustand,
 } from '@/games/texas-holdem'
+import { RAUM_PARAM } from '@/services/raeume'
 import { spielerNameOderDu } from '@/services/spielername'
 import { spiele, setzeTon, tonAn } from '@/services/sound'
-import { Kartenplatz, Spielkarte } from './texas/Spielkarte'
-import { Chipstapel } from './texas/Chips'
+
 import { Einsatzleiste } from './texas/Einsatzleiste'
+import { PokerTisch } from './texas/PokerTisch'
+import { TexasHoldemOnline } from './TexasHoldemOnline'
 import { buchePartie } from './texas/partieBuchen'
 import shell from './PlayShell.module.css'
 import styles from './TexasHoldemPage.module.css'
 
-type Ansicht = 'menue' | 'aufbau' | 'tisch'
+type Ansicht = 'menue' | 'aufbau' | 'online' | 'tisch'
 
 const STUFEN: { id: KiStufe; label: string; erklaerung: string }[] = [
   { id: 'leicht', label: 'Leicht', erklaerung: 'Geht fast immer mit und erhöht selten.' },
@@ -48,93 +49,13 @@ const STUFEN: { id: KiStufe; label: string; erklaerung: string }[] = [
 
 const GEGNER_NAMEN = ['Ida', 'Bruno', 'Lotte', 'Hans', 'Mira']
 
-interface Platz {
-  /** Prozent der Tischbreite. */
-  x: number
-  /** Prozent der Tischhöhe. */
-  y: number
-}
-
-/**
- * Wo die Gegner sitzen -- je nachdem, wie viele es sind.
- *
- * Von Hand gesetzt statt auf der Ellipse ausgerechnet: Gerechnete Plätze
- * liegen mathematisch richtig und sehen trotzdem falsch aus, weil die
- * Namenskästchen verschieden breit sind und sich an den Seiten
- * überschneiden. Der Mensch sitzt immer unten, ausserhalb des Filzes.
- */
-const SITZE: Record<number, Platz[]> = {
-  1: [{ x: 50, y: 22 }],
-  2: [
-    { x: 28, y: 24 },
-    { x: 72, y: 24 },
-  ],
-  3: [
-    { x: 14, y: 39 },
-    { x: 50, y: 19 },
-    { x: 86, y: 39 },
-  ],
-  4: [
-    { x: 13, y: 40 },
-    { x: 33, y: 20 },
-    { x: 67, y: 20 },
-    { x: 87, y: 40 },
-  ],
-  5: [
-    { x: 12, y: 41 },
-    { x: 29, y: 21 },
-    { x: 50, y: 17 },
-    { x: 71, y: 21 },
-    { x: 88, y: 41 },
-  ],
-}
-
-/** Der eigene Platz -- unten am Rand des Filzes. */
-const MEIN_PLATZ: Platz = { x: 50, y: 90 }
-
-/**
- * Wo die eigenen Jetons landen.
- *
- * Nicht über `einsatzPunkt` gerechnet, sondern gesetzt: Von unten führt
- * der Weg geradewegs in die Mitte, und dort liegen schon Karten und
- * Topf. Mein Einsatz liegt darunter, zwischen Topf und Tischkante.
- */
-const MEIN_EINSATZ: Platz = { x: 50, y: 84 }
-
-/**
- * Wo der Einsatz liegt: zwischen Spieler und Mitte.
- *
- * Deutlich mehr als die Hälfte des Weges -- bei weniger liegen die
- * Jetons auf dem Namenskästchen statt davor. Im Browser ausgemessen.
- */
-function einsatzPunkt(p: Platz): Platz {
-  return { x: p.x + (50 - p.x) * 0.62, y: p.y + (50 - p.y) * 0.62 }
-}
-
-/** Der Geberknopf liegt dichter am Platz als die Jetons -- sonst stapelt sich beides. */
-function geberPunkt(p: Platz): Platz {
-  return { x: p.x + (50 - p.x) * 0.2, y: p.y + (50 - p.y) * 0.2 }
-}
-
-/**
- * Aus welcher Richtung die Jetons angeflogen kommen.
- *
- * Von der Seite des Spielers, 26 Punkte weit. Die Animation beginnt dort
- * und endet auf dem Einsatzpunkt -- das ist das „in die Mitte werfen".
- */
-function wurfVersatz(p: Platz): { '--wurf-x': string; '--wurf-y': string } {
-  const dx = p.x - 50
-  const dy = p.y - 50
-  const laenge = Math.hypot(dx, dy) || 1
-  return {
-    '--wurf-x': `${((dx / laenge) * 26).toFixed(1)}px`,
-    '--wurf-y': `${((dy / laenge) * 26).toFixed(1)}px`,
-  }
-}
-
 export function TexasHoldemPage() {
   const navigate = useNavigate()
-  const [ansicht, setAnsicht] = useState<Ansicht>('menue')
+  // Mit ?raum=CODE (von der Seite „Offene Spiele") geht es direkt in den
+  // Online-Teil; der tritt dann von selbst bei.
+  const [ansicht, setAnsicht] = useState<Ansicht>(() =>
+    new URLSearchParams(window.location.search).has(RAUM_PARAM) ? 'online' : 'menue',
+  )
   const [spielerName, setSpielerName] = useState('Du')
   const [gegner, setGegner] = useState(3)
   const [stufe, setStufe] = useState<KiStufe>('normal')
@@ -251,6 +172,19 @@ export function TexasHoldemPage() {
               <small>Alle mit {START_CHIPS} Chips, bis einer alles hat</small>
             </span>
           </button>
+          <button
+            type="button"
+            className={styles.grosserKnopf}
+            onClick={() => setAnsicht('online')}
+          >
+            <span className={styles.knopfIcon} aria-hidden="true">
+              🌐
+            </span>
+            <span>
+              <strong>Online mit anderen</strong>
+              <small>Tisch aufmachen, Code weitergeben – bis zu sechs</small>
+            </span>
+          </button>
           <p className={styles.spielgeld}>
             Gespielt wird mit Spielgeld. Es gibt nichts zu kaufen und nichts zu gewinnen.
           </p>
@@ -260,6 +194,15 @@ export function TexasHoldemPage() {
         </section>
       </main>
     )
+  }
+
+  /*
+   * Online läuft über den Server (Migration 024): Er mischt, hält die
+   * Karten und prüft jeden Einsatz. Die Seite dafür steht für sich, weil
+   * sie einen anderen Zustand hat -- sie kennt die fremden Karten nicht.
+   */
+  if (ansicht === 'online') {
+    return <TexasHoldemOnline onZurueck={() => setAnsicht('menue')} />
   }
 
   if (ansicht === 'aufbau') {
@@ -325,31 +268,6 @@ export function TexasHoldemPage() {
   const moegl = moeglichkeiten(zustand)
   const platz = menschlicherPlatz(zustand)
 
-  /* Wer sitzt wo -- und wessen Jetons liegen gerade in der Mitte. */
-  const gegnerMitPlatz = zustand.spieler
-    .map((spieler, index) => ({ spieler, index }))
-    .filter((e) => !e.spieler.mensch)
-    .map((e, i) => ({
-      ...e,
-      platz: SITZE[zustand.spieler.length - 1]?.[i] ?? { x: 50, y: 16 },
-    }))
-
-  const platzVon = (index: number): Platz =>
-    zustand.spieler[index]?.mensch
-      ? MEIN_PLATZ
-      : (gegnerMitPlatz.find((e) => e.index === index)?.platz ?? MEIN_PLATZ)
-
-  const einsaetze = zustand.spieler
-    .map((spieler, index) => ({
-      id: spieler.id,
-      betrag: spieler.einsatz,
-      platz: platzVon(index),
-      punkt: zustand.spieler[index]?.mensch ? MEIN_EINSATZ : einsatzPunkt(platzVon(index)),
-    }))
-    .filter((e) => e.betrag > 0)
-
-  const geberPlatz = geberPunkt(platzVon(zustand.dealer))
-
   /*
    * Welche fünf Karten die Hand ausmachen. Nach dem Showdown bekommen sie
    * einen Ring -- sonst sieht man zwar, dass jemand gewonnen hat, aber
@@ -413,138 +331,40 @@ export function TexasHoldemPage() {
 
   /* --------------------------------------------------------------- Tisch */
 
+  /*
+   * Der Tisch selbst steht in texas/PokerTisch.tsx und bekommt nur, was
+   * zu sehen ist. Online gibt es denselben Tisch mit denselben
+   * Animationen -- dort kommen die fremden Karten aber als `null` an, weil
+   * der Server sie nicht herausgibt. Deshalb kennt der Tisch den Zustand
+   * der Engine nicht.
+   */
   return (
     <main className={shell.page}>
       <Kopf onZurueck={() => setAnsicht('menue')} ton={ton} onTon={tonUmschalten} />
-
-      <section className={styles.tisch}>
-        {/*
-          Der Tisch: aussen die Bande, innen der Filz. Die Plätze liegen
-          absolut auf dem Filz, die Einsätze zwischen Platz und Mitte --
-          so sieht man, wessen Jetons da liegen.
-        */}
-        <div className={styles.bande}>
-          <div className={styles.filz}>
-            <div className={styles.mitte} role="group" aria-label="Tischmitte">
-              <div className={styles.board} role="group" aria-label="Gemeinschaftskarten">
-                {[0, 1, 2, 3, 4].map((i) =>
-                  zustand.board[i] ? (
-                    <Spielkarte
-                      key={i}
-                      karte={zustand.board[i]}
-                      groesse="tisch"
-                      zaehlt={zaehltMit(zustand.board[i])}
-                    />
-                  ) : (
-                    <Kartenplatz key={i} groesse="tisch" />
-                  ),
-                )}
-              </div>
-              <p className={styles.topf}>
-                {/* Der Schlüssel ist der Betrag: Wächst der Topf, entsteht
-                    der Stapel neu und wächst sichtbar mit. */}
-                <span key={topf} className={styles.topfChips}>
-                  <Chipstapel betrag={topf} zahl="keine" hoechstens={6} />
-                </span>
-                <span className={styles.topfZahl}>{topf}</span>
-                <span className={styles.topfWort}>im Topf</span>
-              </p>
-              <p className={styles.stufe}>
-                Hand {zustand.handNr} · Blinds {klein}/{gross}
-              </p>
-            </div>
-
-            {gegnerMitPlatz.map(({ spieler, platz }) => (
-              <div
-                key={spieler.id}
-                className={styles.sitz}
-                style={{ left: `${platz.x}%`, top: `${platz.y}%` }}
-              >
-                <GegnerKarte
-                  spieler={spieler}
-                  amZug={zustand.spieler[zustand.amZug]?.id === spieler.id}
-                  offen={gezeigt}
-                  zaehltMit={zaehltMit}
-                />
-              </div>
-            ))}
-
-            {/* Die Einsätze. Der Schlüssel enthält den Betrag -- bei jeder
-                Erhöhung fliegen die Jetons neu ein. */}
-            {einsaetze.map(({ id, betrag, platz, punkt }) => {
-              return (
-                <span
-                  key={`${id}-${betrag}`}
-                  className={styles.einsatzMarke}
-                  style={{
-                    left: `${punkt.x}%`,
-                    top: `${punkt.y}%`,
-                    ...wurfVersatz(platz),
-                  }}
-                >
-                  <Chipstapel betrag={betrag} klein />
-                </span>
-              )
-            })}
-
-            {geberPlatz && (
-              <span
-                className={styles.geberKnopf}
-                style={{ left: `${geberPlatz.x}%`, top: `${geberPlatz.y}%` }}
-                title="Geber"
-                aria-label="Geber"
-              >
-                D
-              </span>
-            )}
-          </div>
-        </div>
-
-        <ol className={styles.protokoll} aria-label="Was bisher geschah">
-          {/*
-            Das Ergebnis steht gleich darunter gross im Kasten -- im
-            Protokoll wäre es dieselbe Zeile zweimal untereinander.
-          */}
-          {zustand.protokoll
-            .filter((zeile) => zeile !== zustand.ergebnis?.text)
-            .slice(-4)
-            .reverse()
-            .map((zeile, i) => (
-              <li key={`${zustand.protokoll.length}-${i}`}>{zeile}</li>
-            ))}
-        </ol>
-
-        {zustand.ergebnis && zustand.phase === 'showdown' && (
-          <p className={styles.ergebnis} role="status">
-            {zustand.ergebnis.text}
-          </p>
-        )}
-
-        <div className={styles.unten}>
-          <div className={styles.ichZeile}>
-            <div className={styles.meineKarten} role="group" aria-label="Deine Karten">
-              {ich?.karten.length ? (
-                ich.karten.map((k, i) => <Spielkarte key={i} karte={k} zaehlt={zaehltMit(k)} />)
-              ) : (
-                <>
-                  <Kartenplatz />
-                  <Kartenplatz />
-                </>
-              )}
-            </div>
-            <div className={styles.meinStand}>
-              <strong className={styles.meineChips}>{ich?.chips ?? 0}</strong>
-              <span className={styles.meinEinsatz}>
-                {ich && ich.einsatz > 0 ? `im Einsatz: ${ich.einsatz}` : 'Chips'}
-              </span>
-              {ich?.status === 'gefoldet' && (
-                <span className={styles.weggeworfen}>weggeworfen</span>
-              )}
-              {ich?.status === 'raus' && <span className={styles.weggeworfen}>ausgeschieden</span>}
-            </div>
-          </div>
-
-          {zustand.phase === 'showdown' ? (
+      <PokerTisch
+        spieler={zustand.spieler.map((s) => ({
+          id: s.id,
+          name: s.mensch ? 'Du' : s.name,
+          karten: s.karten,
+          chips: s.chips,
+          einsatz: s.einsatz,
+          status: s.status,
+          ichSelbst: s.mensch,
+        }))}
+        amZugId={zustand.spieler[zustand.amZug]?.id ?? null}
+        dealerId={zustand.spieler[zustand.dealer]?.id ?? null}
+        board={zustand.board}
+        topf={topf}
+        handNr={zustand.handNr}
+        blinds={{ klein, gross }}
+        gezeigt={gezeigt}
+        zaehltMit={zaehltMit}
+        protokoll={zustand.protokoll}
+        ergebnisText={
+          zustand.ergebnis && zustand.phase === 'showdown' ? zustand.ergebnis.text : null
+        }
+        aktionen={
+          zustand.phase === 'showdown' ? (
             <button type="button" className={styles.start} onClick={weiterSpielen}>
               Nächste Hand
             </button>
@@ -567,59 +387,10 @@ export function TexasHoldemPage() {
                 ? `${zustand.spieler[zustand.amZug]?.name ?? 'Jemand'} ist dran …`
                 : 'Die anderen spielen die Hand zu Ende …'}
             </p>
-          )}
-        </div>
-      </section>
+          )
+        }
+      />
     </main>
-  )
-}
-
-function GegnerKarte({
-  spieler,
-  amZug,
-  offen,
-  zaehltMit,
-}: {
-  spieler: TexasSpieler
-  amZug: boolean
-  offen: boolean
-  zaehltMit: (k?: Karte | null) => boolean
-}) {
-  const raus = spieler.status === 'raus'
-  const weg = spieler.status === 'gefoldet'
-  return (
-    <div
-      className={styles.gegnerKarte}
-      data-zug={amZug ? 'ja' : undefined}
-      data-weg={weg || raus ? 'ja' : undefined}
-    >
-      <div className={styles.gegnerKarten}>
-        {raus ? (
-          <span className={styles.rausText}>raus</span>
-        ) : (
-          spieler.karten.map((k, i) => (
-            <Spielkarte
-              key={i}
-              karte={k}
-              zu={!offen || weg}
-              groesse="klein"
-              zaehlt={zaehltMit(k)}
-            />
-          ))
-        )}
-      </div>
-      <span className={styles.gegnerName}>{spieler.name}</span>
-      <span className={styles.gegnerChips}>
-        {spieler.status === 'allin' ? (
-          <span className={styles.allin}>all-in</span>
-        ) : (
-          <>
-            <Chipstapel betrag={spieler.chips} klein zahl="keine" hoechstens={3} />
-            <span className={styles.gegnerZahl}>{spieler.chips}</span>
-          </>
-        )}
-      </span>
-    </div>
   )
 }
 
