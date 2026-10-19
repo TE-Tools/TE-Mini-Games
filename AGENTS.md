@@ -24,10 +24,19 @@ Binding design specs live in `docs/design/`. Follow them when implementing the
 corresponding feature; do not invent a competing design.
 
 - **Kniffel:** Regeln und Wertung liegen in `src/games/kniffel/regeln.ts`.
-  Die Online-Wertung in `supabase/migrations/017_kniffel.sql` ist eine zweite
+  Die Online-Wertung in `supabase/migrations/017_kniffel.sql` (seit dem
+  Zusatzkniffel ergänzt durch `025_zusatzkniffel.sql`) ist eine zweite
   Fassung derselben Regeln -- notwendig, weil beim Kniffel der Würfel das
   Spiel ist und ein Client, der selbst würfelt, sich alles schreiben könnte.
-  Wer eine Regel ändert, ändert beide Seiten. Die Bestenliste (Migration
+  Wer eine Regel ändert, ändert beide Seiten -- und
+  `scripts/pruefe-kniffel-sql.mjs` rechnet sie gegeneinander nach (alle 252
+  Würfe mal dreizehn Felder, dazu tausende Blöcke). Der Zusatzkniffel
+  (jeder weitere Kniffel 100 Punkte) hängt an zwei Bedingungen, und beide
+  bleiben stehen: fünf gleiche, und im Kniffel-Feld steht schon die 50 --
+  geprüft am Block von VOR dem Eintragen, sonst bekäme der erste Kniffel
+  den Bonus. Er steht als `zusatzkniffel` im Block und nicht daneben, weil
+  die Bestenliste genau den Block archiviert; `kniffel_block_voll` zählt
+  ihn nicht mit, sonst endet die Partie nie. Die Bestenliste (Migration
   `021_kniffel_bestenliste.sql`) rechnet nichts selbst: Sie archiviert beim
   Partieende, was `kniffel_gesamt` ergibt, und zählt Siege. Seit Migration
   `022_kniffel_gegen_rechner.sql` zählen auf Wunsch auch Partien gegen den

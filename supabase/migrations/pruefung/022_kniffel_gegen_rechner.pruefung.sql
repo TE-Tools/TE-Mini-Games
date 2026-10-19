@@ -54,27 +54,19 @@ create table public.kniffel_players (
   primary key (match_id, seat)
 );
 
--- Die Wertung aus 017, wortgleich kopiert (siehe 021er Prüfung).
-create or replace function public.kniffel_gesamt(p_block jsonb)
-returns integer
-language sql
-immutable
-set search_path = public, pg_temp
-as $$
-  with oben as (
-    select coalesce(sum((p_block ->> f)::int), 0) as summe
-    from unnest(array['einser','zweier','dreier','vierer','fuenfer','sechser']) f
-    where p_block ? f
-  ),
-  unten as (
-    select coalesce(sum((p_block ->> f)::int), 0) as summe
-    from unnest(array['dreierpasch','viererpasch','fullHouse','kleineStrasse',
-                      'grosseStrasse','kniffel','chance']) f
-    where p_block ? f
-  )
-  select oben.summe + case when oben.summe >= 63 then 35 else 0 end + unten.summe
-  from oben, unten;
-$$;
+-- Die Wertung kommt aus der echten Migration, nicht als Kopie.
+--
+-- Hier stand sie zweimal -- mit dem Hinweis „wer sie dort ändert, zieht sie
+-- hier nach, sonst prüft diese Datei stillschweigend die alte Wertung".
+-- Genau das wäre am 19.10.2026 passiert: Der Zusatzkniffel (025) kam dazu,
+-- und die Kopie hätte weiter die Summe ohne ihn gerechnet und „alles
+-- durch" gemeldet. Ein Hinweis, den man befolgen muss, ist schwächer als
+-- eine Datei, die man einbindet.
+--
+-- 025 ersetzt `kniffel_gesamt` aus 017 und bringt den Zusatzkniffel mit.
+-- Dass beide Fassungen (SQL und TypeScript) dasselbe rechnen, prüft
+-- scripts/pruefe-kniffel-sql.mjs.
+\ir ../025_zusatzkniffel.sql
 
 create or replace function public.kniffel_cleanup()
 returns void

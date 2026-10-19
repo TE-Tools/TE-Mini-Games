@@ -15,11 +15,14 @@ import { createRng } from '@/games/rng'
 import {
   WUERFEL_ANZAHL,
   WUERFE_JE_ZUG,
+  ZUSATZ_KNIFFEL_PUNKTE,
   blockVoll,
   freieFelder,
   gesamtpunkte,
   leererBlock,
+  mitZusatzkniffel,
   punkteFuer,
+  zusatzkniffelAnzahl,
   type Block,
   type KategorieId,
 } from './regeln'
@@ -86,7 +89,7 @@ function pruefeNamen(spieler: SpielerEinrichtung[]): void {
 
 export function erstellePartie(optionen: PartieOptionen): KniffelZustand {
   pruefeNamen(optionen.spieler)
-  const seed = optionen.seed ?? ((Date.now() ^ (Math.random() * 0x100000000)) >>> 0)
+  const seed = optionen.seed ?? (Date.now() ^ (Math.random() * 0x100000000)) >>> 0
   return {
     phase: 'wurf',
     spieler: optionen.spieler.map((s, i) => ({
@@ -209,7 +212,20 @@ export function eintragen(state: KniffelZustand, feld: KategorieId): KniffelZust
   const spieler = aktiverSpieler(state)
   const punkte = punkteFuer(feld, state.wuerfel)
 
-  let s = mitSpieler(state, spieler.id, { block: { ...spieler.block, [feld]: punkte } })
+  /*
+   * Erst der Zusatzkniffel, dann das Feld: Der Bonus hängt daran, dass
+   * im Kniffel-Feld schon die 50 steht -- und das muss der Block von
+   * VOR dem Eintragen sein. Wer gerade seinen ersten Kniffel einträgt,
+   * bekommt 50 und keinen Bonus.
+   */
+  const vorher = spieler.block
+  const neuerBlock = { ...mitZusatzkniffel(vorher, state.wuerfel), [feld]: punkte }
+  const zusatz = zusatzkniffelAnzahl(neuerBlock) > zusatzkniffelAnzahl(vorher)
+
+  let s = mitSpieler(state, spieler.id, { block: neuerBlock })
+  if (zusatz) {
+    s = mitLog(s, `Zusatzkniffel! ${spieler.name} bekommt ${ZUSATZ_KNIFFEL_PUNKTE} Punkte dazu.`)
+  }
   s = mitLog(
     s,
     punkte > 0

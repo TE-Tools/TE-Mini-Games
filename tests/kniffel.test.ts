@@ -27,6 +27,10 @@ import {
   blockVoll,
   WUERFE_JE_ZUG,
   WUERFEL_ANZAHL,
+  KNIFFEL_PUNKTE,
+  ZUSATZ_KNIFFEL_PUNKTE,
+  zusatzkniffelPunkte,
+  type Block,
   MIN_SPIELER,
   MAX_SPIELER,
   type KniffelZustand,
@@ -57,8 +61,13 @@ describe('Aufstellung', () => {
   })
 
   it('geht allein und zu sechst', () => {
-    expect(() => erstellePartie({ seed: 1, spieler: [] })).toThrow(new RegExp(`Mindestens ${MIN_SPIELER}`))
-    const sechs = Array.from({ length: MAX_SPIELER }, (_, i) => ({ name: `S${i}`, typ: 'ki' as const }))
+    expect(() => erstellePartie({ seed: 1, spieler: [] })).toThrow(
+      new RegExp(`Mindestens ${MIN_SPIELER}`),
+    )
+    const sechs = Array.from({ length: MAX_SPIELER }, (_, i) => ({
+      name: `S${i}`,
+      typ: 'ki' as const,
+    }))
     expect(erstellePartie({ seed: 1, spieler: sechs }).spieler).toHaveLength(MAX_SPIELER)
     expect(() =>
       erstellePartie({ seed: 1, spieler: [...sechs, { name: 'zuviel', typ: 'ki' }] }),
@@ -67,7 +76,13 @@ describe('Aufstellung', () => {
 
   it('lässt keine doppelten Namen zu', () => {
     expect(() =>
-      erstellePartie({ seed: 1, spieler: [{ name: 'Anna', typ: 'mensch' }, { name: 'anna', typ: 'ki' }] }),
+      erstellePartie({
+        seed: 1,
+        spieler: [
+          { name: 'Anna', typ: 'mensch' },
+          { name: 'anna', typ: 'ki' },
+        ],
+      }),
     ).toThrow(/doppelt/)
   })
 
@@ -77,7 +92,14 @@ describe('Aufstellung', () => {
 
   it('zählt dreizehn Züge je Spieler', () => {
     expect(offeneZuege(partie())).toBe(13)
-    expect(offeneZuege(partie([{ name: 'A', typ: 'mensch' }, { name: 'B', typ: 'ki' }]))).toBe(26)
+    expect(
+      offeneZuege(
+        partie([
+          { name: 'A', typ: 'mensch' },
+          { name: 'B', typ: 'ki' },
+        ]),
+      ),
+    ).toBe(26)
   })
 })
 
@@ -203,7 +225,10 @@ describe('Eintragen', () => {
 })
 
 describe('Zugfolge', () => {
-  const zwei = [{ name: 'A', typ: 'mensch' as const }, { name: 'B', typ: 'mensch' as const }]
+  const zwei = [
+    { name: 'A', typ: 'mensch' as const },
+    { name: 'B', typ: 'mensch' as const },
+  ]
 
   it('gibt nach dem Eintragen weiter', () => {
     const s = eintragen(mitWuerfeln(partie(zwei), [1, 1, 1, 1, 1]), 'einser')
@@ -221,7 +246,21 @@ describe('Zugfolge', () => {
 
   it('endet, wenn alle Blöcke voll sind', () => {
     let s = partie()
-    const felder = ['einser','zweier','dreier','vierer','fuenfer','sechser','dreierpasch','viererpasch','fullHouse','kleineStrasse','grosseStrasse','kniffel','chance'] as const
+    const felder = [
+      'einser',
+      'zweier',
+      'dreier',
+      'vierer',
+      'fuenfer',
+      'sechser',
+      'dreierpasch',
+      'viererpasch',
+      'fullHouse',
+      'kleineStrasse',
+      'grosseStrasse',
+      'kniffel',
+      'chance',
+    ] as const
     for (const feld of felder) s = eintragen(mitWuerfeln(s, [1, 2, 3, 4, 5]), feld)
     expect(s.phase).toBe('ende')
     expect(s.siegerId).toBe('p0')
@@ -230,16 +269,32 @@ describe('Zugfolge', () => {
 
 describe('Endstand', () => {
   it('sortiert nach Punkten', () => {
-    let s = partie([{ name: 'A', typ: 'mensch' }, { name: 'B', typ: 'mensch' }])
-    s = { ...s, spieler: s.spieler.map((p) => p.id === 'p1' ? { ...p, block: { ...leererBlock(), kniffel: 50 } } : p) }
+    let s = partie([
+      { name: 'A', typ: 'mensch' },
+      { name: 'B', typ: 'mensch' },
+    ])
+    s = {
+      ...s,
+      spieler: s.spieler.map((p) =>
+        p.id === 'p1' ? { ...p, block: { ...leererBlock(), kniffel: 50 } } : p,
+      ),
+    }
     const tabelle = endstand(s)
     expect(tabelle[0]!.name).toBe('B')
     expect(tabelle[0]!.punkte).toBe(50)
   })
 
   it('kürt beim Beenden den Besten', () => {
-    let s = partie([{ name: 'A', typ: 'mensch' }, { name: 'B', typ: 'mensch' }])
-    s = { ...s, spieler: s.spieler.map((p) => p.id === 'p1' ? { ...p, block: { ...leererBlock(), chance: 20 } } : p) }
+    let s = partie([
+      { name: 'A', typ: 'mensch' },
+      { name: 'B', typ: 'mensch' },
+    ])
+    s = {
+      ...s,
+      spieler: s.spieler.map((p) =>
+        p.id === 'p1' ? { ...p, block: { ...leererBlock(), chance: 20 } } : p,
+      ),
+    }
     expect(beenden(s).siegerId).toBe('p1')
   })
 })
@@ -345,5 +400,63 @@ describe('Computergegner', () => {
     const schwer = schnitt('schwer')
     expect(normal).toBeGreaterThan(leicht)
     expect(schwer).toBeGreaterThan(normal)
+  })
+})
+
+/**
+ * Der Zusatzkniffel im Ablauf.
+ *
+ * Die Regel selbst steht in tests/kniffel-regeln.test.ts. Hier geht es um
+ * die Reihenfolge, und die ist die Falle: Der Bonus hängt daran, dass im
+ * Kniffel-Feld schon die 50 STEHT -- also am Block vor dem Eintragen.
+ * Wird er nach dem Schreiben geprüft, bekommt schon der erste Kniffel
+ * 100 Punkte dazu.
+ */
+describe('Zusatzkniffel beim Eintragen', () => {
+  /** Eine Partie, in der die Würfel gesetzt werden können. */
+  function mitWurf(block: Partial<Block>, wuerfel: number[]) {
+    const state = erstellePartie({ spieler: [{ name: 'Ich', typ: 'mensch' }], seed: 1 })
+    return {
+      ...state,
+      phase: 'eintragen' as const,
+      wurfNummer: 1,
+      wuerfel,
+      spieler: [{ ...state.spieler[0]!, block: { ...leererBlock(), ...block } }],
+    }
+  }
+
+  it('gibt dem ersten Kniffel 50 und keine 100 dazu', () => {
+    const nach = eintragen(mitWurf({}, [4, 4, 4, 4, 4]), 'kniffel')
+    const block = nach.spieler[0]!.block
+    expect(block.kniffel).toBe(KNIFFEL_PUNKTE)
+    expect(zusatzkniffelPunkte(block)).toBe(0)
+    expect(gesamtpunkte(block)).toBe(KNIFFEL_PUNKTE)
+  })
+
+  it('gibt dem zweiten Kniffel 100 dazu – egal, wo er eingetragen wird', () => {
+    const vorher = mitWurf({ kniffel: KNIFFEL_PUNKTE }, [4, 4, 4, 4, 4])
+    const nach = eintragen(vorher, 'vierer')
+    const block = nach.spieler[0]!.block
+    expect(block.vierer).toBe(20)
+    expect(zusatzkniffelPunkte(block)).toBe(ZUSATZ_KNIFFEL_PUNKTE)
+    // 50 (Kniffel) + 20 (Vierer) + 100 (Zusatz) -- kein oberer Bonus bei 20.
+    expect(gesamtpunkte(block)).toBe(170)
+  })
+
+  it('gibt auch beim Streichen 100 dazu', () => {
+    // Fünf Vierer in die Einser: 0 Punkte im Feld, der Bonus bleibt.
+    const nach = eintragen(mitWurf({ kniffel: KNIFFEL_PUNKTE }, [4, 4, 4, 4, 4]), 'einser')
+    expect(nach.spieler[0]!.block.einser).toBe(0)
+    expect(zusatzkniffelPunkte(nach.spieler[0]!.block)).toBe(ZUSATZ_KNIFFEL_PUNKTE)
+  })
+
+  it('gibt nichts dazu, wenn das Kniffel-Feld gestrichen ist', () => {
+    const nach = eintragen(mitWurf({ kniffel: 0 }, [4, 4, 4, 4, 4]), 'vierer')
+    expect(zusatzkniffelPunkte(nach.spieler[0]!.block)).toBe(0)
+  })
+
+  it('schreibt es ins Protokoll', () => {
+    const nach = eintragen(mitWurf({ kniffel: KNIFFEL_PUNKTE }, [4, 4, 4, 4, 4]), 'vierer')
+    expect(nach.protokoll.some((z) => z.includes('Zusatzkniffel'))).toBe(true)
   })
 })
