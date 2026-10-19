@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
+  ZUSATZ_KNIFFEL_PUNKTE,
   MAX_SPIELER,
   WUERFE_JE_ZUG,
   aktiverSpieler,
@@ -176,7 +177,8 @@ export function KniffelPage() {
         <section className={styles.menue}>
           <p className={styles.einleitung}>
             Dreizehn Felder, drei Würfe je Zug. Wer oben 63 zusammenbekommt, kriegt 35 Punkte dazu –
-            und wer fünf gleiche wirft, den Kniffel.
+            und wer fünf gleiche wirft, den Kniffel. Jeder weitere Kniffel danach bringt{' '}
+            {ZUSATZ_KNIFFEL_PUNKTE} Punkte zusätzlich.
           </p>
 
           <button

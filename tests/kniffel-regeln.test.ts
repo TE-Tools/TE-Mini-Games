@@ -11,7 +11,13 @@ import {
   KATEGORIE_IDS,
   BONUS_GRENZE,
   BONUS_PUNKTE,
+  KNIFFEL_PUNKTE,
   KNIFFEL_ZAEHLT_ALS_FULL_HOUSE,
+  ZUSATZ_KNIFFEL_PUNKTE,
+  gibtZusatzkniffel,
+  mitZusatzkniffel,
+  zusatzkniffelAnzahl,
+  zusatzkniffelPunkte,
   punkteFuer,
   haeufigkeiten,
   augensumme,
@@ -178,7 +184,14 @@ describe('Bonus und Summen', () => {
   }
 
   it('gibt den Bonus ab 63 Punkten oben', () => {
-    const knapp = blockMit({ einser: 3, zweier: 6, dreier: 9, vierer: 12, fuenfer: 15, sechser: 18 })
+    const knapp = blockMit({
+      einser: 3,
+      zweier: 6,
+      dreier: 9,
+      vierer: 12,
+      fuenfer: 15,
+      sechser: 18,
+    })
     expect(obenSumme(knapp)).toBe(BONUS_GRENZE)
     expect(bonusErreicht(knapp)).toBe(true)
     expect(bonus(knapp)).toBe(BONUS_PUNKTE)
@@ -186,7 +199,14 @@ describe('Bonus und Summen', () => {
   })
 
   it('gibt ihn bei 62 Punkten nicht', () => {
-    const daneben = blockMit({ einser: 2, zweier: 6, dreier: 9, vierer: 12, fuenfer: 15, sechser: 18 })
+    const daneben = blockMit({
+      einser: 2,
+      zweier: 6,
+      dreier: 9,
+      vierer: 12,
+      fuenfer: 15,
+      sechser: 18,
+    })
     expect(obenSumme(daneben)).toBe(62)
     expect(bonus(daneben)).toBe(0)
     expect(bisZumBonus(daneben)).toBe(1)
@@ -194,8 +214,14 @@ describe('Bonus und Summen', () => {
 
   it('rechnet oben, Bonus und unten zusammen', () => {
     const block = blockMit({
-      einser: 3, zweier: 6, dreier: 9, vierer: 12, fuenfer: 15, sechser: 18,
-      kniffel: 50, chance: 20,
+      einser: 3,
+      zweier: 6,
+      dreier: 9,
+      vierer: 12,
+      fuenfer: 15,
+      sechser: 18,
+      kniffel: 50,
+      chance: 20,
     })
     expect(untenSumme(block)).toBe(70)
     expect(gesamtpunkte(block)).toBe(63 + 35 + 70)
@@ -267,5 +293,74 @@ describe('Die Würfelaugen auf dem Bildschirm', () => {
         }
       }
     })
+  })
+})
+
+/**
+ * Der Zusatzkniffel.
+ *
+ * ANLASS (19.10.2026, Thomas): „bei kniffel spiel bitte zusatzkniffel
+ * einbauen das dann extra 100 Punkte gibt."
+ *
+ * Die Regel hat zwei Bedingungen, und beide sind leicht falsch gebaut:
+ * Es braucht fünf gleiche UND eine geschriebene 50 im Kniffel-Feld. Wer
+ * das Feld gestrichen hat (0), bekommt nichts; wer seinen ersten Kniffel
+ * einträgt, bekommt 50 und keinen Bonus.
+ */
+describe('Zusatzkniffel', () => {
+  const fuenfSechsen = [6, 6, 6, 6, 6]
+  const mitKniffel = (): Block => ({ ...leererBlock(), kniffel: KNIFFEL_PUNKTE })
+  const gestrichen = (): Block => ({ ...leererBlock(), kniffel: 0 })
+
+  it('gibt es nicht, solange das Kniffel-Feld frei ist', () => {
+    expect(gibtZusatzkniffel(leererBlock(), fuenfSechsen)).toBe(false)
+  })
+
+  it('gibt es nicht, wenn das Kniffel-Feld gestrichen wurde', () => {
+    // 0 im Feld heisst: Der Kniffel ist verschenkt. Dann auch kein Bonus.
+    expect(gibtZusatzkniffel(gestrichen(), fuenfSechsen)).toBe(false)
+  })
+
+  it('gibt es nicht ohne fünf gleiche', () => {
+    expect(gibtZusatzkniffel(mitKniffel(), [6, 6, 6, 6, 5])).toBe(false)
+    expect(gibtZusatzkniffel(mitKniffel(), [1, 2, 3, 4, 5])).toBe(false)
+  })
+
+  it('gibt 100 Punkte, wenn die 50 schon steht', () => {
+    const block = mitZusatzkniffel(mitKniffel(), fuenfSechsen)
+    expect(zusatzkniffelPunkte(block)).toBe(ZUSATZ_KNIFFEL_PUNKTE)
+    expect(zusatzkniffelAnzahl(block)).toBe(1)
+  })
+
+  it('zählt jeden weiteren einzeln', () => {
+    let block = mitKniffel()
+    for (let i = 1; i <= 3; i++) {
+      block = mitZusatzkniffel(block, [1, 1, 1, 1, 1])
+      expect(zusatzkniffelAnzahl(block)).toBe(i)
+    }
+    expect(zusatzkniffelPunkte(block)).toBe(300)
+  })
+
+  it('steht in der Endsumme', () => {
+    const ohne = mitKniffel()
+    const mit = mitZusatzkniffel(ohne, fuenfSechsen)
+    expect(gesamtpunkte(mit) - gesamtpunkte(ohne)).toBe(ZUSATZ_KNIFFEL_PUNKTE)
+  })
+
+  it('ist kein Feld, das man füllen muss', () => {
+    // Sonst wäre der Block nie voll und die Partie nie zu Ende.
+    const block = mitZusatzkniffel({ ...leererBlock(), kniffel: KNIFFEL_PUNKTE }, fuenfSechsen)
+    expect(freieFelder(block)).not.toContain('zusatzkniffel')
+    const voll = {} as Block
+    for (const id of KATEGORIE_IDS) voll[id] = 0
+    voll.kniffel = KNIFFEL_PUNKTE
+    expect(blockVoll(mitZusatzkniffel(voll, fuenfSechsen))).toBe(true)
+  })
+
+  it('verändert die Zwischensummen nicht', () => {
+    const ohne = mitKniffel()
+    const mit = mitZusatzkniffel(ohne, fuenfSechsen)
+    expect(obenSumme(mit)).toBe(obenSumme(ohne))
+    expect(untenSumme(mit)).toBe(untenSumme(ohne))
   })
 })

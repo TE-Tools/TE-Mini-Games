@@ -94,9 +94,7 @@ export function kiFeldwahl(
 
   if (stufe === 'leicht') {
     // Nimmt schlicht das, was jetzt am meisten bringt.
-    return felder.reduce((beste, id) =>
-      (moeglich[id] ?? 0) > (moeglich[beste] ?? 0) ? id : beste,
-    )
+    return felder.reduce((beste, id) => ((moeglich[id] ?? 0) > (moeglich[beste] ?? 0) ? id : beste))
   }
 
   let bestesFeld = felder[0]!
@@ -183,8 +181,7 @@ function halteHaeufigste(wuerfel: readonly number[]): boolean[] {
 
 /** Wie oben, aber eine angefangene Straße wird nicht zerschlagen. */
 function halteMitStrassen(block: Block, wuerfel: readonly number[]): boolean[] {
-  const strassenOffen =
-    block.kleineStrasse === null || block.grosseStrasse === null
+  const strassenOffen = block.kleineStrasse === null || block.grosseStrasse === null
   if (strassenOffen) {
     const beste = besteStrassenBasis(wuerfel)
     // Ab drei zusammenhängenden lohnt es, darauf zu setzen.
@@ -275,8 +272,7 @@ function halteBesteProbe(
  */
 function bestesErgebnis(block: Block, wuerfel: readonly number[]): number {
   const offenOben = OBERE.filter((id) => block[id] === null).length
-  const bonusAnteil =
-    offenOben > 0 && bisZumBonus(block) > 0 ? BONUS_PUNKTE / offenOben : 0
+  const bonusAnteil = offenOben > 0 && bisZumBonus(block) > 0 ? BONUS_PUNKTE / offenOben : 0
 
   let beste = 0
   for (const id of freieFelder(block)) {

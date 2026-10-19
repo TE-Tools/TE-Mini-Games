@@ -14,12 +14,15 @@ import {
   BONUS_GRENZE,
   BONUS_PUNKTE,
   KATEGORIEN,
+  ZUSATZ_KNIFFEL_PUNKTE,
   bisZumBonus,
   bonusErreicht,
   gesamtpunkte,
   obenSumme,
   untenSumme,
   punkteFuer,
+  zusatzkniffelAnzahl,
+  zusatzkniffelPunkte,
   type Block,
   type KategorieId,
 } from '@/games/kniffel'
@@ -43,12 +46,7 @@ interface KniffelblockProps {
   onEintragen: (feld: KategorieId) => void
 }
 
-export function Kniffelblock({
-  spalten,
-  wuerfel,
-  eintragbar,
-  onEintragen,
-}: KniffelblockProps) {
+export function Kniffelblock({ spalten, wuerfel, eintragbar, onEintragen }: KniffelblockProps) {
   const gewuerfelt = wuerfel.some((w) => w > 0)
   const zeilenProps = { spalten, wuerfel, gewuerfelt, eintragbar, onEintragen }
 
@@ -117,13 +115,46 @@ export function Kniffelblock({
                 <Zeile key={k.id} feld={k.id} name={k.name} kurz={k.kurz} {...zeilenProps} />
               ))}
 
+              {/*
+                Der Zusatzkniffel steht als eigene Zeile da, auch wenn er
+                leer ist: Wer die Regel nicht kennt, soll sie im Block
+                sehen und nicht erst, wenn plötzlich 100 Punkte mehr
+                dastehen. Antippen kann man ihn nicht -- er ist kein Feld,
+                das man aussucht.
+              */}
+              <tr className={styles.bonusZeile}>
+                <th scope="row" className={styles.summeName}>
+                  Zusatzkniffel
+                  <span className={styles.kurz}>
+                    Jeder weitere – {ZUSATZ_KNIFFEL_PUNKTE} Punkte
+                  </span>
+                </th>
+                {spalten.map((sp) => (
+                  <td key={sp.id} className={styles.summeWert}>
+                    {zusatzkniffelPunkte(sp.block) > 0 ? (
+                      <strong className={styles.bonusDa}>
+                        +{zusatzkniffelPunkte(sp.block)}
+                        {zusatzkniffelAnzahl(sp.block) > 1 && (
+                          <span className={styles.zusatzZahl}>
+                            {' '}
+                            ({zusatzkniffelAnzahl(sp.block)}×)
+                          </span>
+                        )}
+                      </strong>
+                    ) : (
+                      <span className={styles.bonusFehlt}>–</span>
+                    )}
+                  </td>
+                ))}
+              </tr>
+
               <tr className={styles.summeZeile}>
                 <th scope="row" className={styles.summeName}>
                   Zwischensumme
                 </th>
                 {spalten.map((sp) => (
                   <td key={sp.id} className={styles.summeWert}>
-                    {untenSumme(sp.block)}
+                    {untenSumme(sp.block) + zusatzkniffelPunkte(sp.block)}
                   </td>
                 ))}
               </tr>

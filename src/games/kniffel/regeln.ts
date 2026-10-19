@@ -53,8 +53,20 @@ export const KATEGORIEN: readonly KategorieDaten[] = [
 
 export const KATEGORIE_IDS: readonly KategorieId[] = KATEGORIEN.map((k) => k.id)
 
-/** Ein Block: Feld → Punkte, oder null, solange es noch frei ist. */
-export type Block = Record<KategorieId, number | null>
+/**
+ * Ein Block: Feld → Punkte, oder null, solange es noch frei ist.
+ *
+ * `zusatzkniffel` ist kein Feld, das man aussucht: Dort sammeln sich die
+ * Punkte für jeden weiteren Kniffel (siehe ZUSATZ_KNIFFEL_PUNKTE). Es
+ * steht trotzdem im Block und nicht daneben, weil der Block die eine
+ * Stelle ist, aus der die Punktzahl gerechnet wird -- online archiviert
+ * die Bestenliste genau ihn (Migration 021). Ein Zusatzkniffel, der
+ * woanders läge, fehlte dort still.
+ */
+export interface Block extends Record<KategorieId, number | null> {
+  /** Punkte aus weiteren Kniffeln. Fehlt, solange es keinen gab. */
+  zusatzkniffel?: number
+}
 
 export function leererBlock(): Block {
   const block = {} as Block
@@ -72,6 +84,20 @@ export const FULL_HOUSE_PUNKTE = 25
 export const KLEINE_STRASSE_PUNKTE = 30
 export const GROSSE_STRASSE_PUNKTE = 40
 export const KNIFFEL_PUNKTE = 50
+
+/**
+ * Was jeder weitere Kniffel bringt.
+ *
+ * ANLASS (19.10.2026, Thomas): „bei kniffel spiel bitte zusatzkniffel
+ * einbauen das dann extra 100 Punkte gibt."
+ *
+ * So steht es auch in den offiziellen Regeln: Wer schon 50 im
+ * Kniffel-Feld hat und noch einmal fünf gleiche würfelt, bekommt 100
+ * Punkte dazu -- und trägt den Wurf zusätzlich irgendwo ein. Wer das
+ * Feld mit 0 gestrichen hat, bekommt nichts: Der Bonus hängt am
+ * geschriebenen Kniffel, nicht am Glück.
+ */
+export const ZUSATZ_KNIFFEL_PUNKTE = 100
 
 /**
  * Zählt ein Kniffel als Full House?
@@ -192,8 +218,41 @@ export function untenSumme(block: Block): number {
   return UNTEN.reduce((summe, id) => summe + (block[id] ?? 0), 0)
 }
 
+/** Die bisher gesammelten Punkte aus weiteren Kniffeln. */
+export function zusatzkniffelPunkte(block: Block): number {
+  return block.zusatzkniffel ?? 0
+}
+
+/** Wie viele weitere Kniffel das waren. */
+export function zusatzkniffelAnzahl(block: Block): number {
+  return Math.floor(zusatzkniffelPunkte(block) / ZUSATZ_KNIFFEL_PUNKTE)
+}
+
+/**
+ * Bringt dieser Wurf einen Zusatzkniffel?
+ *
+ * Zwei Bedingungen, und beide zählen: fünf gleiche -- und im
+ * Kniffel-Feld stehen schon die 50. Ist das Feld noch frei, ist dies der
+ * erste Kniffel (dann gibt es 50, keinen Bonus); steht dort eine 0, ist
+ * es gestrichen und es gibt nichts.
+ *
+ * Auf welches Feld der Wurf danach eingetragen wird, ist dafür
+ * gleichgültig -- deshalb ändert der Bonus auch nichts an der Wahl des
+ * Feldes und nichts an der KI.
+ */
+export function gibtZusatzkniffel(block: Block, wuerfel: readonly number[]): boolean {
+  if (!hatMindestens(wuerfel, WUERFEL_ANZAHL)) return false
+  return block.kniffel === KNIFFEL_PUNKTE
+}
+
+/** Den Block mit dem Zusatzkniffel, falls dieser Wurf einen bringt. */
+export function mitZusatzkniffel(block: Block, wuerfel: readonly number[]): Block {
+  if (!gibtZusatzkniffel(block, wuerfel)) return block
+  return { ...block, zusatzkniffel: zusatzkniffelPunkte(block) + ZUSATZ_KNIFFEL_PUNKTE }
+}
+
 export function gesamtpunkte(block: Block): number {
-  return obenSumme(block) + bonus(block) + untenSumme(block)
+  return obenSumme(block) + bonus(block) + untenSumme(block) + zusatzkniffelPunkte(block)
 }
 
 export function freieFelder(block: Block): KategorieId[] {
