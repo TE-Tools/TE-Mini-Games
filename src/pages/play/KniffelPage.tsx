@@ -30,6 +30,9 @@ import {
 import { isKniffelOnlineAvailable } from '@/services/kniffelOnline'
 import { spielerNameOderDu } from '@/services/spielername'
 import { spiele, setzeTon, tonAn, vibriere } from '@/services/sound'
+import { setzeEffektWahl, webglMoeglich } from '@/services/effekte'
+import { useEffekte3d } from '@/components/drei/useEffekte3d'
+import { Konfetti } from '@/components/konfetti/Konfetti'
 import { Wuerfelreihe } from './kniffel/Wuerfelreihe'
 import { Kniffelblock, type BlockSpalte } from './kniffel/Kniffelblock'
 import { Bestenliste } from './kniffel/Bestenliste'
@@ -307,7 +310,8 @@ export function KniffelPage() {
     return (
       <main className={`${shell.page} ${styles.breiteSeite}`}>
         <Kopf onZurueck={() => setAnsicht('menue')} ton={ton} onTon={tonUmschalten} />
-        <section className={shell.section}>
+        <section className={`${shell.section} ${styles.ende}`}>
+          {gewonnen && <Konfetti anzahl={70} />}
           <p className={gewonnen ? shell.correct : shell.wrong}>
             {gewonnen ? '🏆 Gewonnen!' : `${tabelle[0]?.name} gewinnt.`}
           </p>
@@ -380,6 +384,7 @@ export function KniffelPage() {
             gehalten={zustand.gehalten}
             haltbar={mensch && zustand.wurfNummer > 0 && zustand.wurfNummer < WUERFE_JE_ZUG}
             rollt={rollt}
+            wurf={`${zustand.amZug}-${zustand.runde}-${zustand.wurfNummer}`}
             onHalten={haltenKlick}
           />
 
@@ -450,14 +455,39 @@ function Kopf({
         ←
       </button>
       <h1 className={shell.title}>Kniffel</h1>
-      <button
-        type="button"
-        className={styles.tonKnopf}
-        onClick={onTon}
-        aria-label={ton ? 'Ton ausschalten' : 'Ton einschalten'}
-      >
-        {ton ? '🔊' : '🔈'}
-      </button>
+      <div className={styles.kopfKnoepfe}>
+        <DreiDKnopf />
+        <button
+          type="button"
+          className={styles.tonKnopf}
+          onClick={onTon}
+          aria-label={ton ? 'Ton ausschalten' : 'Ton einschalten'}
+        >
+          {ton ? '🔊' : '🔈'}
+        </button>
+      </div>
     </header>
+  )
+}
+
+/**
+ * 3D-Würfel an oder aus. Die Automatik entscheidet beim ersten Mal nach
+ * dem Gerät; wer hier tippt, entscheidet selbst. Ohne WebGL gibt es
+ * nichts zu wählen, dann fehlt der Knopf.
+ */
+function DreiDKnopf() {
+  const an = useEffekte3d()
+  if (!webglMoeglich()) return null
+  return (
+    <button
+      type="button"
+      className={`${styles.tonKnopf} ${styles.dreiDKnopf}`}
+      onClick={() => setzeEffektWahl(an ? 'aus' : 'an')}
+      aria-pressed={an}
+      aria-label={an ? '3D-Würfel ausschalten' : '3D-Würfel einschalten'}
+      title={an ? '3D-Würfel aus' : '3D-Würfel an'}
+    >
+      {an ? '3D' : '2D'}
+    </button>
   )
 }

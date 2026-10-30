@@ -47,7 +47,9 @@
   cursor: pointer;
   font-size: var(--text-xl);
   color: var(--color-text);
-  transition: transform var(--transition-fast), border-color var(--transition-fast);
+  transition:
+    transform var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
 .menueKnopf:hover,
@@ -212,7 +214,9 @@
   font-size: var(--text-sm);
   cursor: pointer;
   white-space: nowrap;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
 }
 
 .reiterAn {
@@ -403,7 +407,9 @@
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-sm);
   text-align: center;
-  transition: transform var(--transition-fast), border-color var(--transition-fast),
+  transition:
+    transform var(--transition-fast),
+    border-color var(--transition-fast),
     box-shadow var(--transition-fast);
 }
 
@@ -749,4 +755,357 @@
 
 .offeneSpiele:hover {
   background: var(--color-navy-hover);
+}
+
+/* ===================================================================
+ * Bewegung (30.10.2026)
+ *
+ * Alles hier ist Schmuck und läuft nur mit Transform und Opacity -- das
+ * rechnet die Grafikkarte, auch auf einfachen Handys flüssig. Unter
+ * „Bewegung reduzieren" kürzt global.css jede Animation auf null.
+ * =================================================================== */
+
+/* -------------------------------------------- Hereinkommen beim Laden */
+
+@keyframes hochkommen {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.kopf,
+.willkommen,
+.standLeiste,
+.reiter,
+.spiele > .abschnittTitel,
+.spiele > .abschnittText,
+.offeneSpiele {
+  /* backwards, nicht both: Nach dem Ende soll wieder gelten, was die Regel
+     selbst sagt -- sonst hielte die Animation jeden Hover-Transform fest. */
+  animation: hochkommen 520ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+.willkommen {
+  animation-delay: 60ms;
+}
+
+.standLeiste {
+  animation-delay: 120ms;
+}
+
+.reiter {
+  animation-delay: 170ms;
+}
+
+.spiele > .abschnittTitel,
+.spiele > .abschnittText,
+.offeneSpiele {
+  animation-delay: 220ms;
+}
+
+/* Der Titel bekommt einen leisen Glanz, der einmal darüber läuft. */
+.willkommenTitel {
+  background: linear-gradient(
+    100deg,
+    var(--color-text) 0%,
+    var(--color-text) 40%,
+    var(--color-primary) 50%,
+    var(--color-text) 60%,
+    var(--color-text) 100%
+  );
+  background-size: 250% 100%;
+  background-position: 100% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: glanz 2.4s 0.5s ease-in-out both;
+}
+
+@keyframes glanz {
+  to {
+    background-position: 0% 0;
+  }
+}
+
+/* --------------------------------------------------------- Standleiste */
+
+.standLeiste {
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgb(255 255 255 / 0.9), transparent 60%),
+    var(--color-bg-elevated);
+}
+
+.fuellung {
+  position: relative;
+  overflow: hidden;
+  transform-origin: left center;
+  animation: fuellen 900ms 300ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+/* Ein Lichtstreif, der ab und zu durch den Balken läuft. */
+.fuellung::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgb(255 255 255 / 0.65) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  animation: streif 3.2s 1.4s ease-in-out infinite;
+}
+
+@keyframes fuellen {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes streif {
+  0%,
+  55% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ------------------------------------------------------------- Reiter */
+
+.reiter {
+  position: relative;
+}
+
+/* Die Marke gleitet unter den aktiven Reiter; der Reiter selbst ist dann
+   nur noch Schrift darauf. */
+.reiterMarke {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--color-navy);
+  box-shadow: 0 4px 12px rgb(38 42 61 / 0.25);
+  transition:
+    transform 340ms cubic-bezier(0.3, 1.3, 0.5, 1),
+    width 340ms cubic-bezier(0.3, 1.3, 0.5, 1);
+  pointer-events: none;
+}
+
+.reiterAn,
+.reiterAus {
+  position: relative;
+  z-index: 1;
+}
+
+/* Erst wenn die Marke gemessen ist, gibt der Reiter seinen Grund an sie ab. */
+.reiter[data-marke] .reiterAn {
+  background: transparent;
+  border-color: transparent;
+}
+
+.reiterAus:active {
+  transform: scale(0.96);
+}
+
+.reiterInhalt {
+  width: 100%;
+  animation: hereingleiten 320ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+@keyframes hereingleiten {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.99);
+  }
+}
+
+/* ------------------------------------------------------------ Kacheln */
+
+.kacheln {
+  perspective: 900px;
+}
+
+.kachel {
+  position: relative;
+  isolation: isolate;
+  transform-style: preserve-3d;
+  transform: rotateX(var(--neigung-x, 0deg)) rotateY(var(--neigung-y, 0deg));
+  transition:
+    transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color var(--transition-fast),
+    box-shadow 260ms ease;
+  /* Gestaffelt herein, aber höchstens eine gute halbe Sekunde lang --
+     bei zwanzig Kacheln wartet sonst die letzte auf ihren Auftritt. */
+  animation: kachelRein 560ms cubic-bezier(0.2, 0.9, 0.25, 1.1) backwards;
+  animation-delay: calc(260ms + min(var(--i, 0), 12) * 40ms);
+}
+
+@keyframes kachelRein {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scale(0.94);
+  }
+}
+
+/* Ein Lichtfleck, der der Maus folgt -- wie Glanz auf Karton. */
+.kachel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle at var(--licht-x, 50%) var(--licht-y, 0%),
+    color-mix(in srgb, var(--kachel-farbe, var(--color-primary)) 12%, transparent),
+    transparent 65%
+  );
+  opacity: 0;
+  transition: opacity 260ms ease;
+}
+
+.kachel:hover {
+  transform: rotateX(var(--neigung-x, 0deg)) rotateY(var(--neigung-y, 0deg)) translateY(-3px);
+  box-shadow:
+    0 2px 4px rgb(26 31 49 / 0.05),
+    0 14px 30px color-mix(in srgb, var(--kachel-farbe, #1a1f31) 18%, transparent);
+}
+
+.kachel:hover::before {
+  opacity: 1;
+}
+
+.kachel:active {
+  transform: scale(0.97);
+  transition-duration: 90ms;
+}
+
+.kachelIcon {
+  transition: transform 380ms cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.kachel:hover .kachelIcon {
+  transform: translateZ(24px) scale(1.12) rotate(-6deg);
+}
+
+/* Die ganze Kachel ist der Knopf: Der Verweis spannt sich über sie. Der
+   sichtbare „Spielen"-Knopf bleibt als Ziel fürs Auge stehen. */
+.kachelKnopf::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-2xl);
+}
+
+.kachel:has(.kachelKnopf:focus-visible) {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.kachelKnopf:focus-visible {
+  outline: none;
+}
+
+/* -------------------------------------------------------------- Menü */
+
+.menueHintergrund {
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  animation: schleierRein 220ms ease backwards;
+}
+
+.menueTafel {
+  animation: tafelHoch 360ms cubic-bezier(0.2, 0.9, 0.25, 1.05) backwards;
+}
+
+.menueGriff {
+  align-self: center;
+  width: 2.5rem;
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--color-border-strong);
+}
+
+.menueListe li {
+  animation: hochkommen 320ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(80ms + var(--i, 0) * 35ms);
+}
+
+.menueListe a {
+  transition:
+    background var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.menueListe a:active {
+  transform: scale(0.98);
+}
+
+.menueZufahren {
+  animation: schleierRaus 220ms ease forwards;
+}
+
+.menueZufahren .menueTafel {
+  animation: tafelRunter 220ms ease-in forwards;
+}
+
+@keyframes schleierRein {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes schleierRaus {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes tafelHoch {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes tafelRunter {
+  to {
+    transform: translateY(110%);
+  }
+}
+
+/* --------------------------------------------------- Knöpfe im Kopf */
+
+.menueKnopf,
+.avatarKnopf,
+.offeneSpiele,
+.spendeKnopf {
+  transition:
+    transform 200ms cubic-bezier(0.3, 1.5, 0.5, 1),
+    box-shadow 200ms ease,
+    background var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.menueKnopf:hover,
+.avatarKnopf:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.offeneSpiele:hover,
+.spendeKnopf:hover {
+  transform: translateY(-2px);
+}
+
+.offeneSpiele:active,
+.spendeKnopf:active {
+  transform: scale(0.97);
 }

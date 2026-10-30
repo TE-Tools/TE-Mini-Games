@@ -1,0 +1,54 @@
+/* Die Schnipsel starten alle in der Mitte, fliegen auseinander und
+   fallen dann. Die Bahn steckt in den Variablen jedes Schnipsels. */
+
+.konfetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 20;
+}
+
+.breit,
+.schmal {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 2px;
+  background: var(--farbe);
+  opacity: 0;
+  animation-name: fliegen;
+  animation-timing-function: cubic-bezier(0.15, 0.6, 0.35, 1);
+  animation-fill-mode: forwards;
+}
+
+.breit {
+  width: 10px;
+  height: 6px;
+}
+
+.schmal {
+  width: 5px;
+  height: 11px;
+}
+
+@keyframes fliegen {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(0deg) scale(0.6);
+  }
+  35% {
+    opacity: 1;
+    transform: translate(calc(var(--x) * 0.8), var(--y)) rotate(calc(var(--dreh) * 0.4)) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--x), calc(var(--y) + var(--fall))) rotate(var(--dreh)) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .konfetti {
+    display: none;
+  }
+}

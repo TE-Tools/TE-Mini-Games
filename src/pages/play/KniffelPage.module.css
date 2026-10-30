@@ -69,7 +69,9 @@
   text-align: left;
   cursor: pointer;
   color: var(--color-text);
-  transition: border-color var(--transition-fast), transform var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .grosserKnopf:hover:not(:disabled) {
@@ -579,4 +581,178 @@
   font-size: var(--text-sm);
   font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);
+}
+
+/* ===================================================================
+ * Bewegung (30.10.2026): Knöpfe, die nachgeben, ein Menü, das
+ * hereinkommt, und Konfetti für den Sieg. Nur Transform und Opacity.
+ * =================================================================== */
+
+.kopfKnoepfe {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.dreiDKnopf {
+  font-size: var(--text-sm);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--color-text-muted);
+}
+
+.dreiDKnopf[aria-pressed='true'] {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--grad-primary-soft);
+}
+
+.tonKnopf {
+  transition:
+    transform 180ms cubic-bezier(0.3, 1.5, 0.5, 1),
+    border-color var(--transition-fast);
+}
+
+.tonKnopf:active {
+  transform: scale(0.92);
+}
+
+@keyframes kniffelHoch {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+.menue > *,
+.aufbau > * {
+  animation: kniffelHoch 460ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+.menue > :nth-child(2),
+.aufbau > :nth-child(2) {
+  animation-delay: 60ms;
+}
+
+.menue > :nth-child(3),
+.aufbau > :nth-child(3) {
+  animation-delay: 120ms;
+}
+
+.menue > :nth-child(4),
+.aufbau > :nth-child(4) {
+  animation-delay: 180ms;
+}
+
+.menue > :nth-child(n + 5),
+.aufbau > :nth-child(n + 5) {
+  animation-delay: 240ms;
+}
+
+.grosserKnopf {
+  transition:
+    border-color var(--transition-fast),
+    transform 220ms cubic-bezier(0.3, 1.5, 0.5, 1),
+    box-shadow 220ms ease;
+}
+
+.grosserKnopf:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.grosserKnopf:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.knopfIcon {
+  transition: transform 380ms cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.grosserKnopf:hover:not(:disabled) .knopfIcon {
+  transform: scale(1.12) rotate(-8deg);
+}
+
+.wuerfelKnopf,
+.start {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 160ms cubic-bezier(0.3, 1.5, 0.5, 1),
+    box-shadow 160ms ease;
+}
+
+.wuerfelKnopf:hover:not(:disabled),
+.start:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.wuerfelKnopf:active:not(:disabled),
+.start:active:not(:disabled) {
+  transform: translateY(2px) scale(0.99);
+}
+
+/* Ein Glanz, der über den Knopf läuft, solange er zum Würfeln einlädt. */
+.wuerfelKnopf:not(:disabled)::after,
+.start:not(:disabled)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 35%,
+    rgb(255 255 255 / 0.28) 50%,
+    transparent 65%
+  );
+  transform: translateX(-100%);
+  animation: knopfGlanz 3s 0.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes knopfGlanz {
+  0%,
+  60% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Der Ergebnisschirm trägt das Konfetti. */
+.ende {
+  position: relative;
+}
+
+.ende > p:first-of-type {
+  animation: siegPlopp 620ms cubic-bezier(0.3, 1.6, 0.5, 1) backwards;
+}
+
+@keyframes siegPlopp {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+.endEintrag {
+  animation: kniffelHoch 420ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+.endEintrag:nth-child(2) {
+  animation-delay: 90ms;
+}
+
+.endEintrag:nth-child(3) {
+  animation-delay: 180ms;
+}
+
+.endEintrag:nth-child(4) {
+  animation-delay: 270ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wuerfelKnopf::after,
+  .start::after {
+    display: none;
+  }
 }

@@ -9,9 +9,21 @@
  * vorher Kacheln zwischen den Spielen. Jetzt zeigen sie hier direkt das
  * Wichtigste und verweisen für den Rest auf ihre Seite -- die Kachelfläche
  * bleibt den Spielen vorbehalten, wie im Entwurf.
+ *
+ * Bewegung (30.10.2026): Der Kopf bekommt schwebende 3D-Spielsachen, die
+ * Kacheln kommen gestaffelt herein und neigen sich unter der Maus, der
+ * Reiter gleitet, das Menü fährt hoch. Alles davon ist Schmuck: Ohne 3D
+ * oder mit „Bewegung reduzieren" steht dieselbe Seite still da.
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from 'react'
 import { Link } from 'react-router-dom'
 import styles from './HomePage.module.css'
 import { getOrCreateGuestProfile, getRecentResults, type LocalProfile } from '@/offline'
@@ -22,6 +34,7 @@ import { getAvatar } from '@/profile/avatars'
 import { LogoMark } from '@/components/brand/LogoMark'
 import { DATA_PULLED_EVENT } from '@/services/remotePull'
 import { getRemoteOverall, gameLabel, type OverallEntry } from '@/services/leaderboard'
+import { StartBuehne } from '@/components/drei/StartBuehne'
 import { SPIELE_KACHELN, kachelFuer } from './spiele-katalog'
 
 type Reiter = 'spiele' | 'rangliste' | 'erfolge' | 'tagesziel'
@@ -90,39 +103,43 @@ export function HomePage() {
     Math.min(100, (xpProgress.current / Math.max(1, xpProgress.needed)) * 100),
   )
 
+  const xpAnzeige = useHochzaehlen(loading ? 0 : totalXp)
+
   return (
     <main className={styles.page}>
-      <header className={styles.kopf}>
-        <button
-          type="button"
-          className={styles.menueKnopf}
-          onClick={() => setMenueOffen(true)}
-          aria-label="Menü öffnen"
-        >
-          <span aria-hidden="true">⋮</span>
-        </button>
+      <StartBuehne>
+        <header className={styles.kopf}>
+          <button
+            type="button"
+            className={styles.menueKnopf}
+            onClick={() => setMenueOffen(true)}
+            aria-label="Menü öffnen"
+          >
+            <span aria-hidden="true">⋮</span>
+          </button>
 
-        <div className={styles.marke}>
-          <span className={styles.logo}>
-            <LogoMark size={44} />
-          </span>
-          <h1 className={styles.markenName}>
-            <span className={styles.markenTe}>TE</span> MINI GAMES
-          </h1>
-          <p className={styles.markenSpruch}>Spielen · wachsen · vergleichen</p>
+          <div className={styles.marke}>
+            <span className={styles.logo}>
+              <LogoMark size={44} />
+            </span>
+            <h1 className={styles.markenName}>
+              <span className={styles.markenTe}>TE</span> MINI GAMES
+            </h1>
+            <p className={styles.markenSpruch}>Spielen · wachsen · vergleichen</p>
+          </div>
+
+          <Link to="/profile" className={styles.avatarKnopf} aria-label="Profil">
+            <span className={styles.avatarGesicht} aria-hidden="true">
+              {getAvatar(profile?.avatar).emoji}
+            </span>
+          </Link>
+        </header>
+
+        <div className={styles.willkommen}>
+          <h2 className={styles.willkommenTitel}>Deine Spielewelt</h2>
+          <p className={styles.willkommenText}>Eine kleine Herausforderung für jeden Moment.</p>
         </div>
-
-        <Link to="/profile" className={styles.avatarKnopf} aria-label="Profil">
-          <span className={styles.avatarGesicht} aria-hidden="true">
-            {getAvatar(profile?.avatar).emoji}
-          </span>
-        </Link>
-      </header>
-
-      <div className={styles.willkommen}>
-        <h2 className={styles.willkommenTitel}>Deine Spielewelt</h2>
-        <p className={styles.willkommenText}>Eine kleine Herausforderung für jeden Moment.</p>
-      </div>
+      </StartBuehne>
 
       <section className={styles.standLeiste} aria-label="Spielerfortschritt" aria-busy={loading}>
         <div className={styles.standTeil}>
@@ -132,7 +149,7 @@ export function HomePage() {
         <div className={styles.standTeil}>
           <span className={styles.standLabel}>XP</span>
           <span className={styles.standWert}>
-            {loading ? '…' : totalXp.toLocaleString('de-DE')}
+            {loading ? '…' : xpAnzeige.toLocaleString('de-DE')}
           </span>
         </div>
         <div className={styles.standTeil}>
@@ -162,24 +179,15 @@ export function HomePage() {
         )}
       </section>
 
-      <nav className={styles.reiter} aria-label="Bereiche">
-        {REITER.map((r) => (
-          <button
-            key={r.id}
-            type="button"
-            className={reiter === r.id ? styles.reiterAn : styles.reiterAus}
-            onClick={() => setReiter(r.id)}
-            aria-current={reiter === r.id ? 'true' : undefined}
-          >
-            {r.label}
-          </button>
-        ))}
-      </nav>
+      <ReiterLeiste aktiv={reiter} onWahl={setReiter} />
 
-      {reiter === 'spiele' && <ZuletztGespielt />}
-      {reiter === 'rangliste' && <RanglisteKurz />}
-      {reiter === 'erfolge' && <ErfolgeKurz />}
-      {reiter === 'tagesziel' && <TageszielKurz />}
+      {/* Der Schlüssel lässt den Inhalt bei jedem Wechsel neu hereingleiten. */}
+      <div key={reiter} className={styles.reiterInhalt}>
+        {reiter === 'spiele' && <ZuletztGespielt />}
+        {reiter === 'rangliste' && <RanglisteKurz />}
+        {reiter === 'erfolge' && <ErfolgeKurz />}
+        {reiter === 'tagesziel' && <TageszielKurz />}
+      </div>
 
       <InstallButton />
 
@@ -194,8 +202,15 @@ export function HomePage() {
         </Link>
 
         <nav className={styles.kacheln} aria-label="Spiele">
-          {SPIELE_KACHELN.map((k) => (
-            <article key={k.id} className={styles.kachel} data-game={k.id}>
+          {SPIELE_KACHELN.map((k, i) => (
+            <article
+              key={k.id}
+              className={styles.kachel}
+              data-game={k.id}
+              style={{ '--i': i } as React.CSSProperties}
+              onPointerMove={kachelNeigen}
+              onPointerLeave={kachelGerade}
+            >
               <span className={styles.kachelIcon} aria-hidden="true">
                 {k.icon}
               </span>
@@ -243,9 +258,135 @@ export function HomePage() {
   )
 }
 
+/* ------------------------------------------------------------ Bewegung */
+
+/**
+ * Zählt eine Zahl in gut einer halben Sekunde hoch, statt sie hinzusetzen.
+ * Mit „Bewegung reduzieren" steht sie sofort da.
+ */
+function useHochzaehlen(ziel: number): number {
+  const [wert, setWert] = useState(ziel)
+  const von = useRef(0)
+
+  useEffect(() => {
+    const start = von.current
+    von.current = ziel
+    if (start === ziel || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setWert(ziel)
+      return
+    }
+    const dauer = 650
+    const beginn = performance.now()
+    let rahmen = 0
+    const schritt = (jetzt: number) => {
+      const t = Math.min(1, (jetzt - beginn) / dauer)
+      const sanft = 1 - Math.pow(1 - t, 3)
+      setWert(Math.round(start + (ziel - start) * sanft))
+      if (t < 1) rahmen = requestAnimationFrame(schritt)
+    }
+    rahmen = requestAnimationFrame(schritt)
+    return () => cancelAnimationFrame(rahmen)
+  }, [ziel])
+
+  return wert
+}
+
+/** Die Kachel neigt sich zur Maus hin. Auf dem Finger nicht -- dort drückt sie sich nur ein. */
+function kachelNeigen(e: ReactPointerEvent<HTMLElement>) {
+  if (e.pointerType !== 'mouse') return
+  const el = e.currentTarget
+  const r = el.getBoundingClientRect()
+  const x = (e.clientX - r.left) / r.width - 0.5
+  const y = (e.clientY - r.top) / r.height - 0.5
+  el.style.setProperty('--neigung-x', `${(-y * 10).toFixed(2)}deg`)
+  el.style.setProperty('--neigung-y', `${(x * 12).toFixed(2)}deg`)
+  el.style.setProperty('--licht-x', `${((x + 0.5) * 100).toFixed(1)}%`)
+  el.style.setProperty('--licht-y', `${((y + 0.5) * 100).toFixed(1)}%`)
+}
+
+function kachelGerade(e: ReactPointerEvent<HTMLElement>) {
+  const el = e.currentTarget
+  el.style.removeProperty('--neigung-x')
+  el.style.removeProperty('--neigung-y')
+}
+
+/* -------------------------------------------------------------- Reiter */
+
+/**
+ * Die vier Reiter mit einer Marke, die unter den aktiven gleitet. Die Marke
+ * wird gemessen statt gerechnet: Ab Tablet stehen die Reiter mittig mit
+ * fester Höchstbreite, da stimmt kein Prozentwert mehr.
+ */
+function ReiterLeiste({ aktiv, onWahl }: { aktiv: Reiter; onWahl: (r: Reiter) => void }) {
+  const leiste = useRef<HTMLElement>(null)
+  const [marke, setMarke] = useState<{ x: number; b: number } | null>(null)
+
+  useLayoutEffect(() => {
+    const el = leiste.current
+    if (!el) return
+    const messen = () => {
+      const knopf = el.querySelector<HTMLElement>(`[data-reiter="${aktiv}"]`)
+      if (knopf) setMarke({ x: knopf.offsetLeft, b: knopf.offsetWidth })
+    }
+    messen()
+    // Ältere Browser (und die Testumgebung) kennen keinen ResizeObserver --
+    // dann misst die Marke nur beim Wechsel.
+    if (typeof ResizeObserver === 'undefined') return
+    const beobachter = new ResizeObserver(messen)
+    beobachter.observe(el)
+    return () => beobachter.disconnect()
+  }, [aktiv])
+
+  return (
+    <nav
+      ref={leiste}
+      className={styles.reiter}
+      aria-label="Bereiche"
+      data-marke={marke && marke.b > 0 ? '' : undefined}
+    >
+      {marke && marke.b > 0 && (
+        <span
+          className={styles.reiterMarke}
+          style={{ transform: `translateX(${marke.x}px)`, width: marke.b }}
+          aria-hidden="true"
+        />
+      )}
+      {REITER.map((r) => (
+        <button
+          key={r.id}
+          type="button"
+          data-reiter={r.id}
+          className={aktiv === r.id ? styles.reiterAn : styles.reiterAus}
+          onClick={() => onWahl(r.id)}
+          aria-current={aktiv === r.id ? 'true' : undefined}
+        >
+          {r.label}
+        </button>
+      ))}
+    </nav>
+  )
+}
+
 /* --------------------------------------------------------------- Menü */
 
-function Menue({ onSchliessen }: { onSchliessen: () => void }) {
+/** So lange läuft das Zufahren, bevor das Menü wirklich verschwindet. */
+const MENUE_ZU_MS = 220
+
+function Menue({ onSchliessen: schliessenSofort }: { onSchliessen: () => void }) {
+  const [schliesst, setSchliesst] = useState(false)
+  const onSchliessen = useCallback(() => {
+    setSchliesst(true)
+    window.setTimeout(schliessenSofort, MENUE_ZU_MS)
+  }, [schliessenSofort])
+
+  useEffect(() => {
+    const taste = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onSchliessen()
+    }
+    window.addEventListener('keydown', taste)
+    return () => window.removeEventListener('keydown', taste)
+  }, [onSchliessen])
+
   const eintraege = [
     { pfad: '/profile', icon: '👤', name: 'Profil und Konto' },
     { pfad: '/family', icon: '👨‍👩‍👧', name: 'Familienrunde' },
@@ -255,16 +396,21 @@ function Menue({ onSchliessen }: { onSchliessen: () => void }) {
     { pfad: '/offene-spiele', icon: '🌐', name: 'Offene Spiele' },
   ]
   return (
-    <div className={styles.menueHintergrund} onClick={onSchliessen} role="presentation">
+    <div
+      className={`${styles.menueHintergrund} ${schliesst ? styles.menueZufahren : ''}`}
+      onClick={onSchliessen}
+      role="presentation"
+    >
       <div
         className={styles.menueTafel}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-label="Menü"
       >
+        <span className={styles.menueGriff} aria-hidden="true" />
         <ul className={styles.menueListe}>
-          {eintraege.map((e) => (
-            <li key={e.pfad}>
+          {eintraege.map((e, i) => (
+            <li key={e.pfad} style={{ '--i': i } as React.CSSProperties}>
               <Link to={e.pfad} onClick={onSchliessen}>
                 <span aria-hidden="true">{e.icon}</span> {e.name}
               </Link>

@@ -539,6 +539,7 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
             gehalten={match.gehalten}
             haltbar={ichBinDran && match.wurf_nummer > 0 && match.wurf_nummer < WUERFE_JE_ZUG}
             rollt={rollt}
+            wurf={`${match.am_zug}-${match.runde}-${match.wurf_nummer}`}
             onHalten={haltenKlick}
           />
 

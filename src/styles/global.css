@@ -35,8 +35,7 @@ body {
    * Geblieben ist ein einziger, sehr zarter Verlauf nach oben: Er nimmt der
    * Flaeche das Klinische, ohne dass man ihn als Farbe wahrnimmt.
    */
-  background-image:
-    linear-gradient(180deg, #ffffff 0%, var(--color-bg) 46%);
+  background-image: linear-gradient(180deg, #ffffff 0%, var(--color-bg) 46%);
   background-repeat: no-repeat;
   background-attachment: fixed;
   color: var(--color-text);
@@ -104,4 +103,16 @@ ol {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* Jede Seite blendet beim Öffnen weich ein (30.10.2026). Nur Opacity:
+   Ein Transform auf <main> würde jedes position: fixed darin verschieben. */
+#root main {
+  animation: seiteRein 260ms ease-out backwards;
+}
+
+@keyframes seiteRein {
+  from {
+    opacity: 0;
+  }
 }
