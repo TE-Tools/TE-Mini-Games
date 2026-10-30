@@ -176,7 +176,7 @@ export function StadtLandFlussPage() {
 
   if (state.phase === 'handoff') {
     return (
-      <main className={styles.page}>
+      <main key="uebergabe" className={styles.page}>
         <p className={styles.meta}>
           {rundeLabel} · Buchstabe {state.buchstabe}
         </p>
@@ -207,7 +207,7 @@ export function StadtLandFlussPage() {
 
   if (state.phase === 'write') {
     return (
-      <main className={styles.page}>
+      <main key="schreiben" className={styles.page}>
         <p className={styles.meta}>
           {ap.name} · {rundeLabel}
         </p>

@@ -296,9 +296,9 @@ export function KopfrechnenPage() {
             {config.tasks.length} Aufgaben · {config.seconds} s
           </p>
           <p className={shell.hint}>
-            Rechne im Kopf und tippe die Zahl ein. {NOETIG_ZUM_BESTEHEN} von{' '}
-            {AUFGABEN_JE_RUNDE} richtig, dann ist das Level geschafft – wer alle hat,
-            bekommt für die übrige Zeit noch Punkte dazu.
+            Rechne im Kopf und tippe die Zahl ein. {NOETIG_ZUM_BESTEHEN} von {AUFGABEN_JE_RUNDE}{' '}
+            richtig, dann ist das Level geschafft – wer alle hat, bekommt für die übrige Zeit noch
+            Punkte dazu.
           </p>
           <button type="button" className={shell.primaryBtn} onClick={startRound}>
             Start
@@ -320,13 +320,21 @@ export function KopfrechnenPage() {
           <p className={styles.counter}>
             Aufgabe {index + 1} von {config.tasks.length}
           </p>
-          <p className={styles.task}>{aufgabe.text} =</p>
+          <p key={index} className={styles.task}>
+            {aufgabe.text} =
+          </p>
           <form
             onSubmit={(e) => {
               e.preventDefault()
               abschicken()
             }}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', width: '100%' }}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '1rem',
+              width: '100%',
+            }}
           >
             <input
               ref={eingabeRef}
@@ -343,7 +351,10 @@ export function KopfrechnenPage() {
               Weiter
             </button>
           </form>
-          <p className={rueckmeldung?.startsWith('Richtig') ? styles.feedbackOk : styles.feedbackBad}>
+          <p
+            key={`r${index}`}
+            className={rueckmeldung?.startsWith('Richtig') ? styles.feedbackOk : styles.feedbackBad}
+          >
             {rueckmeldung ?? ' '}
           </p>
           <div className={styles.marks} aria-hidden="true">

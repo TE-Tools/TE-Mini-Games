@@ -255,7 +255,7 @@ export function FindeDenImposterPage() {
     const open = () => setState(openSecret(state))
 
     return (
-      <main className={styles.page}>
+      <main key="uebergabe" className={styles.page}>
         <p className={styles.meta}>
           {phaseLabel(state.phase)} · {roundLabel}
           {kategorieZusatz}
@@ -274,7 +274,7 @@ export function FindeDenImposterPage() {
 
   if (state.phase === 'secret_reveal') {
     return (
-      <main className={styles.page}>
+      <main key="aufdecken" className={styles.page}>
         <p className={styles.meta}>
           {roundLabel}
           {kategorieZusatz}

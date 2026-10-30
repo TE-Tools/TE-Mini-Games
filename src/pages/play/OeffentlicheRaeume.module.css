@@ -105,3 +105,28 @@
   color: var(--color-text-muted);
   font-size: var(--text-xs);
 }
+
+/* ============ Modern (30.10.2026) ============ */
+
+.kasten {
+  border: 1px solid rgb(255 255 255 / 0.8);
+  background: rgb(255 255 255 / 0.88);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-md);
+}
+
+.knopf {
+  border-radius: var(--radius-full);
+  border: 0;
+  box-shadow: 0 6px 14px rgb(90 60 224 / 0.3);
+  transition: transform 180ms cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+.knopf:active {
+  transform: scale(0.96);
+}
+
+.fehler {
+  color: var(--color-danger);
+  font-weight: 700;
+}

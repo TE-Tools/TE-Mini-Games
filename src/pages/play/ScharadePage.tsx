@@ -84,8 +84,8 @@ export function ScharadePage() {
         </Link>
         <h1 className={shell.title}>🎭 Scharade</h1>
         <p className={shell.subtitle}>
-          Einer stellt den Begriff dar oder hält das Handy an die Stirn – die anderen raten.
-          Wer die Uhr besser nutzt, hat mehr Treffer.
+          Einer stellt den Begriff dar oder hält das Handy an die Stirn – die anderen raten. Wer die
+          Uhr besser nutzt, hat mehr Treffer.
         </p>
 
         <div className={shell.card}>
@@ -164,8 +164,8 @@ export function ScharadePage() {
           <p className={shell.subtitle}>Gerät weitergeben an</p>
           <p className={shell.coverName}>{ap.name}</p>
           <p className={shell.hint}>
-            {state.seconds} Sekunden. Darstellen oder erklären – nur das Wort selbst darf
-            nicht fallen. Die anderen rufen ihre Tipps.
+            {state.seconds} Sekunden. Darstellen oder erklären – nur das Wort selbst darf nicht
+            fallen. Die anderen rufen ihre Tipps.
           </p>
           <button
             type="button"
@@ -192,7 +192,7 @@ export function ScharadePage() {
         <p className={`${shell.timer} ${rest !== null && rest <= 10 ? shell.timerLow : ''}`}>
           {rest ?? state.seconds} s
         </p>
-        <div className={`${shell.card} ${styles.wordBox}`}>
+        <div key={currentWord(state)} className={`${shell.card} ${styles.wordBox}`}>
           <p className={styles.word}>{currentWord(state)}</p>
         </div>
         <button

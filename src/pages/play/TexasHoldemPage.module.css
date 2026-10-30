@@ -641,3 +641,95 @@
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* Ton-Knopf rund und weiss wie der Zurück-Knopf (30.10.2026). */
+.tonKnopf {
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform 200ms cubic-bezier(0.3, 1.5, 0.5, 1),
+    box-shadow 200ms ease;
+}
+
+.tonKnopf:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.tonKnopf:active {
+  transform: scale(0.92);
+}
+
+/* ===================================================================
+ * Modern (30.10.2026): Der Tisch bekommt eine kühle, dunkle Bande statt
+ * braunem Holz -- passt zum neuen Grund und lässt den Filz leuchten.
+ * =================================================================== */
+
+.bande {
+  background: linear-gradient(160deg, #3a3f5c, #232638 60%, #2e3350);
+  box-shadow:
+    0 18px 40px -12px rgb(31 34 51 / 0.45),
+    inset 0 1px 0 rgb(255 255 255 / 0.18),
+    inset 0 -2px 6px rgb(0 0 0 / 0.35);
+}
+
+.filz {
+  background: radial-gradient(ellipse 90% 70% at 50% 18%, #2f8a6a 0%, #1d634f 55%, #123f33 100%);
+}
+
+/* Wer dran ist, pulsiert sanft -- über die Deckkraft eines Rings, das ist billig. */
+.gegnerKarte[data-zug='ja'] {
+  position: relative;
+}
+
+.gegnerKarte[data-zug='ja']::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  box-shadow:
+    0 0 0 2px #f0c040,
+    0 0 16px rgb(240 192 64 / 0.6);
+  pointer-events: none;
+  animation: zugPuls 1.4s ease-in-out infinite alternate;
+}
+
+:global(:root[data-sparsam]) .gegnerKarte[data-zug='ja']::after {
+  animation: none;
+}
+
+@keyframes zugPuls {
+  from {
+    opacity: 0.4;
+  }
+}
+
+.filz::before {
+  border: 1.5px dashed rgb(255 255 255 / 0.14);
+}
+
+.topf {
+  padding: 0.2rem 0.7rem;
+  border-radius: var(--radius-full);
+  background: rgb(0 0 0 / 0.28);
+}
+
+.weggeworfen {
+  color: var(--color-danger);
+}
+
+/* Auf schmalen Handys rücken die Plätze etwas zusammen. */
+@media (max-width: 400px) {
+  .gegnerKarte {
+    width: 3.9rem;
+  }
+}

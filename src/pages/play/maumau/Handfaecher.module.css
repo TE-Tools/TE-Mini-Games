@@ -37,3 +37,16 @@
     transition: none;
   }
 }
+
+/* Eine gezogene Karte fliegt in die Hand (30.10.2026). `translate` statt
+   `transform`, damit der Fächer seine eigene Drehung behält. */
+.platz {
+  animation: ziehen 260ms cubic-bezier(0.2, 0.8, 0.3, 1.1) backwards;
+}
+
+@keyframes ziehen {
+  from {
+    translate: 0 -6rem;
+    opacity: 0;
+  }
+}

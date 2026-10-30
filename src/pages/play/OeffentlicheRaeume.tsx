@@ -27,6 +27,8 @@ export function OeffentlicheRaeume({ laden, onBeitreten, gesperrt = false }: Pro
   useEffect(() => {
     let abbruch = false
     const hole = () => {
+      // Im Hintergrund nicht nachfragen -- das kostet Akku und Daten für nichts.
+      if (document.hidden) return
       void laden()
         .then((liste) => {
           if (abbruch) return
@@ -54,7 +56,7 @@ export function OeffentlicheRaeume({ laden, onBeitreten, gesperrt = false }: Pro
     <section className={styles.kasten} aria-label="Öffentliche Räume">
       <h2 className={styles.titel}>Öffentliche Räume</h2>
       {raeume === null && <p className={styles.leise}>Suche nach offenen Räumen…</p>}
-      {fehler && <p className={styles.leise}>{fehler}</p>}
+      {fehler && <p className={styles.fehler}>{fehler}</p>}
       {raeume?.length === 0 && !fehler && (
         <p className={styles.leise}>
           Gerade wartet niemand. Mach selbst einen öffentlichen Raum auf – dann steht er hier für

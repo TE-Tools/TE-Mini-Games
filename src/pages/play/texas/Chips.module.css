@@ -81,3 +81,15 @@
 .zahlGross {
   font-size: 1.3rem;
 }
+
+/* Jetons mit gewölbter Oberseite und Kante (30.10.2026). */
+.scheibe {
+  background: radial-gradient(
+    circle at 50% 35%,
+    color-mix(in srgb, var(--chip, #f2f2f0) 70%, #ffffff),
+    var(--chip, #f2f2f0) 60%
+  );
+  box-shadow:
+    0 1.5px 0 color-mix(in srgb, var(--chip, #f2f2f0) 60%, #000000),
+    0 2px 3px rgb(0 0 0 / 0.4);
+}

@@ -1,5 +1,5 @@
 /*
- * Gemeinsames Gerüst der Partyspiele im dunklen Indigo-Design.
+ * Gemeinsames Gerüst der Partyspiele (seit 30.10.2026 hell und modern).
  * Die Farbe des jeweiligen Spiels kommt als --party-farbe und
  * --party-rand von der Seite; alles andere ist hier einmal beschrieben,
  * statt in jeder Spielseite noch einmal.
@@ -331,4 +331,26 @@
 
 .back:active {
   transform: scale(0.94);
+}
+
+.pickBtn {
+  transition: transform 150ms ease;
+}
+
+.pickBtn:active {
+  transform: scale(0.96);
+}
+
+.timerLow {
+  animation: partyPuls 1s ease-in-out infinite;
+}
+
+:global(:root[data-sparsam]) .timerLow {
+  animation: none;
+}
+
+@keyframes partyPuls {
+  50% {
+    transform: scale(1.06);
+  }
 }

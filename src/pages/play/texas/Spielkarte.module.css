@@ -106,7 +106,47 @@
 }
 
 /* Die Karten, die die Hand ausmachen. */
-.zaehlt {
+.karte.zaehlt {
   outline: 2px solid var(--color-primary, #f0b429);
   outline-offset: 1px;
+}
+
+/* ===================================================================
+ * Modern (30.10.2026): weichere Schatten, ein Glanz von links oben, und
+ * jede aufgedeckte Karte dreht sich beim Erscheinen um.
+ * =================================================================== */
+
+.karte:not(.platz) {
+  box-shadow:
+    0 1px 1px rgb(15 20 40 / 0.18),
+    0 6px 14px -4px rgb(15 20 40 / 0.35),
+    inset 0 0 0 1px rgb(15 20 40 / 0.08);
+  font-variant-numeric: tabular-nums;
+  animation: umdrehen 340ms cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
+}
+
+.karte:not(.platz)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(150deg, rgb(255 255 255 / 0.55), transparent 45%);
+  pointer-events: none;
+}
+
+/* Die Karten der Gewinnhand leuchten golden statt violett auf Grün. */
+.karte.zaehlt {
+  outline: none;
+  transform: translateY(-4px);
+  box-shadow:
+    0 0 0 2px #f6c945,
+    0 0 14px rgb(246 201 69 / 0.7),
+    0 8px 14px -4px rgb(0 0 0 / 0.4);
+}
+
+@keyframes umdrehen {
+  from {
+    transform: perspective(400px) rotateY(90deg) translateY(-8px);
+    opacity: 0;
+  }
 }

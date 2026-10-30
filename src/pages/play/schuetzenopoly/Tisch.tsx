@@ -64,7 +64,12 @@ export function BrettMitte({ zustand }: { zustand: SpielZustand }) {
       <p className={styles.mitteName}>
         <span aria-hidden="true">{figur(aktiv.figurId).icon}</span> {aktiv.name}
       </p>
-      <div className={styles.wuerfelPaar} aria-label="Würfel">
+      <div
+        key={zustand.wuerfel ? zustand.wuerfel.join('-') + '-' + zustand.runde : 'leer'}
+        className={styles.wuerfelPaar}
+        role="img"
+        aria-label="Würfel"
+      >
         <span className={styles.wuerfel}>{zustand.wuerfel ? augen(zustand.wuerfel[0]) : '·'}</span>
         <span className={styles.wuerfel}>{zustand.wuerfel ? augen(zustand.wuerfel[1]) : '·'}</span>
       </div>

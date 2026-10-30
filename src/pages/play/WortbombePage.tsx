@@ -71,8 +71,8 @@ export function WortbombePage() {
         </Link>
         <h1 className={shell.title}>💣 Wortbombe</h1>
         <p className={shell.subtitle}>
-          Eine Silbe steht auf dem Bildschirm. Wer das Handy hat, sagt ein Wort damit und
-          gibt weiter. Irgendwann geht die Bombe hoch – und der Letzte verliert ein Leben.
+          Eine Silbe steht auf dem Bildschirm. Wer das Handy hat, sagt ein Wort damit und gibt
+          weiter. Irgendwann geht die Bombe hoch – und der Letzte verliert ein Leben.
         </p>
 
         <div className={shell.card}>
@@ -120,20 +120,13 @@ export function WortbombePage() {
               onChange={(e) => setLeben(Number(e.target.value))}
             />
           </label>
-          <p className={shell.meta}>
-            Ob ein Wort zählt, entscheidet die Runde – wie am Tisch.
-          </p>
+          <p className={shell.meta}>Ob ein Wort zählt, entscheidet die Runde – wie am Tisch.</p>
         </div>
 
         {error && <p className={shell.error}>{error}</p>}
         {stufen.length === 0 && <p className={shell.error}>Wähle mindestens eine Stufe.</p>}
 
-        <button
-          type="button"
-          className={shell.btn}
-          disabled={stufen.length === 0}
-          onClick={start}
-        >
+        <button type="button" className={shell.btn} disabled={stufen.length === 0} onClick={start}>
           Zünden
         </button>
       </main>
@@ -162,14 +155,12 @@ export function WortbombePage() {
         <p className={shell.meta}>Runde {state.roundIndex + 1}</p>
         <div className={`${shell.card} ${styles.silbeBox}`}>
           <p className={shell.subtitle}>Sag ein Wort mit</p>
-          <p className={styles.silbe}>{state.silbe}</p>
+          <p key={state.silbe} className={styles.silbe}>
+            {state.silbe}
+          </p>
           <p className={shell.coverName}>{ap.name}</p>
         </div>
-        <button
-          type="button"
-          className={shell.btn}
-          onClick={() => setState(passBomb(state))}
-        >
+        <button type="button" className={shell.btn} onClick={() => setState(passBomb(state))}>
           Gesagt – weitergeben
         </button>
         {lebenAnzeige}

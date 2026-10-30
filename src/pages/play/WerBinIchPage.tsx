@@ -154,7 +154,7 @@ export function WerBinIchPage() {
 
   if (state.phase === 'handoff') {
     return (
-      <main className={styles.page}>
+      <main key="uebergabe" className={styles.page}>
         <p className={styles.meta}>
           Begriffe ansehen · {rundeLabel} · {state.categoryLabel}
         </p>
@@ -174,7 +174,7 @@ export function WerBinIchPage() {
 
   if (state.phase === 'reveal') {
     return (
-      <main className={styles.page}>
+      <main key="aufdecken" className={styles.page}>
         <p className={styles.meta}>
           Nur für {ap.name} · {rundeLabel}
         </p>
@@ -227,7 +227,7 @@ export function WerBinIchPage() {
 
   if (state.phase === 'guess') {
     return (
-      <main className={styles.page}>
+      <main key="raten" className={styles.page}>
         <p className={styles.meta}>Raten · {rundeLabel}</p>
         <div className={`${styles.card} ${styles.cover}`}>
           <p className={styles.subtitle}>Gerät an</p>
@@ -258,7 +258,7 @@ export function WerBinIchPage() {
 
   if (state.phase === 'guess_result') {
     return (
-      <main className={styles.page}>
+      <main key="ergebnis" className={styles.page} data-ok={ap.correct}>
         <p className={styles.meta}>Raten · {rundeLabel}</p>
         <div className={`${styles.card} ${styles.cover}`}>
           <h2 className={styles.cardTitle}>

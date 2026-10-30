@@ -941,3 +941,16 @@
     }
   }
 }
+
+/* Schwache Geräte (data-sparsam an <html>, 30.10.2026): keine Unschärfe über
+   der laufenden WebGL-Leinwand -- das ist dort der teuerste Effekt. Bleibt
+   unter .ew-root und liest keine App-Tokens. */
+:root[data-sparsam] .ew-root .screen.is-dim {
+  backdrop-filter: none;
+  background: rgba(6, 8, 14, 0.88);
+}
+
+/* Daumengrösse für den Ablegen-Knopf. */
+.ew-root #btn-drop {
+  min-height: 44px;
+}

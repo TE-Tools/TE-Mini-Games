@@ -437,3 +437,103 @@
 .back:active {
   transform: scale(0.94);
 }
+
+/* ============ Modern (30.10.2026): Reste des dunklen Designs heller ============ */
+
+/* Die Rollenkarte war noch dunkelgrün/-rot mit dunkler Schrift -- kaum lesbar. */
+.roleCard {
+  border: 1px solid #bbf7d0;
+  background: linear-gradient(180deg, #f0fdf4, #dcfce7);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-md);
+  animation: aufdecken 420ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+.roleCard[data-faction='saboteure'] {
+  border-color: #fecdd3;
+  background: linear-gradient(180deg, #fff1f2, #ffe4e6);
+}
+
+.clockHot {
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  color: var(--color-danger);
+  animation: puls 1s ease-in-out infinite;
+}
+
+.dead,
+.errorLine {
+  color: var(--color-danger);
+}
+
+.primaryBtn,
+.secondaryBtn {
+  border-radius: var(--radius-full);
+  border: 1px solid rgb(184 134 11 / 0.35);
+  box-shadow: 0 8px 20px rgb(212 160 23 / 0.28);
+  transition: transform 200ms cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+.secondaryBtn {
+  border-color: var(--color-border);
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
+}
+
+.primaryBtn:active,
+.secondaryBtn:active {
+  transform: scale(0.97);
+}
+
+.player {
+  border-width: 1px;
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
+  transition: transform 150ms ease;
+}
+
+.player:not(:disabled):active {
+  transform: scale(0.96);
+}
+
+/* Wer nicht wählbar ist, sieht man jetzt auch. */
+.player:disabled {
+  opacity: 1;
+  background: var(--color-surface);
+  box-shadow: none;
+}
+
+.playerSelected {
+  animation: wahl 260ms cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+.log,
+.talk,
+.codeBox {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+}
+
+:global(:root[data-sparsam]) .clockHot {
+  animation: none;
+}
+
+@keyframes wahl {
+  from {
+    transform: scale(0.94);
+  }
+}
+
+@keyframes aufdecken {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+
+@keyframes puls {
+  50% {
+    transform: scale(1.06);
+  }
+}

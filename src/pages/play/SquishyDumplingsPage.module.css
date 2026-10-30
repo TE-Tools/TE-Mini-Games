@@ -474,3 +474,108 @@
 .back:active {
   transform: scale(0.94);
 }
+
+/* ---------------------------------------- Modern (30.10.2026): Dialoge */
+
+.overlay {
+  background: rgb(20 18 40 / 0.42);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  animation: schleierRein 220ms ease backwards;
+}
+
+:global(:root[data-sparsam]) .overlay {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: rgb(20 18 40 / 0.55);
+}
+
+@keyframes schleierRein {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes dialogPlopp {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.94);
+  }
+}
+
+.card {
+  border-radius: 28px;
+  border: 1px solid rgb(255 255 255 / 0.8);
+  box-shadow: var(--shadow-lg);
+  animation: dialogPlopp 380ms cubic-bezier(0.3, 1.4, 0.5, 1) backwards;
+}
+
+/* ============ Modern (30.10.2026): Kopf, Knöpfe ============ */
+
+.top {
+  padding: var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--glas);
+  border: 1px solid var(--glas-rand);
+  box-shadow: var(--shadow-sm);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+}
+
+:global(:root[data-sparsam]) .top {
+  background: var(--glas-dicht);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.retry {
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-full);
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  font-weight: 700;
+  transition: transform 200ms cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+.retry:active {
+  transform: scale(0.94);
+}
+
+.actions button {
+  border-radius: var(--radius-full);
+  min-height: 44px;
+  padding: 0 1.2rem;
+  transition: transform 150ms ease;
+}
+
+.actions button:active {
+  transform: scale(0.96);
+}
+
+.actions .primary {
+  border: none;
+  background: linear-gradient(135deg, #f5c84b, #e0a40f);
+  box-shadow: 0 8px 20px rgb(224 164 15 / 0.35);
+}
+
+.metaEng {
+  color: var(--color-danger);
+}
+
+.card.cardWin {
+  border: 2px solid #ec7fa9;
+  box-shadow:
+    0 0 0 6px rgb(236 127 169 / 0.18),
+    var(--shadow-lg);
+}
+
+.uhrKnapp {
+  color: var(--color-danger);
+}
+
+/* Kettenreaktionen: auf schwachen Geräten ohne Leuchten je Zelle. */
+:global(:root[data-sparsam]) .zelleZuendet::after {
+  box-shadow: none;
+}

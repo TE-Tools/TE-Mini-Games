@@ -495,3 +495,97 @@
     animation: none;
   }
 }
+
+/* ---------------------------------------- Modern (30.10.2026): Dialoge */
+
+.overlay {
+  background: rgb(20 18 40 / 0.42);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  animation: schleierRein 220ms ease backwards;
+}
+
+:global(:root[data-sparsam]) .overlay {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: rgb(20 18 40 / 0.55);
+}
+
+@keyframes schleierRein {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes dialogPlopp {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.94);
+  }
+}
+
+.dialog {
+  border-radius: 28px;
+  box-shadow: var(--shadow-lg);
+  animation: dialogPlopp 380ms cubic-bezier(0.3, 1.4, 0.5, 1) backwards;
+}
+
+/* ============ Feinschliff (30.10.2026) -- Trapbound bleibt dunkel ============ */
+
+/* Keine Unschärfe über der laufenden Leinwand -- das kostet jedes Bild. */
+.overlay {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: rgb(11 9 22 / 0.78);
+}
+
+/* Der Sieg behält sein Leuchten (der allgemeine Dialogblock oben hatte es ersetzt). */
+.dialog.dialogSieg {
+  box-shadow:
+    0 0 38px rgb(124 231 200 / 0.25),
+    var(--shadow-lg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog {
+    animation: none;
+  }
+}
+
+/* Grössere Ziele für den Daumen. */
+.hudKnopf,
+.werkzeug {
+  min-height: 40px;
+  min-width: 40px;
+  border-radius: 12px;
+}
+
+.padKnopf {
+  transition: transform 80ms ease;
+}
+
+.padKnopf:active {
+  transform: scale(0.92);
+  box-shadow: 0 0 18px rgb(124 231 200 / 0.4);
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-full);
+  min-height: 40px;
+  padding: 0 0.8rem;
+  background: rgb(143 124 196 / 0.18);
+  border: 1px solid rgb(143 124 196 / 0.4);
+}
+
+.menueHaupt,
+.menueKnopf {
+  border-radius: var(--radius-full);
+  transition: transform 160ms ease;
+}
+
+.menueHaupt:active,
+.menueKnopf:active {
+  transform: scale(0.97);
+}

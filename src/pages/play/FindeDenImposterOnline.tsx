@@ -566,6 +566,7 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
                 key={p.seat}
                 type="button"
                 className={styles.voteBtn}
+                data-mine={me.vote_seat === p.seat || undefined}
                 disabled={busy || me.vote_seat !== null}
                 onClick={() => void run(() => voteOnline(m.id, p.seat))}
               >

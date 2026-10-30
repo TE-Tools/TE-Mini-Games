@@ -260,3 +260,33 @@
   font-weight: 600;
   opacity: 0.8;
 }
+
+/* ---------------------------------------------- Modern (30.10.2026) */
+
+/* Ein eingetragener Wert blitzt kurz auf -- so sieht man, wo er gelandet ist. */
+.wert {
+  animation: eintrag 600ms ease-out;
+}
+
+@keyframes eintrag {
+  from {
+    background: color-mix(in srgb, var(--color-primary) 22%, #ffffff);
+  }
+}
+
+.vorschlag,
+.vorschlagNull {
+  transition: transform 150ms ease;
+}
+
+.vorschlag:active:not(:disabled),
+.vorschlagNull:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+/* Die festgepinnte Namensspalte wirft beim Seitwärtsscrollen einen Schatten. */
+.ecke,
+.feldName,
+.summeName {
+  box-shadow: 6px 0 8px -6px rgb(31 34 51 / 0.15);
+}

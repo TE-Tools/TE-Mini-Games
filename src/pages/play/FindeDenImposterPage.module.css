@@ -324,3 +324,94 @@
 .back:active {
   transform: scale(0.94);
 }
+
+/* ------------------------------------------ Modern (30.10.2026): Karten */
+
+.card {
+  border-radius: var(--radius-2xl);
+  border: 1px solid rgb(255 255 255 / 0.8);
+  background: rgb(255 255 255 / 0.88);
+  box-shadow: var(--shadow-md);
+  animation: karteRein 460ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+.card:nth-of-type(2) {
+  animation-delay: 60ms;
+}
+
+.card:nth-of-type(3) {
+  animation-delay: 120ms;
+}
+
+.card:nth-of-type(n + 4) {
+  animation-delay: 180ms;
+}
+
+@keyframes karteRein {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+/* ============ Modern (30.10.2026) ============ */
+
+.back {
+  align-self: flex-start;
+}
+
+.btn,
+.btnSecondary,
+.btnDanger {
+  border-radius: var(--radius-full);
+  border-width: 1px;
+  font-weight: 800;
+  transition: transform 200ms cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+.btn {
+  box-shadow: 0 8px 20px rgb(225 29 72 / 0.3);
+}
+
+.btn:active,
+.btnSecondary:active,
+.btnDanger:active,
+.voteBtn:active {
+  transform: scale(0.97);
+}
+
+/* Das Aufdecken soll ein Moment sein, kein Austausch. */
+.secretBox .roleImposter,
+.secretBox .roleCitizen,
+.secretWord {
+  animation: aufdecken 420ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+.secretWord {
+  overflow-wrap: anywhere;
+}
+
+.voteBtn:disabled {
+  opacity: 0.55;
+}
+
+/* Die eigene Stimme bleibt sichtbar, nachdem alles gesperrt ist. */
+.voteBtn[data-mine] {
+  opacity: 1;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px rgb(90 60 224 / 0.14);
+}
+
+.hintList li,
+.rankList li,
+.badge {
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+}
+
+@keyframes aufdecken {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}

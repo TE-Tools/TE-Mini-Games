@@ -187,8 +187,19 @@ export function LevelMap({
   ]
   const road = smoothPath(roadPoints)
 
+  // Das Stück Weg, das schon gegangen ist: vom Anfang bis zur höchsten
+  // freien Stufe (bei offenem Tor bis ins Tor). Es leuchtet über dem Weg --
+  // so sieht man auf einen Blick, wie weit man nach vorne gekommen ist.
+  const gegangen = points.filter((p) => p.level <= unlocked)
+  const fortschritt = smoothPath([
+    ...(hasWayBack ? [roadPoints[0]!] : []),
+    ...gegangen,
+    ...(hasGate && gateOpen ? [roadPoints.at(-1)!] : []),
+  ])
+
   const zone = zoneFuer(aufbau, currentLevel)
   const positionInZone = levelInZoneVon(aufbau, currentLevel)
+  const zoneGroesse = Math.min(aufbau.levelProZone, maxLevel)
 
   const landRef = useRef<HTMLDivElement>(null)
   const currentRef = useRef<HTMLDivElement>(null)
@@ -232,9 +243,23 @@ export function LevelMap({
         </span>
         <strong>{zone.name}</strong>
         <span className={styles.zoneProgress}>
-          {positionInZone}/{Math.min(aufbau.levelProZone, maxLevel)}
+          {positionInZone}/{zoneGroesse}
         </span>
       </p>
+      <div
+        className={styles.zoneSpur}
+        style={zoneStyle(zone)}
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={zoneGroesse}
+        aria-valuenow={positionInZone}
+        aria-label={`Fortschritt in ${zone.name}`}
+      >
+        <span
+          className={styles.zoneFuellung}
+          style={{ width: `${Math.max(3, (positionInZone / Math.max(1, zoneGroesse)) * 100)}%` }}
+        />
+      </div>
 
       <div
         ref={landRef}
@@ -251,6 +276,12 @@ export function LevelMap({
             {/* Road edge, road surface and slab seams – one continuous path. */}
             <path className={styles.roadEdge} d={road} />
             <path className={styles.roadSurface} d={road} />
+            {fortschritt && (
+              <>
+                <path className={styles.roadGlanz} d={fortschritt} />
+                <path className={styles.roadFortschritt} d={fortschritt} />
+              </>
+            )}
             <path className={styles.roadSeams} d={road} />
           </svg>
 

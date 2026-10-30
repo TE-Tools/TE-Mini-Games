@@ -371,3 +371,45 @@
   color: var(--color-text-muted);
   white-space: nowrap;
 }
+
+/* ===================================================================
+ * Modern (30.10.2026)
+ * =================================================================== */
+
+/* Das aktive Feld pocht über die Randfarbe statt über einen Filter --
+   ein Filter zeichnet das ganze Feld in jedem Bild neu. */
+.aktiv {
+  animation: pochenRand 1.2s ease-in-out infinite alternate;
+}
+
+:global(:root[data-sparsam]) .aktiv {
+  animation: none;
+}
+
+@keyframes pochenRand {
+  from {
+    outline-color: var(--color-gold-deep);
+  }
+  to {
+    outline-color: var(--color-gold-light);
+  }
+}
+
+.fenster {
+  box-shadow: 0 20px 40px -16px rgb(31 34 51 / 0.5);
+}
+
+.feld {
+  border-radius: 6px;
+}
+
+/* Eine Figur, die ankommt, landet mit einem kleinen Hüpfer. */
+.figurMarke {
+  animation: landen 280ms cubic-bezier(0.3, 1.6, 0.5, 1) backwards;
+}
+
+@keyframes landen {
+  from {
+    transform: translateY(-8px) scale(0.6);
+  }
+}

@@ -168,3 +168,8 @@
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* Zebrastreifen sichtbar auf hellem Grund (war noch fürs dunkle Design). */
+.zeile:nth-child(odd) {
+  background: var(--schleier);
+}

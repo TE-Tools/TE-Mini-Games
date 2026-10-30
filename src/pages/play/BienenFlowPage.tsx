@@ -41,15 +41,19 @@ type Phase = 'map' | 'play' | 'won' | 'lost'
 interface Biene {
   id: string
   color: number
-  /** Start und Ziel: Die Biene fliegt vom Platz hoch und wieder zurück. */
+  /** Start (Platz), Ziel (Pollen) und Ende (Loch). */
   vonX: number
   vonY: number
   zielX: number
   zielY: number
+  endeX: number
+  endeY: number
 }
 
 /**
- * Ein ganzer Bienenflug: hoch zum Pollen, aufnehmen, zurück zum Platz.
+ * Ein ganzer Bienenflug: vom Platz hoch zum Pollen, aufnehmen, und mit der
+ * Fracht hinunter ins Loch. Thomas (30.10.2026): "die Bienen sollen ins
+ * Loch fliegen, nicht auf die Blöcke zurück."
  *
  * Er dauert länger als ein Takt -- so sind immer mehrere Bienen gleichzeitig
  * unterwegs, und daraus wird die Straße, die man im Original sieht. Thomas:
@@ -101,6 +105,7 @@ export function BienenFlowPage() {
 
   const bildRef = useRef<HTMLDivElement>(null)
   const slotsRef = useRef<HTMLDivElement>(null)
+  const lochRef = useRef<HTMLSpanElement>(null)
   const buehneRef = useRef<HTMLDivElement>(null)
   /** Zählt bei jedem neuen Zug hoch; ältere Animationen brechen daran ab. */
   const lauf = useRef(0)
@@ -213,7 +218,10 @@ export function BienenFlowPage() {
           (sch: { zelle: number; slot: number; farbe: number }, k: number) => {
             const oben = mitte(bildRef.current?.children[sch.zelle])
             const unten = mitte(slotsRef.current?.children[sch.slot])
+            const loch = mitte(lochRef.current)
             return {
+              endeX: loch.x,
+              endeY: loch.y,
               id: `f-${gen}-${alt.moves}-${sch.zelle}-${k}`,
               color: sch.farbe,
               vonX: unten.x,
@@ -374,7 +382,7 @@ export function BienenFlowPage() {
         </div>
 
         <div className={styles.nest} aria-hidden="true">
-          <span className={styles.loch} />
+          <span ref={lochRef} className={styles.loch} />
         </div>
 
         <div className={styles.slots} ref={slotsRef} aria-label="Plätze der Kolonie">
@@ -408,6 +416,8 @@ export function BienenFlowPage() {
                 '--von-y': `${b.vonY}px`,
                 '--ziel-x': `${b.zielX}px`,
                 '--ziel-y': `${b.zielY}px`,
+                '--ende-x': `${b.endeX}px`,
+                '--ende-y': `${b.endeY}px`,
                 '--dur': `${FLUG_MS}ms`,
               } as CSSProperties
             }

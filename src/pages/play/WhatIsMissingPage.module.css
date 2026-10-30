@@ -266,3 +266,93 @@
 .back:active {
   transform: scale(0.94);
 }
+
+/* ============ Modern (30.10.2026): Glasleiste und Pillen wie in PlayShell ============ */
+
+.header {
+  padding: var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--glas);
+  border: 1px solid var(--glas-rand);
+  box-shadow: var(--shadow-sm);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+}
+
+:global(:root[data-sparsam]) .header {
+  background: var(--glas-dicht);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.levelBadge {
+  border-width: 1px;
+  box-shadow: none;
+}
+
+.primaryBtn {
+  border: none;
+  border-radius: var(--radius-full);
+  transition:
+    transform 200ms cubic-bezier(0.3, 1.5, 0.5, 1),
+    box-shadow 200ms ease;
+}
+
+.primaryBtn:active {
+  transform: scale(0.97);
+}
+
+.secondaryBtn {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
+  transition: transform 200ms cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+.secondaryBtn:active {
+  transform: scale(0.97);
+}
+
+.ready,
+.result {
+  animation: abschnittRein 420ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+@keyframes abschnittRein {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+.cell,
+.choiceBtn {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  border-radius: 16px;
+}
+
+.choiceBtn {
+  transition: transform 160ms cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+.choiceBtn:active {
+  transform: scale(0.95);
+}
+
+/* Lange Wörter brechen in kleinen Feldern um, statt hinauszuragen. */
+.label {
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+.memorize,
+.choose {
+  animation: abschnittRein 400ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+.missingReveal {
+  animation: abschnittRein 500ms 120ms cubic-bezier(0.3, 1.5, 0.5, 1) backwards;
+}

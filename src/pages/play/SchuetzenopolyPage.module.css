@@ -551,3 +551,63 @@
   font-size: var(--text-sm);
   text-align: center;
 }
+
+/* Ton-Knopf rund und weiss wie der Zurück-Knopf (30.10.2026). */
+.tonKnopf {
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform 200ms cubic-bezier(0.3, 1.5, 0.5, 1),
+    box-shadow 200ms ease;
+}
+
+.tonKnopf:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.tonKnopf:active {
+  transform: scale(0.92);
+}
+
+/* Würfel als weisse Plättchen statt nackter Zeichen; ein neuer Wurf rollt herein. */
+.wuerfel {
+  display: grid;
+  place-items: center;
+  width: 1.3em;
+  height: 1.3em;
+  border-radius: 0.25em;
+  background: linear-gradient(#ffffff, #e9e6f5);
+  color: #1f2233;
+  text-shadow: none;
+  box-shadow:
+    0 4px 10px rgb(0 0 0 / 0.45),
+    inset 0 -2px 0 rgb(0 0 0 / 0.12);
+  font-size: calc(var(--feld, 32px) * 1.1);
+  animation: wurfRein 420ms cubic-bezier(0.3, 1.5, 0.5, 1) backwards;
+}
+
+.wuerfel + .wuerfel {
+  animation-delay: 70ms;
+}
+
+@keyframes wurfRein {
+  from {
+    transform: rotate(-200deg) scale(0.4);
+    opacity: 0;
+  }
+}
+
+.amZug {
+  transform: translateY(-2px);
+  transition: transform 200ms ease;
+}

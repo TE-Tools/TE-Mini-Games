@@ -562,3 +562,122 @@
   text-align: center;
   max-width: 24rem;
 }
+
+/* ---------------------------------------- Modern (30.10.2026): Dialoge */
+
+.overlay {
+  background: rgb(20 18 40 / 0.42);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  animation: schleierRein 220ms ease backwards;
+}
+
+:global(:root[data-sparsam]) .overlay {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: rgb(20 18 40 / 0.55);
+}
+
+@keyframes schleierRein {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes dialogPlopp {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.94);
+  }
+}
+
+.dialog {
+  border-radius: 28px;
+  box-shadow: var(--shadow-lg);
+  animation: dialogPlopp 380ms cubic-bezier(0.3, 1.4, 0.5, 1) backwards;
+}
+
+/* Das Gitter als weiche Karte statt schwarzem Kasten (30.10.2026). Die
+   dicken Linien zwischen den Blöcken bleiben -- die braucht man zum Lösen. */
+.gitterRahmen {
+  border: 2px solid #2c2f45;
+  border-radius: 18px;
+  box-shadow:
+    0 0 0 5px rgb(255 255 255 / 0.7),
+    var(--shadow-lg);
+}
+
+/* Kopf als Glasleiste wie in allen Spielen (30.10.2026). */
+.kopf {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--glas);
+  border: 1px solid var(--glas-rand);
+  box-shadow: var(--shadow-sm);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+}
+
+:global(:root[data-sparsam]) .kopf {
+  background: var(--glas-dicht);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* Blocklinien im selben Ton wie der Rahmen, nicht härter. */
+.rechtsDick {
+  border-right-color: #2c2f45;
+}
+
+.untenDick {
+  border-bottom-color: #2c2f45;
+}
+
+.taste,
+.werkzeug,
+.dialogKnoepfe button,
+.tippKnoepfe button {
+  border: 1px solid var(--color-border);
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 120ms ease;
+}
+
+.taste:not(:disabled):active,
+.werkzeug:not(:disabled):active,
+.dialogKnoepfe button:active,
+.tippKnoepfe button:active {
+  transform: scale(0.93);
+}
+
+/* Eine gesetzte Ziffer springt ins Feld; eine falsche wackelt. */
+.eigen .ziffer {
+  animation: zifferRein 220ms cubic-bezier(0.3, 1.6, 0.5, 1) backwards;
+}
+
+.falsch .ziffer {
+  animation: wackeln 300ms ease-in-out;
+}
+
+/* Unschärfe über dem ganzen Gitter ist auf schwachen Geräten teuer. */
+:global(:root[data-sparsam]) .verdeckt .gitter {
+  filter: none;
+  opacity: 0;
+}
+
+@keyframes zifferRein {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+
+@keyframes wackeln {
+  25% {
+    transform: translateX(-3px);
+  }
+  75% {
+    transform: translateX(3px);
+  }
+}

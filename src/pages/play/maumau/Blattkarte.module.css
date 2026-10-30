@@ -346,3 +346,54 @@
 .wunsch[data-farbe='kreuz'] .wunschPunkt {
   background: #16181d;
 }
+
+/* ===================================================================
+ * Eigenes Gesicht für "Letzte Karte" (30.10.2026).
+ *
+ * Das schräge weisse Oval auf farbiger Fläche und die schwarze Karte mit
+ * vier Farbvierteln lagen zu nah an einem bekannten Handelsprodukt --
+ * AGENTS.md verbietet genau das. Jetzt: ein gerades, abgerundetes Schild
+ * in der Mitte, und die Wunschkarte ist schiefergrau mit einem Schild,
+ * dessen Rand die vier Farben trägt.
+ * =================================================================== */
+
+.oval {
+  transform: none;
+  width: 70%;
+  height: 46%;
+  border-radius: 0.9rem;
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.08),
+    0 2px 6px rgb(0 0 0 / 0.18);
+}
+
+.ovalText {
+  transform: none;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.klein .oval {
+  border-radius: 0.45rem;
+}
+
+.wunschkarte {
+  background: radial-gradient(circle at 30% 25%, #5b5f78, #1f2233);
+}
+
+.wunschkarte .oval {
+  border: 3px solid transparent;
+  background:
+    linear-gradient(#1f2233, #1f2233) padding-box,
+    linear-gradient(90deg, #e4484b, #f0c53f, #42a85f, #3f82d8) border-box;
+}
+
+/* ---------------------------------------------- Modern: alle Karten */
+
+.karte {
+  border-radius: 0.6rem;
+}
+
+.rueckseite {
+  background: linear-gradient(145deg, #6d4ae8, #3b2a8f);
+}

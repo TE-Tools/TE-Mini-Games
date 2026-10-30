@@ -10,7 +10,9 @@
   text-align: center;
   padding: var(--space-6) var(--space-4);
   border-color: var(--party-rand);
-  box-shadow: 0 10px 24px rgb(26 31 49 / 0.126), 0 0 30px -6px var(--party-rand);
+  box-shadow:
+    0 10px 24px rgb(26 31 49 / 0.126),
+    0 0 30px -6px var(--party-rand);
 }
 
 .silbe {
@@ -38,7 +40,9 @@
   align-items: center;
   text-align: center;
   border-color: var(--color-danger);
-  box-shadow: 0 10px 24px rgb(26 31 49 / 0.126), 0 0 30px -6px var(--color-danger);
+  box-shadow:
+    0 10px 24px rgb(26 31 49 / 0.126),
+    0 0 30px -6px var(--color-danger);
 }
 
 .boom {
@@ -48,4 +52,48 @@
 
 .raus {
   opacity: 0.45;
+}
+
+/* ============ Modern (30.10.2026) ============ */
+
+/* Helles Gold mit Leuchten war für dunklen Grund -- auf Weiss verschwand es. */
+.silbe {
+  color: #b45309;
+  text-shadow: none;
+  animation: silbeRein 360ms cubic-bezier(0.3, 1.5, 0.5, 1) backwards;
+}
+
+.boomBox {
+  animation: wackeln 420ms ease-in-out;
+}
+
+.boom {
+  animation: knall 500ms cubic-bezier(0.3, 1.6, 0.5, 1) backwards;
+}
+
+.chipAktiv {
+  box-shadow: 0 6px 14px rgb(245 158 11 / 0.3);
+}
+
+@keyframes silbeRein {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+}
+
+@keyframes knall {
+  from {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+}
+
+@keyframes wackeln {
+  25% {
+    transform: translateX(-6px);
+  }
+  75% {
+    transform: translateX(6px);
+  }
 }

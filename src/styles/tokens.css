@@ -114,16 +114,14 @@
   --text-3xl: 1.875rem;
   --text-4xl: 2.25rem;
 
-  /* Der Knopf behaelt seine Kante -- es sind Spiele --, aber flacher: statt
-     6 px hartem Sockel nur noch 3 px, und der Schatten faerbt ins Blaue
-     statt ins Schwarze. */
+  /* Knopfschatten (30.10.2026): kein harter Sockel mehr, sondern ein weicher,
+     violett getönter Schein -- das wirkt auf dem neuen Grund moderner. Ein
+     Hauch Kante bleibt über die Innenlinien. */
   --btn-shadow:
-    0 1px 0 rgb(255 255 255 / 0.3) inset, 0 -2px 0 rgb(26 31 49 / 0.16) inset,
-    0 3px 0 rgb(26 31 49 / 0.12), 0 6px 14px rgb(26 31 49 / 0.13);
-  --btn-shadow-hover:
-    0 1px 0 rgb(255 255 255 / 0.35) inset, 0 -2px 0 rgb(26 31 49 / 0.16) inset,
-    0 4px 0 rgb(26 31 49 / 0.13), 0 9px 20px rgb(26 31 49 / 0.17);
-  --btn-shadow-active: 0 2px 5px rgb(26 31 49 / 0.22) inset, 0 1px 0 rgb(26 31 49 / 0.1);
+    0 1px 0 rgb(255 255 255 / 0.45) inset, 0 -1px 0 rgb(46 36 120 / 0.08) inset,
+    0 6px 16px rgb(46 36 120 / 0.14);
+  --btn-shadow-hover: 0 1px 0 rgb(255 255 255 / 0.5) inset, 0 10px 24px rgb(46 36 120 / 0.2);
+  --btn-shadow-active: 0 2px 6px rgb(46 36 120 / 0.2) inset, 0 2px 6px rgb(46 36 120 / 0.1);
 
   --shadow-sm: 0 1px 2px rgb(46 36 120 / 0.05), 0 4px 14px rgb(46 36 120 / 0.06);
   --shadow-md: 0 2px 6px rgb(46 36 120 / 0.06), 0 12px 30px rgb(46 36 120 / 0.1);
