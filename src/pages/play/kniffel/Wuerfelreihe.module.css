@@ -7,9 +7,12 @@
 .brett {
   position: relative;
   width: 100%;
-  max-width: 460px;
+  max-width: 540px;
+  /* Was hüpft, bleibt auf dem Brett: Die Würfel fallen nie über den Rand. */
+  overflow: hidden;
   margin: 0 auto;
-  padding: clamp(14px, 4.5vw, 22px) clamp(10px, 3vw, 18px) clamp(18px, 5vw, 26px);
+  padding: clamp(24px, 7vw, 38px) clamp(16px, 5vw, 30px) clamp(28px, 8vw, 42px);
+  margin-block: 6px;
   border-radius: var(--radius-xl);
   background:
     radial-gradient(120% 90% at 50% 0%, rgb(255 255 255 / 0.12), transparent 60%),
@@ -38,7 +41,7 @@
   position: relative;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: clamp(4px, 1.6vw, 10px);
+  gap: clamp(10px, 3.4vw, 20px);
   width: 100%;
   margin: 0 auto;
 }
@@ -47,6 +50,7 @@
    Würfel, bevor sie liegen. Sie ist so breit wie die Reihe, damit jeder
    Würfel unter seinem Knopf landet. */
 .leinwand {
+  z-index: 0;
   position: absolute;
   left: 0;
   top: -55%;

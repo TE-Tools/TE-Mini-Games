@@ -40,7 +40,7 @@ const WEISS = new THREE.Color(0xffffff)
 /** Ein gehaltener Würfel wird warm getönt -- wie der goldene Rand in 2D. */
 const GOLD = new THREE.Color(0xffe2a0)
 
-const GROESSE = 0.84
+const GROESSE = 0.8
 const ANHEBEN = 0.32
 
 interface Wurf {
@@ -276,9 +276,9 @@ export function starteWuerfelSzene(leinwand: HTMLCanvasElement): WuerfelSzene {
               Math.random() - 0.5,
             ).normalize(),
             drehung: Math.PI * (3 + Math.random() * 2) * (Math.random() < 0.5 ? -1 : 1),
-            vonX: (Math.random() - 0.5) * 1.2,
-            vonZ: 1.4 + Math.random() * 0.8,
-            hoehe: 1.6 + Math.random() * 0.6,
+            vonX: (Math.random() - 0.5) * 0.8,
+            vonZ: 0.5 + Math.random() * 0.5,
+            hoehe: 1.1 + Math.random() * 0.4,
           }
           // Wer noch gar nicht da war, fällt nicht aus dem Nichts heraus,
           // sondern ist schon in der Luft sichtbar.

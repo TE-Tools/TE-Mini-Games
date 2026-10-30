@@ -35,9 +35,14 @@ body {
    * Geblieben ist ein einziger, sehr zarter Verlauf nach oben: Er nimmt der
    * Flaeche das Klinische, ohne dass man ihn als Farbe wahrnimmt.
    */
-  background-image: linear-gradient(180deg, #ffffff 0%, var(--color-bg) 46%);
-  background-repeat: no-repeat;
-  background-attachment: fixed;
+  /*
+   * Neu (30.10.2026, Thomas: "die Hintergründe ... modern"): ein weicher
+   * Farbverlauf aus drei Lichtern -- Violett, Türkis, Gold, die Farben der
+   * Marke --, sehr hell und sehr gross, damit er wie Licht wirkt und nicht
+   * wie Farbe. Er liegt fest hinter allem (body::before) und treibt
+   * langsam; darüber ein feines Punktraster (body::after), das der Fläche
+   * Halt gibt. Beides ist reines CSS, ohne Bild, ohne Leinwand.
+   */
   color: var(--color-text);
   line-height: 1.5;
   min-height: 100%;
@@ -115,4 +120,72 @@ ol {
   from {
     opacity: 0;
   }
+}
+
+/* ------------------------------------------------- Der Hintergrund */
+
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Die Lichter. Die Fläche ist grösser als der Schirm, damit beim Treiben
+   nie ein Rand sichtbar wird. Nur Transform -- das rechnet die Grafikkarte. */
+body::before {
+  inset: -20vmax;
+  background:
+    radial-gradient(38vmax 32vmax at 18% 12%, var(--licht-a), transparent 70%),
+    radial-gradient(34vmax 30vmax at 86% 22%, var(--licht-b), transparent 70%),
+    radial-gradient(40vmax 34vmax at 62% 92%, var(--licht-c), transparent 70%),
+    linear-gradient(180deg, #fbfaff 0%, var(--color-bg) 60%);
+  animation: lichterTreiben 38s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+body::after {
+  inset: 0;
+  background-image: radial-gradient(rgb(31 34 51 / 0.07) 1px, transparent 1.2px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(180deg, #000 0%, rgb(0 0 0 / 0.35) 55%, transparent 100%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, rgb(0 0 0 / 0.35) 55%, transparent 100%);
+}
+
+@keyframes lichterTreiben {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(3vmax, -2vmax, 0) rotate(6deg);
+  }
+  100% {
+    transform: translate3d(-3vmax, 2vmax, 0) rotate(-4deg);
+  }
+}
+
+/* Schwache Geräte (gesetzt in main.tsx): Die Lichter stehen still. */
+:root[data-sparsam] body::before {
+  animation: none;
+  will-change: auto;
+}
+
+/* ------------------------------------------------------- Glas */
+
+/*
+ * Für Flächen, die über dem Hintergrund schweben: Kopfleisten, die beim
+ * Scrollen stehen bleiben. Auf schwachen Geräten ohne Unschärfe -- das ist
+ * der teuerste Effekt überhaupt --, dafür etwas deckender.
+ */
+.glas {
+  background: var(--glas);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+}
+
+:root[data-sparsam] .glas {
+  background: var(--glas-dicht);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }

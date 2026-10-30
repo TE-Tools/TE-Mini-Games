@@ -79,3 +79,14 @@ export function effekte3dAn(): boolean {
   if (wahl === 'an') return true
   return !bewegungReduziert() && geraetStarkGenug()
 }
+
+/**
+ * Schreibt `data-sparsam` an <html>, wenn das Gerät schwach ist oder
+ * jemand weniger Bewegung will. Das CSS hängt daran ab, was teuer ist:
+ * treibender Hintergrund, Unschärfe hinter Glasflächen.
+ */
+export function markiereLeistung(): void {
+  if (typeof document === 'undefined') return
+  const sparsam = effektWahl() === 'aus' || bewegungReduziert() || !geraetStarkGenug()
+  document.documentElement.toggleAttribute('data-sparsam', sparsam)
+}

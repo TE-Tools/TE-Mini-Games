@@ -89,7 +89,9 @@
   font-size: var(--text-lg);
   box-shadow: var(--btn-shadow);
   border: 2px solid #0f766e;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .primaryBtn:hover {
@@ -173,4 +175,164 @@
 .muted {
   font-size: var(--text-sm);
   color: var(--color-text-muted);
+}
+
+/* ===================================================================
+ * Modern (30.10.2026, Thomas: "das ganze Layout so modern").
+ *
+ * Die Kopfzeile wird eine schwebende Glasleiste, die Knöpfe werden
+ * weiche Pillen mit Leuchten statt harter Kanten. Gilt für jedes Spiel,
+ * das dieses Gerüst nutzt -- deshalb hier und nicht zwölfmal einzeln.
+ * =================================================================== */
+
+.page {
+  padding-top: var(--space-3);
+}
+
+.header {
+  padding: var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--glas);
+  border: 1px solid var(--glas-rand);
+  box-shadow: var(--shadow-sm);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+  animation: kopfRein 420ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+:global(:root[data-sparsam]) .header {
+  background: var(--glas-dicht);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+@keyframes kopfRein {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+.back {
+  width: 44px;
+  height: 44px;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  color: var(--color-text);
+  transition:
+    transform 200ms cubic-bezier(0.3, 1.5, 0.5, 1),
+    box-shadow 200ms ease;
+}
+
+.back:hover {
+  transform: translateX(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.back:active {
+  transform: scale(0.92);
+}
+
+.title {
+  letter-spacing: -0.01em;
+}
+
+.levelBadge {
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 10%, #ffffff);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+  box-shadow: none;
+}
+
+.section {
+  animation: abschnittRein 460ms 80ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+@keyframes abschnittRein {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+.info,
+.timer {
+  color: var(--color-primary);
+}
+
+.primaryBtn {
+  position: relative;
+  overflow: hidden;
+  border: none;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, #7c5cf0 0%, #5a3ce0 55%, #4527c4 100%);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.25) inset,
+    0 8px 22px rgb(90 60 224 / 0.35);
+  transition:
+    transform 200ms cubic-bezier(0.3, 1.5, 0.5, 1),
+    box-shadow 200ms ease;
+}
+
+.primaryBtn:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.25) inset,
+    0 12px 28px rgb(90 60 224 / 0.42);
+}
+
+.primaryBtn:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.2) inset,
+    0 4px 12px rgb(90 60 224 / 0.3);
+}
+
+.secondaryBtn {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform 200ms cubic-bezier(0.3, 1.5, 0.5, 1),
+    border-color 150ms ease,
+    box-shadow 200ms ease;
+}
+
+.secondaryBtn:hover {
+  transform: translateY(-1px);
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-md);
+}
+
+.secondaryBtn:active {
+  transform: scale(0.98);
+}
+
+.correct,
+.wrong {
+  animation: ergebnisPlopp 560ms cubic-bezier(0.3, 1.6, 0.5, 1) backwards;
+}
+
+@keyframes ergebnisPlopp {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+}
+
+.homeLink {
+  text-decoration: none;
+  font-weight: 600;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-full);
+  transition:
+    background 150ms ease,
+    color 150ms ease;
+}
+
+.homeLink:hover {
+  background: rgb(255 255 255 / 0.7);
+  color: var(--color-text);
 }

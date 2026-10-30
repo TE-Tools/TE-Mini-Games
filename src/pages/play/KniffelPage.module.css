@@ -236,8 +236,12 @@
   flex-direction: column;
   gap: var(--space-3);
   padding-bottom: var(--space-3);
-  /* Deckend, sonst scheint der Block durch. */
-  background: var(--color-bg);
+  /* Glas: Der Block darunter scheint nur verschwommen durch. Ohne
+     Unschärfe (schwache Geräte) fast deckend, siehe unten. */
+  background: var(--glas);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+  border-radius: 0 0 var(--radius-2xl) var(--radius-2xl);
   /* Etwas breiter als der Inhalt, damit an den Rändern nichts vorbeiläuft. */
   margin-inline: calc(var(--space-4) * -1);
   padding-inline: var(--space-4);
@@ -754,5 +758,19 @@
   .wuerfelKnopf::after,
   .start::after {
     display: none;
+  }
+}
+
+:global(:root[data-sparsam]) .oben {
+  background: var(--glas-dicht);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+@media (min-width: 52rem) {
+  .oben {
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }

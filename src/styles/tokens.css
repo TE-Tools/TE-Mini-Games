@@ -26,13 +26,29 @@
    * Die Textfarbe bleibt dasselbe dunkle Blauviolett -- sie traegt den
    * Kontrast, und ein warmer Text daneben saehe vergilbt aus.
    */
-  --color-bg: #f0efe9;
-  --color-bg-elevated: #faf9f5;
-  --color-surface: #e9e7dd;
-  --color-border: #e2ded1;
-  --color-border-strong: #c9c4b2;
+  /*
+   * Modern (30.10.2026, Thomas): Der Sandton weicht einem kühlen, sehr
+   * hellen Grund mit einem Hauch Violett. Hinter allem liegen jetzt farbige
+   * Lichter (global.css) -- auf Sand sahen die schmutzig aus, auf diesem
+   * Grund leuchten sie. Karten sind reines Weiss und heben sich davon ab.
+   */
+  --color-bg: #f3f2f9;
+  --color-bg-elevated: #ffffff;
+  --color-surface: #eeedf6;
+  --color-border: #e6e4f0;
+  --color-border-strong: #cbc8dc;
   --color-text: #1f2233;
-  --color-text-muted: #66655f;
+  --color-text-muted: #646379;
+
+  /* Die drei Lichter des Hintergrunds -- bewusst blass. */
+  --licht-a: rgb(139 92 246 / 0.22);
+  --licht-b: rgb(20 184 166 / 0.16);
+  --licht-c: rgb(245 158 11 / 0.14);
+
+  /* Glas für schwebende Leisten; die dichte Fassung ist für Geräte ohne Unschärfe. */
+  --glas: rgb(255 255 255 / 0.62);
+  --glas-dicht: rgb(255 255 255 / 0.92);
+  --glas-rand: rgb(255 255 255 / 0.8);
   --color-primary: #5a3ce0;
   --color-primary-hover: #4a2fc8;
   --color-primary-text: #ffffff;
@@ -63,8 +79,8 @@
   --color-navy-hover: #343954;
 
   /* Wiederkehrende Verlaeufe -- frueher stand jeder davon zehnmal im Code. */
-  --grad-surface: linear-gradient(180deg, #ffffff, #f6f4ec);
-  --grad-surface-hover: linear-gradient(180deg, #ffffff, #efece0);
+  --grad-surface: linear-gradient(180deg, #ffffff, #f7f6fc);
+  --grad-surface-hover: linear-gradient(180deg, #ffffff, #efeef8);
   --grad-primary: linear-gradient(180deg, #6d4ae8, #5227cf);
   --grad-primary-soft: linear-gradient(180deg, #ffffff, #f2f0fb);
   --grad-gold: linear-gradient(180deg, #e8b93a, #c99512 55%, #a67c0a);
@@ -102,23 +118,17 @@
      6 px hartem Sockel nur noch 3 px, und der Schatten faerbt ins Blaue
      statt ins Schwarze. */
   --btn-shadow:
-    0 1px 0 rgb(255 255 255 / 0.30) inset,
-    0 -2px 0 rgb(26 31 49 / 0.16) inset,
-    0 3px 0 rgb(26 31 49 / 0.12),
-    0 6px 14px rgb(26 31 49 / 0.13);
+    0 1px 0 rgb(255 255 255 / 0.3) inset, 0 -2px 0 rgb(26 31 49 / 0.16) inset,
+    0 3px 0 rgb(26 31 49 / 0.12), 0 6px 14px rgb(26 31 49 / 0.13);
   --btn-shadow-hover:
-    0 1px 0 rgb(255 255 255 / 0.35) inset,
-    0 -2px 0 rgb(26 31 49 / 0.16) inset,
-    0 4px 0 rgb(26 31 49 / 0.13),
-    0 9px 20px rgb(26 31 49 / 0.17);
-  --btn-shadow-active:
-    0 2px 5px rgb(26 31 49 / 0.22) inset,
-    0 1px 0 rgb(26 31 49 / 0.10);
+    0 1px 0 rgb(255 255 255 / 0.35) inset, 0 -2px 0 rgb(26 31 49 / 0.16) inset,
+    0 4px 0 rgb(26 31 49 / 0.13), 0 9px 20px rgb(26 31 49 / 0.17);
+  --btn-shadow-active: 0 2px 5px rgb(26 31 49 / 0.22) inset, 0 1px 0 rgb(26 31 49 / 0.1);
 
-  --shadow-sm: 0 1px 2px rgb(26 31 49 / 0.05), 0 2px 8px rgb(26 31 49 / 0.05);
-  --shadow-md: 0 2px 4px rgb(26 31 49 / 0.05), 0 8px 22px rgb(26 31 49 / 0.09);
-  --shadow-lg: 0 4px 8px rgb(26 31 49 / 0.06), 0 16px 40px rgb(26 31 49 / 0.13);
-  --shadow-game: 0 2px 4px rgb(26 31 49 / 0.05), 0 10px 24px rgb(26 31 49 / 0.10);
+  --shadow-sm: 0 1px 2px rgb(46 36 120 / 0.05), 0 4px 14px rgb(46 36 120 / 0.06);
+  --shadow-md: 0 2px 6px rgb(46 36 120 / 0.06), 0 12px 30px rgb(46 36 120 / 0.1);
+  --shadow-lg: 0 4px 10px rgb(46 36 120 / 0.07), 0 24px 54px rgb(46 36 120 / 0.16);
+  --shadow-game: 0 2px 6px rgb(46 36 120 / 0.06), 0 14px 32px rgb(46 36 120 / 0.11);
   /* Frueher ein violetter Schimmer im Dunkeln; auf Hell traegt ein zarter
      farbiger Rand dieselbe Rolle, ohne zu leuchten. */
   --glow-primary: 0 0 0 1px rgb(90 60 224 / 0.14);

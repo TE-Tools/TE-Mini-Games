@@ -3,6 +3,10 @@ import { createRoot } from 'react-dom/client'
 import { App } from '@/app/App'
 import { StartFehler } from '@/app/StartFehler'
 import '@/styles/global.css'
+import { EFFEKTE_GEAENDERT, markiereLeistung } from '@/services/effekte'
+
+markiereLeistung()
+window.addEventListener(EFFEKTE_GEAENDERT, markiereLeistung)
 
 /**
  * Den Startbildschirm aus index.html wegblenden.
