@@ -954,3 +954,14 @@
 .ew-root #btn-drop {
   min-height: 44px;
 }
+
+/* Filmlook (30.10.2026): eine weiche Vignette über der Spielfläche, die
+   den Blick zur Mitte zieht. Als Hintergrund der Berührungsebene -- ein
+   CSS-Verlauf, kein Shader, also auf jeder Stufe umsonst. */
+.ew-root #touch-layer {
+  background: radial-gradient(
+    ellipse 75% 70% at 50% 52%,
+    transparent 55%,
+    rgba(4, 6, 12, 0.42) 100%
+  );
+}

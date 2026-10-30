@@ -9,6 +9,7 @@ import { lanternRadius } from '@/games/emberwake/systems/EmberSystem'
 import { lerp, clamp01 } from '@/games/emberwake/core/math'
 import { Rng } from '@/games/emberwake/core/Rng'
 import { Particles } from './Particles'
+import { Sky, halo } from './atmosphere'
 import {
   coreModel,
   enemyModel,
@@ -57,6 +58,10 @@ export class GameView {
   private readonly lanternLight: THREE.PointLight
   private readonly fog: THREE.Fog
   readonly particles: Particles
+  private readonly sky: Sky
+  private readonly coreHalo: THREE.Sprite
+  private readonly lanternHalo: THREE.Sprite
+  private readonly himmelFarbe = new THREE.Color()
 
   private terrain: THREE.Mesh | null = null
   private treeTrunks: THREE.InstancedMesh[] = []
@@ -65,6 +70,8 @@ export class GameView {
   private rocks: THREE.InstancedMesh[] = []
   private nodeMeshes = new Map<ResourceId, THREE.InstancedMesh>()
   private stumps: THREE.InstancedMesh | null = null
+  private grass: THREE.InstancedMesh | null = null
+  private grassZeit: { value: number } | null = null
   private player: PlayerModel
   private core: CoreModel
   private slotMarkers: THREE.Mesh[] = []
@@ -72,13 +79,14 @@ export class GameView {
   private secretMesh: THREE.Mesh | null = null
   private enemyPool: EnemyVisual[] = []
   private enemyActive = new Map<number, EnemyVisual>()
-  private readonly staticMaterial = vertexMaterial()
+  private readonly staticMaterial: THREE.MeshLambertMaterial | THREE.MeshStandardMaterial
   private readonly disposables: Array<{ dispose(): void }> = []
   private world: World | null = null
   private emberTimer = 0
   private time = 0
 
   constructor(private quality: QualitySettings) {
+    this.staticMaterial = vertexMaterial(quality.tier !== 'low')
     this.hemi = new THREE.HemisphereLight(0xb9c4d6, 0x3a3f36, 0.9)
     this.sun = new THREE.DirectionalLight(0xffffff, 1.4)
     this.sun.position.set(30, 50, 20)
@@ -105,6 +113,11 @@ export class GameView {
     this.particles = new Particles(quality.particleBudget)
     this.scene.add(this.particles.points)
 
+    this.sky = new Sky()
+    this.coreHalo = halo(0xff9a4d)
+    this.lanternHalo = halo(0xffc070)
+    this.scene.add(this.sky.mesh, this.sky.stars, this.coreHalo, this.lanternHalo)
+
     this.player = playerModel()
     this.scene.add(this.player.group)
     this.core = coreModel()
@@ -121,6 +134,7 @@ export class GameView {
     const pal = world.worldDef.palette
 
     this.buildTerrain(world)
+    this.buildGrass(world)
     this.buildObstacles(world)
     this.buildNodes(world)
     this.buildCamp(world)
@@ -175,6 +189,94 @@ export class GameView {
     this.terrain.receiveShadow = true
     this.scene.add(this.terrain)
     this.disposables.push(geo)
+  }
+
+  /**
+   * Gras: kleine Büschel aus drei Halmen, alle in einem einzigen Draw Call
+   * (PERFORMANCE.md §3.2), Dichte aus der Qualitätsstufe. Rein Optik -- es
+   * steht nicht in der Welt, die Simulation weiss nichts davon. Der Wind
+   * biegt die Spitzen im Vertex-Shader, die CPU tut dafür nichts.
+   */
+  private buildGrass(w: World): void {
+    const anzahl = Math.round(this.quality.grassDensity * Math.min(3000, w.size * w.size * 0.5))
+    if (anzahl <= 0) return
+    const pal = w.worldDef.palette
+
+    const geo = new THREE.BufferGeometry()
+    const halme: number[] = []
+    const hoehe: number[] = []
+    for (let k = 0; k < 3; k++) {
+      const a = (k / 3) * Math.PI + 0.3
+      const dx = Math.cos(a) * 0.09
+      const dz = Math.sin(a) * 0.09
+      const lean = 0.08 * (k - 1)
+      // Jeder Halm zweimal, einmal je Seite: Mit DoubleSide würde die
+      // Rückseite ihre Normale umdrehen und schwarz erscheinen.
+      halme.push(-dx, 0, -dz, dx, 0, dz, lean, 0.42 + k * 0.06, lean * 0.5)
+      halme.push(dx, 0, dz, -dx, 0, -dz, lean, 0.42 + k * 0.06, lean * 0.5)
+      hoehe.push(0, 0, 1, 0, 0, 1)
+    }
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(halme, 3))
+    geo.setAttribute('hoehe', new THREE.Float32BufferAttribute(hoehe, 1))
+    // Normalen nach oben: Gras wird wie der Boden beleuchtet, nicht wie
+    // eine dunkle Kante von der Seite.
+    geo.setAttribute(
+      'normal',
+      new THREE.Float32BufferAttribute(
+        Array.from({ length: halme.length }, (_, i) => (i % 3 === 1 ? 1 : 0)),
+        3,
+      ),
+    )
+
+    const mat = new THREE.MeshLambertMaterial()
+    const zeit = { value: 0 }
+    mat.onBeforeCompile = (shader) => {
+      shader.uniforms.zeit = zeit
+      shader.vertexShader = shader.vertexShader
+        .replace(
+          '#include <common>',
+          '#include <common>\nattribute float hoehe;\nuniform float zeit;',
+        )
+        .replace(
+          '#include <begin_vertex>',
+          [
+            '#include <begin_vertex>',
+            'vec4 wurzel = instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);',
+            'float wind = sin(zeit * 1.7 + wurzel.x * 0.35 + wurzel.z * 0.22) * 0.5 + 0.5;',
+            'transformed.x += hoehe * (0.06 + wind * 0.1);',
+            'transformed.z += hoehe * sin(zeit * 1.1 + wurzel.x) * 0.04;',
+          ].join('\n'),
+        )
+    }
+    this.grassZeit = zeit
+
+    const mesh = new THREE.InstancedMesh(geo, mat, anzahl)
+    const rng = new Rng(w.level.seed ^ 0x9a55)
+    const hell = new THREE.Color(pal.ground).offsetHSL(0, 0.05, 0.08)
+    const dunkel = new THREE.Color(pal.groundDark)
+    const c = new THREE.Color()
+    const half = w.size / 2 - 2
+    for (let i = 0; i < anzahl; i++) {
+      let x: number
+      let z: number
+      // Nicht mitten ins Lager -- da ist festgetretener Boden.
+      do {
+        x = (rng.next() * 2 - 1) * half
+        z = (rng.next() * 2 - 1) * half
+      } while (Math.hypot(x, z) < 3.5)
+      _p.set(x, w.terrain.heightAt(x, z), z)
+      _q.setFromAxisAngle(_axisY, rng.angle())
+      _s.setScalar(0.8 + rng.next() * 0.9)
+      _m.compose(_p, _q, _s)
+      mesh.setMatrixAt(i, _m)
+      mesh.setColorAt(i, c.copy(dunkel).lerp(hell, rng.next()))
+    }
+    mesh.instanceMatrix.needsUpdate = true
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
+    mesh.receiveShadow = true
+    this.grass = mesh
+    this.scene.add(mesh)
+    this.disposables.push(geo, mat)
   }
 
   private buildObstacles(w: World): void {
@@ -398,6 +500,7 @@ export class GameView {
     // Himmel, Nebel, Sonne
     _colA.setHex(pal.skyNight).lerp(_colB.setHex(pal.skyDay), sun)
     ;(this.scene.background as THREE.Color).copy(_colA)
+    this.himmelFarbe.copy(_colA)
     _colA.setHex(pal.fogNight).lerp(_colB.setHex(pal.fogDay), sun)
     this.fog.color.copy(_colA)
     const range = Math.min(visibilityRange(w), this.quality.drawDistance)
@@ -475,6 +578,12 @@ export class GameView {
     this.lanternLight.intensity = p.alive ? lerp(9, 4, sun) : 0
     this.player.lanternMaterial.color.setHex(0xffb35c)
 
+    // Himmel mit der Kamera mitführen, Lichthof um die Laterne.
+    this.sky.update(this.himmelFarbe, this.fog.color, sun, px, pz)
+    this.lanternHalo.position.set(px, py + 1.0, pz)
+    this.lanternHalo.scale.setScalar(lerp(2.2, 1.4, sun))
+    this.lanternHalo.material.opacity = p.alive ? lerp(0.75, 0.25, sun) : 0
+
     // Schattenkamera folgt dem Spieler
     this.sun.position.set(px + 30, 50, pz + 20)
     this.sun.target.position.set(px, py, pz)
@@ -492,6 +601,10 @@ export class GameView {
     this.coreLight.distance = w.ember.lightRadius * 2.2
     this.core.glowMaterial.opacity = lerp(0.05, 0.4, charge) * lerp(1, 0.35, sun)
     this.core.glowRing.scale.setScalar(0.4 + charge * 0.8)
+    // Lichthof um den Kristall: wächst mit der Ladung, nachts kräftiger.
+    this.coreHalo.position.set(CAMP_POS.x, this.core.crystal.position.y + 0.1, CAMP_POS.z)
+    this.coreHalo.scale.setScalar(lerp(0.8, 2.6, charge) * pulse)
+    this.coreHalo.material.opacity = lerp(0.1, 0.55, charge) * lerp(1, 0.4, sun)
     this.core.lightRing.scale.setScalar(w.ember.lightRadius)
     ;(this.core.lightRing.material as THREE.MeshBasicMaterial).opacity =
       lerp(0.55, 0.12, sun) * (0.4 + charge * 0.6)
@@ -514,6 +627,7 @@ export class GameView {
     this.syncBuildings(w)
     if (this.secretMesh) this.secretMesh.visible = !w.secret.found
 
+    if (this.grassZeit) this.grassZeit.value = this.time
     this.particles.update(dt)
   }
 
@@ -587,6 +701,7 @@ export class GameView {
       ...this.rocks,
       ...this.nodeMeshes.values(),
       this.stumps,
+      this.grass,
       ...this.slotMarkers,
       ...this.buildingMeshes.values(),
       this.secretMesh,
@@ -601,6 +716,7 @@ export class GameView {
     this.rocks = []
     this.nodeMeshes.clear()
     this.stumps = null
+    this.grass = null
     this.slotMarkers = []
     this.buildingMeshes.clear()
     this.secretMesh = null

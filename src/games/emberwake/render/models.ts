@@ -54,8 +54,25 @@ function merge(parts: THREE.BufferGeometry[]): THREE.BufferGeometry {
   return merged
 }
 
-/** Vertex-Farben-Material — alle Modelle teilen sich diese Instanz. */
-export function vertexMaterial(): THREE.MeshLambertMaterial {
+/**
+ * Vertex-Farben-Material — alle Modelle teilen sich diese Instanz.
+ *
+ * Ab Stufe MITTEL physikalisch beleuchtet (30.10.2026): Licht fällt weicher
+ * über die Kanten, und Laterne und Kern färben die Flächen glaubwürdiger.
+ * Auf NIEDRIG bleibt es beim günstigen Lambert -- gleiche Farben, weniger
+ * Rechenarbeit je Pixel.
+ */
+export function vertexMaterial(
+  hochwertig = false,
+): THREE.MeshLambertMaterial | THREE.MeshStandardMaterial {
+  if (hochwertig) {
+    return new THREE.MeshStandardMaterial({
+      vertexColors: true,
+      flatShading: true,
+      roughness: 0.88,
+      metalness: 0,
+    })
+  }
   return new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true })
 }
 

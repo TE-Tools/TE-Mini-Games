@@ -119,7 +119,7 @@ Beim Start wird die Geräteklasse ermittelt (GPU-Kennung, `deviceMemory`,
 
 **Dynamische Anpassung:** Fällt die Bildrate über 3 Sekunden unter den
 Zielwert, wird schrittweise heruntergestuft — zuerst Pixelverhältnis,
-dann Partikel, dann Schatten, dann Sichtweite. Ein Hinweis informiert den
+dann das Leuchten, dann Partikel, dann Schatten, dann Sichtweite. Ein Hinweis informiert den
 Spieler einmalig; in den Einstellungen ist die Stufe manuell wählbar.
 
 **Nie automatisch heruntergestuft wird die Sichtweite unter 60 m** —
@@ -174,3 +174,24 @@ Diese Punkte sind bereits eingeplant, nicht erst zu entdecken:
   dynamische Anpassung erst nach 3 Sekunden Unterschreitung, damit sie
   nicht auf kurze Ausreißer reagiert
 - **Garbage Collection** ist der Hauptgrund für Mikroruckler — siehe Pooling
+
+---
+
+## 8. Optik-Stand 30.10.2026
+
+Was seitdem im Renderer steckt, und was es kostet:
+
+| Effekt                        | Stufe       | Kosten                                        |
+| ----------------------------- | ----------- | --------------------------------------------- |
+| ACES-Tonwerte (Filmlook)      | alle        | keine (im Shader ohnehin vorhanden)           |
+| Himmelskuppel mit Verlauf     | alle        | 1 Draw Call, ~500 Dreiecke                    |
+| Sterne in der Nacht           | alle        | 1 Draw Call, 320 Punkte                       |
+| Lichthöfe um Laterne und Kern | alle        | 2 Sprites                                     |
+| Runde Glutpartikel            | alle        | eine 64×64-Leinwand als Textur                |
+| Vignette                      | alle        | CSS-Verlauf, kein Shader                      |
+| Gras mit Wind                 | MITTEL/HOCH | 1 Draw Call, bis 3000 Büschel (je 6 Dreiecke) |
+| PBR-Material (Standard)       | MITTEL/HOCH | etwas mehr je Pixel als Lambert               |
+| Leuchten (Bloom)              | HOCH        | eigener Chunk, halbe Auflösung                |
+
+Das Bloom-Modul (`render/post.ts`) wird nur per dynamischem Import geladen,
+wenn die Stufe es verlangt (§5).

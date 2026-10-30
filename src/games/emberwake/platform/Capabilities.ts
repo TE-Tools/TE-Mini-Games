@@ -16,6 +16,8 @@ export interface QualitySettings {
   particleBudget: number
   grassDensity: number
   antialias: boolean
+  /** Leuchten um helle Lichter (Nachbearbeitung). Nur HOCH, PERFORMANCE.md §4. */
+  bloom: boolean
 }
 
 export interface Capabilities {
@@ -41,6 +43,7 @@ export const QUALITY_PRESETS: Record<QualityTier, QualitySettings> = {
     particleBudget: 60,
     grassDensity: 0,
     antialias: false,
+    bloom: false,
   },
   medium: {
     tier: 'medium',
@@ -51,6 +54,7 @@ export const QUALITY_PRESETS: Record<QualityTier, QualitySettings> = {
     particleBudget: 120,
     grassDensity: 0.5,
     antialias: false,
+    bloom: false,
   },
   high: {
     tier: 'high',
@@ -61,6 +65,7 @@ export const QUALITY_PRESETS: Record<QualityTier, QualitySettings> = {
     particleBudget: 200,
     grassDensity: 1,
     antialias: true,
+    bloom: true,
   },
 }
 

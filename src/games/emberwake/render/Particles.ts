@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { Rng } from '@/games/emberwake/core/Rng'
+import { glow } from './atmosphere'
 
 /**
  * Gepoolte Partikel als ein einziges Points-Objekt — ein Draw Call.
@@ -36,7 +37,9 @@ export class Particles {
     this.geometry.setDrawRange(0, capacity)
 
     this.material = new THREE.PointsMaterial({
-      size: 0.16,
+      // Weiche, runde Funken statt eckiger Punkte (30.10.2026).
+      map: glow(),
+      size: 0.3,
       vertexColors: true,
       transparent: true,
       opacity: 0.95,
