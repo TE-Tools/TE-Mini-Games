@@ -10,12 +10,12 @@ import { lerp, clamp01 } from '@/games/emberwake/core/math'
 import { Rng } from '@/games/emberwake/core/Rng'
 import { Particles } from './Particles'
 import { Sky, halo } from './atmosphere'
+import { menschModell } from './figur'
 import {
   coreModel,
   enemyModel,
   foodNodeGeometry,
   genericNodeGeometry,
-  playerModel,
   rockGeometry,
   secretGeometry,
   slotMarkerGeometry,
@@ -80,13 +80,20 @@ export class GameView {
   private enemyPool: EnemyVisual[] = []
   private enemyActive = new Map<number, EnemyVisual>()
   private readonly staticMaterial: THREE.MeshLambertMaterial | THREE.MeshStandardMaterial
+  /** Der Boden glatt schattiert -- Hügel statt Facetten (ab MITTEL). */
+  private readonly bodenMaterial: THREE.MeshLambertMaterial | THREE.MeshStandardMaterial
   private readonly disposables: Array<{ dispose(): void }> = []
   private world: World | null = null
   private emberTimer = 0
   private time = 0
+  /** Für das Neigen in Kurven: Blickrichtung im letzten Bild und die geglättete Neigung. */
+  private letzteRichtung = 0
+  private kurve = 0
 
   constructor(private quality: QualitySettings) {
     this.staticMaterial = vertexMaterial(quality.tier !== 'low')
+    this.bodenMaterial = vertexMaterial(quality.tier !== 'low')
+    if (quality.tier !== 'low') this.bodenMaterial.flatShading = false
     this.hemi = new THREE.HemisphereLight(0xb9c4d6, 0x3a3f36, 0.9)
     this.sun = new THREE.DirectionalLight(0xffffff, 1.4)
     this.sun.position.set(30, 50, 20)
@@ -118,7 +125,7 @@ export class GameView {
     this.lanternHalo = halo(0xffc070)
     this.scene.add(this.sky.mesh, this.sky.stars, this.coreHalo, this.lanternHalo)
 
-    this.player = playerModel()
+    this.player = menschModell()
     this.scene.add(this.player.group)
     this.core = coreModel()
     this.scene.add(this.core.group)
@@ -164,6 +171,10 @@ export class GameView {
     _colA.setHex(pal.ground)
     _colB.setHex(pal.groundDark)
     const warm = new THREE.Color(0x8a7a5a)
+    // Flecken wie auf echtem Boden: nackte Erde, dunkles Moos, helleres Gras.
+    const erde = new THREE.Color(0x6e5c44)
+    const moos = new THREE.Color(pal.groundDark).offsetHSL(0.02, 0.08, -0.04)
+    const halm = new THREE.Color(pal.ground).offsetHSL(0.01, 0.1, 0.06)
 
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i)
@@ -178,6 +189,12 @@ export class GameView {
       // Um das Lager wärmer — Lichtfarbe bedeutet Sicherheit.
       const dCamp = Math.hypot(x, z)
       if (dCamp < 9) c.lerp(warm, (1 - dCamp / 9) * 0.45)
+      const n1 = Math.sin(x * 0.11 + 1.3) * Math.cos(z * 0.09 - 0.7)
+      const n2 = Math.sin(x * 0.37 + z * 0.29) * 0.5 + Math.sin(z * 0.53 - x * 0.21) * 0.5
+      const fleck = n1 * 0.7 + n2 * 0.3
+      if (fleck > 0.35) c.lerp(erde, Math.min(0.55, (fleck - 0.35) * 1.4))
+      else if (fleck < -0.3) c.lerp(moos, Math.min(0.5, (-0.3 - fleck) * 1.2))
+      else c.lerp(halm, (0.35 - Math.abs(fleck)) * 0.35)
       colors[i * 3] = c.r
       colors[i * 3 + 1] = c.g
       colors[i * 3 + 2] = c.b
@@ -185,7 +202,7 @@ export class GameView {
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3))
     geo.computeVertexNormals()
 
-    this.terrain = new THREE.Mesh(geo, this.staticMaterial)
+    this.terrain = new THREE.Mesh(geo, this.bodenMaterial)
     this.terrain.receiveShadow = true
     this.scene.add(this.terrain)
     this.disposables.push(geo)
@@ -311,7 +328,7 @@ export class GameView {
     for (let v = 0; v < 3; v++) {
       const anzahl = w.nodes.filter((n) => n.form === 'baum' && n.variant === v).length
       if (anzahl === 0) continue
-      const geo = treeGeometry(0x4a3b2c, pal.tree, pal.treeDark, v)
+      const geo = treeGeometry(0x5c4632, pal.tree, pal.treeDark, v)
       const mesh = new THREE.InstancedMesh(geo, this.staticMaterial, anzahl)
       mesh.castShadow = this.quality.shadows
       mesh.receiveShadow = true
@@ -538,9 +555,31 @@ export class GameView {
     this.player.kneeLeft.rotation.z = Math.max(0, -schwung) * 0.9 * kraft
     this.player.kneeRight.rotation.z = Math.max(0, schwung) * 0.9 * kraft
 
-    const bob = moving ? Math.abs(Math.sin(p.stride * 5)) * 0.05 * kraft : 0
-    this.player.torso.position.y = bob
-    this.player.torso.rotation.z = -0.04 * kraft + p.attackAnim * 0.12
+    /*
+     * Haltung (30.10.2026, Thomas: "der Char läuft immer gerade").
+     *
+     * Wer läuft, beugt sich vor, dreht die Schultern gegen die Hüfte und
+     * legt sich in die Kurve; der Kopf hält dagegen, damit der Blick ruhig
+     * bleibt. Wer steht, atmet. Alles nur Darstellung -- die Simulation
+     * kennt davon nichts.
+     */
+    const bob = moving ? Math.abs(Math.sin(p.stride * 5)) * 0.04 * kraft : 0
+    const atmen = moving ? 0 : Math.sin(this.time * 1.8) * 0.006
+    this.player.torso.position.y = this.player.huefte + bob + atmen
+    this.player.torso.rotation.z = -0.12 * kraft + p.attackAnim * 0.12
+    this.player.torso.rotation.y = schwung * 0.14 * kraft
+
+    const dreh = Math.atan2(
+      Math.sin(p.facing - this.letzteRichtung),
+      Math.cos(p.facing - this.letzteRichtung),
+    )
+    this.letzteRichtung = p.facing
+    const zielKurve = dt > 0 ? Math.max(-0.22, Math.min(0.22, (-dreh / dt) * 0.06 * kraft)) : 0
+    this.kurve += (zielKurve - this.kurve) * (1 - Math.exp(-dt * 8))
+    this.player.torso.rotation.x = this.kurve
+
+    this.player.kopf.rotation.y = -schwung * 0.1 * kraft
+    this.player.kopf.rotation.z = 0.08 * kraft + (moving ? 0 : Math.sin(this.time * 0.7) * 0.03)
 
     /*
      * Der Hieb.
@@ -554,8 +593,9 @@ export class GameView {
     // wenn der Fortschritt voll ist -- genau dann fällt auch das Scheit.
     const hacken = w.interactable?.kind === 'node' && p.gatherProgress > 0
     const hieb = Math.max(p.attackAnim, hacken ? 1 - p.gatherProgress : 0)
-    this.player.arm.rotation.z = -schwung * 0.55 * kraft
-    this.player.arm.rotation.x = 0.12
+    // Die Laterne schwingt weniger als ein freier Arm -- man hält sie ruhig.
+    this.player.arm.rotation.z = -schwung * 0.35 * kraft
+    this.player.arm.rotation.x = 0.16
     /*
      * Ausholen heißt: über die Schulter nach hinten, nicht nach vorn.
      *

@@ -78,6 +78,38 @@ export function vertexMaterial(
 
 // ---------------------------------------------------------------------------
 
+/**
+ * Licht von oben, Schatten von unten -- in die Vertex-Farben gebacken.
+ *
+ * Ohne das sehen Bäume und Felsen überall gleich hell aus, als klebten sie
+ * auf dem Boden. Echte Umgebungsverdeckung kostet einen eigenen Durchgang;
+ * diese hier kostet beim Laden einmal eine Schleife und dann nichts mehr.
+ */
+function tiefe(geo: THREE.BufferGeometry, unten: number, oben: number, dunkel = 0.5): void {
+  const pos = geo.attributes.position as THREE.BufferAttribute
+  const col = geo.attributes.color as THREE.BufferAttribute
+  for (let i = 0; i < pos.count; i++) {
+    const t = Math.min(1, Math.max(0, (pos.getY(i) - unten) / Math.max(0.01, oben - unten)))
+    const k = dunkel + (1.08 - dunkel) * Math.sqrt(t)
+    col.setXYZ(i, col.getX(i) * k, col.getY(i) * k, col.getZ(i) * k)
+  }
+}
+
+/** Eine Tannenetage: Kegel, dessen Rand herabhängt wie schwere Zweige. */
+function etage(radius: number, hoehe: number, y: number, rng: Rng): THREE.BufferGeometry {
+  const cone = new THREE.ConeGeometry(radius, hoehe, 11, 3, true)
+  const pos = cone.attributes.position as THREE.BufferAttribute
+  for (let i = 0; i < pos.count; i++) {
+    const vy = pos.getY(i)
+    const r = Math.hypot(pos.getX(i), pos.getZ(i)) / radius
+    // Aussen sacken die Zweige ab, und jeder Zweig ist anders lang.
+    const zacke = 1 + (rng.next() - 0.5) * 0.28 * r
+    pos.setXYZ(i, pos.getX(i) * zacke, vy - r * r * 0.22, pos.getZ(i) * zacke)
+  }
+  cone.translate(0, y, 0)
+  return cone
+}
+
 export function treeGeometry(
   trunkColor: number,
   canopyColor: number,
@@ -85,32 +117,87 @@ export function treeGeometry(
   variant: number,
 ): THREE.BufferGeometry {
   const rng = new Rng(1000 + variant)
-  const trunk = new THREE.CylinderGeometry(0.16, 0.24, 1.6, 5, 1)
-  trunk.translate(0, 0.8, 0)
-  paint(trunk, trunkColor, 0.15, rng)
+  const parts: THREE.BufferGeometry[] = []
 
-  const parts: THREE.BufferGeometry[] = [trunk]
-  const tiers = 2 + variant
-  for (let i = 0; i < tiers; i++) {
-    const t = i / Math.max(1, tiers - 1)
-    const radius = 1.25 - t * 0.55
-    const height = 1.5 - t * 0.3
-    const cone = new THREE.ConeGeometry(radius, height, 6, 1)
-    cone.translate(0, 1.5 + i * 0.85, 0)
-    jitterVertices(cone, 0.12, rng)
-    paint(cone, i % 2 === 0 ? canopyColor : canopyDark, 0.18, rng)
-    parts.push(cone)
+  // Stamm mit Wurzelansatz: unten breiter, leicht schief gewachsen.
+  const trunk = new THREE.CylinderGeometry(0.11, 0.2, 2.4, 9, 4)
+  trunk.translate(0, 1.2, 0)
+  const tp = trunk.attributes.position as THREE.BufferAttribute
+  for (let i = 0; i < tp.count; i++) {
+    const y = tp.getY(i)
+    const fuss = y < 0.25 ? 1 + (0.25 - y) * 1.6 : 1
+    tp.setXYZ(i, tp.getX(i) * fuss + y * y * 0.012, y, tp.getZ(i) * fuss)
+  }
+  paint(trunk, trunkColor, 0.18, rng)
+  tiefe(trunk, 0, 2.4, 0.75)
+  parts.push(trunk)
+
+  if (variant === 2) {
+    // Laubbaum: ein paar Äste, darüber eine Krone aus Blattballen.
+    for (let i = 0; i < 3; i++) {
+      const ast = new THREE.CylinderGeometry(0.035, 0.06, 0.9, 6)
+      ast.translate(0, 0.45, 0)
+      ast.rotateZ(0.7 + rng.next() * 0.3)
+      ast.rotateY((i / 3) * Math.PI * 2 + rng.next())
+      ast.translate(0, 1.6 + i * 0.25, 0)
+      paint(ast, trunkColor, 0.15, rng)
+      parts.push(ast)
+    }
+    for (let i = 0; i < 7; i++) {
+      const r = 0.55 + rng.next() * 0.35
+      const ballen = new THREE.IcosahedronGeometry(r, 2)
+      jitterVertices(ballen, 0.09, rng)
+      const a = rng.angle()
+      const d = i === 0 ? 0 : 0.45 + rng.next() * 0.35
+      const y = 2.6 + (i === 0 ? 0.55 : rng.next() * 0.7)
+      ballen.translate(Math.cos(a) * d, y, Math.sin(a) * d)
+      paint(ballen, i % 2 === 0 ? canopyColor : canopyDark, 0.16, rng)
+      tiefe(ballen, 1.9, 3.9, 0.45)
+      parts.push(ballen)
+    }
+    return merge(parts)
+  }
+
+  // Nadelbaum: Etagen, die nach oben schmaler werden.
+  const etagen = 4 + variant
+  for (let i = 0; i < etagen; i++) {
+    const t = i / (etagen - 1)
+    const radius = 1.35 - t * 0.95
+    const hoehe = 1.25 - t * 0.35
+    const kegel = etage(radius, hoehe, 1.45 + i * (2.2 / etagen) + t * 0.3, rng)
+    paint(kegel, i % 2 === 0 ? canopyColor : canopyDark, 0.14, rng)
+    // Innen und unten dunkel, an den Spitzen hell -- wie Licht im Wald.
+    tiefe(kegel, 0.9, 4.4, 0.42)
+    parts.push(kegel)
   }
   return merge(parts)
 }
 
 export function rockGeometry(rockColor: number, variant: number): THREE.BufferGeometry {
   const rng = new Rng(2000 + variant)
-  const geo = new THREE.DodecahedronGeometry(0.7, 0)
-  jitterVertices(geo, 0.28, rng)
-  geo.scale(1, 0.65 + rng.next() * 0.3, 1)
-  geo.translate(0, 0.3, 0)
-  paint(geo, rockColor, 0.22, rng)
+  const geo = new THREE.IcosahedronGeometry(0.7, 2)
+  jitterVertices(geo, 0.16, rng)
+  // Grobe Bruchkanten: ein paar Flächen flach abschneiden.
+  const pos = geo.attributes.position as THREE.BufferAttribute
+  for (let i = 0; i < pos.count; i++) {
+    if (pos.getX(i) > 0.45) pos.setX(i, 0.45 + (pos.getX(i) - 0.45) * 0.3)
+    if (pos.getZ(i) < -0.4) pos.setZ(i, -0.4 + (pos.getZ(i) + 0.4) * 0.3)
+  }
+  geo.scale(1, 0.62 + rng.next() * 0.25, 1)
+  geo.translate(0, 0.28, 0)
+  paint(geo, rockColor, 0.2, rng)
+  // Moos oben, Erde unten.
+  geo.computeVertexNormals()
+  const n = geo.attributes.normal as THREE.BufferAttribute
+  const col = geo.attributes.color as THREE.BufferAttribute
+  const moos = new THREE.Color(0x56664a)
+  const c = new THREE.Color()
+  for (let i = 0; i < pos.count; i++) {
+    c.setRGB(col.getX(i), col.getY(i), col.getZ(i))
+    if (n.getY(i) > 0.55) c.lerp(moos, (n.getY(i) - 0.55) * 1.4)
+    col.setXYZ(i, c.r, c.g, c.b)
+  }
+  tiefe(geo, -0.1, 0.8, 0.45)
   return merge([geo])
 }
 
@@ -182,9 +269,9 @@ export function genericNodeGeometry(hex: number): THREE.BufferGeometry {
  * an der Schulter beziehungsweise Hüfte -- deshalb kann GameView damit einen
  * Schritt und einen Axthieb spielen, statt Teile zu verschieben.
  *
- * Es bleibt Low-Poly mit Vertex-Farben: keine Texturen, keine Modelldateien
- * (ARCHITECTURE.md §6). "Echter" heißt hier nicht "fotorealistisch", sondern
- * "man erkennt, was sie tut".
+ * Seit dem 30.10.2026 baut figur.ts sie gerundet statt gestückelt, mit
+ * Gesicht und Kleidung ("es soll wirklich echt aussehen"). Keine Texturen,
+ * keine Modelldateien bleibt (ARCHITECTURE.md §6).
  */
 export interface PlayerModel {
   group: THREE.Group
@@ -192,6 +279,10 @@ export interface PlayerModel {
   torso: THREE.Group
   body: THREE.Mesh
   head: THREE.Mesh
+  /** Kopf samt Gesicht -- dreht sich gegen den Schritt, damit der Blick ruhig bleibt. */
+  kopf: THREE.Group
+  /** Höhe des Drehpunkts des Oberkörpers. */
+  huefte: number
   /** Laternenarm (links). Dreht um die Schulter. */
   arm: THREE.Group
   /** Axtarm (rechts). Dreht um die Schulter. */
@@ -209,142 +300,7 @@ export interface PlayerModel {
   axe: THREE.Group
 }
 
-/** Ein Glied: Drehpunkt oben, Fleisch nach unten. */
-function limb(
-  material: THREE.Material,
-  laenge: number,
-  oben: number,
-  unten: number,
-): { pivot: THREE.Group; mesh: THREE.Mesh } {
-  const pivot = new THREE.Group()
-  const geo = new THREE.CylinderGeometry(oben, unten, laenge, 5)
-  geo.translate(0, -laenge / 2, 0)
-  const mesh = new THREE.Mesh(geo, material)
-  mesh.castShadow = true
-  pivot.add(mesh)
-  return { pivot, mesh }
-}
-
-export function playerModel(): PlayerModel {
-  const group = new THREE.Group()
-  const torso = new THREE.Group()
-  const skin = new THREE.MeshLambertMaterial({ color: 0xd8b79a, flatShading: true })
-  const coat = new THREE.MeshLambertMaterial({ color: 0x3f4763, flatShading: true })
-  const leder = new THREE.MeshLambertMaterial({ color: 0x5b4636, flatShading: true })
-  const hose = new THREE.MeshLambertMaterial({ color: 0x2f3547, flatShading: true })
-
-  // Brustkorb: oben breiter als unten, wie Schultern über der Taille.
-  const brust = new THREE.CylinderGeometry(0.34, 0.26, 0.62, 6)
-  brust.translate(0, 1.14, 0)
-  const body = new THREE.Mesh(brust, coat)
-  body.castShadow = true
-
-  const guertel = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.12, 6), leder)
-  guertel.position.y = 0.8
-
-  const becken = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.24, 0.24, 6), hose)
-  becken.position.y = 0.68
-
-  const hals = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.12, 5), skin)
-  hals.position.y = 1.48
-
-  const head = new THREE.Mesh(new THREE.IcosahedronGeometry(0.21, 0), skin)
-  head.position.y = 1.66
-  head.castShadow = true
-
-  // Kapuze: sitzt hinten am Kopf, das Gesicht bleibt frei.
-  const kapuze = new THREE.Mesh(new THREE.SphereGeometry(0.25, 7, 5), coat)
-  kapuze.position.set(-0.05, 1.7, 0)
-  kapuze.scale.set(1, 0.95, 1.05)
-
-  const rucksack = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.38, 0.22), leder)
-  rucksack.position.set(-0.3, 1.15, 0)
-  rucksack.castShadow = true
-
-  // Arme: Drehpunkt an der Schulter, Unterarm am Ellbogen.
-  const linkerArm = limb(coat, 0.38, 0.09, 0.075)
-  linkerArm.pivot.position.set(0, 1.4, 0.3)
-  const linkerUnterarm = limb(coat, 0.36, 0.075, 0.065)
-  linkerUnterarm.pivot.position.y = -0.38
-  linkerArm.pivot.add(linkerUnterarm.pivot)
-  const linkeHand = new THREE.Mesh(new THREE.IcosahedronGeometry(0.075, 0), skin)
-  linkeHand.position.y = -0.36
-  linkerUnterarm.pivot.add(linkeHand)
-
-  const rechterArm = limb(coat, 0.38, 0.09, 0.075)
-  rechterArm.pivot.position.set(0, 1.4, -0.3)
-  const rechterUnterarm = limb(coat, 0.36, 0.075, 0.065)
-  rechterUnterarm.pivot.position.y = -0.38
-  rechterArm.pivot.add(rechterUnterarm.pivot)
-  const rechteHand = new THREE.Mesh(new THREE.IcosahedronGeometry(0.075, 0), skin)
-  rechteHand.position.y = -0.36
-  rechterUnterarm.pivot.add(rechteHand)
-
-  // Beine: Drehpunkt an der Hüfte, Unterschenkel am Knie, Fuß darunter.
-  const beine: THREE.Group[] = []
-  const knie: THREE.Group[] = []
-  for (const seite of [1, -1]) {
-    const oberschenkel = limb(hose, 0.42, 0.13, 0.11)
-    oberschenkel.pivot.position.set(0, 0.72, seite * 0.13)
-    const unterschenkel = limb(hose, 0.4, 0.1, 0.085)
-    unterschenkel.pivot.position.y = -0.42
-    oberschenkel.pivot.add(unterschenkel.pivot)
-    const fuss = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.1, 0.14), leder)
-    fuss.position.set(0.04, -0.43, 0)
-    fuss.castShadow = true
-    unterschenkel.pivot.add(fuss)
-    beine.push(oberschenkel.pivot)
-    knie.push(unterschenkel.pivot)
-  }
-
-  // Die Laterne hängt in der linken Hand.
-  const lanternMaterial = new THREE.MeshBasicMaterial({ color: 0xffb35c })
-  const lantern = new THREE.Mesh(new THREE.OctahedronGeometry(0.11, 0), lanternMaterial)
-  lantern.position.y = -0.14
-  const buegel = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.012, 4, 8), leder)
-  buegel.rotation.x = Math.PI / 2
-  buegel.position.y = -0.04
-  linkeHand.add(lantern, buegel)
-
-  // Die Axt in der rechten Hand. Der Stiel misst 42 Zentimeter: Mit 62
-  // schleifte das Blatt beim Gehen über den Boden (nachgesehen am 27.09.).
-  const axe = new THREE.Group()
-  const stiel = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.03, 0.42, 5), leder)
-  stiel.geometry.translate(0, -0.21, 0)
-  const blattGeo = new THREE.BoxGeometry(0.05, 0.16, 0.13)
-  blattGeo.translate(0.015, -0.4, 0.05)
-  const blatt = new THREE.Mesh(
-    blattGeo,
-    new THREE.MeshLambertMaterial({
-      color: 0x9aa3b0,
-      flatShading: true,
-    }),
-  )
-  blatt.castShadow = true
-  axe.add(stiel, blatt)
-  axe.visible = false
-  rechteHand.add(axe)
-
-  torso.add(body, guertel, becken, hals, head, kapuze, rucksack, linkerArm.pivot, rechterArm.pivot)
-  group.add(torso, beine[0]!, beine[1]!)
-
-  return {
-    group,
-    torso,
-    body,
-    head,
-    arm: linkerArm.pivot,
-    armRight: rechterArm.pivot,
-    elbowRight: rechterUnterarm.pivot,
-    legLeft: beine[0]!,
-    legRight: beine[1]!,
-    kneeLeft: knie[0]!,
-    kneeRight: knie[1]!,
-    lantern,
-    lanternMaterial,
-    axe,
-  }
-}
+// Die Figur selbst steht seit dem 30.10.2026 in figur.ts (menschModell).
 
 export interface EnemyModel {
   group: THREE.Group
