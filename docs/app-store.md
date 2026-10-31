@@ -122,6 +122,14 @@ build` direkt aufrufen.
    mindestens zwei Screenshots je Geräteklasse, eine
    **Datenschutzerklärung als URL** und die Angaben zur Datensicherheit.
 
+   **Das liegt fertig in `docs/store/`**: die Texte zum Kopieren samt
+   Zeichengrenzen in `docs/store/eintrag.md`, das Funktionsbild und acht
+   Bildschirmfotos als PNG. Die Bilder sind keine Montagen, sondern aus
+   dem echten Build fotografiert -- `node scripts/build-store-assets.mjs`
+   startet die gebaute App, klickt sich in die Spiele hinein und schießt
+   sie neu. Nach jeder sichtbaren Änderung einmal laufen lassen, sonst
+   wirbt der Eintrag mit einer App, die es so nicht mehr gibt.
+
    Zur Datensicherheit: Die App speichert Spielstände lokal (IndexedDB) und
    – nur bei angemeldeten Nutzern – in Supabase. Erhoben werden
    E-Mail-Adresse und Benutzername; Werbung und Tracking gibt es nicht.
