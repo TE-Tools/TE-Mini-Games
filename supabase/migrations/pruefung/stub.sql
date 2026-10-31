@@ -8,7 +8,18 @@
 -- verschieden zu tun.
 
 create schema if not exists auth;
-create table if not exists auth.users (id uuid primary key);
+
+-- Nicht nur die Kennung: Der Trigger aus 001 (`handle_new_user`) liest beim
+-- Anlegen eines Kontos `raw_user_meta_data` und `email`. Fehlen die Spalten,
+-- bricht jede Prüfung ab, die ein Konto anlegt -- mit einer Meldung, die
+-- nach einem Fehler in der Migration aussieht und keiner ist.
+create table if not exists auth.users (
+  id uuid primary key,
+  email text,
+  raw_user_meta_data jsonb not null default '{}'::jsonb
+);
+alter table auth.users add column if not exists email text;
+alter table auth.users add column if not exists raw_user_meta_data jsonb not null default '{}'::jsonb;
 
 -- In Supabase liest auth.uid() den angemeldeten Benutzer aus dem Token.
 -- Hier tut es eine Sitzungsvariable: So kann eine Prüfung zwischen den

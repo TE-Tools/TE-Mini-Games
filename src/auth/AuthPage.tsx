@@ -6,6 +6,7 @@ import {
   signUpWithEmail,
   signInWithGoogle,
   setMyUsername,
+  deleteOwnAccount,
   signOut,
   getCurrentUser,
   validateUsername,
@@ -49,6 +50,15 @@ export function AuthPage({ gate = false }: Props) {
   const [syncInfo, setSyncInfo] = useState<string | null>(null)
   const [confirmReset, setConfirmReset] = useState(false)
   const [resetting, setResetting] = useState(false)
+  /*
+   * Das Konto zu löschen ist endgültig und nimmt die Anmeldung mit. Ein
+   * zweiter Knopf wie beim Zurücksetzen wäre dafür zu wenig -- hier wird
+   * das Wort abgetippt. Nicht als Schikane: Es ist der Unterschied
+   * zwischen „ich wollte das" und „ich habe danebengetippt".
+   */
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleteWord, setDeleteWord] = useState('')
+  const [deleting, setDeleting] = useState(false)
   const [recovery, setRecovery] = useState(
     () => typeof window !== 'undefined' && window.location.hash.includes('type=recovery'),
   )
@@ -155,8 +165,8 @@ export function AuthPage({ gate = false }: Props) {
             <p className={styles.claimTitle}>Dir fehlt noch ein Benutzername</p>
             <p className={styles.muted}>
               In den Ranglisten steht dein Benutzername, nicht deine E-Mail. Ohne ihn tauchst du
-              dort nicht auf – auch wenn alles brav hochgeladen wird. Bei der Anmeldung über
-              Google wird keiner vergeben, deshalb hier nachtragen.
+              dort nicht auf – auch wenn alles brav hochgeladen wird. Bei der Anmeldung über Google
+              wird keiner vergeben, deshalb hier nachtragen.
             </p>
             <label className={styles.label}>
               Benutzername
@@ -187,7 +197,9 @@ export function AuthPage({ gate = false }: Props) {
                       return
                     }
                     setMyUsernameState(await getMyUsername())
-                    setSyncInfo('Benutzername gespeichert \u2013 du bist ab jetzt in der Rangliste.')
+                    setSyncInfo(
+                      'Benutzername gespeichert \u2013 du bist ab jetzt in der Rangliste.',
+                    )
                   })
                   .finally(() => setClaiming(false))
               }}
@@ -277,6 +289,88 @@ export function AuthPage({ gate = false }: Props) {
             </button>
           </>
         )}
+        <hr className={styles.divider} />
+
+        {/*
+          Konto löschen. Steht bewusst ganz unten, hinter dem
+          Zurücksetzen: Wer nur neu anfangen will, kommt vorher an der
+          milderen Möglichkeit vorbei.
+        */}
+        {!confirmDelete ? (
+          <button type="button" className={styles.danger} onClick={() => setConfirmDelete(true)}>
+            Konto löschen
+          </button>
+        ) : (
+          <>
+            <p className={styles.error}>
+              Löscht dein Konto und alles, was daran hängt: Spielstände, Bestwerte, Abzeichen,
+              Einträge in den Bestenlisten und deine Anmeldung. Danach kannst du dich mit dieser
+              E-Mail nicht mehr anmelden. Das lässt sich nicht rückgängig machen.
+            </p>
+            <label className={styles.label}>
+              Tippe <strong>LÖSCHEN</strong> ein, um es zu bestätigen
+              <input
+                className={styles.input}
+                value={deleteWord}
+                onChange={(e) => setDeleteWord(e.target.value)}
+                autoComplete="off"
+                aria-label="Löschen bestätigen"
+              />
+            </label>
+            <button
+              type="button"
+              className={styles.danger}
+              disabled={deleting || deleteWord.trim().toUpperCase() !== 'LÖSCHEN'}
+              onClick={() => {
+                setDeleting(true)
+                setError(null)
+                setSyncInfo(null)
+                void deleteOwnAccount()
+                  .then(async ({ error: fehler }) => {
+                    if (fehler) {
+                      setError(`Das Konto wurde nicht gelöscht: ${fehler}`)
+                      return
+                    }
+                    // Erst der Server, dann das Gerät -- sonst stünden hier
+                    // noch Punkte zu einem Konto, das es nicht mehr gibt.
+                    await resetLocalProgress()
+                    window.location.assign('/')
+                  })
+                  .finally(() => {
+                    setDeleting(false)
+                    setConfirmDelete(false)
+                    setDeleteWord('')
+                  })
+              }}
+            >
+              {deleting ? 'Lösche\u2026' : 'Konto endgültig löschen'}
+            </button>
+            <button
+              type="button"
+              className={styles.switch}
+              onClick={() => {
+                setConfirmDelete(false)
+                setDeleteWord('')
+              }}
+            >
+              Abbrechen
+            </button>
+          </>
+        )}
+
+        {/*
+          Fehler aus diesem Bereich standen bisher nirgends: `setError`
+          wurde beim Zurücksetzen und beim Löschen gesetzt, aber im
+          angemeldeten Teil nie angezeigt -- „Lokal zurückgesetzt, im
+          Konto nicht" sah niemand. Die Zeile steht unten, weil die beiden
+          Knöpfe, deren Scheitern wehtut, unten stehen.
+        */}
+        {error && (
+          <p className={styles.error} role="alert">
+            {error}
+          </p>
+        )}
+
         <Link to="/" className={styles.link}>
           Zur Startseite
         </Link>
@@ -474,7 +568,12 @@ export function AuthPage({ gate = false }: Props) {
         {busy ? '\u2026' : mode === 'in' ? 'Anmelden' : 'Registrieren'}
       </button>
 
-      <button type="button" className={styles.googleBtn} disabled={busy} onClick={() => void google()}>
+      <button
+        type="button"
+        className={styles.googleBtn}
+        disabled={busy}
+        onClick={() => void google()}
+      >
         Mit Google anmelden
       </button>
 

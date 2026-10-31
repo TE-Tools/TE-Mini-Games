@@ -4,6 +4,7 @@ import { HomePage } from '@/pages/HomePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { ImpressumPage } from '@/pages/recht/ImpressumPage'
 import { DatenschutzPage } from '@/pages/recht/DatenschutzPage'
+import { KontoLoeschenPage } from '@/pages/recht/KontoLoeschenPage'
 import { PerfectSecondPage } from '@/pages/play/PerfectSecondPage'
 import { WhatIsMissingPage } from '@/pages/play/WhatIsMissingPage'
 import { SchuetzenrundePage } from '@/pages/play/SchuetzenrundePage'
@@ -194,6 +195,9 @@ export function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/impressum" element={<ImpressumPage />} />
           <Route path="/datenschutz" element={<DatenschutzPage />} />
+          {/* Eigene Adresse, weil Google Play einen Löschweg ohne die App
+              verlangt -- erreichbar auch abgemeldet. */}
+          <Route path="/konto-loeschen" element={<KontoLoeschenPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </AuthGate>

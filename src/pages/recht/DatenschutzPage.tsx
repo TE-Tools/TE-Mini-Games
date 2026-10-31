@@ -157,8 +157,12 @@ export function DatenschutzPage() {
         <h2>6. Speicherdauer und Löschung</h2>
         <p>
           Kontodaten bleiben gespeichert, solange das Konto besteht. In der App kannst du unter{' '}
-          <strong>Profil → Konto &amp; Anmeldung</strong> deine Daten selbst zurücksetzen. Für die
-          vollständige Löschung des Kontos genügt eine formlose E-Mail an{' '}
+          <strong>Profil → Konto &amp; Anmeldung</strong> deinen Fortschritt zurücksetzen – und dort
+          ganz unten auch <strong>dein Konto vollständig löschen</strong>. Das entfernt Konto,
+          Anmeldung, Spielstände, Bestwerte, Abzeichen und Bestenlisten-Einträge sofort und
+          endgültig; wie das geht, steht auf der Seite{' '}
+          <Link to="/konto-loeschen">Konto löschen</Link>. Kommst du nicht mehr an dein Konto,
+          genügt eine formlose E-Mail an{' '}
           <a href="mailto:te-alltagshelfer@outlook.de">te-alltagshelfer@outlook.de</a>.
           Abgeschlossene Online-Runden werden nicht dauerhaft aufbewahrt.
         </p>
