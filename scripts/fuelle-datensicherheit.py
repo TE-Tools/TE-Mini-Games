@@ -59,14 +59,17 @@ EINFACH = {
     ('PSL_SUPPORT_DATA_DELETION_BY_USER', 'DATA_DELETION_NO_AUTO_DELETED'): 'FALSE',
     ('PSL_DATA_DELETION_URL', ''): LOESCH_URL,
 
-    # Keine unabhängige Sicherheitsprüfung nach MASA -- also auch kein Logo.
-    ('PSL_INDEPENDENTLY_VALIDATED', ''): 'FALSE',
-
-    # Mit Google meldet man sich mit einem Konto an, das es schon gibt.
-    ('PSL_HAS_OUTSIDE_APP_ACCOUNTS', ''): 'TRUE',
-    ('PSL_OUTSIDE_APP_ACCOUNT_TYPES', 'PSL_LOGIN_WITH_OUTSIDE_APP_ID'): 'TRUE',
-    ('PSL_OUTSIDE_APP_ACCOUNT_TYPES', 'PSL_LOGIN_THROUGH_EMPLOYMENT_OR_ENTERPRISE_ACCOUNT'): 'FALSE',
-    ('PSL_OUTSIDE_APP_ACCOUNT_TYPES', 'PSL_OUTSIDE_APP_ACCOUNT_TYPE_OTHER'): 'FALSE',
+    # Ebenfalls leer: PSL_INDEPENDENTLY_VALIDATED (unabhaengige
+    # Sicherheitspruefung nach MASA). Ein "nein" sagt dort nichts, was
+    # Google nicht ohnehin annimmt, und die Frage ist OPTIONAL -- eine
+    # Zelle weniger, an der ein Import scheitern kann.
+    #
+    # PSL_HAS_OUTSIDE_APP_ACCOUNTS und die davon abhaengige Frage nach der
+    # Art dieser Konten bleiben leer. Inhaltlich waere "ja" richtig -- mit
+    # "Mit Google anmelden" kommt man mit einem Konto herein, das es schon
+    # gibt. Die Play Console laesst die Frage hier aber nicht beantworten,
+    # und ein Wert, den das Formular nicht annimmt, laesst den ganzen
+    # Import scheitern. Beide Fragen sind OPTIONAL, leer ist zulaessig.
 }
 
 

@@ -14,12 +14,12 @@ PSL_SUPPORT_DATA_DELETION_BY_USER,DATA_DELETION_NO,FALSE,SINGLE_CHOICE,"Können 
 PSL_SUPPORT_DATA_DELETION_BY_USER,DATA_DELETION_NO_AUTO_DELETED,FALSE,SINGLE_CHOICE,"Können Nutzer bei dir anfordern, dass ihre Daten gelöscht werden? / Nein, aber Nutzerdaten werden innerhalb von 90 Tagen automatisch gelöscht"
 PSL_DATA_DELETION_URL,,https://te-mini-games.pages.dev/konto-loeschen,MAYBE_REQUIRED,URL zum Löschen von Daten
 PSL_DATA_COLLECTION_COMPLIES_FAMILY_POLICY,,,OPTIONAL,"Beantworte diese Frage nur, wenn du angegeben hast, dass die Zielaltersgruppe deiner App Kinder umfasst oder wenn du am Designed for Families-Programm teilnimmst. Wenn eine der obigen Angaben zutrifft, musst du die Richtlinie für familienfreundliche Inhalte von Google Play (https://support.google.com/googleplay/android-developer/answer/9893335) einhalten. Möchtest du das den Nutzern im Abschnitt zur Datensicherheit in deinem Store-Eintrag mitteilen?"
-PSL_INDEPENDENTLY_VALIDATED,,FALSE,OPTIONAL,"Hat deine App eine unabhängige Sicherheitsprüfung laut Framework für Mobile Application Security Assessment (MASA) bestanden? Antworte nur mit „Ja“, wenn bei der Prüfung ein einwandfreies Ergebnis erzielt wurde."
+PSL_INDEPENDENTLY_VALIDATED,,,OPTIONAL,"Hat deine App eine unabhängige Sicherheitsprüfung laut Framework für Mobile Application Security Assessment (MASA) bestanden? Antworte nur mit „Ja“, wenn bei der Prüfung ein einwandfreies Ergebnis erzielt wurde."
 PSL_UPI_BADGE_OPT_IN,,,OPTIONAL,Soll dieses Logo in deinem Store-Eintrag angezeigt werden?
-PSL_HAS_OUTSIDE_APP_ACCOUNTS,,TRUE,OPTIONAL,"Können sich Nutzer mit Konten anmelden, die außerhalb der App erstellt wurden?"
-PSL_OUTSIDE_APP_ACCOUNT_TYPES,PSL_LOGIN_WITH_OUTSIDE_APP_ID,TRUE,MULTIPLE_CHOICE,"Wie werden diese Konten erstellt? / Identifikation außerhalb der App (z. B. SIM-Bindung, Abo für Dienste)"
-PSL_OUTSIDE_APP_ACCOUNT_TYPES,PSL_LOGIN_THROUGH_EMPLOYMENT_OR_ENTERPRISE_ACCOUNT,FALSE,MULTIPLE_CHOICE,Wie werden diese Konten erstellt? / Über ein Unternehmen (Arbeitskonto)
-PSL_OUTSIDE_APP_ACCOUNT_TYPES,PSL_OUTSIDE_APP_ACCOUNT_TYPE_OTHER,FALSE,MULTIPLE_CHOICE,Wie werden diese Konten erstellt? / Sonstiger
+PSL_HAS_OUTSIDE_APP_ACCOUNTS,,,OPTIONAL,"Können sich Nutzer mit Konten anmelden, die außerhalb der App erstellt wurden?"
+PSL_OUTSIDE_APP_ACCOUNT_TYPES,PSL_LOGIN_WITH_OUTSIDE_APP_ID,,MULTIPLE_CHOICE,"Wie werden diese Konten erstellt? / Identifikation außerhalb der App (z. B. SIM-Bindung, Abo für Dienste)"
+PSL_OUTSIDE_APP_ACCOUNT_TYPES,PSL_LOGIN_THROUGH_EMPLOYMENT_OR_ENTERPRISE_ACCOUNT,,MULTIPLE_CHOICE,Wie werden diese Konten erstellt? / Über ein Unternehmen (Arbeitskonto)
+PSL_OUTSIDE_APP_ACCOUNT_TYPES,PSL_OUTSIDE_APP_ACCOUNT_TYPE_OTHER,,MULTIPLE_CHOICE,Wie werden diese Konten erstellt? / Sonstiger
 PSL_OUTSIDE_APP_ACCOUNT_TYPE_SPECIFY,,,MAYBE_REQUIRED,"Beschreibe, wie diese Konten erstellt werden"
 PSL_DATA_TYPES_PERSONAL,PSL_NAME,TRUE,MULTIPLE_CHOICE,Personenbezogene Daten / Name
 PSL_DATA_TYPES_PERSONAL,PSL_EMAIL,TRUE,MULTIPLE_CHOICE,Personenbezogene Daten / E-Mail-Adresse
