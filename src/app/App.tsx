@@ -45,9 +45,25 @@ import { getPlayMode, setPlayMode, type PlayMode } from '@/auth/sessionMode'
 
 type GateState = { status: 'loading' } | { status: 'gate' } | { status: 'ready'; mode: PlayMode }
 
+/**
+ * Seiten, die jeder ohne Anmeldung sehen können muss.
+ *
+ * Google ruft die Datenschutzerklärung und den Löschweg beim Prüfen des
+ * Store-Eintrags auf -- ohne Konto, versteht sich. Wer dort ein
+ * Anmeldeformular vorfindet, bekommt die App zurück. Beim Impressum ist
+ * es kein Store-Problem, sondern ein rechtliches: Es muss unmittelbar
+ * erreichbar sein.
+ *
+ * Die Seiten kommen ohne Sitzung aus; die Löschseite fragt selbst nach,
+ * ob jemand angemeldet ist, und zeigt entsprechend den Weg in der App
+ * oder den über E-Mail.
+ */
+const OEFFENTLICHE_SEITEN = ['/impressum', '/datenschutz', '/konto-loeschen']
+
 function AuthGate({ children }: { children: ReactNode }) {
   const [gate, setGate] = useState<GateState>({ status: 'loading' })
   const location = useLocation()
+  const oeffentlich = OEFFENTLICHE_SEITEN.includes(location.pathname)
 
   useEffect(() => {
     let cancelled = false
@@ -107,6 +123,10 @@ function AuthGate({ children }: { children: ReactNode }) {
       setGate({ status: 'gate' })
     })
   }, [location.pathname, gate.status])
+
+  // Vor jeder Prüfung: Diese Seiten warten auf nichts. Selbst das
+  // "Laden…" wäre hier falsch -- ein Prüfer sieht dann eine leere Seite.
+  if (oeffentlich) return <>{children}</>
 
   if (gate.status === 'loading') {
     return (
