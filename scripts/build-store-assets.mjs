@@ -77,6 +77,10 @@ const BASIS = `http://127.0.0.1:${server.address().port}`
 
 mkdirSync(ZIEL, { recursive: true })
 
+/** Gesammelte Beanstandungen -- am Ende entscheidet sich daran der Rückgabewert. */
+let fehler = false
+let fehlerSymbol = false
+
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PFAD || undefined })
 
 /* -------------------------------------------------- Funktionsbild 1024x500
@@ -128,6 +132,35 @@ function funktionsbild() {
   writeFileSync(`${ZIEL}/funktionsbild-1024x500.png`, png)
   await page.close()
   console.log(`funktionsbild-1024x500.png  ${(png.length / 1024).toFixed(0)} KB`)
+}
+
+/* ----------------------------------------------------- App-Symbol 512x512
+ * Google verlangt das Symbol als 32-Bit-PNG *mit* Alphakanal. Die Symbole
+ * in `public/icons/` sind ohne (Farbtyp 2) -- im Browser egal, beim
+ * Hochladen nicht. Einmal durch eine Leinwand geschickt, kommt es als
+ * RGBA heraus; das Bild selbst bleibt dasselbe.
+ */
+{
+  const page = await browser.newPage({ viewport: { width: 512, height: 512 } })
+  await page.goto(`${BASIS}/icons/icon-512.png`, { waitUntil: 'load' })
+  const datenUrl = await page.evaluate(async () => {
+    const bild = new Image()
+    bild.src = '/icons/icon-512.png'
+    await bild.decode()
+    const leinwand = document.createElement('canvas')
+    leinwand.width = 512
+    leinwand.height = 512
+    leinwand.getContext('2d').drawImage(bild, 0, 0, 512, 512)
+    return leinwand.toDataURL('image/png')
+  })
+  const png = Buffer.from(datenUrl.split(',')[1], 'base64')
+  writeFileSync(`${ZIEL}/app-symbol-512x512.png`, png)
+  await page.close()
+  const farbtyp = png[25]
+  console.log(
+    `app-symbol-512x512.png  ${(png.length / 1024).toFixed(0)} KB  Farbtyp ${farbtyp}${farbtyp === 6 ? ' (RGBA)' : ' -- KEIN Alphakanal!'}`,
+  )
+  if (farbtyp !== 6) fehlerSymbol = true
 }
 
 /* ------------------------------------------------ Bildschirmfotos 1080x1920
@@ -201,7 +234,6 @@ async function klick(page, name) {
   await el.click()
   await page.waitForTimeout(1400)
 }
-let fehler = false
 
 const kontext = await browser.newContext({
   viewport: { width: 540, height: 960 },
@@ -240,6 +272,10 @@ for (const b of BILDER) {
 await browser.close()
 server.close()
 console.log(`\nFertig in ${ZIEL}/`)
+if (fehlerSymbol) {
+  console.error('\nDas App-Symbol hat keinen Alphakanal -- Google lehnt es ab.')
+  process.exit(1)
+}
 if (fehler) {
   console.error('\nMindestens ein Knopf wurde nicht gefunden -- die Oberfläche hat sich geändert.')
   process.exit(1)
