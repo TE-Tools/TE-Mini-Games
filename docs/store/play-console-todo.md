@@ -152,7 +152,15 @@ die Glücksspiel-Simulation passt ohnehin nicht dazu.
 
 ### 2.6 Datensicherheit
 
-Der am genauesten geprüfte Abschnitt. Die Angaben:
+Der am genauesten geprüfte Abschnitt — und der einzige, den du nicht
+Feld für Feld anklicken musst. In `docs/store/data-safety.csv` liegt das
+ausgefüllte Formular.
+
+> App-Inhalte → Datensicherheit → **Importieren**
+
+⚠️ Der Import **überschreibt** alles, was dort schon steht.
+
+Was drinsteht, zum Nachlesen:
 
 | Frage                                           | Antwort                         |
 | ----------------------------------------------- | ------------------------------- |
@@ -254,7 +262,17 @@ Länder: mindestens Deutschland, Österreich, Schweiz – die App ist auf
 Deutsch. Weltweit geht auch, der Eintrag erscheint dann überall auf
 Deutsch.
 
-- [ ] ausgewählt
+⚠️ **Südkorea abwählen.** Die dortige Prüfstelle GRAC erkennt die
+IARC-Selbsteinstufung für Spiele mit Glücksspiel-Simulation nicht an und
+lehnt sie ab – das ist der erwartete Ausgang der ehrlichen Antwort beim
+Poker, kein Fehler. Für Korea bräuchte es ein eigenes Verfahren bei GRAC.
+Alle anderen Prüfstellen (USK, PEGI, ESRB, ClassInd) sind davon
+unberührt.
+
+Und nicht: die Antwort zur Glücksspiel-Simulation nachträglich auf „Nein"
+ändern. Eine falsche Angabe im IARC-Fragebogen kostet den ganzen Eintrag.
+
+- [ ] Länder ausgewählt, Südkorea abgewählt
 
 ---
 
