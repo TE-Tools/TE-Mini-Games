@@ -140,6 +140,17 @@ jobs:
           VERSION_NAME: ${{ inputs.versionName }}
           VERSION_CODE: ${{ inputs.versionCode }}
         run: |
+          # Eingaben prüfen, bevor sie stillschweigend Unsinn ergeben.
+          # versionCode ist eine ganze Zahl; "1.0.1" wird dabei zu NaN und
+          # landet als null im Manifest. Das faellt erst beim Hochladen auf.
+          if [ -n "$VERSION_CODE" ] && ! printf '%s' "$VERSION_CODE" | grep -qE '^[1-9][0-9]*$'; then
+            echo "::error::versionCode muss eine ganze Zahl sein (1, 2, 3 ...), nicht \"$VERSION_CODE\". Die Zahl zaehlt die Uploads und muss jedes Mal groesser werden. Der Text, den Nutzer sehen, gehoert in versionName."
+            exit 1
+          fi
+          if [ -n "$VERSION_NAME" ] && ! printf '%s' "$VERSION_NAME" | grep -qE '^[0-9]+\.[0-9]+(\.[0-9]+)?$'; then
+            echo "::error::versionName sieht aus wie 1.0.0 oder 1.2 -- nicht \"$VERSION_NAME\"."
+            exit 1
+          fi
           mkdir -p bau
           cp twa-manifest.json bau/
           cd bau
@@ -191,6 +202,10 @@ jobs:
             "$SIGNIERER" verify --print-certs app-release-signed.apk | grep 'SHA-256 digest'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+          # Auch ins Protokoll: In der Zusammenfassung muss man danach
+          # suchen, und gebraucht wird er jedes Mal fuer assetlinks.json.
+          echo "Fingerabdruck des Upload-Schluessels:"
+          "$SIGNIERER" verify --print-certs app-release-signed.apk | grep 'SHA-256 digest'
           # Eine leere Version nimmt Google nicht an -- lieber hier abbrechen.
           if "$AAPT" dump badging app-release-signed.apk | head -1 | grep -q "versionName=''"; then
             echo "::error::versionName ist leer. In twa-manifest.json heißt der Schlüssel appVersion, nicht appVersionName."
@@ -202,7 +217,7 @@ jobs:
         # schon gebaut, und man will es ansehen können, statt den ganzen
         # Lauf zu wiederholen.
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: te-mini-games-android
           path: |
