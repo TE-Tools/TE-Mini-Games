@@ -13,12 +13,10 @@
  * ersten echten Bau.
  */
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
-
-const manifest = JSON.parse(readFileSync('twa-manifest.json', 'utf8')) as Record<string, unknown>
-const assetlinks = JSON.parse(readFileSync('public/.well-known/assetlinks.json', 'utf8')) as Array<{
-  target: { package_name: string; sha256_cert_fingerprints: string[] }
-}>
+// Die Dateien selbst einlesen, nicht nachbauen: Ein Test gegen eine
+// Kopie der Werte prüft nur die Kopie.
+import manifest from '../twa-manifest.json'
+import assetlinks from '../public/.well-known/assetlinks.json'
 
 describe('TWA-Manifest', () => {
   it('nennt denselben Paketnamen wie assetlinks.json', () => {
