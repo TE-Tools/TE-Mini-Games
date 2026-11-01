@@ -66,17 +66,27 @@ jobs:
         run: |
           # Bubblewrap erkennt ein SDK nur an, wenn darin ein Ordner `tools`
           # oder `bin` liegt (AndroidSdkTools.validatePath). Der Läufer legt
-          # die Werkzeuge stattdessen unter cmdline-tools/latest/bin ab --
-          # ohne diesen Verweis bricht es mit "The provided androidSdk isn't
-          # correct." ab, und `bin/sdkmanager` ist genau der Pfad, den
-          # Bubblewrap danach aufruft.
-          if [ ! -e "$ANDROID_HOME/bin" ] && [ ! -e "$ANDROID_HOME/tools" ]; then
-            sudo ln -s "$ANDROID_HOME/cmdline-tools/latest/bin" "$ANDROID_HOME/bin"
-          fi
-          if [ ! -x "$ANDROID_HOME/bin/sdkmanager" ]; then
-            echo "::error::sdkmanager liegt nicht unter $ANDROID_HOME/bin -- der Läufer hat das Android-SDK anders abgelegt als erwartet."
+          # alles unter cmdline-tools/latest ab.
+          #
+          # Ein blosser Verweis genügt dafür nicht: Das Skript `sdkmanager`
+          # sucht seine JAR-Dateien relativ zum eigenen Pfad. Über
+          # $ANDROID_HOME/bin aufgerufen sucht es sie in $ANDROID_HOME/lib --
+          # dort liegen sie nicht, und es endet mit
+          #   Could not find or load main class ...SdkManagerCli
+          #
+          # Deshalb ein echtes Verzeichnis mit einem Weiterleiter, der das
+          # Original an seinem eigenen Ort aufruft. Das erfüllt die Prüfung
+          # und funktioniert auch, wenn Bubblewrap selbst danach greift.
+          ECHT="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$ECHT" ]; then
+            echo "::error::sdkmanager liegt nicht unter $ECHT -- der Läufer hat das Android-SDK anders abgelegt als erwartet."
             exit 1
           fi
+          sudo mkdir -p "$ANDROID_HOME/bin"
+          printf '#!/bin/bash\nexec "%s" "$@"\n' "$ECHT" | sudo tee "$ANDROID_HOME/bin/sdkmanager" > /dev/null
+          sudo chmod +x "$ANDROID_HOME/bin/sdkmanager"
+          # Beweist, dass der Weiterleiter trägt -- und nicht erst der Bau.
+          "$ANDROID_HOME/bin/sdkmanager" --version
           # Genau die Fassungen, die Bubblewrap und das erzeugte Projekt
           # verlangen. Fehlen sie, lädt Bubblewrap sie mitten im Bau selbst
           # nach -- langsamer und ohne klare Meldung, wenn es schiefgeht.
