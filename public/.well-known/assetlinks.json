@@ -3,7 +3,7 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "dev.pages.te_mini_games.twa",
+      "package_name": "de.tetools.minigames",
       "sha256_cert_fingerprints": [
         "HIER_DEN_FINGERABDRUCK_AUS_DER_PLAY_CONSOLE_EINTRAGEN__App-Integritaet__App-Signaturschluessel",
         "HIER_DEN_FINGERABDRUCK_DES_EIGENEN_UPLOAD-SCHLUESSELS__keytool_-list_-v_-keystore_android.keystore"
