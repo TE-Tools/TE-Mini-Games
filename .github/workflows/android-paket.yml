@@ -1,0 +1,156 @@
+# Baut das Android-Paket (AAB) für Google Play und signiert es mit dem
+# eigenen Upload-Schlüssel aus den Projektgeheimnissen.
+#
+# Die App ist eine Trusted Web Activity: Sie lädt die ausgelieferte Seite,
+# der Bau holt also nichts aus `src/`, sondern erzeugt nur die Hülle aus
+# `twa-manifest.json`. Deshalb ist hier kein `npm run build` nötig.
+#
+# Nötige Geheimnisse:
+#   ANDROID_KEYSTORE_BASE64    -- aus dem Ablauf "Android-Schlüssel erzeugen"
+#   ANDROID_KEYSTORE_PASSWORD
+#   ANDROID_KEY_PASSWORD
+name: Android-Paket bauen
+
+on:
+  workflow_dispatch:
+    inputs:
+      versionName:
+        description: 'Versionsname, wie er im Store steht (z. B. 1.0.1)'
+        required: false
+        default: ''
+      versionCode:
+        description: 'Versionsnummer -- muss bei jedem Upload zu Play größer sein als zuvor'
+        required: false
+        default: ''
+
+jobs:
+  bauen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Geheimnisse prüfen
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          SPEICHER: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          SCHLUESSEL: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          fehlt=""
+          [ -z "$KEYSTORE" ] && fehlt="$fehlt ANDROID_KEYSTORE_BASE64"
+          [ -z "$SPEICHER" ] && fehlt="$fehlt ANDROID_KEYSTORE_PASSWORD"
+          [ -z "$SCHLUESSEL" ] && fehlt="$fehlt ANDROID_KEY_PASSWORD"
+          if [ -n "$fehlt" ]; then
+            echo "::error::Diese Geheimnisse fehlen:$fehlt -- erst den Ablauf \"Android-Schlüssel erzeugen\" starten."
+            exit 1
+          fi
+
+      - name: Gradle- und Bubblewrap-Zwischenspeicher
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('twa-manifest.json') }}
+          restore-keys: gradle-
+
+      - name: Bubblewrap bereitstellen
+        run: |
+          npm i -g @bubblewrap/cli@1.27.0
+          # Bubblewrap lädt sonst ein eigenes JDK und SDK (rund 1,4 GB).
+          # Der Läufer bringt beides mit -- das spart jeden Lauf mehrere Minuten.
+          mkdir -p ~/.bubblewrap
+          printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "$JAVA_HOME" "$ANDROID_HOME" > ~/.bubblewrap/config.json
+          cat ~/.bubblewrap/config.json
+
+      - name: Maven Central über den Google-Spiegel
+        run: |
+          # Bubblewraps Vorlage nennt jcenter(). Das ist seit 2021
+          # abgeschaltet und leitet auf repo1.maven.org um, das hinter
+          # geteilten Adressen gern mit 429 antwortet. Der Spiegel bei
+          # Google hat denselben Inhalt.
+          mkdir -p ~/.gradle/init.d
+          cat > ~/.gradle/init.d/maven-spiegel.gradle <<'GRADLE'
+          def spiegel = 'https://maven-central.storage-download.googleapis.com/maven2/'
+          def ersetze = { handler ->
+            handler.removeAll { repo ->
+              repo instanceof org.gradle.api.artifacts.repositories.MavenArtifactRepository &&
+                ['jcenter', 'repo1.maven.org', 'repo.maven.apache.org'].any { repo.url.toString().contains(it) }
+            }
+            handler.maven { url spiegel }
+          }
+          settingsEvaluated { settings ->
+            ersetze(settings.pluginManagement.repositories)
+            ersetze(settings.dependencyResolutionManagement.repositories)
+          }
+          projectsLoaded {
+            gradle.rootProject.allprojects { projekt ->
+              ersetze(projekt.buildscript.repositories)
+              ersetze(projekt.repositories)
+            }
+          }
+          GRADLE
+          sed -i 's/^          //' ~/.gradle/init.d/maven-spiegel.gradle
+
+      - name: Projekt vorbereiten
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          VERSION_NAME: ${{ inputs.versionName }}
+          VERSION_CODE: ${{ inputs.versionCode }}
+        run: |
+          mkdir -p bau
+          cp twa-manifest.json bau/
+          cd bau
+          if [ -n "$VERSION_NAME" ]; then
+            node -e 'const f="twa-manifest.json",m=require("./"+f);m.appVersion=process.env.VERSION_NAME;require("fs").writeFileSync(f,JSON.stringify(m,null,2)+"\n")'
+          fi
+          if [ -n "$VERSION_CODE" ]; then
+            node -e 'const f="twa-manifest.json",m=require("./"+f);m.appVersionCode=Number(process.env.VERSION_CODE);require("fs").writeFileSync(f,JSON.stringify(m,null,2)+"\n")'
+          fi
+          echo "$KEYSTORE" | base64 -d > android.keystore
+          bubblewrap update --skipVersionUpgrade
+
+      - name: Bauen und signieren
+        env:
+          BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          cd bau
+          bubblewrap build --skipPwaValidation
+
+      - name: Nachsehen, was entstanden ist
+        run: |
+          cd bau
+          AAPT=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 | tail -1)
+          {
+            echo '### Gebautes Paket'
+            echo '```'
+            "$AAPT" dump badging app-release-signed.apk | head -1
+            echo '```'
+            echo 'Der SHA-256 des Signaturschlüssels -- muss in assetlinks.json stehen:'
+            echo '```'
+            "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs app-release-signed.apk | grep 'SHA-256 digest'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          # Eine leere Version nimmt Google nicht an -- lieber hier abbrechen.
+          if "$AAPT" dump badging app-release-signed.apk | head -1 | grep -q "versionName=''"; then
+            echo "::error::versionName ist leer. In twa-manifest.json heißt der Schlüssel appVersion, nicht appVersionName."
+            exit 1
+          fi
+
+      - name: Paket bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: te-mini-games-android
+          path: |
+            bau/app-release-bundle.aab
+            bau/app-release-signed.apk
+          retention-days: 14

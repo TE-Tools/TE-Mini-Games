@@ -1,0 +1,64 @@
+# Erzeugt einmalig den Upload-Schlüssel für Google Play.
+#
+# Warum als Ablauf und nicht von Hand: keytool steckt in einem JDK, und
+# das muss sonst erst auf dem eigenen Rechner stehen. Hier entsteht der
+# Schlüssel auf dem Läufer, mit einem Passwort, das nur als Geheimnis im
+# Projekt liegt -- es wandert durch keinen Chat und durch keine Datei.
+#
+# Einmal laufen lassen, die Datei aus den Artefakten herunterladen, als
+# Geheimnis ANDROID_KEYSTORE_BASE64 hinterlegen, das Artefakt löschen.
+#
+# Der Schlüssel ist nicht ersetzbar: Geht er verloren, muss bei Google ein
+# neuer Upload-Schlüssel beantragt werden. Also die heruntergeladene Datei
+# zusätzlich an einem sicheren Ort aufbewahren.
+name: Android-Schlüssel erzeugen
+
+on:
+  workflow_dispatch:
+
+jobs:
+  schluessel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Java bereitstellen
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Geheimnisse prüfen
+        env:
+          SPEICHER: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          SCHLUESSEL: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$SPEICHER" ] || [ -z "$SCHLUESSEL" ]; then
+            echo "::error::ANDROID_KEYSTORE_PASSWORD und ANDROID_KEY_PASSWORD müssen als Geheimnisse gesetzt sein (mindestens 6 Zeichen)."
+            exit 1
+          fi
+
+      - name: Schlüssel erzeugen
+        env:
+          SPEICHER: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          SCHLUESSEL: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          keytool -genkeypair -v \
+            -keystore android.keystore \
+            -alias te-mini-games \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "$SPEICHER" -keypass "$SCHLUESSEL" \
+            -dname "CN=TE-Tools, OU=TE-Mini Games, O=TE-Tools, L=Unbekannt, S=Unbekannt, C=DE"
+          base64 -w0 android.keystore > android.keystore.base64
+          echo "### Fingerabdruck dieses Schlüssels" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          keytool -list -v -keystore android.keystore -alias te-mini-games \
+            -storepass "$SPEICHER" | grep SHA256 >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Zum Herunterladen bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-keystore
+          path: |
+            android.keystore
+            android.keystore.base64
+          retention-days: 1

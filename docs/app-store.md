@@ -117,6 +117,36 @@ build` direkt aufrufen.
      `repo1.maven.org` ab. Dann einfach noch einmal starten; was schon
      geladen ist, bleibt liegen.
 
+### Der einfachere Weg: bauen lassen
+
+Das Paket muss nicht auf dem eigenen Rechner entstehen. Im Projekt liegen
+zwei Abläufe unter _Actions_:
+
+1. **Android-Schlüssel erzeugen** -- einmalig. Vorher zwei Geheimnisse
+   anlegen (_Settings → Secrets and variables → Actions_):
+   `ANDROID_KEYSTORE_PASSWORD` und `ANDROID_KEY_PASSWORD`, je mindestens
+   sechs Zeichen. Der Ablauf legt den Schlüssel an und stellt ihn als
+   Artefakt bereit. Herunterladen, **sicher aufbewahren** (ohne ihn gibt es
+   keine Updates mehr), den Inhalt von `android.keystore.base64` als
+   drittes Geheimnis `ANDROID_KEYSTORE_BASE64` hinterlegen, dann das
+   Artefakt löschen.
+2. **Android-Paket bauen** -- jedes Mal. Erzeugt `app-release-bundle.aab`
+   für den Store und `app-release-signed.apk` zum Ausprobieren, beide mit
+   dem eigenen Schlüssel signiert. Versionsname und Versionsnummer lassen
+   sich beim Start angeben; die Nummer muss bei jedem Upload zu Play
+   größer sein als zuvor.
+
+Die Zusammenfassung des Laufs nennt den SHA-256 des Schlüssels -- genau
+den, der in `assetlinks.json` gehört.
+
+Beim Bau selbst sind zwei Dinge aufgefallen, die ohne einen echten
+Durchlauf unsichtbar bleiben: `jcenter()` in Bubblewraps Vorlage ist seit
+2021 abgeschaltet und leitet auf `repo1.maven.org` um (beide Abläufe
+nehmen deshalb den Google-Spiegel von Maven Central), und der
+Versionsname heißt in `twa-manifest.json` `appVersion` -- unter
+`appVersionName` liest Bubblewrap ihn nicht und baut ein Paket mit leerer
+Version.
+
 6. Google will außerdem: Kurzbeschreibung, ausführliche Beschreibung, ein
    Symbol (512 × 512, hast du), ein Feature-Grafikbild (1024 × 500),
    mindestens zwei Screenshots je Geräteklasse, eine
