@@ -5,7 +5,9 @@
       "namespace": "android_app",
       "package_name": "de.tetools.minigames",
       "sha256_cert_fingerprints": [
-        "7B:BB:06:19:E8:93:61:43:9B:9D:52:4B:7C:21:BA:8B:C8:AF:CF:92:F8:F5:03:02:C0:59:7A:78:BE:88:BE:15"
+        "7B:BB:06:19:E8:93:61:43:9B:9D:52:4B:7C:21:BA:8B:C8:AF:CF:92:F8:F5:03:02:C0:59:7A:78:BE:88:BE:15",
+        "7E:E0:87:CB:6D:2D:D7:60:FA:B1:42:C7:B8:26:DC:B5:0B:1F:08:A1:13:E5:6F:AB:D4:99:F7:EC:F8:3D:E6:84",
+        "E3:B8:4A:2B:6F:6E:B4:BE:F5:CC:C1:40:65:2E:6E:4C:7D:6C:CD:8C:B9:E4:29:0F:AF:10:CE:60:4B:B1:F7:6F"
       ]
     }
   }
