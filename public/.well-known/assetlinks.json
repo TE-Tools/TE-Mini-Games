@@ -5,7 +5,8 @@
       "namespace": "android_app",
       "package_name": "dev.pages.te_mini_games.twa",
       "sha256_cert_fingerprints": [
-        "HIER_DEN_FINGERABDRUCK_DEINES_SIGNIERSCHLUESSELS_EINTRAGEN"
+        "HIER_DEN_FINGERABDRUCK_AUS_DER_PLAY_CONSOLE_EINTRAGEN__App-Integritaet__App-Signaturschluessel",
+        "HIER_DEN_FINGERABDRUCK_DES_EIGENEN_UPLOAD-SCHLUESSELS__keytool_-list_-v_-keystore_android.keystore"
       ]
     }
   }

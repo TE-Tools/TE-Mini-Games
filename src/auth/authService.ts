@@ -1,3 +1,4 @@
+import { onlineFehlerText } from '@/services/onlineFehler'
 import { supabase, isSupabaseConfigured } from '@/database/supabase'
 import { clearPlayMode, setPlayMode } from '@/auth/sessionMode'
 import type { User, Session } from '@supabase/supabase-js'
@@ -152,7 +153,11 @@ export async function getAuthStatus(): Promise<AuthStatus> {
   const user = userData.user
   if (!user) return { signedIn: false, username: null, email: null }
 
-  const { data } = await supabase.from('profiles').select('username').eq('id', user.id).maybeSingle()
+  const { data } = await supabase
+    .from('profiles')
+    .select('username')
+    .eq('id', user.id)
+    .maybeSingle()
   return {
     signedIn: true,
     username: (data?.username as string | null) ?? null,
@@ -208,6 +213,28 @@ export async function signOut(): Promise<void> {
   await supabase.auth.signOut()
 }
 
+/**
+ * Das eigene Konto löschen -- endgültig.
+ *
+ * Der Server macht die Arbeit (`konto_loeschen`, Migration 026): Er nimmt
+ * keine Kennung entgegen, sondern liest `auth.uid()`. Damit gibt es nichts,
+ * was sich auf ein fremdes Konto richten liesse.
+ *
+ * Danach wird abgemeldet und der lokale Stand geleert -- sonst sieht man
+ * nach dem Löschen noch seine alten Punkte und hält sie für gerettet.
+ *
+ * Gebraucht wird das nicht nur der DSGVO wegen: Google Play verlangt für
+ * Apps mit Registrierung einen Löschweg IN der App und eine Adresse, die
+ * man ohne sie erreicht (/konto-loeschen).
+ */
+export async function deleteOwnAccount(): Promise<{ error: string | null }> {
+  if (!supabase) return { error: 'Keine Verbindung zum Konto-Server.' }
+  const { error } = await supabase.rpc('konto_loeschen')
+  if (error) return { error: onlineFehlerText(error) }
+  await signOut()
+  return { error: null }
+}
+
 /** Mark session as account after successful login/signup. */
 export function markAccountSession(): void {
   setPlayMode('account')
@@ -237,9 +264,7 @@ export function onPasswordRecovery(callback: () => void): () => void {
   return () => data.subscription.unsubscribe()
 }
 
-export function onAuthStateChange(
-  callback: (user: User | null) => void,
-): () => void {
+export function onAuthStateChange(callback: (user: User | null) => void): () => void {
   if (!supabase) {
     callback(null)
     return () => undefined

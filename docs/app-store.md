@@ -1,6 +1,6 @@
 # Die App in den Store bringen
 
-**Stand:** 02.09.2026
+**Stand:** 31.10.2026
 
 Die App ist eine PWA. Auf dem Handy lässt sie sich schon heute über „App
 installieren" auf den Startbildschirm legen – sie sieht dann aus wie eine
@@ -12,15 +12,16 @@ Konten, Schlüssel, Einreichung – steht bei jedem Schritt dabei.
 
 ## Was schon fertig ist
 
-| Punkt | Wo |
-|---|---|
-| Manifest mit Name, Symbolen, Farben | `vite.config.ts` (`VitePWA` → `manifest`) |
-| Symbole 192/512 px, dazu maskierbar | `public/icons/` |
-| Startbildschirm der Seite (sofort sichtbar, noch ohne JavaScript) | `index.html` (`#splash`) |
-| 12 Startbilder für iOS | `public/splash/`, erzeugt von `scripts/build-splash-screens.mjs` |
-| Digital Asset Links (Vorlage) | `public/.well-known/assetlinks.json` |
-| Bubblewrap-Konfiguration | `twa-manifest.json` |
-| JSON-Typ für die Asset-Links | `public/_headers` |
+| Punkt                                                             | Wo                                                               |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Manifest mit Name, Symbolen, Farben                               | `vite.config.ts` (`VitePWA` → `manifest`)                        |
+| Symbole 192/512 px, dazu maskierbar                               | `public/icons/`                                                  |
+| Startbildschirm der Seite (sofort sichtbar, noch ohne JavaScript) | `index.html` (`#splash`)                                         |
+| 12 Startbilder für iOS                                            | `public/splash/`, erzeugt von `scripts/build-splash-screens.mjs` |
+| Digital Asset Links (Vorlage)                                     | `public/.well-known/assetlinks.json`                             |
+| Bubblewrap-Konfiguration                                          | `twa-manifest.json`                                              |
+| JSON-Typ für die Asset-Links                                      | `public/_headers`                                                |
+| Konto löschen in der App und als öffentliche Seite                | `/auth` (ganz unten) und `/konto-loeschen`                       |
 
 Die Startbilder werden **nicht** in den Offline-Vorrat gelegt
 (`globIgnores: ['splash/**']`): Sie sind zusammen rund 3 MB und werden nur
@@ -50,14 +51,14 @@ in der App, ohne Update im Store.
 
    Die Fragen sind mit `twa-manifest.json` in diesem Repo schon beantwortet –
    du kannst die Datei ins Bubblewrap-Verzeichnis kopieren und `bubblewrap
-   build` direkt aufrufen.
+build` direkt aufrufen.
 
 2. Beim ersten Lauf legt Bubblewrap einen **Signierschlüssel** an
    (`android.keystore`). **Diesen Schlüssel gut aufheben und niemals ins
    Repo legen.** Geht er verloren, kannst du die App im Store nie wieder
    aktualisieren – Google lässt kein zweites Zertifikat für dieselbe App zu.
 
-3. Den Fingerabdruck des Schlüssels ausgeben lassen:
+3. Den Fingerabdruck des eigenen Schlüssels ausgeben lassen:
 
    ```bash
    keytool -list -v -keystore android.keystore -alias te-mini-games
@@ -65,28 +66,92 @@ in der App, ohne Update im Store.
 
    Die Zeile `SHA256:` kopieren (die Doppelpunkte bleiben drin).
 
-4. Den Fingerabdruck in `public/.well-known/assetlinks.json` eintragen –
-   dort steht bisher nur ein Platzhalter – und die Seite neu ausrollen.
-   Prüfen lässt sich das danach mit dem
+4. **Wichtig, und hier geht es am häufigsten schief:** Google signiert die
+   App im Store in aller Regel selbst neu (_Play App Signing_, bei neuen
+   Apps der Standard). Dein Schlüssel ist dann nur der **Upload**-Schlüssel
+   – die App, die auf dem Telefon landet, trägt **Googles** Signatur. In
+   `assetlinks.json` muss deshalb Googles Fingerabdruck stehen, nicht nur
+   deiner.
+
+   Zu finden ist er in der Play Console unter
+   **Test und Veröffentlichung → App-Integrität → App-Signaturschlüssel**
+   als `SHA-256-Zertifikat-Fingerabdruck`. Er existiert erst, wenn du das
+   erste Mal ein Bundle hochgeladen hast.
+
+   Trag **beide** in `public/.well-known/assetlinks.json` ein – Googles für
+   die Fassung aus dem Store, deinen für die, die du selbst aufs Telefon
+   schiebst:
+
+   ```json
+   "sha256_cert_fingerprints": [
+     "AB:CD:…  (Play App Signing, aus der Play Console)",
+     "12:34:…  (dein Upload-Schlüssel, aus keytool)"
+   ]
+   ```
+
+   Danach die Seite neu ausrollen. Prüfen lässt sich das mit dem
    [Digital Asset Links Tester](https://developers.google.com/digital-asset-links/tools/generator).
 
-   **Ohne diesen Schritt zeigt die App eine Adressleiste** – Android traut
-   der Hülle sonst nicht.
+   **Stimmt der Fingerabdruck nicht, zeigt die App eine Adressleiste** –
+   Android traut der Hülle sonst nicht. Sie funktioniert, sieht aber aus
+   wie ein Browser mit deiner Seite darin.
 
 5. `bubblewrap build` erzeugt eine `.aab`-Datei. Die lädst du in der Play
    Console hoch (App anlegen → Produktion → Neues Release).
+
+   Zwei Dinge, die dabei aufhalten – beide hier ausprobiert:
+
+   - **Das Passwort für den Schlüsselspeicher wird abgefragt**, und zwar
+     mehrfach. Wer das Skript ohne Eingabe laufen lässt, hängt in einer
+     Endlosschleife („Minimum length is 6"). Ohne Rückfragen geht es mit
+     Umgebungsvariablen:
+
+     ```bash
+     BUBBLEWRAP_KEYSTORE_PASSWORD=… BUBBLEWRAP_KEY_PASSWORD=… bubblewrap build
+     ```
+
+   - **Beim ersten Lauf lädt Bubblewrap ein eigenes JDK und das
+     Android-SDK** – zusammen rund 1,4 GB nach `~/.bubblewrap`. Das dauert
+     und braucht eine Verbindung, die nicht gedrosselt wird: Hinter einem
+     geteilten Proxy bricht Gradle gern mit `429 Too Many Requests` von
+     `repo1.maven.org` ab. Dann einfach noch einmal starten; was schon
+     geladen ist, bleibt liegen.
 
 6. Google will außerdem: Kurzbeschreibung, ausführliche Beschreibung, ein
    Symbol (512 × 512, hast du), ein Feature-Grafikbild (1024 × 500),
    mindestens zwei Screenshots je Geräteklasse, eine
    **Datenschutzerklärung als URL** und die Angaben zur Datensicherheit.
 
+   **Das liegt fertig in `docs/store/`**: die Texte zum Kopieren samt
+   Zeichengrenzen in `docs/store/eintrag.md`, das Funktionsbild und acht
+   Bildschirmfotos als PNG. Die Bilder sind keine Montagen, sondern aus
+   dem echten Build fotografiert -- `node scripts/build-store-assets.mjs`
+   startet die gebaute App, klickt sich in die Spiele hinein und schießt
+   sie neu. Nach jeder sichtbaren Änderung einmal laufen lassen, sonst
+   wirbt der Eintrag mit einer App, die es so nicht mehr gibt.
+
    Zur Datensicherheit: Die App speichert Spielstände lokal (IndexedDB) und
    – nur bei angemeldeten Nutzern – in Supabase. Erhoben werden
    E-Mail-Adresse und Benutzername; Werbung und Tracking gibt es nicht.
+   Beim Formular ankreuzen: Daten können gelöscht werden, und zwar vom
+   Nutzer selbst (`/konto-loeschen`).
+
+7. **Konto-Löschung angeben.** Google verlangt für Apps, in denen man
+   ein Konto anlegen kann, beides: einen Löschweg in der App und eine
+   Adresse, die man ohne die App erreicht. Beides gibt es – in der Play
+   Console einzutragen ist
+   `https://te-mini-games.pages.dev/konto-loeschen`.
 
 **Wie lange das dauert:** Die erste Prüfung durch Google dauert
 erfahrungsgemäß einige Tage.
+
+**Der eigentliche Zeitfaktor ist ein anderer:** Neue _private_
+Entwicklerkonten müssen vor der ersten Veröffentlichung einen
+geschlossenen Test fahren – **zwölf Tester, vierzehn Tage am Stück**. Das
+ist keine Technik, das ist Kalender. Bei einem Konto, das als
+Organisation angelegt ist, entfällt es. Prüfen lässt sich das in der Play
+Console beim Anlegen der App; steht dort ein Hinweis auf „Geschlossener
+Test erforderlich", gilt es für dich.
 
 ## Apple App Store (ehrlich gesagt: mühsam)
 
