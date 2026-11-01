@@ -62,6 +62,27 @@ jobs:
           key: gradle-${{ hashFiles('twa-manifest.json') }}
           restore-keys: gradle-
 
+      - name: Android-SDK für Bubblewrap herrichten
+        run: |
+          # Bubblewrap erkennt ein SDK nur an, wenn darin ein Ordner `tools`
+          # oder `bin` liegt (AndroidSdkTools.validatePath). Der Läufer legt
+          # die Werkzeuge stattdessen unter cmdline-tools/latest/bin ab --
+          # ohne diesen Verweis bricht es mit "The provided androidSdk isn't
+          # correct." ab, und `bin/sdkmanager` ist genau der Pfad, den
+          # Bubblewrap danach aufruft.
+          if [ ! -e "$ANDROID_HOME/bin" ] && [ ! -e "$ANDROID_HOME/tools" ]; then
+            sudo ln -s "$ANDROID_HOME/cmdline-tools/latest/bin" "$ANDROID_HOME/bin"
+          fi
+          if [ ! -x "$ANDROID_HOME/bin/sdkmanager" ]; then
+            echo "::error::sdkmanager liegt nicht unter $ANDROID_HOME/bin -- der Läufer hat das Android-SDK anders abgelegt als erwartet."
+            exit 1
+          fi
+          # Genau die Fassungen, die Bubblewrap und das erzeugte Projekt
+          # verlangen. Fehlen sie, lädt Bubblewrap sie mitten im Bau selbst
+          # nach -- langsamer und ohne klare Meldung, wenn es schiefgeht.
+          yes 2>/dev/null | "$ANDROID_HOME/bin/sdkmanager" --install "build-tools;36.1.0" "platforms;android-36" > /dev/null
+          echo "Build-Tools und Plattform bereit."
+
       - name: Bubblewrap bereitstellen
         run: |
           npm i -g @bubblewrap/cli@1.27.0
@@ -70,6 +91,8 @@ jobs:
           mkdir -p ~/.bubblewrap
           printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "$JAVA_HOME" "$ANDROID_HOME" > ~/.bubblewrap/config.json
           cat ~/.bubblewrap/config.json
+          # Beweist vor dem Bau, dass Bubblewrap beide Pfade annimmt.
+          bubblewrap doctor
 
       - name: Maven Central über den Google-Spiegel
         run: |
