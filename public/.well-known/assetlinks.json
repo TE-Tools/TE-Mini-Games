@@ -5,8 +5,7 @@
       "namespace": "android_app",
       "package_name": "de.tetools.minigames",
       "sha256_cert_fingerprints": [
-        "HIER_DEN_FINGERABDRUCK_AUS_DER_PLAY_CONSOLE_EINTRAGEN__App-Integritaet__App-Signaturschluessel",
-        "HIER_DEN_FINGERABDRUCK_DES_EIGENEN_UPLOAD-SCHLUESSELS__keytool_-list_-v_-keystore_android.keystore"
+        "7B:BB:06:19:E8:93:61:43:9B:9D:52:4B:7C:21:BA:8B:C8:AF:CF:92:F8:F5:03:02:C0:59:7A:78:BE:88:BE:15"
       ]
     }
   }
