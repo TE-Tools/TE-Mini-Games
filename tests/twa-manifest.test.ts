@@ -46,6 +46,20 @@ describe('TWA-Manifest', () => {
     expect(String(manifest.packageId)).toMatch(/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/)
   })
 
+  it('hat nur echte Fingerabdrücke in assetlinks.json', () => {
+    // Ein einziger ungültiger Eintrag macht die ganze Datei ungültig --
+    // Googles Prüfdienst antwortet dann mit ERROR_CODE_MALFORMED_CONTENT,
+    // und die App aus dem Store zeigt eine Adressleiste statt Vollbild.
+    // Ein Platzhalter ist deshalb schlimmer als ein fehlender Eintrag.
+    for (const eintrag of assetlinks) {
+      const abdruecke = eintrag.target.sha256_cert_fingerprints
+      expect(abdruecke.length).toBeGreaterThan(0)
+      for (const abdruck of abdruecke) {
+        expect(abdruck).toMatch(/^[0-9A-F]{2}(:[0-9A-F]{2}){31}$/)
+      }
+    }
+  })
+
   it('zeigt auf dieselbe Domain wie die ausgelieferte Seite', () => {
     expect(manifest.host).toBe('te-mini-games.pages.dev')
     expect(String(manifest.startUrl ?? '/')).toMatch(/^\//)
