@@ -54,7 +54,7 @@ jobs:
           fi
 
       - name: Gradle- und Bubblewrap-Zwischenspeicher
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.gradle/caches
@@ -103,6 +103,7 @@ jobs:
       - name: Projekt vorbereiten
         env:
           KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          SPEICHER: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           VERSION_NAME: ${{ inputs.versionName }}
           VERSION_CODE: ${{ inputs.versionCode }}
         run: |
@@ -115,7 +116,18 @@ jobs:
           if [ -n "$VERSION_CODE" ]; then
             node -e 'const f="twa-manifest.json",m=require("./"+f);m.appVersionCode=Number(process.env.VERSION_CODE);require("fs").writeFileSync(f,JSON.stringify(m,null,2)+"\n")'
           fi
-          echo "$KEYSTORE" | base64 -d > android.keystore
+          # Leerzeichen und Zeilenumbrüche rauswerfen: Beim Einfügen in die
+          # Oberfläche von GitHub rutschen leicht welche mit hinein.
+          printf '%s' "$KEYSTORE" | tr -d '[:space:]' | base64 -d > android.keystore 2>/dev/null || true
+          if [ ! -s android.keystore ]; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 lässt sich nicht als Base64 lesen. In dieses Geheimnis gehört der *Textinhalt* von android.keystore.base64.txt -- nicht die Datei android.keystore selbst und nicht die ZIP-Datei."
+            exit 1
+          fi
+          if ! keytool -list -keystore android.keystore -storepass "$SPEICHER" -alias te-mini-games >/dev/null 2>&1; then
+            echo "::error::Die Datei wurde entschlüsselt, ist aber kein lesbarer Schlüsselspeicher mit dem Alias te-mini-games. Entweder steht im Geheimnis der falsche Inhalt, oder ANDROID_KEYSTORE_PASSWORD stimmt nicht mit dem überein, das beim Erzeugen verwendet wurde."
+            exit 1
+          fi
+          echo "Schlüsselspeicher gelesen."
           bubblewrap update --skipVersionUpgrade
 
       - name: Bauen und signieren

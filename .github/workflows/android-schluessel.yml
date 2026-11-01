@@ -47,7 +47,17 @@ jobs:
             -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "$SPEICHER" -keypass "$SCHLUESSEL" \
             -dname "CN=TE-Tools, OU=TE-Mini Games, O=TE-Tools, L=Unbekannt, S=Unbekannt, C=DE"
-          base64 -w0 android.keystore > android.keystore.base64
+          base64 -w0 android.keystore > android.keystore.base64.txt
+          {
+            echo "### Weiter geht es so"
+            echo "1. Artefakt **android-keystore** unten herunterladen und entpacken."
+            echo "2. \`android.keystore\` sicher aufbewahren -- ohne diese Datei sind spätere Updates der App nicht mehr möglich."
+            echo "3. **\`android.keystore.base64.txt\` in einem Texteditor öffnen**, den gesamten Inhalt kopieren"
+            echo "   und als Geheimnis \`ANDROID_KEYSTORE_BASE64\` anlegen. Es ist eine einzige lange Zeile."
+            echo "   Nicht die Datei \`android.keystore\` selbst einfügen -- die ist binär und lässt sich nicht lesen."
+            echo "4. Artefakt hier löschen."
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
           echo "### Fingerabdruck dieses Schlüssels" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           keytool -list -v -keystore android.keystore -alias te-mini-games \
@@ -60,5 +70,5 @@ jobs:
           name: android-keystore
           path: |
             android.keystore
-            android.keystore.base64
+            android.keystore.base64.txt
           retention-days: 1
