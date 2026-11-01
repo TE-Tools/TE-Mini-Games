@@ -174,7 +174,13 @@ jobs:
       - name: Nachsehen, was entstanden ist
         run: |
           cd bau
-          AAPT=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 | tail -1)
+          # Der Läufer hat mehrere Build-Tools-Fassungen. Ein Platzhalter
+          # trifft sie alle: Die erste wird zum Befehl, die zweite zum
+          # Argument, und apksigner antwortet mit "Unsupported command".
+          # Deshalb beide Werkzeuge eindeutig auswählen.
+          WERKZEUGE=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)
+          AAPT="$WERKZEUGE/aapt2"
+          SIGNIERER="$WERKZEUGE/apksigner"
           {
             echo '### Gebautes Paket'
             echo '```'
@@ -182,7 +188,7 @@ jobs:
             echo '```'
             echo 'Der SHA-256 des Signaturschlüssels -- muss in assetlinks.json stehen:'
             echo '```'
-            "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs app-release-signed.apk | grep 'SHA-256 digest'
+            "$SIGNIERER" verify --print-certs app-release-signed.apk | grep 'SHA-256 digest'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           # Eine leere Version nimmt Google nicht an -- lieber hier abbrechen.
@@ -192,6 +198,10 @@ jobs:
           fi
 
       - name: Paket bereitstellen
+        # Auch dann, wenn die Prüfung davor anschlägt: Das Paket ist dann
+        # schon gebaut, und man will es ansehen können, statt den ganzen
+        # Lauf zu wiederholen.
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: te-mini-games-android
