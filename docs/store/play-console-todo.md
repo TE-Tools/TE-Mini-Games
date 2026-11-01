@@ -16,9 +16,11 @@ wird. Wer von oben nach unten arbeitet, läuft nicht in gesperrte Felder.
 
 ## 0. Vorher: das Paket bauen
 
-Das muss auf deinem Rechner passieren – dort liegt der Signierschlüssel.
-Die Schritte stehen in [`docs/app-store.md`](../app-store.md). Ergebnis ist
-eine Datei `app-release-bundle.aab`.
+Das muss nicht auf deinem Rechner passieren. Unter _Actions_ im Projekt
+liegen zwei Abläufe: **Android-Schlüssel erzeugen** (einmalig) und
+**Android-Paket bauen** (jedes Mal). Ergebnis ist eine Datei
+`app-release-bundle.aab`, signiert mit deinem eigenen Schlüssel. Die
+Einzelheiten stehen in [`docs/app-store.md`](../app-store.md).
 
 - [ ] AAB gebaut
 - [ ] Ein **Testkonto in der App angelegt** (E-Mail + Passwort), das du
