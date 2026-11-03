@@ -9,6 +9,8 @@ import type { ImposterMatchState } from '@/games/finde-den-imposter/types'
 import { createWbiMatch } from '@/games/wer-bin-ich/engine'
 import { FRAGEN } from '@/games/wer-wuerde-eher/fragen'
 import { passtZumBuchstaben } from '@/games/stadt-land-fluss/rules'
+import { erstellePartie as texasPartie, teileAus } from '@/games/texas-holdem/engine'
+import { erstellePartie as mauPartie, legen as mauLegen } from '@/games/maumau/engine'
 import { db, addXp, getProfile, GUEST_USER_ID } from '@/offline'
 import { processAfterResult } from '@/progression'
 
@@ -91,5 +93,58 @@ describe('Tagesserie', () => {
     await addXp(GUEST_USER_ID, 50)
     await processAfterResult({ gameId: 'kopfrechnen', level: 1 })
     expect((await getProfile(GUEST_USER_ID))?.streakDays).toBe(4)
+  })
+})
+
+describe('Texas Hold’em', () => {
+  it('lässt den Letzten handeln, wenn beide Blinds all-in sind', () => {
+    const start = texasPartie({
+      seed: 3,
+      startChips: 1000,
+      spieler: [
+        { name: 'A', mensch: false, kiStufe: 'normal' },
+        { name: 'B', mensch: false, kiStufe: 'normal' },
+        { name: 'C', mensch: false, kiStufe: 'normal' },
+      ],
+    })
+    const roh = structuredClone(start)
+    roh.handNr = 0
+    roh.dealer = 2
+    for (const s of roh.spieler) {
+      s.einsatz = 0
+      s.gesamt = 0
+      s.status = 'aktiv'
+    }
+    roh.spieler[0]!.chips = 5
+    roh.spieler[1]!.chips = 8
+    const s = teileAus(roh)
+    expect(s.phase).toBe('preflop')
+    expect(s.amZug).toBe(2)
+  })
+})
+
+describe('Mau-Mau', () => {
+  it('lässt gewinnen, wer mit der Null die letzte Karte legt', () => {
+    const start = mauPartie({
+      art: 'extrem',
+      seed: 5,
+      spieler: [
+        { name: 'A', mensch: true },
+        { name: 'B', mensch: false, kiStufe: 'normal' },
+        { name: 'C', mensch: false, kiStufe: 'normal' },
+      ],
+      hausregeln: { haendeWandern: true },
+    })
+    const s = structuredClone(start)
+    const nullKarte = s.stapel.find((k) => k.wirkung === 'haende') ?? s.spieler[1]!.hand[0]!
+    nullKarte.wirkung = 'haende'
+    s.amZug = 0
+    s.spieler[0]!.hand = [nullKarte]
+    s.spieler[0]!.mauGesagt = true
+    s.ablage = [{ ...nullKarte, id: 'oben', wirkung: 'keine' }]
+    s.wunsch = null
+    s.strafe = 0
+    const nach = mauLegen(s, nullKarte)
+    expect(nach.siegerId).toBe(s.spieler[0]!.id)
   })
 })

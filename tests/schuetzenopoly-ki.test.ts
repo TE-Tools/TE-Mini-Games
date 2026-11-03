@@ -133,8 +133,14 @@ describe('Handel', () => {
   it('weist ein leeres Angebot zurück', () => {
     const s = kiPartie()
     expect(
-      pruefeHandel(s, { vonId: 'p0', anId: 'p1', gebeFelder: [], gebeTaler: 0, willFelder: [], willTaler: 0 })
-        .gueltig,
+      pruefeHandel(s, {
+        vonId: 'p0',
+        anId: 'p1',
+        gebeFelder: [],
+        gebeTaler: 0,
+        willFelder: [],
+        willTaler: 0,
+      }).gueltig,
     ).toBe(false)
   })
 
@@ -377,7 +383,10 @@ describe('Ganze Partien', () => {
   it('lässt die schwere KI häufiger gewinnen als die leichte', () => {
     let schwer = 0
     let leicht = 0
-    for (let seed = 100; seed < 130; seed++) {
+    // 120 statt 30 Partien: Seit "Gehe zu" den START-Bonus nur noch einmal
+    // zahlt (03.11.2026), stand es auf den alten 30 Startwerten 15:15 --
+    // ein Zufallsgleichstand, kein Befund. Mehr Partien messen die KI.
+    for (let seed = 100; seed < 220; seed++) {
       const s = spieleDurch(
         erstellePartie({
           seed,
