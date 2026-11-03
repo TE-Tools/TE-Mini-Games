@@ -2,7 +2,9 @@ import { describe, it, expect } from 'vitest'
 import { createMatch } from '@/games/finde-den-imposter/engine'
 import {
   HELPER_CLUSTERS,
+  MIN_HELFER,
   helperCandidates,
+  zuNah,
 } from '@/games/finde-den-imposter/data/helperClusters'
 import { wordsForCategory } from '@/games/finde-den-imposter/data/words'
 import { CATEGORIES } from '@/games/finde-den-imposter/data/categories'
@@ -49,6 +51,39 @@ describe('Imposter-Hilfswort-Cluster', () => {
           expect(pool.has(w.toLowerCase()), `${cat.id}: ${w}`).toBe(true)
         }
         expect(group.length).toBeGreaterThanOrEqual(2)
+      }
+    }
+  })
+
+  it('gibt nie ein Hilfswort, das das Geheimwort verrät', () => {
+    for (const [geheim, verraeter] of [
+      ['Schwein', 'Wildschwein'],
+      ['Hand', 'Handgelenk'],
+      ['Karneval', 'Fasching'],
+      ['Kirmes', 'Jahrmarkt'],
+      ['Hockey', 'Eishockey'],
+      ['Brot', 'Brötchen'],
+    ] as const) {
+      expect(zuNah(geheim, verraeter), `${geheim}/${verraeter}`).toBe(true)
+    }
+    expect(zuNah('Hund', 'Katze')).toBe(false)
+
+    for (const cat of CATEGORIES) {
+      const pool = wordsForCategory(cat.id).map((w) => w.word)
+      for (const geheim of pool) {
+        for (const h of helperCandidates(geheim, cat.id, pool)) {
+          expect(zuNah(geheim, h), `${cat.id}: ${geheim} -> ${h}`).toBe(false)
+        }
+      }
+    }
+  })
+
+  it('lässt dem Imposter immer mehrere Möglichkeiten', () => {
+    for (const cat of CATEGORIES) {
+      const pool = wordsForCategory(cat.id).map((w) => w.word)
+      for (const geheim of pool) {
+        const n = helperCandidates(geheim, cat.id, pool).length
+        expect(n, `${cat.id}: ${geheim}`).toBeGreaterThanOrEqual(MIN_HELFER)
       }
     }
   })

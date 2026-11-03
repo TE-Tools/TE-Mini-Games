@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   createWhatIsMissingLevel,
@@ -113,8 +113,12 @@ export function WhatIsMissingPage() {
     setMilestoneXp(0)
   }, [])
 
+  /** Ein Doppeltipp auf die Antwort rechnete sonst zweimal ab (03.11.2026). */
+  const abgerechnet = useRef(false)
+
   const startRound = useCallback(() => {
     if (!config) return
+    abgerechnet.current = false
     setScoreResult(null)
     setPickedId(null)
     setCompletedLevel(null)
@@ -134,7 +138,8 @@ export function WhatIsMissingPage() {
 
   const pickObject = useCallback(
     async (objectId: string) => {
-      if (phase !== 'choose' || !config) return
+      if (phase !== 'choose' || !config || abgerechnet.current) return
+      abgerechnet.current = true
       setPickedId(objectId)
       const correct = objectId === config.missingObject.id
       const result = calculateWhatIsMissingScore({ correct, level: config.level })
@@ -332,8 +337,7 @@ export function WhatIsMissingPage() {
             {scoreResult.correct ? 'Richtig!' : 'Leider falsch'}
           </p>
           <p className={styles.missingReveal}>
-            Es fehlte:{' '}
-            <span className={styles.emoji}>{config.missingObject.emoji}</span>{' '}
+            Es fehlte: <span className={styles.emoji}>{config.missingObject.emoji}</span>{' '}
             {config.missingObject.label}
           </p>
           {pickedId && pickedId !== config.missingObject.id && (

@@ -156,3 +156,125 @@
 .back:active {
   transform: scale(0.94);
 }
+
+/* ======================= Modern (03.11.2026) ======================= */
+
+.summe {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  padding: var(--space-4);
+  border-radius: 26px;
+  background:
+    radial-gradient(90% 120% at 0% 0%, rgb(255 214 120 / 0.4), transparent 55%),
+    var(--color-bg-elevated);
+  border: 1px solid rgb(255 255 255 / 0.85);
+  box-shadow: var(--shadow-md);
+  box-sizing: border-box;
+}
+
+.summeZahl {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #f5c84b, #e0a40f);
+  box-shadow: 0 8px 18px rgb(224 164 15 / 0.35);
+  color: #fff;
+  font-size: 1.6rem;
+  font-weight: 900;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+}
+
+.summeText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.summeText strong {
+  color: var(--color-text);
+  font-size: var(--text-base);
+}
+
+.summeSpur {
+  display: block;
+  height: 8px;
+  margin-top: 4px;
+  border-radius: var(--radius-full);
+  background: rgb(120 110 170 / 0.14);
+  overflow: hidden;
+}
+
+.summeSpur > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f5c84b, #e0a40f);
+}
+
+@media (min-width: 640px) {
+  .list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.cardUnlocked,
+.cardLocked {
+  border-width: 1px;
+  border-radius: 22px;
+  transition: transform 200ms cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+.cardUnlocked {
+  background:
+    radial-gradient(100% 140% at 0% 0%, rgb(255 225 140 / 0.55), transparent 60%),
+    var(--color-bg-elevated);
+  border-color: rgb(224 164 15 / 0.45);
+}
+
+.cardUnlocked .icon {
+  background: linear-gradient(135deg, #fff1c4, #f5c84b);
+  box-shadow: 0 6px 14px rgb(224 164 15 / 0.3);
+}
+
+/* Gesperrt: Man sieht, was es zu holen gibt -- nur ohne Farbe. */
+.cardLocked {
+  opacity: 1;
+  background: rgb(255 255 255 / 0.6);
+  border-style: dashed;
+}
+
+.cardLocked .icon {
+  filter: grayscale(1);
+  opacity: 0.45;
+  background: rgb(120 110 170 / 0.1);
+}
+
+.cardLocked .name {
+  color: var(--color-text-muted);
+}
+
+.schloss {
+  font-size: 0.9rem;
+  opacity: 0.5;
+}
+
+.check {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-success);
+  color: #fff;
+  font-size: 0.9rem;
+}

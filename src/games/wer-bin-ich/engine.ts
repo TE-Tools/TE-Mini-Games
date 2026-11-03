@@ -58,7 +58,7 @@ function dealWords(pool: string[], count: number, rng: () => number): string[] {
 
 export function createWbiMatch(options: CreateWbiOptions): WbiState {
   const names = normalizeNames(options.names)
-  const seed = options.seed ?? ((Date.now() ^ (Math.random() * 0x100000000)) >>> 0)
+  const seed = options.seed ?? (Date.now() ^ (Math.random() * 0x100000000)) >>> 0
   const rng = createRng(String(seed))
   const woerter = dealWords(poolFor(options.categoryId, options.customWords), names.length, rng)
 
@@ -77,6 +77,7 @@ export function createWbiMatch(options: CreateWbiOptions): WbiState {
     roundIndex: 0,
     seed,
     starterIndex: Math.floor(rng() * names.length),
+    ...(options.customWords?.length ? { customWords: [...options.customWords] } : {}),
   }
 }
 
@@ -138,7 +139,7 @@ export function nextWbiRound(state: WbiState): WbiState {
   const nextIndex = state.roundIndex + 1
   const seed = (state.seed + (nextIndex + 1) * 7919) >>> 0
   const rng = createRng(String(seed))
-  const woerter = dealWords(poolFor(state.categoryId), state.players.length, rng)
+  const woerter = dealWords(poolFor(state.categoryId, state.customWords), state.players.length, rng)
 
   return {
     ...state,

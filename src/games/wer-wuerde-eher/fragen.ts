@@ -223,7 +223,10 @@ export const FRAGEN: Frage[] = [
   ...PERSONEN.map((text, i) => ({
     id: `p${i}`,
     modus: 'personen' as const,
-    text: `Wer würde am ehesten … ${text}?`,
+    // Die Einträge sind Nebensätze ("… einen Kuchen alleine isst"). Mit
+    // "Wer würde am ehesten … isst?" war jede Frage falsches Deutsch
+    // (03.11.2026); "die Person sein, die …" trägt sie alle.
+    text: `Wer würde am ehesten die Person sein, die ${text.replace(/^am ehesten /, '')}?`,
   })),
   ...ENTWEDER.map(([a, b], i) => ({
     id: `e${i}`,

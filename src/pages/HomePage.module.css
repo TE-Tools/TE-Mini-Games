@@ -1347,3 +1347,170 @@
 .kachelName {
   margin-top: 0;
 }
+
+/* ===================== Spielerkarte (03.11.2026) =====================
+ * Das Level in einem Ring, der sich mit den XP füllt; XP und Serie als
+ * Chips mit Symbol; darunter der Balken bis zum nächsten Level. */
+
+.standLeiste {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  overflow: visible;
+  border-radius: 26px;
+  background:
+    radial-gradient(90% 120% at 0% 0%, rgb(255 214 120 / 0.35), transparent 55%),
+    radial-gradient(80% 120% at 100% 100%, rgb(140 120 255 / 0.18), transparent 60%),
+    var(--color-bg-elevated);
+  border: 1px solid rgb(255 255 255 / 0.85);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.9),
+    var(--shadow-md);
+}
+
+.levelRing {
+  --anteil: 0%;
+  position: relative;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  padding: 7px;
+  background: conic-gradient(
+    from -90deg,
+    #f5c84b 0%,
+    #e0a40f var(--anteil),
+    rgb(120 110 170 / 0.16) var(--anteil)
+  );
+  box-shadow:
+    0 6px 16px rgb(224 164 15 / 0.28),
+    inset 0 0 0 1px rgb(0 0 0 / 0.04);
+  transition: --anteil 900ms ease;
+}
+
+@property --anteil {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
+.ringKern {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffffff, #f4f1fb);
+  box-shadow: inset 0 2px 6px rgb(40 35 90 / 0.12);
+}
+
+.ringZahl {
+  font-size: 1.7rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.ringKern .standLabel {
+  font-size: 0.55rem;
+}
+
+.standChips {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.standTeil {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-right: none;
+  border-radius: 16px;
+  background: rgb(255 255 255 / 0.75);
+  border: 1px solid var(--color-border);
+  min-width: 0;
+}
+
+.standTeil > span:last-child {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.standTeil .standWert {
+  font-size: var(--text-base);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chipIcon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 11px;
+  font-size: 1rem;
+}
+
+.chipXp .chipIcon {
+  background: linear-gradient(135deg, #fff1c4, #f5c84b);
+}
+
+.chipSerie .chipIcon {
+  background: linear-gradient(135deg, #eceaf3, #d9d5e6);
+  filter: grayscale(1);
+}
+
+.chipSerie.chipAn .chipIcon {
+  background: linear-gradient(135deg, #ffd9c2, #ff8a4c);
+  filter: none;
+  animation: flackern 2.2s ease-in-out infinite;
+}
+
+@keyframes flackern {
+  50% {
+    transform: scale(1.08) rotate(-4deg);
+  }
+}
+
+.standChips + .fortschritt,
+.fortschritt {
+  grid-column: 1 / -1;
+  padding: var(--space-1) var(--space-1) 0;
+  border-top: none;
+  border-left: none;
+}
+
+.spur {
+  height: 10px;
+  background: rgb(120 110 170 / 0.14);
+  box-shadow: inset 0 1px 2px rgb(40 35 90 / 0.12);
+}
+
+.fuellung {
+  background: linear-gradient(90deg, #f5c84b, #e0a40f 60%, #ff9d3d);
+  box-shadow: 0 0 10px rgb(245 180 40 / 0.45);
+}
+
+@media (min-width: 900px) {
+  .standLeiste {
+    grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.4fr);
+  }
+
+  .fortschritt {
+    grid-column: auto;
+    padding: 0 var(--space-2);
+  }
+}
+
+:global(:root[data-sparsam]) .chipSerie.chipAn .chipIcon {
+  animation: none;
+}

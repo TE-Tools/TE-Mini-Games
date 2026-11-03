@@ -36,6 +36,8 @@ export interface WbiState {
   seed: number
   /** Wer die Fragerunde eröffnet – zufällig gezogen. */
   starterIndex: number
+  /** Eigene Wortliste -- muss für jede weitere Runde mitreisen. */
+  customWords?: string[]
 }
 
 export interface CreateWbiOptions {

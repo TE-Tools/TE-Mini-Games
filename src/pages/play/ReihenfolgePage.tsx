@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   createReihenfolgeLevel,
@@ -123,9 +123,12 @@ export function ReihenfolgePage() {
         }, i * takt),
       )
       timers.push(
-        window.setTimeout(() => {
-          if (!abbruch) setLeuchtet(null)
-        }, i * takt + config.showMs),
+        window.setTimeout(
+          () => {
+            if (!abbruch) setLeuchtet(null)
+          },
+          i * takt + config.showMs,
+        ),
       )
     })
     timers.push(
@@ -150,8 +153,16 @@ export function ReihenfolgePage() {
     setMilestoneXp(0)
   }, [])
 
+  /**
+   * Schon abgerechnet? Die Phase bleibt beim Speichern noch 'repeat', und ein
+   * schneller Extratipp rechnete die Runde ein zweites Mal ab -- mit doppelten
+   * XP (03.11.2026).
+   */
+  const abgerechnet = useRef(false)
+
   const startRound = useCallback(() => {
     if (!config) return
+    abgerechnet.current = false
     setScoreResult(null)
     setEingabe([])
     setCompletedLevel(null)
@@ -161,6 +172,8 @@ export function ReihenfolgePage() {
 
   const beenden = useCallback(
     async (correctSteps: number, cfg: ReihenfolgeLevel) => {
+      if (abgerechnet.current) return
+      abgerechnet.current = true
       const result = calculateReihenfolgeScore({
         correctSteps,
         sequenceLength: cfg.sequenceLength,
@@ -214,7 +227,7 @@ export function ReihenfolgePage() {
 
   const tippen = useCallback(
     (pad: number) => {
-      if (phase !== 'repeat' || !config) return
+      if (phase !== 'repeat' || !config || abgerechnet.current) return
       const index = eingabe.length
       const erwartet = config.sequence[index]
       const neu = [...eingabe, pad]
@@ -325,8 +338,8 @@ export function ReihenfolgePage() {
             {config.sequenceLength} Schritte · {config.padCount} Felder
           </p>
           <p className={shell.hint}>
-            Schau zu, wie die Felder aufleuchten – danach tippst du dieselbe Reihenfolge
-            nach. Ein Fehler beendet die Runde.
+            Schau zu, wie die Felder aufleuchten – danach tippst du dieselbe Reihenfolge nach. Ein
+            Fehler beendet die Runde.
           </p>
           {brett}
           <button type="button" className={shell.primaryBtn} onClick={startRound}>
@@ -340,9 +353,7 @@ export function ReihenfolgePage() {
 
       {(phase === 'watch' || phase === 'repeat') && (
         <section className={shell.section} aria-live="polite">
-          <p className={styles.watchLabel}>
-            {phase === 'watch' ? 'Schau zu …' : 'Jetzt du!'}
-          </p>
+          <p className={styles.watchLabel}>{phase === 'watch' ? 'Schau zu …' : 'Jetzt du!'}</p>
           {brett}
           <div className={styles.progress} aria-hidden="true">
             {Array.from({ length: config.sequenceLength }, (_, i) => (

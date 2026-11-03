@@ -123,6 +123,23 @@ function buildPlayers(
   return players
 }
 
+/**
+ * Wer die Runde eröffnet. Sieht der Imposter gar nichts, wäre er als Erster
+ * fast sicher verloren -- dann eröffnet jemand, der das Wort kennt.
+ */
+function waehleStarter(
+  players: ImposterMatchState['players'],
+  config: ImposterRoundConfig,
+  rng: () => number,
+): number {
+  const zufall = rng()
+  const kandidaten = players
+    .map((p, i) => ({ p, i }))
+    .filter(({ p }) => config.imposterSees !== 'nothing' || !p.isImposter)
+  const wahl = kandidaten[Math.floor(zufall * kandidaten.length)]
+  return wahl ? wahl.i : Math.floor(zufall * players.length)
+}
+
 function freshRoundConfig(
   opts: {
     categoryId: string
@@ -133,14 +150,15 @@ function freshRoundConfig(
     roundIndex: number
     totalRounds: number
     customWords: string[] | null
+    usedWords?: string[]
   },
   rng: () => number,
 ): ImposterRoundConfig {
-  const { word, helperWord } = pickWord(
-    poolFor(opts.categoryId, opts.customWords),
-    rng,
-    opts.categoryId,
-  )
+  // Was schon dran war, kommt nicht wieder -- solange die Liste reicht.
+  const voll = poolFor(opts.categoryId, opts.customWords)
+  const benutzt = new Set((opts.usedWords ?? []).map((w) => w.toLowerCase()))
+  const frisch = voll.filter((w) => !benutzt.has(w.toLowerCase()))
+  const { word, helperWord } = pickWord(frisch.length >= 2 ? frisch : voll, rng, opts.categoryId)
 
   let regeln = rulesOf(opts.mode)
   let specialRule: string | null = null
@@ -180,7 +198,7 @@ export function createMatch(options: CreateMatchOptions): ImposterMatchState {
     throw new Error(`„${def.label}" braucht mindestens ${def.minPlayers} Mitspielende`)
   }
   const totalRounds = Math.max(1, Math.min(12, options.totalRounds ?? 3))
-  const seed = options.seed ?? ((Date.now() ^ (Math.random() * 0x100000000)) >>> 0)
+  const seed = options.seed ?? (Date.now() ^ (Math.random() * 0x100000000)) >>> 0
   const rng = createRng(seed)
   const customWords =
     options.customWords && options.customWords.length > 0 ? [...options.customWords] : null
@@ -203,12 +221,14 @@ export function createMatch(options: CreateMatchOptions): ImposterMatchState {
     rng,
   )
 
+  const players = buildPlayers(names, config, rng)
   return {
     phase: 'secret_handoff',
-    players: buildPlayers(names, config, rng),
+    players,
     config,
     activePlayerIndex: 0,
-    starterIndex: Math.floor(rng() * names.length),
+    starterIndex: waehleStarter(players, config, rng),
+    usedWords: [config.secretWord],
     handoffCover: true,
     discussionSeconds: options.discussionSeconds ?? 60,
     accusedId: null,
@@ -247,10 +267,7 @@ export function endDiscussion(state: ImposterMatchState): ImposterMatchState {
 /* -------------------------------- Anklage -------------------------------- */
 
 /** Aus den Angeklagten die Warteschlange für die letzte Chance bauen. */
-function resolveAccusations(
-  state: ImposterMatchState,
-  angeklagt: string[],
-): ImposterMatchState {
+function resolveAccusations(state: ImposterMatchState, angeklagt: string[]): ImposterMatchState {
   const erwischt = angeklagt
     .map((id) => state.players.find((p) => p.id === id))
     .filter((p): p is ImposterPlayer => Boolean(p?.isImposter))
@@ -355,19 +372,22 @@ export function nextRound(state: ImposterMatchState): ImposterMatchState {
       roundIndex: nextIndex,
       totalRounds: Math.max(state.config.totalRounds, nextIndex + 1),
       customWords: state.customWords,
+      usedWords: state.usedWords,
     },
+    rng,
+  )
+  const players = buildPlayers(
+    state.players.map((p) => p.name),
+    config,
     rng,
   )
   return {
     phase: 'secret_handoff',
-    players: buildPlayers(
-      state.players.map((p) => p.name),
-      config,
-      rng,
-    ),
+    players,
     config,
     activePlayerIndex: 0,
-    starterIndex: Math.floor(rng() * state.players.length),
+    starterIndex: waehleStarter(players, config, rng),
+    usedWords: [...(state.usedWords ?? []), config.secretWord],
     handoffCover: true,
     discussionSeconds: state.discussionSeconds,
     accusedId: null,

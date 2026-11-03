@@ -128,6 +128,9 @@ export function PerfectSecondPage() {
     const timer = timerRef.current
     if (!timer || phase !== 'running') return
     const actual = timer.stop()
+    // Gleich vergessen: Ein Doppeltipp auf STOPP fand die Phase noch auf
+    // 'running' und wertete das Level zweimal (03.11.2026).
+    timerRef.current = null
     const result = calculateScore({
       targetTime: config.targetTime,
       actualTime: actual,

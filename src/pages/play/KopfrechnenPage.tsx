@@ -102,8 +102,18 @@ export function KopfrechnenPage() {
     }
   }, [])
 
+  /**
+   * Schon abgerechnet? Uhr und letzte Antwort konnten sich überholen, und
+   * die Abrechnung lief aus einem State-Updater heraus (den StrictMode doppelt
+   * ruft) -- beides gab doppelte XP (03.11.2026).
+   */
+  const abgerechnet = useRef(false)
+  const trefferRef = useRef<boolean[]>([])
+
   const beenden = useCallback(
     async (ergebnisse: boolean[], sekundenUebrig: number, cfg: KopfrechnenLevel) => {
+      if (abgerechnet.current) return
+      abgerechnet.current = true
       setAblauf(null)
       const correct = ergebnisse.filter(Boolean).length
       const result = calculateKopfrechnenScore({
@@ -166,10 +176,7 @@ export function KopfrechnenPage() {
       setRestSekunden(uebrig)
       if (uebrig === 0) {
         window.clearInterval(t)
-        setTreffer((bisher) => {
-          void beenden(bisher, 0, config)
-          return bisher
-        })
+        void beenden(trefferRef.current, 0, config)
       }
     }, 200)
     return () => window.clearInterval(t)
@@ -191,6 +198,8 @@ export function KopfrechnenPage() {
     setIndex(0)
     setAntwort('')
     setTreffer([])
+    trefferRef.current = []
+    abgerechnet.current = false
     setRueckmeldung(null)
     setRestSekunden(config.seconds)
     setAblauf(Date.now() + config.seconds * 1000)
@@ -198,7 +207,7 @@ export function KopfrechnenPage() {
   }, [config])
 
   const abschicken = useCallback(() => {
-    if (phase !== 'play' || !config) return
+    if (phase !== 'play' || !config || abgerechnet.current) return
     const aufgabe = config.tasks[index]
     if (!aufgabe) return
     const eingegeben = Number.parseInt(antwort.trim(), 10)
@@ -207,6 +216,7 @@ export function KopfrechnenPage() {
     const richtig = eingegeben === aufgabe.answer
     const neu = [...treffer, richtig]
     setTreffer(neu)
+    trefferRef.current = neu
     setRueckmeldung(richtig ? 'Richtig' : `Falsch – ${aufgabe.answer}`)
     setAntwort('')
 
@@ -341,7 +351,9 @@ export function KopfrechnenPage() {
               className={styles.answer}
               value={antwort}
               onChange={(e) => setAntwort(e.target.value.replace(/[^\d-]/g, ''))}
-              inputMode="numeric"
+              // Die iPhone-Zahlentastatur hat kein Minus. Gibt es negative
+              // Ergebnisse, braucht es die normale Tastatur (03.11.2026).
+              inputMode={config.tasks.some((t) => t.answer < 0) ? 'text' : 'numeric'}
               autoComplete="off"
               autoFocus
               aria-label="Deine Antwort"

@@ -13,13 +13,7 @@ export type ImposterPhase =
   | 'round_result'
 
 export type ImposterModeId =
-  | 'classic'
-  | 'double'
-  | 'blank'
-  | 'duel'
-  | 'categories_only'
-  | 'speed'
-  | 'chaos'
+  'classic' | 'double' | 'blank' | 'duel' | 'categories_only' | 'speed' | 'chaos'
 
 export interface ImposterPlayer {
   id: string
@@ -83,6 +77,8 @@ export interface ImposterMatchState {
    * wie viele Wortrunden sie macht, klärt sie selbst.
    */
   starterIndex: number
+  /** Geheimwörter der bisherigen Runden -- sie kommen im selben Spiel nicht wieder. */
+  usedWords?: string[]
   /** True, solange der „Gib das Gerät an X"-Deckel liegt (nur bei den Geheimnissen). */
   handoffCover: boolean
   discussionSeconds: number

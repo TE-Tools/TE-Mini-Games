@@ -2,7 +2,7 @@
  * Run after every game result: update streak, evaluate achievements.
  */
 
-import { applyPlayToStreak, dateKeyFromIso } from './streak'
+import { applyPlayToStreak } from './streak'
 import { evaluateAchievements, type AchievementId } from './achievements'
 import { unlockMany, getUnlockedAchievements } from '@/offline/achievements'
 import { getProfile, updateStreak, GUEST_USER_ID } from '@/offline'
@@ -33,17 +33,16 @@ export interface AfterResultOutput {
   newlyUnlocked: AchievementId[]
 }
 
-export async function processAfterResult(
-  input: AfterResultInput,
-): Promise<AfterResultOutput> {
+export async function processAfterResult(input: AfterResultInput): Promise<AfterResultOutput> {
   const userId = input.userId ?? GUEST_USER_ID
   const profile = await getProfile(userId)
 
   const streakState = applyPlayToStreak({
     streakDays: profile?.streakDays ?? 0,
-    lastPlayedDate: dateKeyFromIso(profile?.lastPlayedAt ?? null),
+    // Nicht lastPlayedAt: Das hat addXp kurz vorher schon auf heute gesetzt.
+    lastPlayedDate: profile?.streakDate ?? null,
   })
-  await updateStreak(userId, streakState.streakDays)
+  await updateStreak(userId, streakState.streakDays, streakState.lastPlayedDate)
 
   const now = new Date()
 

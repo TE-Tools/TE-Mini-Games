@@ -22,6 +22,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
 import { Link } from 'react-router-dom'
@@ -102,10 +103,12 @@ export function HomePage() {
     return () => window.removeEventListener(DATA_PULLED_EVENT, onPulled)
   }, [ladeProfil])
 
-  const playerLevel = profile?.playerLevel ?? 1
   const totalXp = profile?.totalXp ?? 0
   const streakDays = profile?.streakDays ?? 0
   const xpProgress = xpProgressInLevel(totalXp)
+  // Ring und Zahl sollen zusammenpassen: Das Level folgt aus den XP, auch
+  // wenn das gespeicherte Profil nach einem Abgleich kurz hinterherhängt.
+  const playerLevel = Math.max(profile?.playerLevel ?? 1, xpProgress.level)
   const fehlend = Math.max(0, xpProgress.needed - xpProgress.current)
   const anteil = Math.max(
     2,
@@ -150,22 +153,48 @@ export function HomePage() {
         </div>
       </StartBuehne>
 
+      {/*
+       * Spielerkarte (03.11.2026): Das Level steht in einem Ring, der sich mit
+       * den XP bis zum nächsten Level füllt; XP und Serie daneben als Chips.
+       */}
       <section className={styles.standLeiste} aria-label="Spielerfortschritt" aria-busy={loading}>
-        <div className={styles.standTeil}>
-          <span className={styles.standLabel}>Level</span>
-          <span className={styles.standWert}>{loading ? '…' : playerLevel}</span>
-        </div>
-        <div className={styles.standTeil}>
-          <span className={styles.standLabel}>XP</span>
-          <span className={styles.standWert}>
-            {loading ? '…' : xpAnzeige.toLocaleString('de-DE')}
+        <div
+          className={styles.levelRing}
+          style={{ '--anteil': `${loading ? 0 : anteil}%` } as CSSProperties}
+        >
+          <span className={styles.ringKern}>
+            <span className={styles.standLabel}>Level</span>
+            <span className={styles.ringZahl}>{loading ? '…' : playerLevel}</span>
           </span>
         </div>
-        <div className={styles.standTeil}>
-          <span className={styles.standLabel}>Serie</span>
-          <span className={styles.standWert}>
-            {loading ? '…' : streakDays > 0 ? `${streakDays} Tage` : '—'}
-          </span>
+
+        <div className={styles.standChips}>
+          <div className={`${styles.standTeil} ${styles.chipXp}`}>
+            <span className={styles.chipIcon} aria-hidden="true">
+              ⚡
+            </span>
+            <span>
+              <span className={styles.standLabel}>XP</span>
+              <span className={styles.standWert}>
+                {loading ? '…' : xpAnzeige.toLocaleString('de-DE')}
+              </span>
+            </span>
+          </div>
+          <div
+            className={`${styles.standTeil} ${styles.chipSerie} ${
+              streakDays > 0 ? styles.chipAn : ''
+            }`}
+          >
+            <span className={styles.chipIcon} aria-hidden="true">
+              🔥
+            </span>
+            <span>
+              <span className={styles.standLabel}>Serie</span>
+              <span className={styles.standWert}>
+                {loading ? '…' : streakDays > 0 ? `${streakDays} Tage` : '—'}
+              </span>
+            </span>
+          </div>
         </div>
 
         {!loading && (
