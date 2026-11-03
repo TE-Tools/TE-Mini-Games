@@ -12,8 +12,8 @@ export class CameraRig {
   /** Drehung um die Hochachse. 0 = Kamera steht bei +z und blickt nach −z. */
   yaw = 0
   private pitch = 0.92 // ~53°
-  private distance = 11
-  private targetDistance = 11
+  private distance = 9
+  private targetDistance = 9
 
   private readonly target = new THREE.Vector3()
   private readonly smoothTarget = new THREE.Vector3()
@@ -28,7 +28,7 @@ export class CameraRig {
   }
 
   zoom(delta: number): void {
-    this.targetDistance = clamp(this.targetDistance + delta, 7, 17)
+    this.targetDistance = clamp(this.targetDistance + delta, 6, 17)
   }
 
   /** Welt-Richtung für „Bildschirm nach oben" und „Bildschirm nach rechts". */
@@ -54,8 +54,10 @@ export class CameraRig {
     }
     this.distance = damp(this.distance, this.targetDistance, 6, dt)
 
-    // Steilerer Blick bei nahem Zoom hält den Boden lesbar.
-    const pitch = lerp(0.78, 1.0, (this.distance - 7) / 10)
+    // Nah ist der Blick flacher und zeigt die Figur, weit steiler und zeigt
+    // das Gelände. Seit 03.11.2026 startet sie bei 9 m und 43° statt
+    // bei 11 m und 50° -- näher dran, die Figur soll man sehen.
+    const pitch = lerp(0.66, 1.0, (this.distance - 6) / 11)
     this.pitch = pitch
 
     const horiz = Math.cos(this.pitch) * this.distance
@@ -77,7 +79,7 @@ export class CameraRig {
   reset(): void {
     this.first = true
     this.yaw = 0
-    this.targetDistance = 11
-    this.distance = 11
+    this.targetDistance = 9
+    this.distance = 9
   }
 }

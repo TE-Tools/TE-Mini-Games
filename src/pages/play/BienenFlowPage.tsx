@@ -102,6 +102,12 @@ export function BienenFlowPage() {
   const [imFlug, setImFlug] = useState<Map<number, number>>(new Map())
   /** Wie oft dieses Level schon schiefging -- ab zehn gibt es einen Platz mehr. */
   const [pleiten, setPleiten] = useState(0)
+  /**
+   * Mit welcher Zahl ein Block auf seinen Platz kam -- daraus wird die
+   * Honigfüllung, die mit jedem Pollen steigt (03.11.2026, nach dem
+   * Colony-Flow-Video: dort sieht man dem Block an, wie weit er ist).
+   */
+  const [startMenge, setStartMenge] = useState<Map<string, number>>(new Map())
 
   const bildRef = useRef<HTMLDivElement>(null)
   const slotsRef = useRef<HTMLDivElement>(null)
@@ -148,6 +154,7 @@ export function BienenFlowPage() {
     setSterne(0)
     setBienen([])
     setImFlug(new Map())
+    setStartMenge(new Map())
   }, [])
 
   const onSelectLevel = useCallback(
@@ -276,8 +283,10 @@ export function BienenFlowPage() {
   const onTapSpalte = useCallback(
     (spalte: number) => {
       if (!state || state.phase !== 'play') return
+      const block = state.spalten[spalte]?.[0]
       const ergebnis = tapSpalte(state, spalte)
       if (!ergebnis) return
+      if (block) setStartMenge((prev) => new Map(prev).set(block.id, block.amount))
       setState(ergebnis.state)
     },
     [state],
@@ -330,6 +339,7 @@ export function BienenFlowPage() {
   const verdeckt = verdeckteBloecke(state, SICHTBARE_REIHEN)
   const frei = zugaenglich(state.board, state.rows, state.cols)
   const belegt = state.slots.filter((s) => s != null).length
+  const rest = restPixel(state)
   /** Der sechste Platz aus zehn Fehlversuchen. */
   const bonus = state.slotCount > SLOT_COUNT
 
@@ -349,7 +359,6 @@ export function BienenFlowPage() {
         <span>
           {cfg.motiv} · {cfg.label}
         </span>
-        <span>{restPixel(state)} Pixel</span>
         <span className={belegt >= state.slotCount - 1 ? styles.metaEng : undefined}>
           Plätze {belegt}/{state.slotCount}
           {bonus ? ' ★' : ''}
@@ -381,29 +390,61 @@ export function BienenFlowPage() {
           })}
         </div>
 
-        <div className={styles.nest} aria-hidden="true">
-          <span ref={lochRef} className={styles.loch} />
+        {/*
+         * Unter dem Bild die Leiste mit dem, was noch zu holen ist, darunter
+         * das Nest. Solange ein Platz arbeitet, schwirrt dort ein kleiner
+         * Schwarm -- im Original ist das die Ameisenstraße am Bildrand.
+         */}
+        <div className={styles.nest}>
+          <span className={styles.zaehler} aria-label={`Noch ${rest} Pixel`}>
+            <span key={rest} className={styles.zaehlerZahl}>
+              {rest}
+            </span>
+          </span>
+          <span className={styles.huegel} aria-hidden="true">
+            <span ref={lochRef} className={styles.loch} />
+            {belegt > 0 && state.phase === 'play' && (
+              <span className={styles.schwarm}>
+                {[0, 1, 2, 3, 4].map((k) => (
+                  <i key={k} style={{ '--k': k } as CSSProperties}>
+                    🐝
+                  </i>
+                ))}
+              </span>
+            )}
+          </span>
         </div>
 
         <div className={styles.slots} ref={slotsRef} aria-label="Plätze der Kolonie">
-          {state.slots.map((b, i) => (
-            <div
-              key={i}
-              className={`${styles.slot} ${b ? styles.slotBelegt : ''} ${
-                bonus && i === state.slotCount - 1 ? styles.slotBonus : ''
-              }`}
-              style={
-                b
-                  ? {
-                      background: COLOR_HEX[b.color] ?? '#888',
-                      color: schriftFarbe(COLOR_HEX[b.color] ?? '#888'),
-                    }
-                  : undefined
-              }
-            >
-              {b ? <span className={styles.slotZahl}>{b.amount}</span> : '⬡'}
-            </div>
-          ))}
+          {state.slots.map((b, i) => {
+            const start = b ? (startMenge.get(b.id) ?? b.amount) : 0
+            const voll = b && start > 0 ? 1 - b.amount / start : 0
+            return (
+              <div
+                key={b ? b.id : `leer-${i}`}
+                className={`${styles.slot} ${b ? styles.slotBelegt : ''} ${
+                  bonus && i === state.slotCount - 1 ? styles.slotBonus : ''
+                }`}
+                style={
+                  b
+                    ? {
+                        background: COLOR_HEX[b.color] ?? '#888',
+                        color: schriftFarbe(COLOR_HEX[b.color] ?? '#888'),
+                      }
+                    : undefined
+                }
+              >
+                {b && (
+                  <i
+                    className={styles.honig}
+                    style={{ transform: `scaleY(${voll})` }}
+                    aria-hidden="true"
+                  />
+                )}
+                {b ? <span className={styles.slotZahl}>{b.amount}</span> : '⬡'}
+              </div>
+            )
+          })}
         </div>
 
         {bienen.map((b) => (

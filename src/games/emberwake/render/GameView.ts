@@ -89,6 +89,9 @@ export class GameView {
   /** Für das Neigen in Kurven: Blickrichtung im letzten Bild und die geglättete Neigung. */
   private letzteRichtung = 0
   private kurve = 0
+  /** Geglättete Blickrichtung, die die Figur tatsächlich zeigt. */
+  private blick = 0
+  private ersterBlick = true
 
   constructor(private quality: QualitySettings) {
     this.staticMaterial = vertexMaterial(quality.tier !== 'low')
@@ -138,6 +141,8 @@ export class GameView {
   load(world: World): void {
     this.unload()
     this.world = world
+    this.ersterBlick = true
+    this.kurve = 0
     const pal = world.worldDef.palette
 
     this.buildTerrain(world)
@@ -534,7 +539,25 @@ export class GameView {
     const pz = lerp(p.prevPos.z, p.pos.z, alpha)
     const py = w.terrain.heightAt(px, pz)
     this.player.group.position.set(px, py, pz)
-    this.player.group.rotation.y = -p.facing + Math.PI / 2
+    /*
+     * Blickrichtung. Die Figur schaut nach +x; `rotation.y = -facing` dreht
+     * dieses +x genau auf (cos facing, sin facing), also in die Laufrichtung.
+     * Bis 03.11.2026 stand hier `+ Math.PI / 2` aus der Zeit der runden
+     * Kegelfigur -- seit die Figur Arme und Beine hat, lief sie damit
+     * seitwärts (Thomas: "läuft immer schräg"). Geglättet wird hier, weil
+     * `facing` nur im 30-Hz-Takt springt und die Figur sonst ruckt.
+     */
+    if (this.ersterBlick) {
+      this.blick = p.facing
+      this.letzteRichtung = p.facing
+      this.ersterBlick = false
+    }
+    const blickSchritt = Math.atan2(
+      Math.sin(p.facing - this.blick),
+      Math.cos(p.facing - this.blick),
+    )
+    this.blick += blickSchritt * (1 - Math.exp(-dt * 18))
+    this.player.group.rotation.y = -this.blick
     this.player.group.visible = p.alive
 
     /*
@@ -569,12 +592,14 @@ export class GameView {
     this.player.torso.rotation.z = -0.12 * kraft + p.attackAnim * 0.12
     this.player.torso.rotation.y = schwung * 0.14 * kraft
 
+    // Steigt `facing`, dreht die Figur zu ihrer +z-Seite; positives
+    // rotation.x kippt den Oberkörper genau dorthin, also in die Kurve.
     const dreh = Math.atan2(
-      Math.sin(p.facing - this.letzteRichtung),
-      Math.cos(p.facing - this.letzteRichtung),
+      Math.sin(this.blick - this.letzteRichtung),
+      Math.cos(this.blick - this.letzteRichtung),
     )
-    this.letzteRichtung = p.facing
-    const zielKurve = dt > 0 ? Math.max(-0.22, Math.min(0.22, (-dreh / dt) * 0.06 * kraft)) : 0
+    this.letzteRichtung = this.blick
+    const zielKurve = dt > 0 ? Math.max(-0.18, Math.min(0.18, (dreh / dt) * 0.05 * kraft)) : 0
     this.kurve += (zielKurve - this.kurve) * (1 - Math.exp(-dt * 8))
     this.player.torso.rotation.x = this.kurve
 

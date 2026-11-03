@@ -568,3 +568,302 @@
   background: rgb(60 55 110 / 0.08);
   box-shadow: inset 0 1px 2px rgb(40 35 90 / 0.12);
 }
+
+/* ===== Nach dem Colony-Flow-Video (03.11.2026) =====
+ * Thomas hat ein Video vom Original geschickt. Übernommen ist das Gefühl,
+ * nicht die Gestaltung: ein gerahmtes Bild, eine Leiste mit dem Rest, ein
+ * Nest, an dem es wimmelt, und Blöcke, die man anfassen möchte. Rahmen und
+ * Füllung sind Honig -- hier arbeiten Bienen, keine Ameisen. */
+
+/* Die Bühne liegt auf einer hellen Wabenfläche. */
+.buehne {
+  padding: 14px 10px 12px;
+  border-radius: 28px;
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgb(255 236 190 / 0.55), transparent 70%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='48' viewBox='0 0 28 48'%3E%3Cpath d='M14 0l14 8v16l-14 8L0 24V8zM14 32v16' fill='none' stroke='%23d9a441' stroke-opacity='.16' stroke-width='1.2'/%3E%3C/svg%3E"),
+    #fffaf0;
+  border: 1px solid rgb(217 164 65 / 0.25);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.9),
+    var(--shadow-md);
+  gap: 0.35rem;
+}
+
+/* Das Bild im Honigrahmen. */
+.bild {
+  padding: 8px;
+  border: none;
+  border-radius: 14px;
+  background: #ebe8f3;
+  box-shadow:
+    inset 0 2px 6px rgb(40 35 90 / 0.14),
+    0 0 0 6px #f0b93a,
+    0 0 0 8px #c98a1c,
+    0 10px 22px -6px rgb(150 95 10 / 0.45);
+  margin: 8px 0 4px;
+}
+
+.pixelVoll {
+  border-radius: 3px;
+  box-shadow:
+    inset 0 1.5px 0 rgb(255 255 255 / 0.6),
+    inset 0 -2px 0 rgb(0 0 0 / 0.18),
+    0 0 0 1px rgb(40 35 60 / 0.16);
+}
+
+/* Leiste, Hügel, Loch. */
+.nest {
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+.zaehler {
+  min-width: 64px;
+  padding: 3px 14px 4px;
+  border-radius: 9px;
+  background: linear-gradient(180deg, #b9823f, #8d5b24);
+  box-shadow:
+    inset 0 1.5px 0 rgb(255 255 255 / 0.3),
+    inset 0 -2px 0 rgb(0 0 0 / 0.2),
+    0 3px 6px rgb(90 55 10 / 0.3);
+  color: #fff;
+  font-weight: 900;
+  font-size: 1rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.35);
+}
+
+.zaehlerZahl {
+  display: inline-block;
+  animation: zaehlerTick 220ms ease-out;
+}
+
+@keyframes zaehlerTick {
+  from {
+    transform: translateY(-3px) scale(1.15);
+  }
+}
+
+.huegel {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 78px;
+  height: 24px;
+  border-radius: 50% 50% 40% 40% / 70% 70% 30% 30%;
+  background: radial-gradient(ellipse at 50% 30%, #d9b27a, #a77a43 70%);
+  box-shadow: 0 3px 6px rgb(90 55 10 / 0.25);
+}
+
+.loch {
+  width: 36px;
+  height: 12px;
+  background: radial-gradient(ellipse at 50% 35%, #3d2610, #1d1206);
+  box-shadow:
+    inset 0 2px 3px rgb(0 0 0 / 0.6),
+    0 1px 0 rgb(255 255 255 / 0.3);
+}
+
+/* Der Schwarm am Nest: fünf Bienen auf eigenen Achterbahnen. */
+.schwarm {
+  position: absolute;
+  inset: -8px -14px auto;
+  height: 30px;
+  pointer-events: none;
+}
+
+.schwarm i {
+  position: absolute;
+  left: 50%;
+  top: 10px;
+  font-style: normal;
+  font-size: 0.95rem;
+  line-height: 1;
+  animation: schwirren calc(1.4s + var(--k) * 0.23s) ease-in-out infinite;
+  animation-delay: calc(var(--k) * -0.37s);
+}
+
+@keyframes schwirren {
+  0%,
+  100% {
+    transform: translate(-32px, 4px) rotate(-8deg);
+  }
+  25% {
+    transform: translate(-6px, -10px) rotate(6deg);
+  }
+  50% {
+    transform: translate(26px, 2px) rotate(10deg) scaleX(-1);
+  }
+  75% {
+    transform: translate(2px, 10px) rotate(-4deg) scaleX(-1);
+  }
+}
+
+:global(:root[data-sparsam]) .schwarm,
+:global(:root[data-sparsam]) .zaehlerZahl {
+  animation: none;
+}
+
+:global(:root[data-sparsam]) .schwarm i {
+  animation: none;
+  display: none;
+}
+
+/* Plätze: leere Mulden, belegte stehen als Würfel darin und füllen sich. */
+.slots {
+  gap: 0.4rem;
+  margin-top: 4px;
+}
+
+.slot {
+  position: relative;
+  overflow: hidden;
+  max-width: 60px;
+  border: none;
+  border-radius: 14px;
+  background: rgb(120 90 40 / 0.09);
+  box-shadow: inset 0 3px 6px rgb(90 60 20 / 0.2);
+  color: rgb(150 110 50 / 0.45);
+  font-size: 1rem;
+}
+
+.slotBonus {
+  box-shadow:
+    inset 0 3px 6px rgb(90 60 20 / 0.2),
+    0 0 0 2px #f0b93a;
+}
+
+.slotBelegt {
+  border: none;
+  box-shadow:
+    inset 0 3px 0 rgb(255 255 255 / 0.38),
+    inset 0 -5px 0 rgb(0 0 0 / 0.22),
+    0 4px 8px rgb(0 0 0 / 0.2);
+  animation: landen 320ms cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+@keyframes landen {
+  from {
+    transform: translateY(26px) scale(0.7);
+    opacity: 0.4;
+  }
+}
+
+/* Die Füllung: Honig steigt von unten, mit jedem Pollen ein Stück. */
+.honig {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 100%;
+  background: linear-gradient(180deg, rgb(255 214 102 / 0.75), rgb(230 160 20 / 0.85));
+  box-shadow: inset 0 2px 0 rgb(255 255 255 / 0.5);
+  transition: transform 260ms ease-out;
+  pointer-events: none;
+}
+
+.slotZahl {
+  position: relative;
+  font-size: 1.15rem;
+  font-weight: 900;
+  text-shadow:
+    0 1.5px 0 rgb(0 0 0 / 0.3),
+    0 0 3px rgb(0 0 0 / 0.25);
+}
+
+:global(:root[data-sparsam]) .slotBelegt {
+  animation: none;
+}
+
+/* Nachschub: dicke Würfel mit Seitenkante, die beim Tippen einsinken. */
+.spalten {
+  gap: 0.45rem;
+  margin-top: 0.2rem;
+}
+
+.spalte {
+  gap: 0.4rem;
+}
+
+.block {
+  position: relative;
+  min-height: 52px;
+  border-radius: 14px;
+  font-size: 1.25rem;
+  font-weight: 900;
+  text-shadow:
+    0 1.5px 0 rgb(0 0 0 / 0.3),
+    0 0 3px rgb(0 0 0 / 0.22);
+  box-shadow:
+    inset 0 3px 0 rgb(255 255 255 / 0.4),
+    inset 0 -6px 0 rgb(0 0 0 / 0.2),
+    0 5px 0 rgb(0 0 0 / 0.18),
+    0 8px 14px rgb(0 0 0 / 0.14);
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
+}
+
+/* Ein Glanzlicht oben links macht aus der Fläche einen Würfel. */
+.block::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 6px;
+  width: 34%;
+  height: 22%;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.32);
+  pointer-events: none;
+}
+
+.blockOben:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow:
+    inset 0 3px 0 rgb(255 255 255 / 0.3),
+    inset 0 -3px 0 rgb(0 0 0 / 0.2),
+    0 1px 0 rgb(0 0 0 / 0.18);
+}
+
+/* Wartende Blöcke bleiben farbig und lesbar, liegen aber tiefer im Schatten. */
+.blockTief {
+  opacity: 1;
+  min-height: 42px;
+  filter: brightness(0.82) saturate(0.85);
+  font-size: 1.05rem;
+  box-shadow:
+    inset 0 2px 0 rgb(255 255 255 / 0.25),
+    inset 0 -4px 0 rgb(0 0 0 / 0.2);
+}
+
+.blockTief::before {
+  display: none;
+}
+
+/* Geht genau auf: ein goldener Ring, der leise pulsiert. */
+.blockPasst {
+  outline: 3px solid #fff4c2;
+  outline-offset: -3px;
+  animation: passtGlimmen 1.6s ease-in-out infinite;
+}
+
+@keyframes passtGlimmen {
+  50% {
+    outline-color: #f0b93a;
+  }
+}
+
+:global(:root[data-sparsam]) .blockPasst {
+  animation: none;
+}
+
+.spalteLeer {
+  height: 52px;
+  border: none;
+  border-radius: 14px;
+  background: rgb(120 90 40 / 0.07);
+  box-shadow: inset 0 3px 6px rgb(90 60 20 / 0.14);
+}
