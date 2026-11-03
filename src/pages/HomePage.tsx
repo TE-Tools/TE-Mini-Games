@@ -35,7 +35,13 @@ import { LogoMark } from '@/components/brand/LogoMark'
 import { DATA_PULLED_EVENT } from '@/services/remotePull'
 import { getRemoteOverall, gameLabel, type OverallEntry } from '@/services/leaderboard'
 import { StartBuehne } from '@/components/drei/StartBuehne'
-import { SPIELE_KACHELN, kachelFuer } from './spiele-katalog'
+import {
+  SPIELE_KACHELN,
+  SPIEL_GRUPPEN,
+  gruppeVon,
+  kachelFuer,
+  type SpielGruppe,
+} from './spiele-katalog'
 
 type Reiter = 'spiele' | 'rangliste' | 'erfolge' | 'tagesziel'
 
@@ -51,6 +57,9 @@ export function HomePage() {
   const [loading, setLoading] = useState(true)
   const [reiter, setReiter] = useState<Reiter>('spiele')
   const [menueOffen, setMenueOffen] = useState(false)
+  const [gruppe, setGruppe] = useState<SpielGruppe | 'alle'>('alle')
+  const sichtbareSpiele =
+    gruppe === 'alle' ? SPIELE_KACHELN : SPIELE_KACHELN.filter((k) => gruppeVon(k.id) === gruppe)
 
   const ladeProfil = useCallback(async () => {
     try {
@@ -201,8 +210,24 @@ export function HomePage() {
           <span aria-hidden="true">🌐</span> Offene Spiele – wer gerade wartet
         </Link>
 
-        <nav className={styles.kacheln} aria-label="Spiele">
-          {SPIELE_KACHELN.map((k, i) => (
+        <div className={styles.gruppen} role="group" aria-label="Spiele filtern">
+          {[{ id: 'alle' as const, label: 'Alle', icon: '✨' }, ...SPIEL_GRUPPEN].map((g) => (
+            <button
+              key={g.id}
+              type="button"
+              className={styles.gruppe}
+              aria-pressed={gruppe === g.id}
+              onClick={() => setGruppe(g.id)}
+            >
+              <span aria-hidden="true">{g.icon}</span> {g.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Der Schlüssel lässt die Kacheln nach jedem Filterwechsel neu
+            hereinkommen, statt dass sie einfach verschwinden. */}
+        <nav key={gruppe} className={styles.kacheln} aria-label="Spiele">
+          {sichtbareSpiele.map((k, i) => (
             <article
               key={k.id}
               className={styles.kachel}
@@ -211,14 +236,19 @@ export function HomePage() {
               onPointerMove={kachelNeigen}
               onPointerLeave={kachelGerade}
             >
-              <span className={styles.kachelIcon} aria-hidden="true">
-                {k.icon}
-              </span>
+              <span className={styles.kachelLicht} aria-hidden="true" />
+              <div className={styles.kachelKopf}>
+                <span className={styles.kachelIcon} aria-hidden="true">
+                  {k.icon}
+                </span>
+              </div>
+              <span className={styles.kachelArt}>{k.art}</span>
               <h3 className={styles.kachelName}>{k.name}</h3>
-              <p className={styles.kachelArt}>{k.art}</p>
               <Link to={k.pfad} className={styles.kachelKnopf}>
-                Spielen
-                <span className={styles.kachelZiel}> – {k.name}</span>
+                <span className={styles.kachelPfeil} aria-hidden="true">
+                  ▶
+                </span>
+                <span className={styles.kachelZiel}>Spielen – {k.name}</span>
               </Link>
             </article>
           ))}

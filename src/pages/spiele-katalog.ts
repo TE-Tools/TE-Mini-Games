@@ -112,3 +112,46 @@ const NACH_ID = new Map(SPIELE_KACHELN.map((k) => [k.id, k]))
 export function kachelFuer(id: string): KachelEintrag | undefined {
   return NACH_ID.get(id as GameId)
 }
+
+/*
+ * Die Reiter über den Kacheln (03.11.2026): Bei zweiundzwanzig Spielen
+ * hilft eine grobe Sortierung beim Suchen -- "worauf hab ich Lust?" in vier
+ * Antworten. Ein Spiel steht in genau einer Gruppe.
+ */
+export type SpielGruppe = 'knobeln' | 'geschick' | 'tisch' | 'party'
+
+export const SPIEL_GRUPPEN: readonly { id: SpielGruppe; label: string; icon: string }[] = [
+  { id: 'knobeln', label: 'Knobeln', icon: '🧩' },
+  { id: 'geschick', label: 'Geschick', icon: '⚡' },
+  { id: 'tisch', label: 'Karten & Würfel', icon: '🎲' },
+  { id: 'party', label: 'Party', icon: '🎉' },
+]
+
+const GRUPPE: Partial<Record<GameId, SpielGruppe>> = {
+  'perfect-second': 'geschick',
+  'what-is-missing': 'knobeln',
+  reihenfolge: 'knobeln',
+  kopfrechnen: 'knobeln',
+  sudoku: 'knobeln',
+  'bienen-flow': 'knobeln',
+  'squishy-dumplings': 'geschick',
+  trapbound: 'geschick',
+  emberwake: 'geschick',
+  kniffel: 'tisch',
+  maumau: 'tisch',
+  'letzte-karte': 'tisch',
+  'texas-holdem': 'tisch',
+  schuetzenopoly: 'tisch',
+  schuetzenrunde: 'party',
+  'finde-den-imposter': 'party',
+  'wer-bin-ich': 'party',
+  'stadt-land-fluss': 'party',
+  scharade: 'party',
+  wortbombe: 'party',
+  'wer-wuerde-eher': 'party',
+}
+
+/** Ein Spiel ohne Eintrag landet bei "Knobeln" -- dort fällt es nicht aus dem Raster. */
+export function gruppeVon(id: GameId): SpielGruppe {
+  return GRUPPE[id] ?? 'knobeln'
+}
