@@ -611,3 +611,67 @@
   transform: translateY(-2px);
   transition: transform 200ms ease;
 }
+
+/* ===================================================================
+ * Tablet quer (05.11.2026)
+ *
+ * Untereinander gestapelt lag auf einem Tablet quer nur das Brett im
+ * Bild; Würfeln, Kaufen und Zug beenden standen darunter, und für jeden
+ * Zug musste man scrollen. Wo das Fenster breit genug ist, steht das
+ * Brett links so hoch wie das Fenster, und alles andere rechts daneben.
+ * =================================================================== */
+
+@media (orientation: landscape) and (min-width: 820px) and (min-height: 500px) {
+  .breiteSeite {
+    max-width: 80rem;
+  }
+
+  .spielflaeche {
+    max-width: none;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+    grid-template-rows: repeat(6, auto) 1fr;
+    align-items: start;
+    column-gap: var(--space-6);
+    row-gap: var(--space-3);
+    padding-bottom: var(--space-2);
+  }
+
+  .spielflaeche > * {
+    grid-column: 2;
+  }
+
+  .spielflaeche > .brettSpalte {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    --brett-max: calc(100dvh - 150px);
+  }
+}
+
+.kopfKnoepfe {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/*
+ * Telefon und Tablet hochkant: Die Handlungsleiste bleibt unten stehen.
+ *
+ * Unter Brett und Protokoll lag "Würfeln" bzw. "Zug beenden" auf einem
+ * Telefon unter dem Rand -- jeder Zug hieß: runterscrollen, tippen, wieder
+ * hoch zum Brett. Jetzt klebt die Leiste am unteren Rand, solange sie
+ * nicht ohnehin zu sehen ist.
+ */
+@media not ((orientation: landscape) and (min-width: 820px) and (min-height: 500px)) {
+  .spielflaeche > .leiste {
+    position: sticky;
+    bottom: 0;
+    z-index: 6;
+    margin-inline: calc(var(--space-4) * -1);
+    padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom));
+    background: var(--glas);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
+    backdrop-filter: blur(18px) saturate(150%);
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+    box-shadow: 0 -8px 12px -10px var(--hairline-strong);
+  }
+}

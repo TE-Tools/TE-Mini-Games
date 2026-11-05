@@ -18,9 +18,18 @@
   touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
   border-radius: var(--radius-lg);
-  width: 100%;
+  /*
+   * Quadratisch, und zwar wirklich.
+   *
+   * Vorher war die Breite fest 100 % und nur die Höhe gedeckelt. Auf einem
+   * Tablet quer wurde das Fenster dadurch breiter als hoch, das Brett
+   * richtete sich aber nach der Breite -- und die untere Reihe lag
+   * abgeschnitten unter dem Rand. Jetzt bestimmt das Kleinere von beidem
+   * die Kante. Wie hoch es werden darf, legt die Seite über --brett-max fest.
+   */
+  width: min(100%, var(--brett-max, max(280px, calc(100dvh - 240px))));
+  margin-inline: auto;
   aspect-ratio: 1;
-  max-height: min(100vw, calc(100dvh - 240px));
   background: #0e2317;
 }
 

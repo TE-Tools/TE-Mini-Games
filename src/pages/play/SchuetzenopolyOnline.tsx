@@ -620,6 +620,7 @@ export function SchuetzenopolyOnline({ eigenerName, onZurueck }: Props) {
           aktiverSpielerId={aktiv.id}
           hervorgehoben={laeuftFigur ?? (zustand.phase === 'feld' ? aktiv.position : null)}
           onFeldTippen={setFeldKarte}
+          className={styles.brettSpalte}
         >
           <BrettMitte zustand={zustand} />
         </Brett>

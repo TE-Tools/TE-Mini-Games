@@ -850,3 +850,33 @@
 .grosserKnopf:hover:not(:disabled)::after {
   transform: translateX(3px);
 }
+
+/*
+ * Tablet quer (05.11.2026, Thomas: "Tablet und Handy optimiert").
+ *
+ * Ab 52rem stehen beide Blockhälften nebeneinander, und `.oben` klebt nicht
+ * mehr -- am Rechner passt dann alles auf den Schirm. Auf einem Tablet quer
+ * nicht: 768 Punkte Höhe reichen nicht für Würfel und dreizehn Felder, und
+ * nach jedem Eintrag ging es wieder nach oben zum Würfeln. Deshalb stehen
+ * Würfel und Knopf hier links in einer eigenen Spalte, die stehen bleibt,
+ * und der Block rechts daneben.
+ */
+@media (min-width: 52rem) and (orientation: landscape) and (max-height: 62rem) {
+  .tisch {
+    display: grid;
+    grid-template-columns: minmax(17rem, 21rem) minmax(0, 1fr);
+    column-gap: var(--space-6);
+    align-items: start;
+  }
+
+  .tisch > * {
+    grid-column: 2;
+  }
+
+  .tisch > .oben {
+    grid-column: 1;
+    grid-row: 1 / span 6;
+    position: sticky;
+    top: var(--space-4);
+  }
+}

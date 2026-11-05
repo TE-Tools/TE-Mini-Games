@@ -52,13 +52,16 @@
 }
 
 .titelblock {
+  /* Der Schriftzug richtet sich nach der Spalte, nicht nach dem Fenster --
+     auf einem Tablet ragte er sonst rechts aus der schmalen Spalte heraus. */
+  container-type: inline-size;
   text-align: center;
   padding: 1.6rem 0 0.6rem;
 }
 
 .titel {
   margin: 0;
-  font-size: clamp(2.2rem, 12vw, 3.4rem);
+  font-size: clamp(1.6rem, 10.5cqi, 3.4rem);
   letter-spacing: 0.16em;
   font-weight: 900;
   color: #f4f1ff;

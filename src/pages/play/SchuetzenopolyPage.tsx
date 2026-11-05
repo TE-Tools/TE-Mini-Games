@@ -60,6 +60,8 @@ import { Spielaufbau } from './schuetzenopoly/Spielaufbau'
 import { SchuetzenopolyOnline } from './SchuetzenopolyOnline'
 import { BauPanel, WahlPanel } from './schuetzenopoly/Aktionen'
 import { BrettMitte, Handlungsleiste, Protokoll, SpielerLeiste } from './schuetzenopoly/Tisch'
+import { Tischmodus } from './schuetzenopoly/Tischmodus'
+import { TISCH_ABFRAGE, useMedienAbfrage } from './useMedienAbfrage'
 import shell from './PlayShell.module.css'
 import styles from './SchuetzenopolyPage.module.css'
 
@@ -103,6 +105,9 @@ export function SchuetzenopolyPage() {
   const [bauOffen, setBauOffen] = useState(false)
   const [laufPosition, setLaufPosition] = useState<number | null>(null)
   const [ton, setTonAn] = useState(tonAn())
+  /** Tischmodus von Hand an- oder abgeschaltet; null heißt: von selbst. */
+  const [tischWahl, setTischWahl] = useState<boolean | null>(null)
+  const tischMoeglich = useMedienAbfrage(TISCH_ABFRAGE)
   /** Der jeweils letzte Spielzustand -- für Aufrufe aus Zeitgebern heraus. */
   const zustandMerker = useRef<SpielZustand | null>(null)
   /** Verzögerte Schritte. Wer die Seite verlässt, soll sie nicht nachholen. */
@@ -601,57 +606,26 @@ export function SchuetzenopolyPage() {
       ]
     : undefined
 
-  return (
-    <main className={`${shell.page} ${styles.breiteSeite}`}>
-      <Kopf
-        onZurueck={() => setAnsicht('menue')}
-        ton={ton}
-        onTon={tonUmschalten}
-        runde={`Runde ${zustand.runde}/${zustand.rundenLimit}`}
-      />
+  const menschen = zustand.spieler.filter((s) => s.typ === 'mensch').length
+  // Von selbst am Tisch, sobald mehrere Menschen an einem Tablet sitzen.
+  const amTisch = tischMoeglich && (tischWahl ?? menschen >= 2)
 
-      <section className={styles.spielflaeche}>
-        <SpielerLeiste zustand={zustand} />
+  const leiste = (
+    <Handlungsleiste
+      zustand={zustand}
+      darfZiehen={mensch}
+      onAktion={fuehreAus}
+      karteOffen={Boolean(feldKarte)}
+      onKarteAnsehen={() =>
+        zustand.kaufAngebot && setFeldKarte(feldAn(zustand.kaufAngebot.position))
+      }
+      onBauen={() => setBauOffen(true)}
+      onHandeln={() => setHandelOffen(true)}
+    />
+  )
 
-        <Brett
-          besitz={zustand.besitz}
-          spieler={spielerFuerBrett}
-          aktiverSpielerId={aktiv.id}
-          hervorgehoben={laeuft ?? (zustand.phase === 'feld' ? aktiv.position : null)}
-          onFeldTippen={setFeldKarte}
-        >
-          <BrettMitte zustand={zustand} />
-        </Brett>
-
-        <Protokoll zustand={zustand} />
-
-        <Handlungsleiste
-          zustand={zustand}
-          darfZiehen={mensch}
-          onAktion={fuehreAus}
-          karteOffen={Boolean(feldKarte)}
-          onKarteAnsehen={() =>
-            zustand.kaufAngebot && setFeldKarte(feldAn(zustand.kaufAngebot.position))
-          }
-          onBauen={() => setBauOffen(true)}
-          onHandeln={() => setHandelOffen(true)}
-        />
-
-        <button
-          type="button"
-          className={styles.aufgeben}
-          onClick={() => {
-            if (window.confirm('Wirklich aufgeben?')) {
-              const menschSpieler = zustand.spieler.find((s) => s.typ === 'mensch')
-              if (menschSpieler) anwenden((s) => aufgeben(s, menschSpieler.id))
-            }
-          }}
-        >
-          Partie aufgeben
-        </button>
-      </section>
-
-      {/* --- Überlagerungen --- */}
+  const ueberlagerungen = (
+    <>
       {zustand.offenesMinispiel &&
         spielerMit(zustand, zustand.offenesMinispiel.spielerId)?.typ === 'mensch' && (
           <div className={styles.vollbild}>
@@ -715,6 +689,86 @@ export function SchuetzenopolyPage() {
           onSchliessen={() => karteZurueck()}
         />
       )}
+    </>
+  )
+
+  if (amTisch) {
+    return (
+      <Tischmodus
+        zustand={zustand}
+        spielerFuerBrett={spielerFuerBrett}
+        hervorgehoben={laeuft ?? (zustand.phase === 'feld' ? aktiv.position : null)}
+        onFeldTippen={setFeldKarte}
+        leiste={leiste}
+        ueberlagerungen={ueberlagerungen}
+        ecke={
+          <>
+            <button
+              type="button"
+              className={styles.tonKnopf}
+              onClick={() => setTischWahl(false)}
+              aria-label="Tischmodus verlassen"
+              title="Normale Ansicht"
+            >
+              📱
+            </button>
+            <button
+              type="button"
+              className={styles.tonKnopf}
+              onClick={tonUmschalten}
+              aria-label={ton ? 'Ton ausschalten' : 'Ton einschalten'}
+            >
+              {ton ? '🔊' : '🔈'}
+            </button>
+          </>
+        }
+      />
+    )
+  }
+
+  return (
+    <main className={`${shell.page} ${styles.breiteSeite}`}>
+      <Kopf
+        onZurueck={() => setAnsicht('menue')}
+        ton={ton}
+        onTon={tonUmschalten}
+        runde={`Runde ${zustand.runde}/${zustand.rundenLimit}`}
+        onTisch={tischMoeglich ? () => setTischWahl(true) : undefined}
+      />
+
+      <section className={styles.spielflaeche}>
+        <SpielerLeiste zustand={zustand} />
+
+        <Brett
+          besitz={zustand.besitz}
+          spieler={spielerFuerBrett}
+          aktiverSpielerId={aktiv.id}
+          hervorgehoben={laeuft ?? (zustand.phase === 'feld' ? aktiv.position : null)}
+          onFeldTippen={setFeldKarte}
+          className={styles.brettSpalte}
+        >
+          <BrettMitte zustand={zustand} />
+        </Brett>
+
+        <Protokoll zustand={zustand} />
+
+        {leiste}
+
+        <button
+          type="button"
+          className={styles.aufgeben}
+          onClick={() => {
+            if (window.confirm('Wirklich aufgeben?')) {
+              const menschSpieler = zustand.spieler.find((s) => s.typ === 'mensch')
+              if (menschSpieler) anwenden((s) => aufgeben(s, menschSpieler.id))
+            }
+          }}
+        >
+          Partie aufgeben
+        </button>
+      </section>
+
+      {ueberlagerungen}
     </main>
   )
 }
@@ -726,11 +780,14 @@ function Kopf({
   ton,
   onTon,
   runde,
+  onTisch,
 }: {
   onZurueck: () => void
   ton: boolean
   onTon: () => void
   runde?: string
+  /** Nur auf einem Tablet: das Brett flach in die Mitte, jeder an seine Seite. */
+  onTisch?: () => void
 }) {
   return (
     <header className={shell.header}>
@@ -738,15 +795,28 @@ function Kopf({
         ←
       </button>
       <h1 className={shell.title}>Schützenopoly</h1>
-      <button
-        type="button"
-        className={styles.tonKnopf}
-        onClick={onTon}
-        aria-label={ton ? 'Ton ausschalten' : 'Ton einschalten'}
-        title={runde}
-      >
-        {ton ? '🔊' : '🔈'}
-      </button>
+      <span className={styles.kopfKnoepfe}>
+        {onTisch && (
+          <button
+            type="button"
+            className={styles.tonKnopf}
+            onClick={onTisch}
+            aria-label="Tischmodus: jeder spielt von seiner Seite"
+            title="Tischmodus"
+          >
+            🍽️
+          </button>
+        )}
+        <button
+          type="button"
+          className={styles.tonKnopf}
+          onClick={onTon}
+          aria-label={ton ? 'Ton ausschalten' : 'Ton einschalten'}
+          title={runde}
+        >
+          {ton ? '🔊' : '🔈'}
+        </button>
+      </span>
     </header>
   )
 }
