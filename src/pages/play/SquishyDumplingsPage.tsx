@@ -98,6 +98,15 @@ export function SquishyDumplingsPage() {
   const lauf = useRef(0)
   /** Wann die Zeit abgelaufen ist -- gerechnet, nicht gezählt. */
   const endeRef = useRef(0)
+  /**
+   * Läuft gerade ein Zug ab? Die Uhr fragt das ab: Wer in der letzten
+   * Sekunde den entscheidenden Tausch macht, soll nicht verlieren, weil die
+   * Kette noch rollt -- gewertet wird, wenn sie liegt.
+   */
+  const laeuftRef = useRef(false)
+  useEffect(() => {
+    laeuftRef.current = laeuft
+  }, [laeuft])
 
   useEffect(() => {
     let abgebrochen = false
@@ -212,6 +221,8 @@ export function SquishyDumplingsPage() {
         setRestzeit(uebrig)
         return
       }
+      setRestzeit(0)
+      if (laeuftRef.current) return
       window.clearInterval(uhr)
       setRestzeit(0)
       setState((alt) => (alt ? zeitAbgelaufen(alt) : alt))
@@ -224,6 +235,9 @@ export function SquishyDumplingsPage() {
   const spieleZug = useCallback(
     (a: number, b: number) => {
       if (!state || state.phase !== 'play' || laeuft) return
+      // Nach Ablauf der Zeit kein neuer Zug mehr, auch nicht in dem Takt,
+      // bevor die Uhr das Ende meldet.
+      if (endeRef.current - Date.now() <= 0) return
       if (!tauschErlaubt(state, a, b)) return
       const gen = lauf.current
       const ergebnis = tausche(state, a, b)

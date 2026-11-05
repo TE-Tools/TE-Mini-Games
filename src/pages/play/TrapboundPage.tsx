@@ -72,6 +72,8 @@ export function TrapboundPage() {
   const lauf = useRef(0)
   /** Wo die Kamera gerade steht; null heißt "beim nächsten Bild hinsetzen". */
   const kameraRef = useRef<number | null>(null)
+  /** Senkrecht dasselbe -- für die Stockwerk-Level, die höher sind als ein Bild. */
+  const kameraYRef = useRef<number | null>(null)
 
   const einst = stand.einstellungen
 
@@ -142,6 +144,7 @@ export function TrapboundPage() {
     (nr: number) => {
       lauf.current += 1
       kameraRef.current = null
+      kameraYRef.current = null
       const daten = levelDaten(nr)
       spielRef.current = starte(daten)
       todeRef.current = 0
@@ -164,6 +167,7 @@ export function TrapboundPage() {
   /** Nach einem Tod: sofort wieder auf Anfang, Fallen zurück. */
   const neustart = useCallback(() => {
     kameraRef.current = null
+    kameraYRef.current = null
     const daten = levelDaten(levelNr)
     spielRef.current = starte(daten)
     setEnde(null)
@@ -319,6 +323,21 @@ export function TrapboundPage() {
       else kameraRef.current += (ziel - kameraRef.current) * 0.18
       const kamera = Math.round(kameraRef.current)
 
+      /*
+       * Und senkrecht. Die Stockwerk-Level sind einen Bildschirm breit und
+       * mehrere hoch; die Figur steht etwas unter der Mitte, damit man
+       * sieht, was über einem kommt. Bei Leveln, die genau ein Bild hoch
+       * sind, bleibt das bei null.
+       */
+      const levelHoehe = s.level.hoehe ?? BILD_HOEHE
+      const zielY = Math.max(
+        0,
+        Math.min(levelHoehe - BILD_HOEHE, s.koerper.y + PHYSIK.hoehe / 2 - BILD_HOEHE * 0.58),
+      )
+      if (kameraYRef.current === null) kameraYRef.current = zielY
+      else kameraYRef.current += (zielY - kameraYRef.current) * 0.14
+      const kameraY = Math.round(kameraYRef.current)
+
       const randX = (c.width - BILD_BREITE * skala) / 2
       const randY = (c.height - BILD_HOEHE * skala) / 2
 
@@ -330,7 +349,7 @@ export function TrapboundPage() {
       ctx.rect(randX, randY, BILD_BREITE * skala, BILD_HOEHE * skala)
       ctx.clip()
 
-      ctx.setTransform(skala, 0, 0, skala, randX - kamera * skala, randY)
+      ctx.setTransform(skala, 0, 0, skala, randX - kamera * skala, randY - kameraY * skala)
       ctx.imageSmoothingEnabled = false
       zeichne(ctx, s, { welt: weltVon(s.level.nr), beben: einst.beben, uhr: u })
       ctx.restore()
