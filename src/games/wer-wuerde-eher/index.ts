@@ -14,4 +14,5 @@ export {
 } from './engine'
 export type { WweeState, WweePlayer, WweePhase, CreateWweeOptions, Auszaehlung } from './engine'
 export { FRAGEN, fragenFuer } from './fragen'
-export type { Frage, FrageModus } from './fragen'
+export { FRAGEN_EN } from './fragen.en'
+export type { Frage, FrageModus, FragenSprache } from './fragen'

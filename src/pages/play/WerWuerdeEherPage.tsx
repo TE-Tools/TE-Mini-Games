@@ -24,7 +24,7 @@ const DEFAULT_NAMES = 'Thomas\nMarina\nPhillip\nSonja'
 const MODI: FrageModus[] = ['personen', 'entweder']
 
 export function WerWuerdeEherPage() {
-  const { t } = useSprache()
+  const { t, sprache } = useSprache()
   const w = t.werWuerdeEher
   const g = t.partyGemeinsam
   const [state, setState] = useState<WweeState | null>(null)
@@ -41,11 +41,11 @@ export function WerWuerdeEherPage() {
         .split(/[\n,;]+/)
         .map((n) => n.trim())
         .filter(Boolean)
-      setState(createWweeMatch({ names, modi, rounds: runden }))
+      setState(createWweeMatch({ names, modi, rounds: runden, sprache }))
     } catch (e) {
       setError(fehlerSatz(e))
     }
-  }, [namesText, modi, runden])
+  }, [namesText, modi, runden, sprache])
 
   if (!state) {
     const modusText: Record<FrageModus, { label: string; erklaerung: string }> = {
