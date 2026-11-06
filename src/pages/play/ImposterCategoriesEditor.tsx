@@ -126,10 +126,10 @@ export function ImposterCategoriesEditor({ categories, onChanged, onClose }: Pro
       <div className={styles.card}>
         <h2 className={styles.cardTitle}>Eigene Kategorien</h2>
         <p className={styles.subtitle}>
-          Eigene Wortlisten für die Runde – zum Beispiel Namen aus dem Verein oder Insider aus
-          der Familie. Sie liegen nur auf diesem Gerät; zum Weitergeben nimmst du Export und
-          Import. Online gehen sie nicht: dort zieht der Server das Wort, und der kennt nur
-          den eingebauten Wortschatz.
+          Eigene Wortlisten für die Runde – zum Beispiel Namen aus dem Verein oder Insider aus der
+          Familie. Sie liegen nur auf diesem Gerät; zum Weitergeben nimmst du Export und Import.
+          Online gehen sie nicht: dort zieht der Server das Wort, und der kennt nur den eingebauten
+          Wortschatz.
         </p>
 
         {categories.length === 0 ? (

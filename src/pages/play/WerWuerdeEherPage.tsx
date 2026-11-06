@@ -20,7 +20,11 @@ const DEFAULT_NAMES = 'Thomas\nMarina\nPhillip\nSonja'
 
 const MODI: { id: FrageModus; label: string; erklaerung: string }[] = [
   { id: 'personen', label: 'Wer würde am ehesten…?', erklaerung: 'Alle tippen auf einen Namen.' },
-  { id: 'entweder', label: 'Was wäre dir lieber?', erklaerung: 'Alle entscheiden sich für A oder B.' },
+  {
+    id: 'entweder',
+    label: 'Was wäre dir lieber?',
+    erklaerung: 'Alle entscheiden sich für A oder B.',
+  },
 ]
 
 export function WerWuerdeEherPage() {
@@ -51,8 +55,8 @@ export function WerWuerdeEherPage() {
         </Link>
         <h1 className={shell.title}>🗳️ Wer würde eher?</h1>
         <p className={shell.subtitle}>
-          Das Handy geht reihum, jeder stimmt heimlich ab. Aufgedeckt wird erst, wenn alle
-          dran waren – danach wird erklärt.
+          Das Handy geht reihum, jeder stimmt heimlich ab. Aufgedeckt wird erst, wenn alle dran
+          waren – danach wird erklärt.
         </p>
 
         <div className={shell.card}>
@@ -255,9 +259,7 @@ export function WerWuerdeEherPage() {
   return (
     <main className={`${shell.page} ${styles.farbe}`}>
       <h1 className={shell.title}>Das war&apos;s</h1>
-      <p className={shell.subtitle}>
-        {state.fragen.length} Fragen durch. Nochmal mit neuen?
-      </p>
+      <p className={shell.subtitle}>{state.fragen.length} Fragen durch. Nochmal mit neuen?</p>
       <button type="button" className={shell.btn} onClick={start}>
         Neue Partie
       </button>

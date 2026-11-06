@@ -152,7 +152,11 @@ export function WahlPanel({
                 .filter((s) => s.id !== spielerId && !s.insolvent)
                 .map((s) => (
                   <li key={s.id}>
-                    <button type="button" className={styles.wahlKnopf} onClick={() => onBaustopp(s.id)}>
+                    <button
+                      type="button"
+                      className={styles.wahlKnopf}
+                      onClick={() => onBaustopp(s.id)}
+                    >
                       {s.name}
                     </button>
                   </li>

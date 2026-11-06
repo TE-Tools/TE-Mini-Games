@@ -34,7 +34,11 @@ interface Reihe {
 
 const STUFEN: { id: KiStufe; label: string; erklaerung: string }[] = [
   { id: 'leicht', label: 'Leicht', erklaerung: 'Kauft nach Gefühl, baut selten, handelt nicht.' },
-  { id: 'normal', label: 'Normal', erklaerung: 'Sammelt Gruppen, baut sinnvoll, handelt gelegentlich.' },
+  {
+    id: 'normal',
+    label: 'Normal',
+    erklaerung: 'Sammelt Gruppen, baut sinnvoll, handelt gelegentlich.',
+  },
   { id: 'schwer', label: 'Schwer', erklaerung: 'Rechnet Gebühren, blockiert, handelt gezielt.' },
 ]
 
@@ -54,10 +58,7 @@ export function Spielaufbau({ vorschlagName, onStart, onAbbrechen }: AufbauProps
 
   const hinzufuegen = () => {
     if (reihen.length >= MAX_SPIELER) return
-    setReihen((alt) => [
-      ...alt,
-      { name: `Gegner ${alt.length}`, typ: 'ki', kiStufe: 'normal' },
-    ])
+    setReihen((alt) => [...alt, { name: `Gegner ${alt.length}`, typ: 'ki', kiStufe: 'normal' }])
   }
 
   const entfernen = (index: number) => {
@@ -177,8 +178,8 @@ export function Spielaufbau({ vorschlagName, onStart, onAbbrechen }: AufbauProps
       </label>
 
       <p className={styles.hinweis}>
-        Rollen und Figuren werden zu Beginn zufällig verteilt. Es gibt {ROLLEN.length} Rollen
-        und {FIGUREN.length} Figuren.
+        Rollen und Figuren werden zu Beginn zufällig verteilt. Es gibt {ROLLEN.length} Rollen und{' '}
+        {FIGUREN.length} Figuren.
       </p>
 
       {fehler && (

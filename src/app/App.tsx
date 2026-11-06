@@ -42,6 +42,7 @@ import { initRemoteSync, syncFullNow } from '@/services/remoteSync'
 import { ermittleSpielerName } from '@/services/spielername'
 import { onAuthStateChange, getSession } from '@/auth/authService'
 import { getPlayMode, setPlayMode, type PlayMode } from '@/auth/sessionMode'
+import { SprachProvider } from '@/i18n/SprachProvider'
 
 type GateState = { status: 'loading' } | { status: 'gate' } | { status: 'ready'; mode: PlayMode }
 
@@ -159,68 +160,70 @@ export function App() {
   }, [])
 
   return (
-    <BrowserRouter>
-      <AuthGate>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/play/perfect-second" element={<PerfectSecondPage />} />
-          <Route path="/play/what-is-missing" element={<WhatIsMissingPage />} />
-          <Route path="/play/schuetzenrunde" element={<SchuetzenrundePage />} />
-          <Route path="/play/finde-den-imposter" element={<FindeDenImposterPage />} />
-          <Route path="/play/reihenfolge" element={<ReihenfolgePage />} />
-          <Route path="/play/kopfrechnen" element={<KopfrechnenPage />} />
-          <Route path="/play/wer-bin-ich" element={<WerBinIchPage />} />
-          <Route path="/play/stadt-land-fluss" element={<StadtLandFlussPage />} />
-          <Route path="/play/scharade" element={<ScharadePage />} />
-          <Route path="/play/wortbombe" element={<WortbombePage />} />
-          <Route path="/play/wer-wuerde-eher" element={<WerWuerdeEherPage />} />
-          <Route path="/play/schuetzenopoly" element={<SchuetzenopolyPage />} />
-          <Route path="/play/kniffel" element={<KniffelPage />} />
-          <Route path="/play/texas-holdem" element={<TexasHoldemPage />} />
-          <Route path="/play/maumau" element={<MauMauPage spiel="maumau" />} />
-          <Route path="/play/letzte-karte" element={<MauMauPage spiel="letzte-karte" />} />
-          <Route path="/play/bienen-flow" element={<BienenFlowPage />} />
-          <Route path="/play/squishy-dumplings" element={<SquishyDumplingsPage />} />
-          <Route path="/play/trapbound" element={<TrapboundPage />} />
-          <Route
-            path="/play/emberwake"
-            element={
-              <Suspense
-                fallback={
-                  <main
-                    style={{
-                      flex: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      minHeight: '100dvh',
-                      padding: '1.5rem',
-                    }}
-                  >
-                    <p style={{ opacity: 0.7 }}>Emberwake lädt…</p>
-                  </main>
-                }
-              >
-                <EmberwakePage />
-              </Suspense>
-            }
-          />
-          <Route path="/play/sudoku" element={<SudokuPage />} />
-          <Route path="/offene-spiele" element={<OffeneSpielePage />} />
-          <Route path="/family" element={<FamilyPage />} />
-          <Route path="/daily" element={<DailyPage />} />
-          <Route path="/leaderboard" element={<LeaderboardPage />} />
-          <Route path="/achievements" element={<AchievementsPage />} />
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/impressum" element={<ImpressumPage />} />
-          <Route path="/datenschutz" element={<DatenschutzPage />} />
-          {/* Eigene Adresse, weil Google Play einen Löschweg ohne die App
+    <SprachProvider>
+      <BrowserRouter>
+        <AuthGate>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/play/perfect-second" element={<PerfectSecondPage />} />
+            <Route path="/play/what-is-missing" element={<WhatIsMissingPage />} />
+            <Route path="/play/schuetzenrunde" element={<SchuetzenrundePage />} />
+            <Route path="/play/finde-den-imposter" element={<FindeDenImposterPage />} />
+            <Route path="/play/reihenfolge" element={<ReihenfolgePage />} />
+            <Route path="/play/kopfrechnen" element={<KopfrechnenPage />} />
+            <Route path="/play/wer-bin-ich" element={<WerBinIchPage />} />
+            <Route path="/play/stadt-land-fluss" element={<StadtLandFlussPage />} />
+            <Route path="/play/scharade" element={<ScharadePage />} />
+            <Route path="/play/wortbombe" element={<WortbombePage />} />
+            <Route path="/play/wer-wuerde-eher" element={<WerWuerdeEherPage />} />
+            <Route path="/play/schuetzenopoly" element={<SchuetzenopolyPage />} />
+            <Route path="/play/kniffel" element={<KniffelPage />} />
+            <Route path="/play/texas-holdem" element={<TexasHoldemPage />} />
+            <Route path="/play/maumau" element={<MauMauPage spiel="maumau" />} />
+            <Route path="/play/letzte-karte" element={<MauMauPage spiel="letzte-karte" />} />
+            <Route path="/play/bienen-flow" element={<BienenFlowPage />} />
+            <Route path="/play/squishy-dumplings" element={<SquishyDumplingsPage />} />
+            <Route path="/play/trapbound" element={<TrapboundPage />} />
+            <Route
+              path="/play/emberwake"
+              element={
+                <Suspense
+                  fallback={
+                    <main
+                      style={{
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minHeight: '100dvh',
+                        padding: '1.5rem',
+                      }}
+                    >
+                      <p style={{ opacity: 0.7 }}>Emberwake lädt…</p>
+                    </main>
+                  }
+                >
+                  <EmberwakePage />
+                </Suspense>
+              }
+            />
+            <Route path="/play/sudoku" element={<SudokuPage />} />
+            <Route path="/offene-spiele" element={<OffeneSpielePage />} />
+            <Route path="/family" element={<FamilyPage />} />
+            <Route path="/daily" element={<DailyPage />} />
+            <Route path="/leaderboard" element={<LeaderboardPage />} />
+            <Route path="/achievements" element={<AchievementsPage />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/impressum" element={<ImpressumPage />} />
+            <Route path="/datenschutz" element={<DatenschutzPage />} />
+            {/* Eigene Adresse, weil Google Play einen Löschweg ohne die App
               verlangt -- erreichbar auch abgemeldet. */}
-          <Route path="/konto-loeschen" element={<KontoLoeschenPage />} />
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </AuthGate>
-    </BrowserRouter>
+            <Route path="/konto-loeschen" element={<KontoLoeschenPage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </AuthGate>
+      </BrowserRouter>
+    </SprachProvider>
   )
 }

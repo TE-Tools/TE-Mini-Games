@@ -7,14 +7,24 @@
  */
 
 import type { GameId } from '@/games/types'
+import type { Texte } from '@/i18n/sprache'
 
 export interface KachelEintrag {
   id: GameId
+  /**
+   * Der deutsche Name. Angezeigt wird er nicht mehr von hier aus,
+   * sondern über `t.spiele[id]` -- diese Zeile bleibt als Fundstelle
+   * für Suchen im Quelltext und als Beleg, welches Spiel gemeint ist.
+   */
   name: string
   pfad: string
   icon: string
-  /** Ein Wort, das die Art des Spiels benennt. */
-  art: string
+  /**
+   * Ein Wort, das die Art des Spiels benennt. Als Schlüssel getippt:
+   * Eine neue Art ohne Übersetzung ist damit ein Fehler beim Bauen und
+   * keine deutsche Insel in der englischen Oberfläche.
+   */
+  art: keyof Texte['spielarten']
 }
 
 export const SPIELE_KACHELN: readonly KachelEintrag[] = [
@@ -120,11 +130,11 @@ export function kachelFuer(id: string): KachelEintrag | undefined {
  */
 export type SpielGruppe = 'knobeln' | 'geschick' | 'tisch' | 'party'
 
-export const SPIEL_GRUPPEN: readonly { id: SpielGruppe; label: string; icon: string }[] = [
-  { id: 'knobeln', label: 'Knobeln', icon: '🧩' },
-  { id: 'geschick', label: 'Geschick', icon: '⚡' },
-  { id: 'tisch', label: 'Karten & Würfel', icon: '🎲' },
-  { id: 'party', label: 'Party', icon: '🎉' },
+export const SPIEL_GRUPPEN: readonly { id: SpielGruppe; icon: string }[] = [
+  { id: 'knobeln', icon: '🧩' },
+  { id: 'geschick', icon: '⚡' },
+  { id: 'tisch', icon: '🎲' },
+  { id: 'party', icon: '🎉' },
 ]
 
 const GRUPPE: Partial<Record<GameId, SpielGruppe>> = {

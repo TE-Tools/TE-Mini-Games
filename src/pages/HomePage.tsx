@@ -30,7 +30,10 @@ import styles from './HomePage.module.css'
 import { getOrCreateGuestProfile, getRecentResults, type LocalProfile } from '@/offline'
 import { getUnlockedAchievements } from '@/offline/achievements'
 import { xpProgressInLevel, ACHIEVEMENTS, getDailyChallenge } from '@/progression'
+import type { AchievementId } from '@/progression/achievements'
 import { InstallButton } from '@/components/install/InstallButton'
+import { SprachKnopf } from '@/i18n/SprachKnopf'
+import { useSprache, spielName } from '@/i18n/sprache'
 import { getAvatar } from '@/profile/avatars'
 import { LogoMark } from '@/components/brand/LogoMark'
 import { DATA_PULLED_EVENT } from '@/services/remotePull'
@@ -46,14 +49,15 @@ import {
 
 type Reiter = 'spiele' | 'rangliste' | 'erfolge' | 'tagesziel'
 
-const REITER: { id: Reiter; label: string }[] = [
-  { id: 'spiele', label: 'Spiele' },
-  { id: 'rangliste', label: 'Rangliste' },
-  { id: 'erfolge', label: 'Erfolge' },
-  { id: 'tagesziel', label: 'Tagesziel' },
+const REITER: { id: Reiter }[] = [
+  { id: 'spiele' },
+  { id: 'rangliste' },
+  { id: 'erfolge' },
+  { id: 'tagesziel' },
 ]
 
 export function HomePage() {
+  const { t } = useSprache()
   const [profile, setProfile] = useState<LocalProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [reiter, setReiter] = useState<Reiter>('spiele')
@@ -125,7 +129,7 @@ export function HomePage() {
             type="button"
             className={styles.menueKnopf}
             onClick={() => setMenueOffen(true)}
-            aria-label="Menü öffnen"
+            aria-label={t.start.menueOeffnen}
           >
             <span aria-hidden="true">⋮</span>
           </button>
@@ -137,19 +141,22 @@ export function HomePage() {
             <h1 className={styles.markenName}>
               <span className={styles.markenTe}>TE</span> MINI GAMES
             </h1>
-            <p className={styles.markenSpruch}>Spielen · wachsen · vergleichen</p>
+            <p className={styles.markenSpruch}>{t.marke.spruch}</p>
           </div>
 
-          <Link to="/profile" className={styles.avatarKnopf} aria-label="Profil">
-            <span className={styles.avatarGesicht} aria-hidden="true">
-              {getAvatar(profile?.avatar).emoji}
-            </span>
-          </Link>
+          <div className={styles.kopfRechts}>
+            <SprachKnopf />
+            <Link to="/profile" className={styles.avatarKnopf} aria-label={t.start.profil}>
+              <span className={styles.avatarGesicht} aria-hidden="true">
+                {getAvatar(profile?.avatar).emoji}
+              </span>
+            </Link>
+          </div>
         </header>
 
         <div className={styles.willkommen}>
-          <h2 className={styles.willkommenTitel}>Deine Spielewelt</h2>
-          <p className={styles.willkommenText}>Eine kleine Herausforderung für jeden Moment.</p>
+          <h2 className={styles.willkommenTitel}>{t.start.titel}</h2>
+          <p className={styles.willkommenText}>{t.start.untertitel}</p>
         </div>
       </StartBuehne>
 
@@ -157,13 +164,17 @@ export function HomePage() {
        * Spielerkarte (03.11.2026): Das Level steht in einem Ring, der sich mit
        * den XP bis zum nächsten Level füllt; XP und Serie daneben als Chips.
        */}
-      <section className={styles.standLeiste} aria-label="Spielerfortschritt" aria-busy={loading}>
+      <section
+        className={styles.standLeiste}
+        aria-label={t.start.fortschrittBereich}
+        aria-busy={loading}
+      >
         <div
           className={styles.levelRing}
           style={{ '--anteil': `${loading ? 0 : anteil}%` } as CSSProperties}
         >
           <span className={styles.ringKern}>
-            <span className={styles.standLabel}>Level</span>
+            <span className={styles.standLabel}>{t.start.level}</span>
             <span className={styles.ringZahl}>{loading ? '…' : playerLevel}</span>
           </span>
         </div>
@@ -174,7 +185,7 @@ export function HomePage() {
               ⚡
             </span>
             <span>
-              <span className={styles.standLabel}>XP</span>
+              <span className={styles.standLabel}>{t.start.xp}</span>
               <span className={styles.standWert}>
                 {loading ? '…' : xpAnzeige.toLocaleString('de-DE')}
               </span>
@@ -189,7 +200,7 @@ export function HomePage() {
               🔥
             </span>
             <span>
-              <span className={styles.standLabel}>Serie</span>
+              <span className={styles.standLabel}>{t.start.serie}</span>
               <span className={styles.standWert}>
                 {loading ? '…' : streakDays > 0 ? `${streakDays} Tage` : '—'}
               </span>
@@ -200,8 +211,7 @@ export function HomePage() {
         {!loading && (
           <div className={styles.fortschritt}>
             <p className={styles.fortschrittText}>
-              Noch <strong>{fehlend.toLocaleString('de-DE')}</strong> XP bis Level{' '}
-              {xpProgress.level + 1}
+              {t.start.nochBisLevel(fehlend, xpProgress.level + 1)}
             </p>
             <div
               className={styles.spur}
@@ -209,7 +219,7 @@ export function HomePage() {
               aria-valuemin={0}
               aria-valuemax={xpProgress.needed}
               aria-valuenow={xpProgress.current}
-              aria-label={`Fortschritt zu Level ${xpProgress.level + 1}`}
+              aria-label={t.start.fortschrittZuLevel(xpProgress.level + 1)}
             >
               <span className={styles.fuellung} style={{ width: `${anteil}%` }} />
             </div>
@@ -230,17 +240,17 @@ export function HomePage() {
       <InstallButton />
 
       <section className={styles.spiele}>
-        <h2 className={styles.abschnittTitel}>Spiele entdecken</h2>
-        <p className={styles.abschnittText}>Wähle eine Herausforderung.</p>
+        <h2 className={styles.abschnittTitel}>{t.start.spieleEntdecken}</h2>
+        <p className={styles.abschnittText}>{t.start.spieleEntdeckenText}</p>
 
         {/* Wer mitspielen will, statt selbst zu eröffnen: alle öffentlichen
             Räume aller Online-Spiele auf einer Seite (12.09.2026, Thomas). */}
         <Link to="/offene-spiele" className={styles.offeneSpiele}>
-          <span aria-hidden="true">🌐</span> Offene Spiele – wer gerade wartet
+          <span aria-hidden="true">🌐</span> {t.start.offeneSpiele}
         </Link>
 
-        <div className={styles.gruppen} role="group" aria-label="Spiele filtern">
-          {[{ id: 'alle' as const, label: 'Alle', icon: '✨' }, ...SPIEL_GRUPPEN].map((g) => (
+        <div className={styles.gruppen} role="group" aria-label={t.start.spieleFiltern}>
+          {[{ id: 'alle' as const, icon: '✨' }, ...SPIEL_GRUPPEN].map((g) => (
             <button
               key={g.id}
               type="button"
@@ -248,14 +258,14 @@ export function HomePage() {
               aria-pressed={gruppe === g.id}
               onClick={() => setGruppe(g.id)}
             >
-              <span aria-hidden="true">{g.icon}</span> {g.label}
+              <span aria-hidden="true">{g.icon}</span> {t.gruppen[g.id]}
             </button>
           ))}
         </div>
 
         {/* Der Schlüssel lässt die Kacheln nach jedem Filterwechsel neu
             hereinkommen, statt dass sie einfach verschwinden. */}
-        <nav key={gruppe} className={styles.kacheln} aria-label="Spiele">
+        <nav key={gruppe} className={styles.kacheln} aria-label={t.start.reiterSpiele}>
           {sichtbareSpiele.map((k, i) => (
             <article
               key={k.id}
@@ -271,13 +281,15 @@ export function HomePage() {
                   {k.icon}
                 </span>
               </div>
-              <span className={styles.kachelArt}>{k.art}</span>
-              <h3 className={styles.kachelName}>{k.name}</h3>
+              <span className={styles.kachelArt}>{t.spielarten[k.art]}</span>
+              <h3 className={styles.kachelName}>{t.spiele[k.id]}</h3>
               <Link to={k.pfad} className={styles.kachelKnopf}>
                 <span className={styles.kachelPfeil} aria-hidden="true">
                   ▶
                 </span>
-                <span className={styles.kachelZiel}>Spielen – {k.name}</span>
+                <span className={styles.kachelZiel}>
+                  {t.start.spielen} – {t.spiele[k.id]}
+                </span>
               </Link>
             </article>
           ))}
@@ -289,26 +301,23 @@ export function HomePage() {
           eingebundene Zahlungs-Widgets bringen fremdes Nachverfolgen mit, und
           fuer paypal.me braucht es nichts davon. */}
       <footer className={styles.spende}>
-        <p className={styles.spendeText}>
-          TE-Mini Games ist kostenlos und ohne Werbung. Wenn es dir Freude macht, kannst du einen
-          Kaffee ausgeben.
-        </p>
+        <p className={styles.spendeText}>{t.start.spendeText}</p>
         <a
           className={styles.spendeKnopf}
           href="https://paypal.me/ThomasElsen"
           target="_blank"
           rel="noopener noreferrer"
         >
-          <span aria-hidden="true">☕</span> Spenden über PayPal
+          <span aria-hidden="true">☕</span> {t.start.spendeKnopf}
         </a>
-        <p className={styles.spendeKlein}>Öffnet PayPal in einem neuen Fenster.</p>
+        <p className={styles.spendeKlein}>{t.start.spendeHinweis}</p>
 
         {/* Pflichtangaben. Sie stehen hier unten, wo man sie sucht -- und seit
             es einen Spenden-Knopf gibt, gehoeren sie ohnehin dazu. */}
         <p className={styles.rechtliches}>
-          <Link to="/impressum">Impressum</Link>
+          <Link to="/impressum">{t.recht.impressum}</Link>
           <span aria-hidden="true"> · </span>
-          <Link to="/datenschutz">Datenschutz</Link>
+          <Link to="/datenschutz">{t.recht.datenschutz}</Link>
         </p>
       </footer>
 
@@ -338,10 +347,10 @@ function useHochzaehlen(ziel: number): number {
     const beginn = performance.now()
     let rahmen = 0
     const schritt = (jetzt: number) => {
-      const t = Math.min(1, (jetzt - beginn) / dauer)
-      const sanft = 1 - Math.pow(1 - t, 3)
+      const zeitanteil = Math.min(1, (jetzt - beginn) / dauer)
+      const sanft = 1 - Math.pow(1 - zeitanteil, 3)
       setWert(Math.round(start + (ziel - start) * sanft))
-      if (t < 1) rahmen = requestAnimationFrame(schritt)
+      if (zeitanteil < 1) rahmen = requestAnimationFrame(schritt)
     }
     rahmen = requestAnimationFrame(schritt)
     return () => cancelAnimationFrame(rahmen)
@@ -377,6 +386,7 @@ function kachelGerade(e: ReactPointerEvent<HTMLElement>) {
  * fester Höchstbreite, da stimmt kein Prozentwert mehr.
  */
 function ReiterLeiste({ aktiv, onWahl }: { aktiv: Reiter; onWahl: (r: Reiter) => void }) {
+  const { t } = useSprache()
   const leiste = useRef<HTMLElement>(null)
   const [marke, setMarke] = useState<{ x: number; b: number } | null>(null)
 
@@ -400,7 +410,7 @@ function ReiterLeiste({ aktiv, onWahl }: { aktiv: Reiter; onWahl: (r: Reiter) =>
     <nav
       ref={leiste}
       className={styles.reiter}
-      aria-label="Bereiche"
+      aria-label={t.start.bereiche}
       data-marke={marke && marke.b > 0 ? '' : undefined}
     >
       {marke && marke.b > 0 && (
@@ -419,7 +429,7 @@ function ReiterLeiste({ aktiv, onWahl }: { aktiv: Reiter; onWahl: (r: Reiter) =>
           onClick={() => onWahl(r.id)}
           aria-current={aktiv === r.id ? 'true' : undefined}
         >
-          {r.label}
+          {t.reiter[r.id]}
         </button>
       ))}
     </nav>
@@ -432,6 +442,7 @@ function ReiterLeiste({ aktiv, onWahl }: { aktiv: Reiter; onWahl: (r: Reiter) =>
 const MENUE_ZU_MS = 220
 
 function Menue({ onSchliessen: schliessenSofort }: { onSchliessen: () => void }) {
+  const { t } = useSprache()
   const [schliesst, setSchliesst] = useState(false)
   const onSchliessen = useCallback(() => {
     setSchliesst(true)
@@ -447,12 +458,12 @@ function Menue({ onSchliessen: schliessenSofort }: { onSchliessen: () => void })
   }, [onSchliessen])
 
   const eintraege = [
-    { pfad: '/profile', icon: '👤', name: 'Profil und Konto' },
-    { pfad: '/family', icon: '👨‍👩‍👧', name: 'Familienrunde' },
-    { pfad: '/daily', icon: '📅', name: 'Daily Challenge' },
-    { pfad: '/leaderboard', icon: '🏆', name: 'Rangliste' },
-    { pfad: '/achievements', icon: '🏅', name: 'Abzeichen' },
-    { pfad: '/offene-spiele', icon: '🌐', name: 'Offene Spiele' },
+    { pfad: '/profile', icon: '👤', name: t.menue.profil },
+    { pfad: '/family', icon: '👨‍👩‍👧', name: t.menue.familie },
+    { pfad: '/daily', icon: '📅', name: t.menue.daily },
+    { pfad: '/leaderboard', icon: '🏆', name: t.menue.rangliste },
+    { pfad: '/achievements', icon: '🏅', name: t.menue.abzeichen },
+    { pfad: '/offene-spiele', icon: '🌐', name: t.menue.offeneSpiele },
   ]
   return (
     <div
@@ -516,7 +527,12 @@ function Tafel({
 }
 
 function ZuletztGespielt() {
-  const [zeilen, setZeilen] = useState<{ id: string; spiel: string; punkte: number }[] | null>(null)
+  const { sprache, t } = useSprache()
+  // Die Kennung merken, nicht den Namen: Sonst behalten die Zeilen beim
+  // Sprachwechsel die Sprache, in der sie geladen wurden.
+  const [zeilen, setZeilen] = useState<{ id: string; gameId: string; punkte: number }[] | null>(
+    null,
+  )
 
   useEffect(() => {
     let abbruch = false
@@ -526,7 +542,7 @@ function ZuletztGespielt() {
         setZeilen(
           r.map((e) => ({
             id: e.id,
-            spiel: kachelFuer(e.gameId)?.name ?? gameLabel(e.gameId),
+            gameId: e.gameId,
             punkte: e.score,
           })),
         )
@@ -538,17 +554,17 @@ function ZuletztGespielt() {
   }, [])
 
   return (
-    <Tafel titel="Zuletzt gespielt" hinweis="Da warst du gerade unterwegs.">
-      {zeilen === null && <p className={styles.leiseZeile}>Laden…</p>}
-      {zeilen?.length === 0 && (
-        <p className={styles.leiseZeile}>Noch nichts gespielt – such dir unten etwas aus.</p>
-      )}
+    <Tafel titel={t.start.zuletztGespielt} hinweis={t.start.zuletztGespieltText}>
+      {zeilen === null && <p className={styles.leiseZeile}>{t.allgemein.laden}</p>}
+      {zeilen?.length === 0 && <p className={styles.leiseZeile}>{t.start.nochNichtsGespielt}</p>}
       {zeilen && zeilen.length > 0 && (
         <ul className={styles.liste}>
           {zeilen.map((z) => (
             <li key={z.id} className={styles.listenZeile}>
-              <span className={styles.zeileName}>{z.spiel}</span>
-              <span className={styles.zeileWert}>{z.punkte.toLocaleString('de-DE')}</span>
+              <span className={styles.zeileName}>
+                {spielName(t, z.gameId, gameLabel(z.gameId))}
+              </span>
+              <span className={styles.zeileWert}>{z.punkte.toLocaleString(sprache)}</span>
             </li>
           ))}
         </ul>
@@ -605,8 +621,9 @@ function RanglisteKurz() {
 }
 
 function ErfolgeKurz() {
+  const { t } = useSprache()
   const [anzahl, setAnzahl] = useState<number | null>(null)
-  const [letzte, setLetzte] = useState<{ id: string; name: string; icon: string }[]>([])
+  const [letzte, setLetzte] = useState<{ id: AchievementId; icon: string }[]>([])
 
   useEffect(() => {
     let abbruch = false
@@ -621,7 +638,7 @@ function ErfolgeKurz() {
             .reverse()
             .map((e) => nachId.get(e.achievementId as (typeof ACHIEVEMENTS)[number]['id']))
             .filter((a): a is NonNullable<typeof a> => Boolean(a))
-            .map((a) => ({ id: a.id, name: a.name, icon: a.icon })),
+            .map((a) => ({ id: a.id, icon: a.icon })),
         )
       })
       .catch(() => setAnzahl(0))
@@ -632,23 +649,19 @@ function ErfolgeKurz() {
 
   return (
     <Tafel
-      titel="Erfolge"
+      titel={t.reiter.erfolge}
       hinweis={
-        anzahl === null
-          ? 'Laden…'
-          : `${anzahl} von ${ACHIEVEMENTS.length} Abzeichen freigeschaltet.`
+        anzahl === null ? t.allgemein.laden : t.erfolge.freigeschaltet(anzahl, ACHIEVEMENTS.length)
       }
-      mehr={{ pfad: '/achievements', text: 'Alle ansehen' }}
+      mehr={{ pfad: '/achievements', text: t.erfolge.alleAnsehen }}
     >
-      {anzahl === 0 && (
-        <p className={styles.leiseZeile}>Noch keins – das erste kommt schneller als du denkst.</p>
-      )}
+      {anzahl === 0 && <p className={styles.leiseZeile}>{t.erfolge.nochKeins}</p>}
       {letzte.length > 0 && (
         <ul className={styles.abzeichen}>
           {letzte.map((a) => (
             <li key={a.id} className={styles.abzeichenEintrag}>
               <span aria-hidden="true">{a.icon}</span>
-              {a.name}
+              {t.abzeichen[a.id].name}
             </li>
           ))}
         </ul>
@@ -658,6 +671,7 @@ function ErfolgeKurz() {
 }
 
 function TageszielKurz() {
+  const { t } = useSprache()
   const heute = getDailyChallenge()
   const spiel = kachelFuer(heute.gameId)
   return (
@@ -668,7 +682,7 @@ function TageszielKurz() {
     >
       <p className={styles.tagesSpiel}>
         <span aria-hidden="true">{spiel?.icon ?? '📅'}</span>{' '}
-        <strong>{spiel?.name ?? gameLabel(heute.gameId)}</strong>
+        <strong>{spielName(t, heute.gameId, gameLabel(heute.gameId))}</strong>
         <span className={styles.leiseZeile}> · Level {heute.level}</span>
       </p>
     </Tafel>

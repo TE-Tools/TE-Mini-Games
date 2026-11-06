@@ -1,24 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import {
-  getDailyChallenge,
-  type DailyChallengeConfig,
-} from '@/progression/daily'
-import {
-  hasCompletedDaily,
-  getDailyAttempt,
-  saveDailyAttempt,
-} from '@/offline/daily'
+import { getDailyChallenge, type DailyChallengeConfig } from '@/progression/daily'
+import { hasCompletedDaily, getDailyAttempt, saveDailyAttempt } from '@/offline/daily'
 import {
   createPerfectSecondLevel,
   calculateScore,
   createTimer,
   formatTime,
 } from '@/games/perfect-second'
-import {
-  createWhatIsMissingLevel,
-  calculateWhatIsMissingScore,
-} from '@/games/what-is-missing'
+import { createWhatIsMissingLevel, calculateWhatIsMissingScore } from '@/games/what-is-missing'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
 import styles from './DailyPage.module.css'
@@ -124,10 +114,7 @@ export function DailyPage() {
       const t = window.setTimeout(() => setPhase('play-missing-choose'), 0)
       return () => window.clearTimeout(t)
     }
-    const t = window.setTimeout(
-      () => setWimCountdown((c) => Math.round((c - 0.1) * 10) / 10),
-      100,
-    )
+    const t = window.setTimeout(() => setWimCountdown((c) => Math.round((c - 0.1) * 10) / 10), 100)
     return () => window.clearTimeout(t)
   }, [phase, wimCountdown])
 
@@ -147,8 +134,7 @@ export function DailyPage() {
     [wimConfig, finish],
   )
 
-  const gameLabel =
-    config?.gameId === 'perfect-second' ? 'Die perfekte Sekunde' : 'Was fehlt?'
+  const gameLabel = config?.gameId === 'perfect-second' ? 'Die perfekte Sekunde' : 'Was fehlt?'
 
   if (phase === 'loading' || !config) {
     return (
@@ -161,7 +147,12 @@ export function DailyPage() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <button type="button" className={styles.back} onClick={() => navigate('/')} aria-label="Zurück">
+        <button
+          type="button"
+          className={styles.back}
+          onClick={() => navigate('/')}
+          aria-label="Zurück"
+        >
           ←
         </button>
         <h1 className={styles.title}>Daily Challenge</h1>
@@ -223,7 +214,11 @@ export function DailyPage() {
           <ul className={styles.choiceGrid}>
             {wimConfig.choiceObjects.map((o) => (
               <li key={o.id}>
-                <button type="button" className={styles.choiceBtn} onClick={() => void wimPick(o.id)}>
+                <button
+                  type="button"
+                  className={styles.choiceBtn}
+                  onClick={() => void wimPick(o.id)}
+                >
                   <span className={styles.emoji}>{o.emoji}</span>
                   <span className={styles.objLabel}>{o.label}</span>
                 </button>

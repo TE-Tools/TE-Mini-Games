@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ACHIEVEMENTS, type AchievementId } from '@/progression/achievements'
 import { getUnlockedAchievements } from '@/offline/achievements'
+import { useSprache } from '@/i18n/sprache'
 import styles from './AchievementsPage.module.css'
 
 export function AchievementsPage() {
+  const { t } = useSprache()
   const navigate = useNavigate()
   const [unlocked, setUnlocked] = useState<Set<AchievementId>>(new Set())
   const [loading, setLoading] = useState(true)
@@ -40,7 +42,7 @@ export function AchievementsPage() {
         >
           ←
         </button>
-        <h1 className={styles.title}>Abzeichen</h1>
+        <h1 className={styles.title}>{t.erfolge.titel}</h1>
         <span className={styles.badge}>{loading ? '…' : `${count}/${total}`}</span>
       </header>
 
@@ -49,7 +51,7 @@ export function AchievementsPage() {
         <span className={styles.summeZahl}>{loading ? '…' : count}</span>
         <div className={styles.summeText}>
           <strong>von {total} Abzeichen freigeschaltet</strong>
-          <span>Spiele, sammle XP und knacke Rekorde – so schaltest du Abzeichen frei.</span>
+          <span>{t.erfolge.einleitung}</span>
           <span className={styles.summeSpur} aria-hidden="true">
             <span style={{ width: `${total ? Math.max(2, (count / total) * 100) : 0}%` }} />
           </span>
@@ -66,14 +68,14 @@ export function AchievementsPage() {
               <li
                 key={a.id}
                 className={isOn ? styles.cardUnlocked : styles.cardLocked}
-                aria-label={`${a.name}: ${isOn ? 'freigeschaltet' : 'noch gesperrt'}`}
+                aria-label={`${t.abzeichen[a.id].name}: ${isOn ? t.erfolge.zustandOffen : t.erfolge.zustandGesperrt}`}
               >
                 <span className={styles.icon} aria-hidden="true">
                   {a.icon}
                 </span>
                 <div className={styles.body}>
-                  <span className={styles.name}>{a.name}</span>
-                  <span className={styles.desc}>{a.description}</span>
+                  <span className={styles.name}>{t.abzeichen[a.id].name}</span>
+                  <span className={styles.desc}>{t.abzeichen[a.id].beschreibung}</span>
                 </div>
                 {isOn ? (
                   <span className={styles.check}>✓</span>
