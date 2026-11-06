@@ -98,6 +98,7 @@ export function Wuerfelreihe({
   onHalten,
 }: WuerfelreiheProps) {
   const drei = useEffekte3d()
+  const { t } = useSprache()
   const [kaputt, setKaputt] = useState(false)
   const [szeneDa, setSzeneDa] = useState(false)
   const mit3d = drei && !kaputt
@@ -217,7 +218,7 @@ export function Wuerfelreihe({
       {jubel > 0 && (
         <div key={jubel} className={styles.jubel} role="status">
           <Konfetti />
-          <span className={styles.jubelText}>Kniffel!</span>
+          <span className={styles.jubelText}>{t.kniffel.jubel}</span>
         </div>
       )}
     </div>
