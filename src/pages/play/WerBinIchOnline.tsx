@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CATEGORIES } from '@/games/finde-den-imposter'
 import { getCurrentUser } from '@/auth/authService'
 import { useSprache } from '@/i18n/sprache'
 import {
@@ -22,6 +21,7 @@ import {
 } from '@/services/werBinIchOnline'
 import { HERZSCHLAG_MS, RAUM_GESCHLOSSEN_TEXT, RAUM_PARAM, istRaumWeg } from '@/services/raeume'
 import { OeffentlicheRaeume } from './OeffentlicheRaeume'
+import { gueltigeKategorie, useOnlineKategorien } from './imposter/kategorien'
 import raum from './OeffentlicheRaeume.module.css'
 import styles from './WerBinIchPage.module.css'
 
@@ -29,7 +29,7 @@ import styles from './WerBinIchPage.module.css'
 const POLL_MS = 3000
 
 export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
-  const { t } = useSprache()
+  const { t, sprache } = useSprache()
   const w = t.werBinIch
   // Für die Rückrufe unten, die nur einmal angelegt werden.
   const texte = useRef(w)
@@ -39,7 +39,10 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
   const [ready, setReady] = useState(false)
   const [signedIn, setSignedIn] = useState(false)
 
-  const [categoryId, setCategoryId] = useState(CATEGORIES[0]?.id ?? 'tiere')
+  // Englisch nur, wenn der Server die englischen Listen schon hat (Migration 029).
+  const kategorien = useOnlineKategorien(sprache)
+  const [wahl, setCategoryId] = useState('')
+  const categoryId = gueltigeKategorie(wahl, kategorien, () => false)
   const [name, setName] = useState('')
   const [oeffentlich, setOeffentlich] = useState(false)
   const [code, setCode] = useState('')
@@ -188,14 +191,14 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
           </label>
           <label className={styles.label}>
             {w.kategorie}
-            {/* Die Namen der Kategorien bleiben deutsch: Sie gehören zu den
-                deutschen Wortlisten, und der Server führt sie ebenso. */}
+            {/* Nur die Kategorien der Oberflächensprache; die englischen erst,
+                wenn der Server sie kennt. Den Namen führt der Server ebenso. */}
             <select
               className={styles.select}
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
             >
-              {CATEGORIES.map((c) => (
+              {kategorien.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.label}
                 </option>

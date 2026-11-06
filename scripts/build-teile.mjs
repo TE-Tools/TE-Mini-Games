@@ -95,22 +95,29 @@ function insertTeilen(anweisung) {
   const m = anweisung.match(/^([\s\S]*?\bvalues\b)([\s\S]*)$/i)
   if (!m) return [anweisung]
   const kopf = m[1]
-  const schwanz = m[2].trim().replace(/;\s*$/, '')
+  let schwanz = m[2].trim().replace(/;\s*$/, '')
+  // Ein "on conflict ..." am Ende gehoert an JEDES Stueck, nicht nur ans
+  // letzte (06.11.2026): Vorher fehlte es den vorderen Stuecken, und wer eins
+  // davon ein zweites Mal abschickte, bekam "duplicate key" -- obwohl oben
+  // "gefahrlos mehrfach ausfuehrbar" steht.
+  const konflikt = schwanz.match(/\n(on conflict[\s\S]*)$/i)
+  const ende = konflikt ? '\n' + konflikt[1] : ''
+  if (konflikt) schwanz = schwanz.slice(0, konflikt.index)
   // Wertezeilen enden auf "), " -- am Zeilenumbruch dahinter wird geschnitten.
   const zeilen = schwanz.split(/,\n/)
   const teile = []
   let puffer = []
-  let laenge = kopf.length
+  let laenge = kopf.length + ende.length
   for (const z of zeilen) {
     if (puffer.length > 0 && laenge + z.length > GRENZE) {
-      teile.push(kopf + '\n' + puffer.join(',\n') + ';')
+      teile.push(kopf + '\n' + puffer.join(',\n') + ende + ';')
       puffer = []
-      laenge = kopf.length
+      laenge = kopf.length + ende.length
     }
     puffer.push(z)
     laenge += z.length + 2
   }
-  if (puffer.length > 0) teile.push(kopf + '\n' + puffer.join(',\n') + ';')
+  if (puffer.length > 0) teile.push(kopf + '\n' + puffer.join(',\n') + ende + ';')
   return teile
 }
 

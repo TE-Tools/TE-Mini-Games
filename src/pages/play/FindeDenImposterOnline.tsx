@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CATEGORIES, ONLINE_MODES, modeOf } from '@/games/finde-den-imposter'
+import { ONLINE_MODES, modeOf } from '@/games/finde-den-imposter'
 import { loadCustomCategories } from '@/games/finde-den-imposter/customCategories'
 import { getCurrentUser } from '@/auth/authService'
 import { useSprache } from '@/i18n/sprache'
@@ -28,6 +28,7 @@ import {
 } from '@/services/imposterOnline'
 import { HERZSCHLAG_MS, RAUM_GESCHLOSSEN_TEXT, RAUM_PARAM, istRaumWeg } from '@/services/raeume'
 import { OeffentlicheRaeume } from './OeffentlicheRaeume'
+import { gueltigeKategorie, useOnlineKategorien } from './imposter/kategorien'
 import { chaosRegel, modusName, modusText } from './imposter/imposterText'
 import raum from './OeffentlicheRaeume.module.css'
 import styles from './FindeDenImposterPage.module.css'
@@ -43,13 +44,16 @@ const POLL_MS = 3000
 const EIGEN_PREFIX = 'eigen:'
 
 export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
-  const { t } = useSprache()
+  const { t, sprache } = useSprache()
   const tx = t.imposter
   const to = t.imposter.online
   const [ready, setReady] = useState(false)
   const [signedIn, setSignedIn] = useState(false)
 
-  const [categoryId, setCategoryId] = useState(CATEGORIES[0]?.id ?? 'tiere')
+  // Englisch nur, wenn der Server die englischen Listen schon hat (Migration 029).
+  const kategorien = useOnlineKategorien(sprache)
+  const [wahl, setCategoryId] = useState('')
+  const categoryId = gueltigeKategorie(wahl, kategorien, (id) => id.startsWith(EIGEN_PREFIX))
   // Eigene Listen liegen auf dem Server, nicht im Browser: Der Server zieht
   // das Wort, sonst könnte der Gastgeber als Imposter einfach nachsehen.
   const [eigene, setEigene] = useState<CustomCategoryOnline[]>([])
@@ -258,7 +262,7 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
             >
-              {CATEGORIES.map((c) => (
+              {kategorien.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.label}
                 </option>
