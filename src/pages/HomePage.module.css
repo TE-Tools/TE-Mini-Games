@@ -26,10 +26,20 @@
 
 .kopf {
   display: grid;
-  grid-template-columns: 2.75rem 1fr 2.75rem;
+  /* Rechts stehen jetzt zwei Knoepfe (Sprache, Profil), deshalb `auto`
+     statt fester Breite. Links bleibt das Menue allein; die Marke in der
+     Mitte verschiebt sich dadurch minimal, was weniger stoert als ein
+     abgeschnittener Knopf. */
+  grid-template-columns: 2.75rem 1fr auto;
   align-items: center;
   gap: var(--space-2);
   width: 100%;
+}
+
+.kopfRechts {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
 }
 
 .menueKnopf,

@@ -13,17 +13,29 @@
  *  - Die Adresse muss stimmen. Ein Tippfehler im Empfaengernamen schickt Geld
  *    an eine fremde Person, und das faellt niemandem auf.
  */
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import 'fake-indexeddb/auto'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { HomePage } from '@/pages/HomePage'
+import { SprachProvider } from '@/i18n/SprachProvider'
+
+/*
+ * Die Sprache ausdruecklich setzen. jsdom meldet en-US, die App waehlt
+ * dann Englisch -- und diese Tests pruefen deutschen Text. Ohne diese
+ * Zeilen haengt ihr Ergebnis an der Spracheinstellung der Testumgebung.
+ */
+beforeEach(() => {
+  localStorage.setItem('te-sprache', 'de')
+})
 
 function startseite() {
   return render(
-    <MemoryRouter>
-      <HomePage />
-    </MemoryRouter>,
+    <SprachProvider>
+      <MemoryRouter>
+        <HomePage />
+      </MemoryRouter>
+    </SprachProvider>,
   )
 }
 
@@ -46,7 +58,9 @@ describe('Spenden auf der Startseite', () => {
   it('sagt vorher, dass es die App verlässt', () => {
     startseite()
     expect(screen.getByText(/Öffnet PayPal in einem neuen Fenster/)).toBeTruthy()
-    expect(screen.getByRole('link', { name: /Spenden über PayPal/ }).textContent).toContain('PayPal')
+    expect(screen.getByRole('link', { name: /Spenden über PayPal/ }).textContent).toContain(
+      'PayPal',
+    )
   })
 
   it('bindet kein fremdes Skript ein', () => {
