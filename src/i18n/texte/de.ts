@@ -125,6 +125,9 @@ export const de = {
   recht: {
     impressum: 'Impressum',
     datenschutz: 'Datenschutz',
+    datenschutzerklaerung: 'Datenschutzerklärung',
+    kontoLoeschen: 'Konto löschen',
+    stand: 'Stand: 6. September 2026',
   },
 
   /** Die 50 Abzeichen. Schlüssel ist die Kennung, nicht der Name. */

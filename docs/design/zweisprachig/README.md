@@ -40,6 +40,16 @@ nochBisLevel: (fehlend: number, level: number) => `Noch ${fehlend} XP bis Level 
 So steht die Wortstellung in jeder Sprache für sich. Englisch dreht sie
 regelmäßig um; mit `'Noch ' + n + ' XP bis '` ginge das nicht.
 
+### Lange Texte: zwei Fassungen statt Schnipsel
+
+Die Rechtsseiten (Impressum, Datenschutz, Konto löschen) bestehen aus Absätzen
+mit Fettdruck und Links mitten im Satz. In Wörterbuch-Schnipsel zerlegt, liest
+sie niemand mehr gegen. Dort steht der Text deshalb zweimal in der Seite, als
+`TextDe` und `TextEn`, und eine `Record<Sprache, …>` wählt aus. TypeScript
+erzwingt damit auch hier beide Fassungen. Nur Titel, Stand und Zurück kommen
+aus dem Wörterbuch. Wer einen Absatz ändert, ändert beide. Die englische
+Datenschutzerklärung sagt oben, dass bei Abweichungen die deutsche gilt.
+
 ---
 
 ## Vier Fallen, jede davon ist hier schon zugeschnappt
@@ -139,13 +149,13 @@ gegengeprüft -- sie fallen.
 - Levelkarte (von mehreren Spielen geteilt)
 - Die perfekte Sekunde
 - Sudoku vollständig, inklusive der siebzehn Lösungstechniken
+- Impressum, Datenschutzerklärung, Konto löschen (Teil 5)
 
 **Offen, gemessen am 6.11.2026** -- Zahl der noch deutschen Textstellen je
 Datei:
 
 | Datei                                   | Texte |
 | --------------------------------------- | ----- |
-| `pages/recht/DatenschutzPage.tsx`       | 68    |
 | `pages/play/SchuetzenrundeOnline.tsx`   | 52    |
 | `pages/play/FindeDenImposterOnline.tsx` | 52    |
 | `pages/play/FindeDenImposterPage.tsx`   | 51    |
@@ -162,7 +172,6 @@ Datei:
 | `pages/play/StadtLandFlussOnline.tsx`   | 33    |
 | `pages/play/SchuetzenopolyPage.tsx`     | 32    |
 | `pages/play/KniffelPage.tsx`            | 31    |
-| `pages/recht/KontoLoeschenPage.tsx`     | 27    |
 | `pages/play/StadtLandFlussPage.tsx`     | 26    |
 
 Dazu die Spielmodule unter `src/games/` -- dort steckt viel Inhalt, der nach
@@ -178,10 +187,8 @@ grep -oE ">[^<>{}]*[a-zäöüß]{4,}[^<>{}]*<|'[^']*[äöüßÄÖÜ][^']*'" DATE
 Sie ist eine Hausnummer: Kommentare und Code rutschen mit hinein. Vor dem
 Übersetzen immer in die Datei schauen.
 
-**Vorgeschlagene Reihenfolge:** erst die Rechtsseiten (Datenschutz und
-Kontolöschung -- Google ruft beide auf und erwartet sie in der Sprache des
-Eintrags), dann die Einzelspieler-Spiele nach Beliebtheit, zuletzt die
-Online-Varianten.
+**Vorgeschlagene Reihenfolge:** Die Rechtsseiten sind erledigt. Weiter mit
+den Einzelspieler-Spielen nach Beliebtheit, zuletzt den Online-Varianten.
 
 **Noch offen, unabhängig davon:** 28 Stellen formatieren Zahlen und Daten fest
 mit `toLocaleString('de-DE')`. Sie gehören auf `toLocaleString(sprache)` aus

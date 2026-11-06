@@ -124,6 +124,9 @@ export const en: Texte = {
   recht: {
     impressum: 'Legal notice',
     datenschutz: 'Privacy',
+    datenschutzerklaerung: 'Privacy policy',
+    kontoLoeschen: 'Delete account',
+    stand: 'Last updated: 6 September 2026',
   },
 
   /** The 50 badges, keyed by id. */
