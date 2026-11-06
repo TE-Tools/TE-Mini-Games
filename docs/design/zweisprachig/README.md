@@ -136,10 +136,10 @@ gegengeprüft -- sie fallen.
 
 ## Was bewusst **nicht** übersetzt wird
 
-- **Die Wortlisten** von Stadt-Land-Fluss, Wer bin ich?, Scharade, Wortbombe
-  und Finde den Imposter. Ein englischer Spieler braucht englische Wörter,
-  keine übersetzten deutschen. Das ist Inhaltsarbeit und gehört in eigene
-  Datensätze je Sprache, nicht ins Wörterbuch.
+- **Die Wortlisten werden nicht übersetzt, sondern je Sprache geschrieben.**
+  Ein englischer Spieler braucht englische Wörter, keine übersetzten
+  deutschen. Darum gibt es eigene Listen (siehe „Wortlisten je Sprache“
+  unten), nicht Einträge im Wörterbuch.
 - **Die 22 Grundstücke von Schützenopoly.** Sie stehen für echte deutsche
   Schützenfeste und heißen in jeder Sprache gleich. Siehe
   `docs/design/schuetzenopoly/grundstuecke.md`.
@@ -223,45 +223,58 @@ fällt, wenn sie auseinanderlaufen.
 Inline-Skript wählt die Sprache nach derselben Regel wie `src/i18n/sprache.ts`
 und tauscht den Spruch. Ändert sich die Regel, ändert sie sich dort mit.
 
+### Wortlisten je Sprache
+
+Seit dem 6.11.2026 haben alle Partyspiele englische Inhalte -- geschrieben
+für englische Spieler, nicht übersetzt (Thanksgiving statt Schützenfest).
+
+| Spiel                            | Deutsch                            | Englisch                               |
+| -------------------------------- | ---------------------------------- | -------------------------------------- |
+| Imposter, Wer bin ich?, Scharade | `finde-den-imposter/data/words.ts` | `data/words.en.ts` (Kategorien `en-…`) |
+| Imposter-Hilfswörter             | `data/helperClusters.ts`           | `data/helperClusters.en.ts`            |
+| Wortbombe                        | `wortbombe/silben.ts`              | `wortbombe/silben.en.ts`               |
+| Wer würde eher                   | `wer-wuerde-eher/fragen.ts`        | `wer-wuerde-eher/fragen.en.ts`         |
+
+- **Englische Kategorien sind eigene Kategorien** mit der Kennung `en-…`
+  (`en-tiere` ist „Animals“). `categoriesFor(sprache)` liefert die der
+  Sprache; die Seiten zeigen nur diese. Darum braucht der Server kein neues
+  Feld: Migration `029_englische_woerter.sql` fügt nur Daten hinzu und wird
+  wie 011b und 027 aus den TS-Listen erzeugt
+  (`node scripts/build-imposter-words-sql.mjs`,
+  `node scripts/build-imposter-helfer-sql.mjs`).
+- **Online erst, wenn der Server sie kennt:** `src/services/imposterKategorien.ts`
+  fragt `fdi_categories` nach `en-`-Kennungen. Solange 029 nicht eingespielt
+  ist, bieten die Online-Seiten die deutschen Kategorien an wie zuvor.
+- Wer 027 allein noch einmal einspielt, leert `fdi_helper` ganz -- danach 029
+  erneut einspielen. `ALL_IN_ONE.sql` hat die richtige Reihenfolge.
+- Wortbombe und Wer würde eher tragen `sprache` im Zustand; alte Stände ohne
+  das Feld gelten als Deutsch.
+- Stadt-Land-Fluss braucht keine Liste: Die Buchstaben passen auch fürs
+  Englische, geprüft wird nur der Anfangsbuchstabe.
+
 ### Noch deutsch -- alles Inhalt
 
-1. **Wortlisten.** Der größte Brocken, und Voraussetzung dafür, dass die
-   Partyspiele auf Englisch wirklich spielbar sind:
-   - Imposter, Wer bin ich?, Scharade: `games/finde-den-imposter/data/words.ts`,
-     `data/helperClusters.ts`, die Kategorien in `data/categories.ts` -- und
-     online auf dem Server (Migrationen 011b, 013, 027). Die Kategorienamen
-     bleiben absichtlich deutsch, solange die Wörter es sind: Sie kommen
-     online als `category_label` vom Server zurück, und zwei Sprachen
-     nebeneinander wären schlechter als eine.
-   - Wortbombe: `games/wortbombe/silben.ts`
-   - Wer würde eher: `games/wer-wuerde-eher/fragen.ts`
-   - Stadt-Land-Fluss: die Buchstaben passen auch fürs Englische, geprüft
-     wird nur der Anfangsbuchstabe.
-
-   Englische Listen sind eigene Datensätze je Sprache, keine Übersetzungen.
-   Online braucht es dafür eine Migration, die die Sprache der Runde kennt.
-
-2. **Fehlermeldungen vom Server** in allen Online-Spielen (`raise exception`
+1. **Fehlermeldungen vom Server** in allen Online-Spielen (`raise exception`
    in den Migrationen, angezeigt über `err.message`) und
    `RAUM_GESCHLOSSEN_TEXT` aus `src/services/raeume.ts`. Dafür braucht es
    Kennungen statt Sätzen im SQL oder eine Zuordnung im Dienst.
-3. **Trapbound:** die Namen der Level, Welten und Abschnitte (Hunderte, in
+2. **Trapbound:** die Namen der Level, Welten und Abschnitte (Hunderte, in
    `src/games/trapbound/`). Der Text „Über das Spiel“ spricht noch von zehn
    Leveln in Welt 1; das ist in beiden Sprachen veraltet -- eine Sache für
    Thomas, keine Übersetzung.
-4. **Levelkarte:** Namen, Beschreibungen und Tore der fünf Zeitreise-Zonen
+3. **Levelkarte:** Namen, Beschreibungen und Tore der fünf Zeitreise-Zonen
    (`src/progression/zones.ts`) und der Trapbound-Welten
    (`src/games/trapbound/welten.ts`).
-5. **Schützenopoly:** die 22 Grundstücke samt Fest und belegter Tatsache
+4. **Schützenopoly:** die 22 Grundstücke samt Fest und belegter Tatsache
    (`fakt` in `grundstuecke.ts`) und der Deutsche Schützenbund. Die Namen
    bleiben ohnehin; die Tatsachen sind belegt, eine Übersetzung müsste gegen
    `docs/design/schuetzenopoly/grundstuecke.md` geprüft werden.
-6. **Außerhalb der App:** Manifest-Beschreibung (`vite.config.ts`), die
+5. **Außerhalb der App:** Manifest-Beschreibung (`vite.config.ts`), die
    `description` in `index.html`, die iOS-Startbilder
    (`scripts/build-splash-screens.mjs`) und der Store-Eintrag
    (`docs/store/`). Ein englischer Store-Eintrag ist eine eigene Aufgabe in
    der Play Console.
-7. **Inhaltlich veraltet** (in beiden Sprachen, nur übersetzt): der
+6. **Inhaltlich veraltet** (in beiden Sprachen, nur übersetzt): der
    Imposter-Editor sagt, eigene Listen gingen online nicht -- sie gehen
    inzwischen.
 

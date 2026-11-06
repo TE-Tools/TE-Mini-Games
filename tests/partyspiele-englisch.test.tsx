@@ -1,8 +1,8 @@
 /**
  * Wer bin ich? und Stadt-Land-Fluss auf Englisch -- und auf Deutsch wie bisher.
  *
- * Die Wortlisten und die Kategorien von Wer bin ich? bleiben deutsch (siehe
- * docs/design/zweisprachig), die Oberfläche nicht. Die Spalten von
+ * Die Begriffe von Wer bin ich? kommen aus der Liste der jeweiligen Sprache
+ * (eigene `en-`-Kategorien, siehe docs/design/zweisprachig). Die Spalten von
  * Stadt-Land-Fluss sind dagegen reine Oberfläche: Im Zustand und auf dem
  * Server steht nur die Kennung, der Name wird beim Anzeigen nachgeschlagen.
  */
@@ -85,7 +85,7 @@ beforeEach(() => {
 })
 
 describe('Wer bin ich? am einen Gerät', () => {
-  it('führt auf Englisch durch eine Runde -- die Begriffe bleiben deutsch', async () => {
+  it('führt auf Englisch durch eine Runde', async () => {
     inSprache('en', <WerBinIchPage />)
     expect(screen.getByRole('heading', { name: /Who am I\?/ })).toBeInTheDocument()
     expect(screen.getByText('Players (2–12)')).toBeInTheDocument()
