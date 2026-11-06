@@ -25,8 +25,16 @@ import {
 } from '@/offline/family'
 import type { LocalFamilySession } from '@/offline/db'
 import type { GameId } from '@/games/types'
-import { createFamilyLevel, calculateScore, createTimer, formatTime } from '@/games/perfect-second'
-import { createWhatIsMissingLevel, calculateWhatIsMissingScore } from '@/games/what-is-missing'
+import {
+  createFamilyLevel,
+  calculateScore,
+  createTimer,
+  formatTime,
+} from '@/games/perfect-second'
+import {
+  createWhatIsMissingLevel,
+  calculateWhatIsMissingScore,
+} from '@/games/what-is-missing'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
 import styles from './FamilyPage.module.css'
@@ -57,10 +65,14 @@ export function FamilyPage() {
   // One random target per session - same number for every player, new one next round.
   const [psConfig, setPsConfig] = useState(() => createFamilyLevel())
 
-  const [wimConfig, setWimConfig] = useState(() => createWhatIsMissingLevel(1, 'family-default'))
+  const [wimConfig, setWimConfig] = useState(() =>
+    createWhatIsMissingLevel(1, 'family-default'),
+  )
   const [wimCountdown, setWimCountdown] = useState(0)
 
-  const currentName = session ? (session.playerNames[session.currentPlayerIndex] ?? '') : ''
+  const currentName = session
+    ? session.playerNames[session.currentPlayerIndex] ?? ''
+    : ''
 
   const startSession = useCallback(async () => {
     setError(null)
@@ -149,7 +161,10 @@ export function FamilyPage() {
       const t = window.setTimeout(() => setPhase('play-missing-choose'), 0)
       return () => window.clearTimeout(t)
     }
-    const t = window.setTimeout(() => setWimCountdown((c) => Math.round((c - 0.1) * 10) / 10), 100)
+    const t = window.setTimeout(
+      () => setWimCountdown((c) => Math.round((c - 0.1) * 10) / 10),
+      100,
+    )
     return () => window.clearTimeout(t)
   }, [phase, wimCountdown])
 
@@ -174,12 +189,7 @@ export function FamilyPage() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <button
-          type="button"
-          className={styles.back}
-          onClick={() => navigate('/')}
-          aria-label={'Zur\u00fcck'}
-        >
+        <button type="button" className={styles.back} onClick={() => navigate('/')} aria-label={'Zur\u00fcck'}>
           {'\u2190'}
         </button>
         <h1 className={styles.title}>Familie</h1>
@@ -189,9 +199,7 @@ export function FamilyPage() {
       {phase === 'setup' && (
         <section className={styles.setup}>
           <p className={styles.hint}>
-            {
-              'Namen eintragen (ein Name pro Zeile). Das Ger\u00e4t wird weitergegeben \u2013 kein Konto n\u00f6tig.'
-            }
+            {'Namen eintragen (ein Name pro Zeile). Das Ger\u00e4t wird weitergegeben \u2013 kein Konto n\u00f6tig.'}
           </p>
           <label className={styles.label}>
             Spieler
@@ -250,7 +258,7 @@ export function FamilyPage() {
           {psPhase === 'ready' && (
             <>
               <p className={styles.target}>Ziel: {formatTime(psConfig.targetTime, 2)} s</p>
-              <p className={styles.muted}>{'\u00b1' + formatTime(psConfig.tolerance, 2) + ' s'}</p>
+              <p className={styles.muted}>{('\u00b1' + formatTime(psConfig.tolerance, 2) + ' s')}</p>
               <button type="button" className={styles.primaryBtn} onClick={psStart}>
                 Start
               </button>
@@ -289,11 +297,7 @@ export function FamilyPage() {
           <ul className={styles.choiceGrid}>
             {wimConfig.choiceObjects.map((o) => (
               <li key={o.id}>
-                <button
-                  type="button"
-                  className={styles.choiceBtn}
-                  onClick={() => void wimPick(o.id)}
-                >
+                <button type="button" className={styles.choiceBtn} onClick={() => void wimPick(o.id)}>
                   <span className={styles.emoji}>{o.emoji}</span>
                   <span className={styles.objLabel}>{o.label}</span>
                 </button>
@@ -332,7 +336,9 @@ export function FamilyPage() {
                   {s.actualTime !== null && (
                     <span className={styles.rankTime}>
                       {formatTime(s.actualTime)} s
-                      {s.targetTime !== null ? ` \u00b7 Ziel ${formatTime(s.targetTime, 2)} s` : ''}
+                      {s.targetTime !== null
+                        ? ` \u00b7 Ziel ${formatTime(s.targetTime, 2)} s`
+                        : ''}
                     </span>
                   )}
                 </span>
