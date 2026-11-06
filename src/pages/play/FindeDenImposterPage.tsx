@@ -13,7 +13,7 @@ import {
   accusedPlayer,
   teamMembers,
   teamCaught,
-  CATEGORIES,
+  categoriesFor,
   MODES,
   modeOf,
   defaultImposterCount,
@@ -27,17 +27,23 @@ import {
 import { useSprache } from '@/i18n/sprache'
 import { FindeDenImposterOnline } from './FindeDenImposterOnline'
 import { ImposterCategoriesEditor } from './ImposterCategoriesEditor'
+import { gueltigeKategorie } from './imposter/kategorien'
 import { chaosRegel, meldungText, modusName, modusText, phasenName } from './imposter/imposterText'
 import styles from './FindeDenImposterPage.module.css'
 
 const DEFAULT_NAMES = 'Thomas\nMarina\nPhillip\nSonja'
 
 export function FindeDenImposterPage() {
-  const { t } = useSprache()
+  const { t, sprache } = useSprache()
   const tx = t.imposter
   const [state, setState] = useState<ImposterMatchState | null>(null)
   const [namesText, setNamesText] = useState(DEFAULT_NAMES)
-  const [categoryId, setCategoryId] = useState(CATEGORIES[0]?.id ?? 'tiere')
+  const kategorien = useMemo(() => categoriesFor(sprache), [sprache])
+  const [wahl, setCategoryId] = useState('')
+  const categoryId = useMemo(
+    () => gueltigeKategorie(wahl, kategorien, isCustomCategory),
+    [wahl, kategorien],
+  )
   const [mode, setMode] = useState<ImposterModeId>('classic')
   const [guessText, setGuessText] = useState('')
   // Die Meldung bleibt so, wie sie kam (deutsch aus der Engine) -- übersetzt
@@ -137,7 +143,7 @@ export function FindeDenImposterPage() {
           onChanged={(cats) => {
             setEigene(cats)
             if (isCustomCategory(categoryId) && !cats.some((c) => c.id === categoryId)) {
-              setCategoryId(CATEGORIES[0]?.id ?? 'tiere')
+              setCategoryId('')
             }
           }}
           onClose={() => setZeigeEditor(false)}
@@ -177,10 +183,10 @@ export function FindeDenImposterPage() {
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
             >
-              {/* Die Namen der Kategorien bleiben deutsch: Sie gehören zu den
-                  deutschen Wortlisten (siehe docs/design/zweisprachig). */}
+              {/* Nur die Kategorien der Oberflächensprache -- die Wörter gibt
+                  es je Sprache (words.ts, words.en.ts). */}
               <optgroup label={tx.eingebaut}>
-                {CATEGORIES.map((c) => (
+                {kategorien.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.label}
                   </option>

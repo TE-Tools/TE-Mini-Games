@@ -16,13 +16,14 @@ import {
   type WbiState,
 } from '@/games/wer-bin-ich'
 import {
-  CATEGORIES,
+  categoriesFor,
   loadCustomCategories,
   customCategoryById,
   isCustomCategory,
   type CustomCategory,
 } from '@/games/finde-den-imposter'
 import { spielName, useSprache, type Texte } from '@/i18n/sprache'
+import { gueltigeKategorie } from './imposter/kategorien'
 import { WerBinIchOnline } from './WerBinIchOnline'
 import styles from './WerBinIchPage.module.css'
 
@@ -45,12 +46,17 @@ function namenFehler(names: string[], w: Texte['werBinIch']): string | null {
 }
 
 export function WerBinIchPage() {
-  const { t } = useSprache()
+  const { t, sprache } = useSprache()
   const w = t.werBinIch
   const titel = spielName(t, 'wer-bin-ich', 'Wer bin ich?')
   const [state, setState] = useState<WbiState | null>(null)
   const [namesText, setNamesText] = useState(DEFAULT_NAMES)
-  const [categoryId, setCategoryId] = useState(CATEGORIES[0]?.id ?? 'tiere')
+  const kategorien = useMemo(() => categoriesFor(sprache), [sprache])
+  const [wahl, setCategoryId] = useState('')
+  const categoryId = useMemo(
+    () => gueltigeKategorie(wahl, kategorien, isCustomCategory),
+    [wahl, kategorien],
+  )
   const [guessText, setGuessText] = useState('')
   const [error, setError] = useState<string | null>(null)
   // Mit ?raum=CODE (von der Seite "Offene Spiele") geht es direkt in den Online-Teil.
@@ -139,10 +145,10 @@ export function WerBinIchPage() {
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
             >
-              {/* Die Namen der Kategorien bleiben deutsch: Sie gehören zu
-                  den deutschen Wortlisten, siehe docs/design/zweisprachig. */}
+              {/* Nur die Kategorien der Oberflächensprache -- die Wörter
+                  gibt es je Sprache (words.ts, words.en.ts). */}
               <optgroup label={w.eingebaut}>
-                {CATEGORIES.map((c) => (
+                {kategorien.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.label}
                   </option>
