@@ -4,6 +4,8 @@
 -- die Begruendungen stehen in der Ursprungsdatei.
 
 insert into public.fdi_words (category_id, word) values
+  ('koerper', 'Stirn'),
+  ('koerper', 'Auge'),
   ('koerper', 'Augenbraue'),
   ('koerper', 'Wimper'),
   ('koerper', 'Nase'),

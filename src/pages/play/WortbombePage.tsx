@@ -19,11 +19,11 @@ import styles from './WortbombePage.module.css'
 
 const DEFAULT_NAMES = 'Thomas\nMarina\nPhillip\nSonja'
 
-/** Die Stufen -- die Namen stehen im Wörterbuch. Die Silben selbst bleiben deutsch. */
+/** Die Stufen -- die Namen stehen im Wörterbuch, die Silben kommen in der Sprache der App. */
 const STUFEN: SilbenStufe[] = ['leicht', 'mittel', 'schwer']
 
 export function WortbombePage() {
-  const { t } = useSprache()
+  const { t, sprache } = useSprache()
   const w = t.wortbombe
   const g = t.partyGemeinsam
   const [state, setState] = useState<WortbombeState | null>(null)
@@ -58,13 +58,13 @@ export function WortbombePage() {
         .split(/[\n,;]+/)
         .map((n) => n.trim())
         .filter(Boolean)
-      const match = createWortbombeMatch({ names, stufen, lives: leben })
+      const match = createWortbombeMatch({ names, stufen, lives: leben, sprache })
       setState(match)
       setZuender(Date.now() + zuendzeitMs(match))
     } catch (e) {
       setError(fehlerSatz(e))
     }
-  }, [namesText, stufen, leben])
+  }, [namesText, stufen, leben, sprache])
 
   if (!state) {
     return (

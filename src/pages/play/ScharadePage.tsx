@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   createScharadeMatch,
@@ -14,13 +14,14 @@ import {
   type ScharadeState,
 } from '@/games/scharade'
 import {
-  CATEGORIES,
+  categoriesFor,
   loadCustomCategories,
   customCategoryById,
   isCustomCategory,
   type CustomCategory,
 } from '@/games/finde-den-imposter'
 import { useSprache } from '@/i18n/sprache'
+import { gueltigeKategorie } from './imposter/kategorien'
 import { fehlerSatz, partyFehler } from './partyFehler'
 import shell from './PartyShell.module.css'
 import styles from './ScharadePage.module.css'
@@ -28,12 +29,17 @@ import styles from './ScharadePage.module.css'
 const DEFAULT_NAMES = 'Thomas\nMarina\nPhillip\nSonja'
 
 export function ScharadePage() {
-  const { t } = useSprache()
+  const { t, sprache } = useSprache()
   const s = t.scharade
   const g = t.partyGemeinsam
   const [state, setState] = useState<ScharadeState | null>(null)
   const [namesText, setNamesText] = useState(DEFAULT_NAMES)
-  const [categoryId, setCategoryId] = useState(CATEGORIES[0]?.id ?? 'tiere')
+  const kategorien = useMemo(() => categoriesFor(sprache), [sprache])
+  const [wahl, setCategoryId] = useState('')
+  const categoryId = useMemo(
+    () => gueltigeKategorie(wahl, kategorien, isCustomCategory),
+    [wahl, kategorien],
+  )
   const [sekunden, setSekunden] = useState(60)
   /** Der Satz der Engine, deutsch -- übersetzt wird beim Rendern. */
   const [error, setError] = useState<string | null>(null)
@@ -113,8 +119,8 @@ export function ScharadePage() {
               onChange={(e) => setCategoryId(e.target.value)}
             >
               <optgroup label={s.eingebaut}>
-                {/* Die Kategorien gehören zu den deutschen Wortlisten und bleiben deutsch. */}
-                {CATEGORIES.map((c) => (
+                {/* Nur die Kategorien der Oberflächensprache -- die Wörter gibt es je Sprache. */}
+                {kategorien.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.label}
                   </option>

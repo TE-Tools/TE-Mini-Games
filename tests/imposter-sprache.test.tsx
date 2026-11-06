@@ -2,8 +2,8 @@
  * Finde den Imposter in beiden Sprachen.
  *
  * Das Spielmodul bleibt deutsch (Modi, Chaos-Regeln, Fehlermeldungen,
- * Wörter); übersetzt wird erst beim Anzeigen. Die Wörter und Kategorien
- * bleiben bewusst deutsch -- siehe docs/design/zweisprachig/README.md.
+ * Wörter); übersetzt wird erst beim Anzeigen. Englische Wörter und
+ * Kategorien sind eigene Listen (`en-`), siehe tests/imposter-englisch.test.ts.
  */
 import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'

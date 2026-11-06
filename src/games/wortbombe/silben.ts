@@ -9,6 +9,8 @@
  * von Treffern, „schwer" solche, bei denen man kurz nachdenken muss.
  */
 
+import { SILBEN_EN } from './silben.en'
+
 export interface Silbe {
   text: string
   stufe: 'leicht' | 'mittel' | 'schwer'
@@ -133,7 +135,11 @@ export const SILBEN: Silbe[] = [
 
 export type SilbenStufe = Silbe['stufe']
 
-export function silbenFuer(stufen: SilbenStufe[]): Silbe[] {
+/** In welcher Sprache die Silben kommen -- die englischen stehen in `silben.en.ts`. */
+export type SilbenSprache = 'de' | 'en'
+
+export function silbenFuer(stufen: SilbenStufe[], sprache: SilbenSprache = 'de'): Silbe[] {
   const erlaubt = stufen.length > 0 ? stufen : (['leicht', 'mittel'] as SilbenStufe[])
-  return SILBEN.filter((s) => erlaubt.includes(s.stufe))
+  const liste = sprache === 'en' ? SILBEN_EN : SILBEN
+  return liste.filter((s) => erlaubt.includes(s.stufe))
 }

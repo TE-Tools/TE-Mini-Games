@@ -8,14 +8,15 @@ import { describe, expect, it } from 'vitest'
 import sql from '../supabase/migrations/027_imposter_hilfswoerter.sql?raw'
 import { helperCandidates } from '@/games/finde-den-imposter/data/helperClusters'
 import { wordsForCategory } from '@/games/finde-den-imposter/data/words'
-import { CATEGORIES } from '@/games/finde-den-imposter/data/categories'
+import { categoriesFor } from '@/games/finde-den-imposter/data/categories'
 
 const q = (s: string) => `'${s.replace(/'/g, "''")}'`
 
 describe('Imposter-Hilfswörter in SQL', () => {
   it('enthält jedes Paar, das das Spiel ziehen würde, und kein anderes', () => {
     let erwartet = 0
-    for (const cat of CATEGORIES) {
+    // 027 führt nur Deutsch; die englischen Hilfswörter stehen in 029.
+    for (const cat of categoriesFor('de')) {
       const pool = wordsForCategory(cat.id).map((w) => w.word)
       for (const wort of pool) {
         for (const h of helperCandidates(wort, cat.id, pool)) {
