@@ -1,8 +1,8 @@
 /**
  * Die kleinen Spiele und Randseiten auf Englisch (Teil 8d).
  *
- * Wortlisten und Fragen bleiben deutsch (Inhalt, siehe
- * docs/design/zweisprachig/README.md) -- alles drumherum nicht. Die
+ * Die Inhalte (Silben, Fragen, Begriffe) haben eigene Listen je Sprache;
+ * hier geht es um alles drumherum. Die
  * Engines werfen deutsche Sätze; die Seiten übersetzen sie beim Rendern.
  */
 import 'fake-indexeddb/auto'
@@ -39,7 +39,7 @@ describe('Kleine Spiele auf Englisch', () => {
     inSprache('en', <WerWuerdeEherPage />)
     expect(screen.getByRole('heading', { name: /Who would rather\?/ })).toBeInTheDocument()
     expect(screen.getByText('Players (3–12)')).toBeInTheDocument()
-    expect(screen.getByText('Who would most likely…?')).toBeInTheDocument()
+    expect(screen.getByText('Who is most likely to…?')).toBeInTheDocument()
     expect(screen.queryByText(/Wer würde am ehesten/)).toBeNull()
 
     // Zwei Namen sind zu wenig -- die Engine wirft deutsch, angezeigt wird Englisch.

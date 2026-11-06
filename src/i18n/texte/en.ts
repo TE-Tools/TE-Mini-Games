@@ -2617,7 +2617,7 @@ export const en: Texte = {
     untertitel:
       'The phone goes round and everyone votes in secret. Nothing is revealed until everyone has had a turn – then it is time to explain yourselves.',
     fragen: 'Questions',
-    modusPersonen: 'Who would most likely…?',
+    modusPersonen: 'Who is most likely to…?',
     modusPersonenText: 'Everyone taps a name.',
     modusEntweder: 'Would you rather…?',
     modusEntwederText: 'Everyone picks A or B.',
