@@ -1800,6 +1800,7 @@ export const en: Texte = {
     zumMenue: 'To the menu',
     gegenRechner: 'Against the computer',
     onlineSpielen: 'Play online',
+    spielerOhneName: 'Player',
     ton: 'Sound',
   },
 }

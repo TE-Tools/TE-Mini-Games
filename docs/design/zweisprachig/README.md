@@ -27,6 +27,8 @@ verwirft Fast Refresh bei jeder Textänderung den Zustand der Seite.
 
 1. Eintrag in `de.ts` an der passenden Stelle (nach Seite gruppiert).
 2. `npm run typecheck` -- der Build zeigt genau die fehlende Stelle in `en.ts`.
+   **Nicht** `npx tsc --noEmit -p .`: Die oberste tsconfig hat `"files": []`
+   und nur Verweise, der Aufruf prüft also gar nichts und ist trotzdem grün.
 3. Dort übersetzen.
 4. In der Komponente `const { t } = useSprache()` und `{t.bereich.schluessel}`.
 
@@ -159,6 +161,9 @@ gegengeprüft -- sie fallen.
 - Sudoku vollständig, inklusive der siebzehn Lösungstechniken
 - Impressum, Datenschutzerklärung, Konto löschen (Teil 5)
 - Kniffel solo und online, Bienen-Flow, Squishy Dumplings, Trapbound (Teil 6)
+- Schützenopoly solo, Tischmodus und online; Mau-Mau und Letzte Karte solo
+  und online; Texas Hold'em solo und online; die Liste offener Räume
+  (`OeffentlicheRaeume.tsx`) für alle Online-Spiele (Teil 7)
 
 **Offen, gemessen am 6.11.2026** -- Zahl der noch deutschen Textstellen je
 Datei:
@@ -169,13 +174,9 @@ Datei:
 | `pages/play/FindeDenImposterOnline.tsx` | 52    |
 | `pages/play/FindeDenImposterPage.tsx`   | 51    |
 | `pages/play/SchuetzenrundePage.tsx`     | 39    |
-| `pages/play/SchuetzenopolyOnline.tsx`   | 39    |
 | `pages/play/WerBinIchOnline.tsx`        | 37    |
-| `pages/play/TexasHoldemOnline.tsx`      | 37    |
-| `pages/play/MauMauOnline.tsx`           | 35    |
 | `pages/play/WerBinIchPage.tsx`          | 33    |
 | `pages/play/StadtLandFlussOnline.tsx`   | 33    |
-| `pages/play/SchuetzenopolyPage.tsx`     | 32    |
 | `pages/play/StadtLandFlussPage.tsx`     | 26    |
 
 Dazu die Spielmodule unter `src/games/` -- dort steckt viel Inhalt, der nach
@@ -192,13 +193,31 @@ nach und fällt sonst auf ihn zurück:
 const motiv = (b.motive as Record<string, string | undefined>)[cfg.motiv] ?? cfg.motiv
 ```
 
-**Protokolle aus der Engine** (Kniffel) bleiben deutsch -- Tests und Logs
-lesen sie. Daneben führt die Engine die letzte Meldung als Daten
-(`KniffelZustand.meldung`), und die Seite sagt sie in ihrer Sprache. An den
-Regeln ändert das nichts. Schützenopoly und die Kartenspiele haben dasselbe
-Muster vor sich.
+**Protokolle aus der Engine** bleiben deutsch -- Tests, Logs und der Server
+lesen sie. Für die Anzeige gibt es zwei Wege:
 
-**Noch deutsch in Teil 6:**
+- **Meldung als Daten** (Kniffel, Schützenopoly): Die Engine führt neben
+  dem deutschen Text eine strukturierte Meldung (`KniffelZustand.meldung`,
+  `LogEintrag.meldung` mit 36 Arten). Bei Schützenopoly verlangt `mitLog`
+  sie, eine neue Protokollzeile ohne Meldung ist also ein roter Build. Die
+  Übersetzung steht in `pages/play/schuetzenopoly/texte.ts`. Alte
+  Spielstände ohne Meldung zeigen den deutschen Text.
+- **Zeile erkennen** (Mau-Mau, Texas): Online schreibt der Server das
+  Protokoll (SQL), und der wird nicht angefasst. Darum liest
+  `pages/play/maumau/kartenText.ts` bzw. `pages/play/texas/texasText.ts` jede
+  deutsche Zeile beim Rendern und baut sie aus dem Wörterbuch neu. Eine
+  Zeile, die kein Muster kennt, bleibt deutsch statt leer. **Wer in
+  `engine.ts` oder in Migration 023/024 eine neue Protokollzeile einführt,
+  ergänzt dort das Muster** -- die Tests spielen Partien durch und prüfen,
+  dass auf Englisch kein deutsches Wort übrig bleibt.
+
+An den Regeln ändert beides nichts.
+
+**Kein „Du“ an den Server.** Wer online keinen eigenen Namen hat, heißt für
+die anderen `t.allgemein.spielerOhneName` (Spieler/Player) -- „Du“ oder
+„You“ hieße bei allen anderen sie selbst.
+
+**Noch deutsch (Stand Teil 7):**
 
 - Trapbound: die Namen der Level, Welten und Abschnitte. Das sind Hunderte,
   sie stehen in `src/games/trapbound/` und sind Inhalt -- ein eigener Schritt.
@@ -209,8 +228,17 @@ Muster vor sich.
   Zeitreise-Zonen (`src/progression/zones.ts`) und der Trapbound-Welten
   (`src/games/trapbound/welten.ts`). Die festen Texte der Karte selbst
   (gesperrt, aktuell, Tor öffnen ...) sind seit Teil 6 übersetzt.
-- Fehlermeldungen vom Server (Kniffel online). Sie kommen aus SQL und
-  `RAUM_GESCHLOSSEN_TEXT` aus dem Dienst; das gehört zu den Online-Varianten.
+- Fehlermeldungen vom Server in allen Online-Spielen (`raise exception` in
+  den Migrationen, angezeigt über `err.message`) und `RAUM_GESCHLOSSEN_TEXT`
+  aus `src/services/raeume.ts`. Dafür braucht es Kennungen statt Sätzen im
+  SQL oder eine Zuordnung im Dienst -- ein eigener Schritt.
+- Schützenopoly: die 22 Grundstücke samt Fest und belegter Tatsache
+  (`fakt` in `grundstuecke.ts`) und der Deutsche Schützenbund. Die Namen
+  bleiben ohnehin; die Tatsachen sind belegt, und eine Übersetzung müsste
+  gegen `docs/design/schuetzenopoly/grundstuecke.md` geprüft werden.
+- `OeffentlicheRaeume.tsx` liest die Sprache mit `useContext(SprachContext)`
+  und fällt ohne Provider auf Deutsch zurück, weil mehrere Online-Tests sie
+  ohne Provider rendern. Haben die einen, kann sie auf `useSprache()`.
 
 Die Zahl je Datei bekommt man so:
 
@@ -221,10 +249,11 @@ grep -oE ">[^<>{}]*[a-zäöüß]{4,}[^<>{}]*<|'[^']*[äöüßÄÖÜ][^']*'" DATE
 Sie ist eine Hausnummer: Kommentare und Code rutschen mit hinein. Vor dem
 Übersetzen immer in die Datei schauen.
 
-**Vorgeschlagene Reihenfolge:** Rechtsseiten und die großen Einzelspieler-Spiele
-sind erledigt. Weiter mit Schützenopoly und den Kartenspielen (Mau-Mau,
-Texas), dann den Partyspielen (Schützenrunde, Imposter, Wer bin ich?,
-Stadt-Land-Fluss), zuletzt den übrigen Online-Varianten.
+**Vorgeschlagene Reihenfolge:** Rechtsseiten, Einzelspieler-Spiele,
+Schützenopoly und die Kartenspiele sind erledigt. Weiter mit den
+Partyspielen (Schützenrunde, Imposter, Wer bin ich?, Stadt-Land-Fluss,
+Scharade, Wortbombe, Wer würde eher) samt ihren Online-Varianten -- dort
+steckt die Frage nach englischen Wortlisten, siehe oben.
 
 **Noch offen, unabhängig davon:** 28 Stellen formatieren Zahlen und Daten fest
 mit `toLocaleString('de-DE')`. Sie gehören auf `toLocaleString(sprache)` aus

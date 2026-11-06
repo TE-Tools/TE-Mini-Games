@@ -69,11 +69,10 @@ import styles from './SchuetzenopolyPage.module.css'
 const SCHRITT_MS = 90
 
 interface Props {
-  eigenerName: string
   onZurueck: () => void
 }
 
-export function SchuetzenopolyOnline({ eigenerName, onZurueck }: Props) {
+export function SchuetzenopolyOnline({ onZurueck }: Props) {
   const { t, sprache } = useSprache()
   const ts = t.schuetzenopoly
   const to = ts.online
@@ -301,7 +300,7 @@ export function SchuetzenopolyOnline({ eigenerName, onZurueck }: Props) {
 
   async function nameFuerDiePartie(): Promise<string> {
     const name = await ermittleSpielerName().catch(() => null)
-    return istEchterName(name) ? (name as string) : eigenerName
+    return istEchterName(name) ? (name as string) : t.allgemein.spielerOhneName
   }
 
   const eroeffnen = () =>

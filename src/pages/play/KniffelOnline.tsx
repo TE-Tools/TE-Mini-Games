@@ -41,7 +41,6 @@ import { useSprache } from '@/i18n/sprache'
 import styles from './KniffelPage.module.css'
 
 interface KniffelOnlineProps {
-  eigenerName: string
   onZurueck: () => void
 }
 
@@ -50,7 +49,7 @@ function zuBlock(teil: Partial<Block>): Block {
   return { ...leererBlock(), ...teil }
 }
 
-export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
+export function KniffelOnline({ onZurueck }: KniffelOnlineProps) {
   const { t } = useSprache()
   const o = t.kniffelOnline
   const [matchId, setMatchId] = useState<string | null>(null)
@@ -74,25 +73,28 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
    */
   const meineAuswahl = useRef<EigeneAuswahl | null>(null)
 
-  const laden = useCallback(async (id: string) => {
-    try {
-      const neu = await fetchKniffelState(id)
-      const angewandt = mitEigenerAuswahl(neu, meineAuswahl.current)
-      if (auswahlErledigt(neu, meineAuswahl.current)) meineAuswahl.current = null
-      setState(angewandt)
-      setFehler(null)
-    } catch (err) {
-      // Der Server löscht Räume, in denen zwanzig Minuten niemand mehr war
-      // (Migration 018). Dann zurück in die Lobby, mit Erklärung.
-      if (istRaumWeg(err) && aktuellerRaum.current === id) {
-        setMatchId(null)
-        setState(null)
-        setFehler(RAUM_GESCHLOSSEN_TEXT)
-        return
+  const laden = useCallback(
+    async (id: string) => {
+      try {
+        const neu = await fetchKniffelState(id)
+        const angewandt = mitEigenerAuswahl(neu, meineAuswahl.current)
+        if (auswahlErledigt(neu, meineAuswahl.current)) meineAuswahl.current = null
+        setState(angewandt)
+        setFehler(null)
+      } catch (err) {
+        // Der Server löscht Räume, in denen zwanzig Minuten niemand mehr war
+        // (Migration 018). Dann zurück in die Lobby, mit Erklärung.
+        if (istRaumWeg(err) && aktuellerRaum.current === id) {
+          setMatchId(null)
+          setState(null)
+          setFehler(RAUM_GESCHLOSSEN_TEXT)
+          return
+        }
+        setFehler(err instanceof Error ? err.message : t.kniffelOnline.ladeFehler)
       }
-      setFehler(err instanceof Error ? err.message : t.kniffelOnline.ladeFehler)
-    }
-  }, [t.kniffelOnline.ladeFehler])
+    },
+    [t.kniffelOnline.ladeFehler],
+  )
 
   /*
    * Erst nachsehen, ob jemand angemeldet ist. Ohne Konto den Knopf
@@ -181,7 +183,7 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
    */
   async function nameFuerDieRunde(): Promise<string> {
     const name = await ermittleSpielerName().catch(() => null)
-    return istEchterName(name) ? (name as string) : eigenerName
+    return istEchterName(name) ? (name as string) : t.allgemein.spielerOhneName
   }
 
   const eroeffnen = () =>

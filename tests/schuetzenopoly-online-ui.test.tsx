@@ -85,7 +85,7 @@ function stand(over: Partial<SchopolyOnlineState['match']> = {}, zuege = []): Sc
 function zeige() {
   return render(
     <MemoryRouter>
-      <SchuetzenopolyOnline eigenerName="Du" onZurueck={() => {}} />
+      <SchuetzenopolyOnline onZurueck={() => {}} />
     </MemoryRouter>,
   )
 }
@@ -191,7 +191,7 @@ describe('Schützenopoly online', () => {
     testRender(
       <SprachProvider>
         <MemoryRouter>
-          <mod.SchuetzenopolyOnline eigenerName="Du" onZurueck={() => {}} />
+          <mod.SchuetzenopolyOnline onZurueck={() => {}} />
         </MemoryRouter>
       </SprachProvider>,
     )

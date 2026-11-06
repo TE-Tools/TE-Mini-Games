@@ -1827,6 +1827,8 @@ export const de = {
     zumMenue: 'Zum Menü',
     gegenRechner: 'Gegen den Rechner',
     onlineSpielen: 'Online spielen',
+    /** Name für Mitspieler, wenn jemand online keinen eigenen hat -- nie „Du“, das hieße bei allen anderen sie selbst. */
+    spielerOhneName: 'Spieler',
     ton: 'Ton',
   },
 }

@@ -95,7 +95,7 @@ function laufendeRunde(): KniffelOnlineState {
 async function amTisch() {
   render(
     <MemoryRouter>
-      <KniffelOnline eigenerName="thomas" onZurueck={() => {}} />
+      <KniffelOnline onZurueck={() => {}} />
     </MemoryRouter>,
   )
   await userEvent.click(await screen.findByRole('button', { name: /Raum eröffnen/ }))

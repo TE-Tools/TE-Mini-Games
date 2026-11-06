@@ -505,7 +505,7 @@ export function SchuetzenopolyPage() {
   }
 
   if (ansicht === 'online') {
-    return <SchuetzenopolyOnline eigenerName={spielerName} onZurueck={() => setAnsicht('menue')} />
+    return <SchuetzenopolyOnline onZurueck={() => setAnsicht('menue')} />
   }
 
   if (ansicht === 'aufbau') {

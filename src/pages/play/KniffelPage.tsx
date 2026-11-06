@@ -163,7 +163,7 @@ export function KniffelPage() {
   /* -------------------------------------------------------- Anzeige */
 
   if (ansicht === 'online') {
-    return <KniffelOnline eigenerName={name} onZurueck={() => setAnsicht('menue')} />
+    return <KniffelOnline onZurueck={() => setAnsicht('menue')} />
   }
 
   if (ansicht === 'menue') {
