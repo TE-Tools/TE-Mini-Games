@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CATEGORIES } from '@/games/finde-den-imposter'
 import { getCurrentUser } from '@/auth/authService'
+import { useSprache } from '@/i18n/sprache'
 import {
   isWerBinIchOnlineAvailable,
   createWbiMatchOnline,
@@ -28,6 +29,13 @@ import styles from './WerBinIchPage.module.css'
 const POLL_MS = 3000
 
 export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
+  const { t } = useSprache()
+  const w = t.werBinIch
+  // Für die Rückrufe unten, die nur einmal angelegt werden.
+  const texte = useRef(w)
+  useEffect(() => {
+    texte.current = w
+  }, [w])
   const [ready, setReady] = useState(false)
   const [signedIn, setSignedIn] = useState(false)
 
@@ -79,7 +87,7 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
         setError(RAUM_GESCHLOSSEN_TEXT)
         return
       }
-      setError(e instanceof Error ? e.message : 'Der Spielstand kam nicht an.')
+      setError(e instanceof Error ? e.message : texte.current.standFehlt)
     }
   }, [])
 
@@ -110,7 +118,7 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
     try {
       await job()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Das hat nicht geklappt.')
+      setError(e instanceof Error ? e.message : texte.current.hatNichtGeklappt)
     } finally {
       setBusy(false)
     }
@@ -124,42 +132,36 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
     if (!raumCode) return
     autoBeigetreten.current = true
     // Nicht direkt im Effekt: der Aufruf setzt sofort Zustand, das mag React nicht.
-    const t = window.setTimeout(() => {
+    const zeitgeber = window.setTimeout(() => {
       void run(async () => {
         setMatchId(await joinWbiMatch(raumCode))
       })
     }, 0)
-    return () => window.clearTimeout(t)
+    return () => window.clearTimeout(zeitgeber)
   }, [signedIn, run])
 
   if (!isWerBinIchOnlineAvailable) {
     return (
       <div className={styles.card}>
-        <p className={styles.subtitle}>
-          Für Online-Runden fehlt die Verbindung zum Konto-Server. Am einen Gerät geht es trotzdem
-          jederzeit.
-        </p>
+        <p className={styles.subtitle}>{w.keinServer}</p>
         <button type="button" className={styles.btn} onClick={onBack}>
-          Zurück zum Spiel am einen Gerät
+          {w.zurueckEinGeraet}
         </button>
       </div>
     )
   }
 
-  if (!ready) return <p className={styles.meta}>Laden…</p>
+  if (!ready) return <p className={styles.meta}>{t.allgemein.laden}</p>
 
   if (!signedIn) {
     return (
       <div className={styles.card}>
-        <p className={styles.subtitle}>
-          Online spielst du mit deinem Konto – so weiß der Server, wem er welches Wort vorenthalten
-          muss.
-        </p>
+        <p className={styles.subtitle}>{w.anmeldenGrund}</p>
         <Link to="/auth" className={styles.btn} style={{ textAlign: 'center' }}>
-          Anmelden
+          {w.anmelden}
         </Link>
         <button type="button" className={styles.btnSecondary} onClick={onBack}>
-          Lieber am einen Gerät
+          {w.lieberEinGeraet}
         </button>
       </div>
     )
@@ -173,19 +175,21 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
         {error && <p className={styles.error}>{error}</p>}
 
         <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Neue Runde eröffnen</h2>
+          <h2 className={styles.cardTitle}>{w.neueRundeEroeffnen}</h2>
           <label className={styles.label}>
-            Dein Name
+            {w.deinName}
             <input
               className={styles.input}
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={20}
-              placeholder="wie du am Tisch heißt"
+              placeholder={w.namePlatzhalter}
             />
           </label>
           <label className={styles.label}>
-            Kategorie
+            {w.kategorie}
+            {/* Die Namen der Kategorien bleiben deutsch: Sie gehören zu den
+                deutschen Wortlisten, und der Server führt sie ebenso. */}
             <select
               className={styles.select}
               value={categoryId}
@@ -205,8 +209,8 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
               onChange={(e) => setOeffentlich(e.target.checked)}
             />
             <span>
-              Öffentliche Runde
-              <small>Steht für alle in der Lobby, mit deinem Namen. Jeder kann beitreten.</small>
+              {w.oeffentlich}
+              <small>{w.oeffentlichText}</small>
             </span>
           </label>
           <button
@@ -220,18 +224,18 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
               })
             }
           >
-            Runde eröffnen
+            {w.eroeffnen}
           </button>
         </div>
 
         <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Mit Code beitreten</h2>
+          <h2 className={styles.cardTitle}>{w.mitCodeBeitreten}</h2>
           <input
             className={styles.input}
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
             maxLength={5}
-            placeholder="z. B. K4T9P"
+            placeholder={w.codePlatzhalter}
             autoCapitalize="characters"
           />
           <button
@@ -244,7 +248,7 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
               })
             }
           >
-            Beitreten
+            {w.beitreten}
           </button>
         </div>
 
@@ -260,19 +264,19 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
 
         {open.length > 0 && (
           <div className={styles.card}>
-            <h2 className={styles.cardTitle}>Deine laufenden Runden</h2>
+            <h2 className={styles.cardTitle}>{w.laufendeRunden}</h2>
             <ul className={styles.list}>
               {open.map((m) => (
                 <li key={m.match_id}>
                   <span>
-                    {m.code} · Runde {m.round}
+                    {m.code} · {w.runde(m.round)}
                   </span>
                   <button
                     type="button"
                     className={styles.pickBtn}
                     onClick={() => setMatchId(m.match_id)}
                   >
-                    weiter ({m.size})
+                    {w.fortsetzen(m.size)}
                   </button>
                 </li>
               ))}
@@ -281,7 +285,7 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
         )}
 
         <button type="button" className={styles.btnSecondary} onClick={onBack}>
-          Zurück zum Spiel am einen Gerät
+          {w.zurueckEinGeraet}
         </button>
       </>
     )
@@ -305,21 +309,21 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
       {error && <p className={styles.error}>{error}</p>}
 
       <p className={styles.meta}>
-        Code <strong>{m.code}</strong> · {m.size} dabei · Runde {m.round} · {m.category_label}
+        {w.code} <strong>{m.code}</strong> · {w.dabei(m.size)} · {w.runde(m.round)} ·{' '}
+        {m.category_label}
       </p>
 
       {m.phase === 'lobby' && (
         <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Vorraum</h2>
+          <h2 className={styles.cardTitle}>{w.vorraum}</h2>
           <p className={styles.subtitle}>
-            Gebt den Code weiter.{' '}
-            {m.is_host ? 'Du startest, wenn alle da sind.' : 'Der Gastgeber startet.'}
+            {w.codeWeitergeben} {m.is_host ? w.duStartest : w.gastgeberStartet}
           </p>
           <ul className={styles.list}>
             {state.players.map((p) => (
               <li key={p.seat}>
                 <span>{p.name}</span>
-                <strong>{p.is_you ? 'du' : 'dabei'}</strong>
+                <strong>{p.is_you ? w.du : w.dabeiMarke}</strong>
               </li>
             ))}
           </ul>
@@ -330,11 +334,11 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
               disabled={busy || m.size < 2}
               onClick={() => void run(() => startWbiMatch(m.id))}
             >
-              {m.size < 2 ? 'Mindestens 2 Mitspielende' : 'Runde starten'}
+              {m.size < 2 ? w.mindestensMitspielende(2) : w.rundeStarten}
             </button>
           )}
           <button type="button" className={styles.btnSecondary} onClick={verlassen}>
-            Verlassen
+            {w.verlassen}
           </button>
         </div>
       )}
@@ -346,13 +350,13 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
               viel Platz für gar keine Aussage (02.09.2026, Thomas). */}
           {me.word && (
             <div className={`${styles.card} ${styles.meBox}`}>
-              <p className={styles.subtitle}>Du warst</p>
+              <p className={styles.subtitle}>{w.duWarst}</p>
               <p className={styles.unknownWord}>{me.word}</p>
             </div>
           )}
 
           <div className={styles.card}>
-            <h2 className={styles.cardTitle}>Die anderen</h2>
+            <h2 className={styles.cardTitle}>{w.dieAnderen}</h2>
             <ul className={styles.list}>
               {state.players
                 .filter((p) => !p.is_you)
@@ -363,15 +367,13 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
                   </li>
                 ))}
             </ul>
-            <p className={styles.meta}>
-              {me.word
-                ? 'Dein Begriff ist aufgelöst.'
-                : 'Deinen eigenen Begriff siehst du nicht – alle anderen schon.'}
-            </p>
+            <p className={styles.meta}>{me.word ? w.begriffAufgeloest : w.eigenerVerdecktOnline}</p>
             {m.phase === 'ask' && (
               <p className={styles.meta}>
-                {starter ? `${starter.name}${starter.is_you ? ' (du)' : ''} fängt an. ` : ''}
-                Reihum eine Ja/Nein-Frage – wer ein Nein kassiert, gibt weiter.
+                {starter
+                  ? `${w.faengtAn(starter.is_you ? `${starter.name} ${w.duKlammer}` : starter.name)} `
+                  : ''}
+                {w.frageRegelOnline}
               </p>
             )}
           </div>
@@ -383,23 +385,23 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
               disabled={busy}
               onClick={() => void run(() => toWbiGuessPhase(m.id))}
             >
-              Jetzt raten
+              {w.jetztRaten}
             </button>
           )}
           {m.phase === 'ask' && !m.is_host && (
-            <p className={styles.meta}>Der Gastgeber schaltet um, wenn ihr so weit seid.</p>
+            <p className={styles.meta}>{w.gastgeberSchaltetUm}</p>
           )}
 
           {m.phase === 'guess' && (
             <div className={styles.card}>
               {me.guess === null ? (
                 <>
-                  <h2 className={styles.cardTitle}>Wer bist du?</h2>
+                  <h2 className={styles.cardTitle}>{w.werBistDu}</h2>
                   <input
                     className={styles.input}
                     value={tipptext}
                     onChange={(e) => setGuess({ round: m.round, text: e.target.value })}
-                    placeholder="Dein Tipp…"
+                    placeholder={w.deinTippPlatzhalter}
                     autoComplete="off"
                   />
                   <button
@@ -408,19 +410,17 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
                     disabled={busy || !tipptext.trim()}
                     onClick={() => void run(() => guessWbiOnline(m.id, tipptext))}
                   >
-                    Tipp abgeben
+                    {w.tippAbgeben}
                   </button>
                 </>
               ) : (
                 <>
-                  <h2 className={styles.cardTitle}>{me.correct ? 'Richtig!' : 'Leider daneben'}</h2>
+                  <h2 className={styles.cardTitle}>{me.correct ? w.richtig : w.daneben}</h2>
                   <p className={styles.subtitle}>
-                    Du hast „{me.guess}" getippt – du warst <strong>{me.word}</strong>.
+                    {w.duHastGetippt(me.guess)} <strong>{me.word}</strong>.
                   </p>
                   <p className={styles.meta}>
-                    {m.open_guesses > 0
-                      ? `Noch ${m.open_guesses} am Überlegen.`
-                      : 'Gleich gibt es die Auflösung.'}
+                    {m.open_guesses > 0 ? w.nochAmUeberlegen(m.open_guesses) : w.gleichAufloesung}
                   </p>
                 </>
               )}
@@ -432,16 +432,16 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
       {m.phase === 'result' && (
         <>
           <div className={styles.card}>
-            <h2 className={styles.cardTitle}>Auflösung</h2>
+            <h2 className={styles.cardTitle}>{w.aufloesung}</h2>
             <ul className={styles.list}>
               {state.players.map((p) => (
                 <li key={p.seat}>
                   <span>
                     {p.name}
-                    {p.is_you ? ' (du)' : ''} war <strong>{p.word}</strong>
+                    {p.is_you ? ` ${w.duKlammer}` : ''} {w.war} <strong>{p.word}</strong>
                   </span>
                   <strong className={p.correct ? styles.ok : styles.bad}>
-                    {p.correct ? 'erraten' : `„${p.guess ?? '–'}"`}
+                    {p.correct ? w.erraten : w.tippZitat(p.guess ?? '–')}
                   </strong>
                 </li>
               ))}
@@ -454,11 +454,11 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
               disabled={busy}
               onClick={() => void run(() => nextWbiRoundOnline(m.id))}
             >
-              Nächste Runde
+              {w.naechsteRunde}
             </button>
           )}
           <button type="button" className={styles.btnSecondary} onClick={verlassen}>
-            Runde verlassen
+            {w.rundeVerlassen}
           </button>
         </>
       )}
