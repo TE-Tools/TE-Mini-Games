@@ -17,6 +17,7 @@
 
 import { useState } from 'react'
 import type { Moeglichkeiten } from '@/games/texas-holdem'
+import { useSprache } from '@/i18n/sprache'
 import styles from './Einsatzleiste.module.css'
 
 interface Props {
@@ -42,6 +43,8 @@ export function Einsatzleiste({
   onMitgehen,
   onErhoehen,
 }: Props) {
+  const { t } = useSprache()
+  const w = t.texas.leiste
   const spanne = moeglich.erhoehen
   const [offen, setOffen] = useState(false)
   const [betrag, setBetrag] = useState(spanne?.min ?? 0)
@@ -53,16 +56,16 @@ export function Einsatzleiste({
       <div className={styles.leiste}>
         <div className={styles.schnell}>
           <button type="button" className={styles.klein} onClick={() => setBetrag(spanne.min)}>
-            Minimum
+            {w.minimum}
           </button>
           <button type="button" className={styles.klein} onClick={() => setBetrag(vorschlag(0.5))}>
-            ½ Topf
+            {w.halberTopf}
           </button>
           <button type="button" className={styles.klein} onClick={() => setBetrag(vorschlag(1))}>
-            Topf
+            {w.topf}
           </button>
           <button type="button" className={styles.klein} onClick={() => setBetrag(spanne.max)}>
-            All-in
+            {w.allin}
           </button>
         </div>
         <label className={styles.reglerZeile}>
@@ -75,12 +78,12 @@ export function Einsatzleiste({
             step={Math.max(1, Math.round((spanne.max - spanne.min) / 100))}
             value={betrag}
             onChange={(e) => setBetrag(Number(e.target.value))}
-            aria-label="Einsatz wählen"
+            aria-label={w.einsatzWaehlen}
           />
         </label>
         <div className={styles.zeile}>
           <button type="button" className={styles.abbruch} onClick={() => setOffen(false)}>
-            Abbrechen
+            {w.abbrechen}
           </button>
           <button
             type="button"
@@ -91,7 +94,7 @@ export function Einsatzleiste({
               onErhoehen(betrag)
             }}
           >
-            {betrag >= spanne.max ? `All-in ${betrag}` : `Erhöhen auf ${betrag}`}
+            {betrag >= spanne.max ? w.allinBetrag(betrag) : w.erhoehenAuf(betrag)}
           </button>
         </div>
       </div>
@@ -107,12 +110,12 @@ export function Einsatzleiste({
           disabled={gesperrt || !moeglich.folden}
           onClick={onFolden}
         >
-          Wegwerfen
+          {w.wegwerfen}
         </button>
 
         {moeglich.schieben ? (
           <button type="button" className={styles.mit} disabled={gesperrt} onClick={onSchieben}>
-            Schieben
+            {w.schieben}
           </button>
         ) : (
           <button
@@ -121,7 +124,7 @@ export function Einsatzleiste({
             disabled={gesperrt || moeglich.mitgehen === null}
             onClick={onMitgehen}
           >
-            Mitgehen <small>{moeglich.mitgehen ?? 0}</small>
+            {w.mitgehen} <small>{moeglich.mitgehen ?? 0}</small>
           </button>
         )}
 
@@ -131,7 +134,7 @@ export function Einsatzleiste({
           disabled={gesperrt || !spanne}
           onClick={() => setOffen(true)}
         >
-          {moeglich.schieben ? 'Setzen' : 'Erhöhen'}
+          {moeglich.schieben ? w.setzen : w.erhoehen}
         </button>
       </div>
     </div>
