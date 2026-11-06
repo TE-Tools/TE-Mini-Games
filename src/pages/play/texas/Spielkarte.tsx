@@ -17,7 +17,9 @@
  * sein").
  */
 
-import { FARB_ROT, FARB_ZEICHEN, wertKurz, wertName, type Karte } from '@/games/texas-holdem'
+import { FARB_ROT, FARB_ZEICHEN, type Karte } from '@/games/texas-holdem'
+import { useSprache } from '@/i18n/sprache'
+import { karteVorlesen, wertKurzText } from './texasText'
 import styles from './Spielkarte.module.css'
 
 /**
@@ -39,14 +41,8 @@ interface Props {
   zaehlt?: boolean
 }
 
-const FARB_NAME: Record<string, string> = {
-  pik: 'Pik',
-  herz: 'Herz',
-  karo: 'Karo',
-  kreuz: 'Kreuz',
-}
-
 export function Spielkarte({ karte, zu = false, groesse = 'normal', zaehlt = false }: Props) {
+  const { t } = useSprache()
   const klassen = [
     styles.karte,
     groesse === 'klein' ? styles.klein : groesse === 'tisch' ? styles.tisch : '',
@@ -55,7 +51,11 @@ export function Spielkarte({ karte, zu = false, groesse = 'normal', zaehlt = fal
 
   if (zu || !karte) {
     return (
-      <span className={`${klassen} ${styles.rueckseite}`} role="img" aria-label="verdeckte Karte">
+      <span
+        className={`${klassen} ${styles.rueckseite}`}
+        role="img"
+        aria-label={t.texas.karte.verdeckt}
+      >
         <span className={styles.muster} aria-hidden="true" />
       </span>
     )
@@ -65,10 +65,10 @@ export function Spielkarte({ karte, zu = false, groesse = 'normal', zaehlt = fal
     <span
       className={`${klassen} ${FARB_ROT[karte.farbe] ? styles.rot : styles.schwarz}`}
       role="img"
-      aria-label={`${wertName(karte.wert)} ${FARB_NAME[karte.farbe] ?? ''}`}
+      aria-label={karteVorlesen(t, karte)}
     >
       <span className={styles.wert} aria-hidden="true">
-        {wertKurz(karte.wert)}
+        {wertKurzText(t, karte.wert)}
       </span>
       <span className={styles.zeichen} aria-hidden="true">
         {FARB_ZEICHEN[karte.farbe]}
