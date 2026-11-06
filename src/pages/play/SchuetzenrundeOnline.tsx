@@ -5,10 +5,20 @@ import {
   zugById,
   zugCount,
   zugPointsFor,
-  roleOf,
   factionOf,
   type RoleId,
 } from '@/games/schuetzenrunde'
+import { useSprache } from '@/i18n/sprache'
+import {
+  aussageText,
+  fraktionName,
+  notizZeile,
+  protokollZeile,
+  rollenName,
+  rollenText,
+  zugKurz,
+  zugName,
+} from './schuetzenrunde/srText'
 import {
   createOnlineMatch,
   joinOnlineMatch,
@@ -40,22 +50,15 @@ import styles from './SchuetzenrundePage.module.css'
 /** Wie oft wir beim Server nachfassen, falls Realtime nichts liefert. */
 const POLL_MS = 3000
 
-function roleName(role: string | null): string {
-  if (!role) return ''
-  return roleOf(role as RoleId).name
-}
-
-function roleText(role: string | null): string {
-  if (!role) return ''
-  return roleOf(role as RoleId).description
-}
-
 function factionOfRole(role: string | null): 'bruderschaft' | 'saboteure' | null {
   if (!role) return null
   return factionOf(role as RoleId)
 }
 
 export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
+  const { t } = useSprache()
+  const s = t.schuetzenrunde
+  const o = s.onlineTeil
   const [userReady, setUserReady] = useState(false)
   const [signedIn, setSignedIn] = useState(false)
 
@@ -157,10 +160,10 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
           setError(RAUM_GESCHLOSSEN_TEXT)
           return
         }
-        setError(e instanceof Error ? e.message : 'Der Spielstand kam nicht an.')
+        setError(e instanceof Error ? e.message : o.ladeFehler)
       }
     },
-    [storeResult],
+    [storeResult, o.ladeFehler],
   )
 
   // Realtime plus Nachfassen: was der Server ändert, holen wir sofort neu.
@@ -196,17 +199,20 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
     return () => window.clearInterval(id)
   }, [])
 
-  const run = useCallback(async (job: () => Promise<void>) => {
-    setBusy(true)
-    setError(null)
-    try {
-      await job()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Das hat nicht geklappt.')
-    } finally {
-      setBusy(false)
-    }
-  }, [])
+  const run = useCallback(
+    async (job: () => Promise<void>) => {
+      setBusy(true)
+      setError(null)
+      try {
+        await job()
+      } catch (e) {
+        setError(e instanceof Error ? e.message : o.fehler)
+      } finally {
+        setBusy(false)
+      }
+    },
+    [o.fehler],
+  )
 
   // Von "Offene Spiele" mit ?raum=CODE gekommen: einmal von selbst beitreten.
   const autoBeigetreten = useRef(false)
@@ -216,13 +222,13 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
     if (!raumCode) return
     autoBeigetreten.current = true
     // Nicht direkt im Effekt: der Aufruf setzt sofort Zustand, das mag React nicht.
-    const t = window.setTimeout(() => {
+    const zeitgeber = window.setTimeout(() => {
       void run(async () => {
         const joined = await joinOnlineMatch(raumCode)
         setMatchId(joined.match_id)
       })
     }, 0)
-    return () => window.clearTimeout(t)
+    return () => window.clearTimeout(zeitgeber)
   }, [signedIn, run])
 
   /* ------------------------------ Vorraum ------------------------------ */
@@ -230,30 +236,25 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
   if (!isOnlineAvailable) {
     return (
       <section className={styles.actions}>
-        <p className={styles.hint}>
-          Für Online-Runden fehlt die Verbindung zum Konto-Server. Offline gegen Bots geht trotzdem
-          jederzeit.
-        </p>
+        <p className={styles.hint}>{o.keinServer}</p>
         <button type="button" className={styles.primaryBtn} onClick={onBack}>
-          Zurück zum Spiel gegen Bots
+          {o.zurueckZuBots}
         </button>
       </section>
     )
   }
 
-  if (!userReady) return <p className={styles.muted}>Laden…</p>
+  if (!userReady) return <p className={styles.muted}>{t.allgemein.laden}</p>
 
   if (!signedIn) {
     return (
       <section className={styles.actions}>
-        <p className={styles.hint}>
-          Online spielst du mit deinem Konto – so wissen die anderen, wer am Tisch sitzt.
-        </p>
+        <p className={styles.hint}>{o.ohneKonto}</p>
         <Link to="/auth" className={styles.primaryBtn} style={{ textAlign: 'center' }}>
-          Anmelden
+          {o.anmelden}
         </Link>
         <button type="button" className={styles.secondaryBtn} onClick={onBack}>
-          Lieber gegen Bots
+          {o.lieberBots}
         </button>
       </section>
     )
@@ -265,7 +266,7 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
         {error && <p className={styles.errorLine}>{error}</p>}
 
         <fieldset className={styles.sizes}>
-          <legend className={styles.sizesLegend}>Wie viele Plätze?</legend>
+          <legend className={styles.sizesLegend}>{o.wieVielePlaetze}</legend>
           {[8, 10, 12, 16].map((option) => (
             <button
               key={option}
@@ -277,13 +278,10 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
             </button>
           ))}
         </fieldset>
-        <p className={styles.muted}>
-          Freie Plätze übernehmen beim Start regelbasierte Mitspieler – ihr müsst also nicht
-          vollzählig sein.
-        </p>
+        <p className={styles.muted}>{o.freiePlaetze}</p>
 
         <fieldset className={styles.sizes}>
-          <legend className={styles.sizesLegend}>Dein Zug</legend>
+          <legend className={styles.sizesLegend}>{s.deinZug}</legend>
           {ZUEGE.slice(0, zugCount(size)).map((zug) => (
             <button
               key={zug.id}
@@ -291,14 +289,14 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
               className={zug.id === zugId ? styles.sizeActive : styles.size}
               onClick={() => setZugId(zug.id)}
             >
-              {zug.badge} {zug.name.replace('zug', '')}
+              {zug.badge} {zugKurz(t, zug.id)}
             </button>
           ))}
         </fieldset>
 
         <label className={styles.checkbox}>
           <input type="checkbox" checked={event} onChange={(e) => setEvent(e.target.checked)} />
-          Schützenfest: drei Schuss und Vogelschießen am Ende
+          {s.schuetzenfestWahl}
         </label>
 
         <label className={raum.oeffentlich}>
@@ -308,8 +306,8 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
             onChange={(e) => setOeffentlich(e.target.checked)}
           />
           <span>
-            Öffentliche Runde
-            <small>Steht für alle in der Lobby, mit deinem Namen. Jeder kann beitreten.</small>
+            {o.oeffentlich}
+            <small>{o.oeffentlichText}</small>
           </span>
         </label>
 
@@ -324,17 +322,17 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
             })
           }
         >
-          Runde eröffnen
+          {o.eroeffnen}
         </button>
 
         <label className={styles.label}>
-          Oder mit Code beitreten
+          {o.mitCode}
           <input
             className={styles.input}
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
             maxLength={5}
-            placeholder="z. B. K4T9P"
+            placeholder={o.codeBeispiel}
             autoCapitalize="characters"
           />
         </label>
@@ -349,7 +347,7 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
             })
           }
         >
-          Beitreten
+          {o.beitreten}
         </button>
 
         <OeffentlicheRaeume
@@ -364,8 +362,8 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
         />
 
         {open.length > 0 && (
-          <section className={styles.board} aria-label="Deine laufenden Runden">
-            <p className={styles.boardTitle}>Deine laufenden Runden</p>
+          <section className={styles.board} aria-label={o.laufendeRunden}>
+            <p className={styles.boardTitle}>{o.laufendeRunden}</p>
             {open.map((m) => (
               <button
                 key={m.match_id}
@@ -374,7 +372,7 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
                 onClick={() => setMatchId(m.match_id)}
               >
                 <span>
-                  {m.code} · {m.phase === 'lobby' ? 'Vorraum' : `Runde ${m.round}`}
+                  {m.code} · {m.phase === 'lobby' ? o.vorraum : o.runde(m.round)}
                 </span>
                 <strong>
                   {m.seats_taken}/{m.size}
@@ -385,7 +383,7 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
         )}
 
         <button type="button" className={styles.secondaryBtn} onClick={onBack}>
-          Zurück zum Spiel gegen Bots
+          {o.zurueckZuBots}
         </button>
       </>
     )
@@ -419,8 +417,8 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
       {error && <p className={styles.errorLine}>{error}</p>}
 
       <p className={styles.codeBox}>
-        Code <strong>{m.code}</strong> · {m.seats_taken}/{m.size} Plätze
-        {m.event ? ' · Schützenfest' : ''}
+        {o.code} <strong>{m.code}</strong> · {o.plaetze(m.seats_taken, m.size)}
+        {m.event ? ` · ${s.schuetzenfest}` : ''}
       </p>
 
       {secondsLeft != null && (
@@ -430,29 +428,28 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
       {m.phase !== 'lobby' && me.role && (
         <section className={styles.roleCard} data-faction={myFaction ?? 'bruderschaft'}>
           <p className={styles.roleName}>
-            {roleName(me.role)} · {myFaction === 'saboteure' ? 'Saboteure' : 'Bruderschaft'}
+            {rollenName(t, me.role)} ·{' '}
+            {fraktionName(t, myFaction === 'saboteure' ? 'saboteure' : 'bruderschaft')}
           </p>
-          <p className={styles.roleText}>{roleText(me.role)}</p>
+          <p className={styles.roleText}>{rollenText(t, me.role)}</p>
           <p className={styles.roleText}>
-            {zugById(me.zug_id).badge} {zugById(me.zug_id).name}
+            {zugById(me.zug_id).badge} {zugName(t, me.zug_id)}
           </p>
-          {!me.alive && (
-            <p className={styles.dead}>Du bist ausgeschieden – du schaust nur noch zu.</p>
-          )}
+          {!me.alive && <p className={styles.dead}>{s.ausgeschieden}</p>}
         </section>
       )}
 
       {me.notes.length > 0 && (
-        <section className={styles.notes} aria-label="Deine Erkenntnisse">
+        <section className={styles.notes} aria-label={s.erkenntnisse}>
           {me.notes.map((n) => (
             <p key={n} className={styles.note}>
-              🔎 {n}
+              🔎 {notizZeile(t, n)}
             </p>
           ))}
         </section>
       )}
 
-      <section className={styles.players} aria-label="Mitspieler">
+      <section className={styles.players} aria-label={s.mitspieler}>
         {state.players.map((p) => {
           const selectable =
             p.alive &&
@@ -482,12 +479,12 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
               <span className={styles.playerState}>
                 {zugById(p.zug_id).badge}{' '}
                 {p.role
-                  ? roleName(p.role)
+                  ? rollenName(t, p.role)
                   : m.phase === 'lobby'
-                    ? 'bereit'
+                    ? o.bereit
                     : p.acted
-                      ? 'fertig'
-                      : 'überlegt…'}
+                      ? o.fertig
+                      : o.ueberlegt}
               </span>
             </button>
           )
@@ -496,10 +493,9 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
 
       {m.phase === 'lobby' && (
         <section className={styles.actions}>
-          <p className={styles.phaseTitle}>Vorraum</p>
+          <p className={styles.phaseTitle}>{o.vorraum}</p>
           <p className={styles.hint}>
-            Gib den Code weiter.{' '}
-            {m.is_host ? 'Du startest, wenn ihr so weit seid.' : 'Der Gastgeber startet die Runde.'}
+            {o.codeWeitergeben} {m.is_host ? o.duStartest : o.gastgeberStartet}
           </p>
           {m.is_host && (
             <button
@@ -508,34 +504,34 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
               disabled={busy}
               onClick={() => void run(() => startOnlineMatch(m.id))}
             >
-              Runde starten
+              {s.starten}
             </button>
           )}
           <button type="button" className={styles.secondaryBtn} onClick={leave}>
-            Verlassen
+            {o.verlassen}
           </button>
         </section>
       )}
 
       {m.phase === 'night' && (
         <section className={styles.actions}>
-          <p className={styles.phaseTitle}>Nacht {m.round}</p>
+          <p className={styles.phaseTitle}>{s.nacht(m.round)}</p>
           {!me.alive ? (
-            <p className={styles.hint}>Du bist raus – die anderen spielen weiter.</p>
+            <p className={styles.hint}>{o.duBistRaus}</p>
           ) : me.acted ? (
-            <p className={styles.hint}>Deine Aktion ist abgegeben. Warte auf die anderen…</p>
+            <p className={styles.hint}>{o.aktionAbgegeben}</p>
           ) : nightRole ? (
             <>
               <p className={styles.hint}>
                 {isSaboteur
-                  ? 'Wen schaltet ihr aus?'
+                  ? s.wenAusschalten
                   : me.role === 'schiessmeister'
-                    ? 'Wen prüfst du?'
+                    ? s.wenPruefen
                     : me.role === 'zeugwart'
-                      ? 'Wen schließt du im Zeughaus ein?'
+                      ? s.wenEinschliessen
                       : m.shots_left > 0
-                        ? `Du kannst schießen – noch ${m.shots_left} ${m.shots_left === 1 ? 'Schuss' : 'Schüsse'}.`
-                        : 'Deine Schüsse sind verbraucht.'}
+                        ? s.kannstSchiessen(m.shots_left)
+                        : s.schuesseVerbraucht}
               </p>
               {me.role === 'schuetze' && m.shots_left > 0 && (
                 <label className={styles.checkbox}>
@@ -544,7 +540,7 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
                     checked={useShot}
                     onChange={(e) => setUseShot(e.target.checked)}
                   />
-                  Schuss auf die gewählte Person abgeben
+                  {s.schussAbgeben}
                 </label>
               )}
               {me.role === 'geruechtemacher' && (
@@ -554,7 +550,7 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
                     checked={rumour}
                     onChange={(e) => setRumour(e.target.checked)}
                   />
-                  Gerücht über die gewählte Person streuen
+                  {s.geruechtStreuen}
                 </label>
               )}
               <button
@@ -574,19 +570,19 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
                   })
                 }
               >
-                Aktion abgeben
+                {o.aktionAbgeben}
               </button>
             </>
           ) : (
             <>
-              <p className={styles.hint}>Du schläfst. Die anderen sind aktiv.</p>
+              <p className={styles.hint}>{s.duSchlaefst}</p>
               <button
                 type="button"
                 className={styles.primaryBtn}
                 disabled={busy}
                 onClick={() => void run(() => sendReady(m.id))}
               >
-                Nacht abwarten
+                {s.nachtAbwarten}
               </button>
             </>
           )}
@@ -596,14 +592,14 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
       {(m.phase === 'day' || m.phase === 'vote') && (
         <section className={styles.actions}>
           <p className={styles.phaseTitle}>
-            Tag {m.round} · {m.phase === 'day' ? 'Diskussion' : 'Abstimmung'}
+            {m.phase === 'day' ? s.tagDiskussion(m.round) : s.tagAbstimmung(m.round)}
           </p>
 
           {state.messages.length > 0 && (
             <ul className={styles.talk}>
               {state.messages.map((msg, i) => (
                 <li key={`${msg.round}-${msg.seat}-${i}`} className={styles.talkLine}>
-                  <strong>{msg.name}:</strong> „{msg.text}“
+                  <strong>{msg.name}:</strong> „{msg.is_bot ? aussageText(t, msg.text) : msg.text}“
                 </li>
               ))}
             </ul>
@@ -625,10 +621,10 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
                 value={chat}
                 onChange={(e) => setChat(e.target.value)}
                 maxLength={200}
-                placeholder="Sag was…"
+                placeholder={o.sagWas}
               />
               <button type="submit" className={styles.size} disabled={busy}>
-                Senden
+                {o.senden}
               </button>
             </form>
           )}
@@ -640,7 +636,7 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
               disabled={busy || me.acted}
               onClick={() => void run(() => sendReady(m.id))}
             >
-              {me.acted ? 'Warte auf die anderen…' : 'Bereit zur Abstimmung'}
+              {me.acted ? o.warteAufAndere : o.bereitZurAbstimmung}
             </button>
           ) : (
             <button
@@ -649,7 +645,7 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
               disabled={busy || me.acted || !me.alive}
               onClick={() => void run(() => sendVote(m.id, selected))}
             >
-              {me.acted ? 'Stimme abgegeben' : selected != null ? 'Stimme abgeben' : 'Enthalten'}
+              {me.acted ? o.stimmeAbgegeben : selected != null ? s.stimmeAbgeben : o.enthalten}
             </button>
           )}
         </section>
@@ -657,12 +653,12 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
 
       {m.phase === 'result' && (
         <section className={styles.actions}>
-          <p className={styles.phaseTitle}>Ergebnis</p>
+          <p className={styles.phaseTitle}>{s.ergebnis}</p>
           {state.votes.length > 0 && (
             <ul className={styles.talk}>
               {state.votes.map((v, i) => (
                 <li key={`${v.voter}-${i}`} className={styles.talkLine}>
-                  {v.voter} → <strong>{v.target ?? 'Enthaltung'}</strong>
+                  {v.voter} → <strong>{v.target ?? o.enthaltung}</strong>
                 </li>
               ))}
             </ul>
@@ -673,24 +669,20 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
             disabled={busy || me.acted}
             onClick={() => void run(() => sendReady(m.id))}
           >
-            {me.acted ? 'Warte auf die anderen…' : 'Nächste Nacht'}
+            {me.acted ? o.warteAufAndere : s.naechsteNacht}
           </button>
         </section>
       )}
 
       {over && (
         <section className={styles.actions}>
-          <p className={styles.phaseTitle}>
-            {m.winner === myFaction ? '🏆 Gewonnen!' : 'Verloren'}
-          </p>
+          <p className={styles.phaseTitle}>{m.winner === myFaction ? s.gewonnen : s.verloren}</p>
           <p className={styles.hint}>
-            {m.winner === 'saboteure'
-              ? 'Die Saboteure haben die Bruderschaft übernommen.'
-              : 'Die Bruderschaft hat alle Saboteure entlarvt.'}
+            {m.winner === 'saboteure' ? s.sabotageSieg : s.bruderschaftSieg}
           </p>
           {king && (
             <p className={styles.crown}>
-              👑 {king.seat === me.seat ? 'Du trägst' : `${king.name} trägt`} die Königswürde.
+              👑 {s.koenigswuerde(king.seat === me.seat ? null : king.name)}
             </p>
           )}
           <button
@@ -702,18 +694,18 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
               setSelected(null)
             }}
           >
-            Neue Runde
+            {s.neueRunde}
           </button>
           <button type="button" className={styles.secondaryBtn} onClick={onBack}>
-            Zurück zum Spiel gegen Bots
+            {o.zurueckZuBots}
           </button>
         </section>
       )}
 
-      <section className={styles.log} aria-label="Verlauf">
+      <section className={styles.log} aria-label={s.verlauf}>
         {[...state.log].reverse().map((entry, i) => (
           <p key={`${i}-${entry}`} className={styles.logEntry}>
-            {entry}
+            {protokollZeile(t, entry)}
           </p>
         ))}
       </section>
