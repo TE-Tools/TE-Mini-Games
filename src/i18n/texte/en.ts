@@ -518,6 +518,15 @@ export const en: Texte = {
     abschnittVonBis: (nr: number, von: number, bis: number) =>
       `Section ${nr} · levels ${von}–${bis}`,
     torOeffnet: (level: number) => ` · gate opens after level ${level}`,
+    zone: (nr: number) => `Zone ${nr}`,
+    welt: (nr: number) => `World ${nr}`,
+    fortschrittIn: (zone: string) => `Progress in ${zone}`,
+    torOeffnen: (tor: string) => `Open ${tor}`,
+    torZu: (tor: string, level: number) => `${tor} – only after level ${level}`,
+    gesperrt: (nr: number) => `Level ${nr} locked`,
+    aktuell: (nr: number) => `Level ${nr}, current`,
+    mitTor: (nr: number, tor: string) => `Level ${nr}, ${tor}`,
+    spielen: (nr: number) => `Play level ${nr}`,
   },
 
   sudoku: {
@@ -873,6 +882,61 @@ export const en: Texte = {
       'bao-mond': 'Mooncake',
       'bao-gold': 'Golden bao',
     },
+  },
+
+  trapbound: {
+    zurueck: 'Back',
+    menue: 'Menu',
+    untertitel: 'The floor lies.',
+    weiterLevel: (nr: number) => `CONTINUE · LEVEL ${nr}`,
+    spielen: 'PLAY',
+    levelkarte: 'Level map',
+    sammlung: 'Collection',
+    einstellungen: 'Settings',
+    ueber: 'About the game',
+    fussnote: (geschafft: number, von: number, kristalle: number, tode: number) =>
+      `${geschafft} of ${von} levels · ${kristalle} crystals · ${tode} deaths`,
+    ton: 'Sound',
+    lautstaerke: 'Volume',
+    beben: 'Screen shake',
+    linkshand: 'Left-handed buttons',
+    steuerung: 'Keyboard controls:',
+    steuerungOder: 'or arrow keys,',
+    steuerungLeertaste: 'Space',
+    steuerungSpringen: 'jump,',
+    steuerungNeu: 'restart,',
+    steuerungPause: 'pause.',
+    loeschenFrage: 'Really delete all your progress?',
+    loeschen: 'Delete progress',
+    kristallText1: 'Some levels hide a',
+    kristall: 'shadow crystal',
+    kristallText2:
+      '. It is never on the way to the exit – you only find it by going where you are not supposed to go.',
+    level: (nr: number) => `Level ${nr}`,
+    gefunden: (hab: number, von: number) => `${hab} of ${von} found.`,
+    ueberText:
+      'is a trap platformer: short levels that look harmless and are not. Dying is part of it; every death can be explained, and after each one you are straight back in.',
+    ueberEigen:
+      'Developed independently for TE-Mini Games – own character, own world, own levels, own traps. All graphics and sounds are created in the browser; no third-party assets are used.',
+    ueberWelten:
+      'World 1 “The Caves” with ten levels is finished. The levels are stored as data, so further worlds – factory, tower, twisted world – can be added without rebuilding the game engine.',
+    tippTuer: 'Head right to the door.',
+    karte: 'Map',
+    todeTitel: 'Deaths in this run',
+    neuStarten: 'Restart level',
+    pause: 'Pause',
+    vollbild: 'Full screen',
+    links: 'left',
+    rechts: 'right',
+    springen: 'jump',
+    weiter: 'Next',
+    neustart: 'Restart',
+    ausgang: 'Exit reached',
+    ergebnis: (punkte: number, xp: number) => `${punkte} points · +${xp} XP`,
+    zeitTode: (zeit: string, tode: number) =>
+      `${zeit} seconds · ${tode} ${tode === 1 ? 'death' : 'deaths'}`,
+    kristallGefunden: ' · crystal found ◆',
+    nochmal: 'Again',
   },
 
   allgemein: {

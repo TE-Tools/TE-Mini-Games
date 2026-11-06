@@ -524,6 +524,15 @@ export const de = {
     abschnittVonBis: (nr: number, von: number, bis: number) =>
       `Abschnitt ${nr} · Level ${von}–${bis}`,
     torOeffnet: (level: number) => ` · Tor öffnet nach Level ${level}`,
+    zone: (nr: number) => `Zone ${nr}`,
+    welt: (nr: number) => `Welt ${nr}`,
+    fortschrittIn: (zone: string) => `Fortschritt in ${zone}`,
+    torOeffnen: (tor: string) => `${tor} öffnen`,
+    torZu: (tor: string, level: number) => `${tor} – erst nach Level ${level}`,
+    gesperrt: (nr: number) => `Level ${nr} gesperrt`,
+    aktuell: (nr: number) => `Level ${nr}, aktuell`,
+    mitTor: (nr: number, tor: string) => `Level ${nr}, ${tor}`,
+    spielen: (nr: number) => `Level ${nr} spielen`,
   },
 
   sudoku: {
@@ -880,6 +889,61 @@ export const de = {
       'bao-mond': 'Mondkuchen',
       'bao-gold': 'Goldener Bao',
     },
+  },
+
+  trapbound: {
+    zurueck: 'Zurück',
+    menue: 'Menü',
+    untertitel: 'Der Boden lügt.',
+    weiterLevel: (nr: number) => `WEITER · LEVEL ${nr}`,
+    spielen: 'SPIELEN',
+    levelkarte: 'Levelkarte',
+    sammlung: 'Sammlung',
+    einstellungen: 'Einstellungen',
+    ueber: 'Über das Spiel',
+    fussnote: (geschafft: number, von: number, kristalle: number, tode: number) =>
+      `${geschafft} von ${von} Leveln · ${kristalle} Kristalle · ${tode} Tode`,
+    ton: 'Ton',
+    lautstaerke: 'Lautstärke',
+    beben: 'Bildschirm wackeln',
+    linkshand: 'Knöpfe für Linkshänder',
+    steuerung: 'Steuerung am Rechner:',
+    steuerungOder: 'oder Pfeiltasten,',
+    steuerungLeertaste: 'Leertaste',
+    steuerungSpringen: 'springen,',
+    steuerungNeu: 'neu starten,',
+    steuerungPause: 'Pause.',
+    loeschenFrage: 'Wirklich den ganzen Fortschritt löschen?',
+    loeschen: 'Fortschritt löschen',
+    kristallText1: 'In manchen Leveln liegt ein',
+    kristall: 'Schattenkristall',
+    kristallText2:
+      '. Er ist nie auf dem Weg zum Ausgang – man findet ihn nur, wenn man dorthin geht, wo man eigentlich nicht hin soll.',
+    level: (nr: number) => `Level ${nr}`,
+    gefunden: (hab: number, von: number) => `${hab} von ${von} gefunden.`,
+    ueberText:
+      'ist ein Fallen-Jump-and-Run: kurze Level, die harmlos aussehen und es nicht sind. Sterben gehört dazu; jeder Tod ist erklärbar, und nach dem Tod geht es sofort weiter.',
+    ueberEigen:
+      'Eigenständig entwickelt für TE-Mini Games – eigene Figur, eigene Welt, eigene Level, eigene Fallen. Alle Grafiken und Töne entstehen im Browser, es werden keine fremden Vorlagen verwendet.',
+    ueberWelten:
+      'Welt 1 „Die Höhlen“ mit zehn Leveln ist fertig. Die Level liegen als Daten vor, damit weitere Welten – Fabrik, Turm, verdrehte Welt – ohne Umbau der Spielengine dazukommen können.',
+    tippTuer: 'Nach rechts zur Tür.',
+    karte: 'Karte',
+    todeTitel: 'Tode in diesem Anlauf',
+    neuStarten: 'Level neu starten',
+    pause: 'Pause',
+    vollbild: 'Vollbild',
+    links: 'links',
+    rechts: 'rechts',
+    springen: 'springen',
+    weiter: 'Weiter',
+    neustart: 'Neu starten',
+    ausgang: 'Ausgang erreicht',
+    ergebnis: (punkte: number, xp: number) => `${punkte} Punkte · +${xp} XP`,
+    zeitTode: (zeit: string, tode: number) =>
+      `${zeit} Sekunden · ${tode} ${tode === 1 ? 'Tod' : 'Tode'}`,
+    kristallGefunden: ' · Kristall gefunden ◆',
+    nochmal: 'Nochmal',
   },
 
   allgemein: {

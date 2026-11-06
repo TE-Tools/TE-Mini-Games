@@ -241,7 +241,7 @@ export function LevelMap({
       </p>
       <p className={styles.zoneLine} style={zoneStyle(zone)}>
         <span className={styles.zoneBadge}>
-          {aufbau === ZEITREISE ? `Zone ${zone.index}` : `Welt ${zone.index}`}
+          {aufbau === ZEITREISE ? t.levelkarte.zone(zone.index) : t.levelkarte.welt(zone.index)}
         </span>
         <strong>{zone.name}</strong>
         <span className={styles.zoneProgress}>
@@ -255,7 +255,7 @@ export function LevelMap({
         aria-valuemin={0}
         aria-valuemax={zoneGroesse}
         aria-valuenow={positionInZone}
-        aria-label={`Fortschritt in ${zone.name}`}
+        aria-label={t.levelkarte.fortschrittIn(zone.name)}
       >
         <span
           className={styles.zoneFuellung}
@@ -305,8 +305,8 @@ export function LevelMap({
                 onClick={openGate}
                 aria-label={
                   gateOpen
-                    ? `${segment.gateName} öffnen`
-                    : `${segment.gateName} – erst nach Level ${to}`
+                    ? t.levelkarte.torOeffnen(segment.gateName)
+                    : t.levelkarte.torZu(segment.gateName, to)
                 }
               >
                 <span className={styles.gateWing} aria-hidden="true" />
@@ -409,12 +409,12 @@ export function LevelMap({
                   aria-current={isCurrent ? 'step' : undefined}
                   aria-label={
                     isLocked
-                      ? `Level ${L} gesperrt`
+                      ? t.levelkarte.gesperrt(L)
                       : isCurrent
-                        ? `Level ${L}, aktuell`
+                        ? t.levelkarte.aktuell(L)
                         : isZoneGateLevel
-                          ? `Level ${L}, ${levelZone.gateName}`
-                          : `Level ${L} spielen`
+                          ? t.levelkarte.mitTor(L, levelZone.gateName)
+                          : t.levelkarte.spielen(L)
                   }
                 >
                   <span className={styles.nodeNumber}>{L}</span>

@@ -32,6 +32,7 @@ import { trySyncNow } from '@/services/remoteSync'
 import { LevelMap } from '@/components/level-map/LevelMap'
 import { getOrCreateGuestProfile } from '@/offline'
 import { zeichne } from './TrapboundBild'
+import { useSprache } from '@/i18n/sprache'
 import styles from './TrapboundPage.module.css'
 
 type Ansicht = 'menue' | 'karte' | 'spiel' | 'einstellungen' | 'sammlung' | 'ueber'
@@ -52,6 +53,8 @@ interface Ende {
 }
 
 export function TrapboundPage() {
+  const { t } = useSprache()
+  const tb = t.trapbound
   const [ansicht, setAnsicht] = useState<Ansicht>('menue')
   const [levelNr, setLevelNr] = useState(1)
   const [stand, setStand] = useState<Stand>(() => leseStand())
@@ -152,11 +155,11 @@ export function TrapboundPage() {
       setHud({ tode: 0, zeit: 0, kristall: false })
       setEnde(null)
       setPause(false)
-      setTipp(daten.nr <= 3 ? 'Nach rechts zur Tür.' : '')
+      setTipp(daten.nr <= 3 ? tb.tippTuer : '')
       setAnsicht('spiel')
       warmeVor(nr + 1)
     },
-    [warmeVor],
+    [warmeVor, tb.tippTuer],
   )
 
   // Und schon im Menü das Level vorbereiten, auf das der große Knopf zeigt.
@@ -416,12 +419,12 @@ export function TrapboundPage() {
       <main className={styles.page}>
         <header className={styles.top}>
           <Link to="/" className={styles.back}>
-            {'←'} Zurück
+            {'←'} {tb.zurueck}
           </Link>
         </header>
         <div className={styles.titelblock}>
           <h1 className={styles.titel}>TRAPBOUND</h1>
-          <p className={styles.untertitel}>Der Boden lügt.</p>
+          <p className={styles.untertitel}>{tb.untertitel}</p>
         </div>
         <div className={styles.menue}>
           <button
@@ -429,32 +432,31 @@ export function TrapboundPage() {
             className={styles.menueHaupt}
             onClick={() => starteLevel(Math.min(offen, LEVEL_ANZAHL))}
           >
-            {geschaffte(stand) > 0 ? `WEITER · LEVEL ${offen}` : 'SPIELEN'}
+            {geschaffte(stand) > 0 ? tb.weiterLevel(offen) : tb.spielen}
           </button>
           <button type="button" className={styles.menueKnopf} onClick={() => setAnsicht('karte')}>
-            Levelkarte
+            {tb.levelkarte}
           </button>
           <button
             type="button"
             className={styles.menueKnopf}
             onClick={() => setAnsicht('sammlung')}
           >
-            Sammlung
+            {tb.sammlung}
           </button>
           <button
             type="button"
             className={styles.menueKnopf}
             onClick={() => setAnsicht('einstellungen')}
           >
-            Einstellungen
+            {tb.einstellungen}
           </button>
           <button type="button" className={styles.menueKnopf} onClick={() => setAnsicht('ueber')}>
-            Über das Spiel
+            {tb.ueber}
           </button>
         </div>
         <p className={styles.fussnote}>
-          {geschaffte(stand)} von {LEVEL_ANZAHL} Leveln · {kristalle(stand)} Kristalle ·{' '}
-          {todeGesamt(stand)} Tode
+          {tb.fussnote(geschaffte(stand), LEVEL_ANZAHL, kristalle(stand), todeGesamt(stand))}
         </p>
       </main>
     )
@@ -467,9 +469,9 @@ export function TrapboundPage() {
       <main className={styles.page}>
         <header className={styles.top}>
           <button type="button" className={styles.back} onClick={() => setAnsicht('menue')}>
-            {'←'} Menü
+            {'←'} {tb.menue}
           </button>
-          <h1 className={styles.kopfTitel}>Levelkarte</h1>
+          <h1 className={styles.kopfTitel}>{tb.levelkarte}</h1>
           <span className={styles.kopfWert}>
             {geschaffte(stand)}/{LEVEL_ANZAHL}
           </span>
@@ -481,7 +483,7 @@ export function TrapboundPage() {
           maxLevel={LEVEL_ANZAHL}
           aufbau={TRAP_KARTE}
           onSelectLevel={starteLevel}
-          gameLabel="Trapbound"
+          gameLabel={t.spiele.trapbound}
         />
       </main>
     )
@@ -494,13 +496,13 @@ export function TrapboundPage() {
       <main className={styles.page}>
         <header className={styles.top}>
           <button type="button" className={styles.back} onClick={() => setAnsicht('menue')}>
-            {'←'} Menü
+            {'←'} {tb.menue}
           </button>
-          <h1 className={styles.kopfTitel}>Einstellungen</h1>
+          <h1 className={styles.kopfTitel}>{tb.einstellungen}</h1>
         </header>
         <div className={styles.karte2}>
           <label className={styles.reihe}>
-            <span>Ton</span>
+            <span>{tb.ton}</span>
             <input
               type="checkbox"
               checked={einst.ton && tonAn()}
@@ -511,7 +513,7 @@ export function TrapboundPage() {
             />
           </label>
           <label className={styles.reihe}>
-            <span>Lautstärke</span>
+            <span>{tb.lautstaerke}</span>
             <input
               type="range"
               min={0}
@@ -528,7 +530,7 @@ export function TrapboundPage() {
             />
           </label>
           <label className={styles.reihe}>
-            <span>Bildschirm wackeln</span>
+            <span>{tb.beben}</span>
             <input
               type="checkbox"
               checked={einst.beben}
@@ -541,7 +543,7 @@ export function TrapboundPage() {
             />
           </label>
           <label className={styles.reihe}>
-            <span>Knöpfe für Linkshänder</span>
+            <span>{tb.linkshand}</span>
             <input
               type="checkbox"
               checked={einst.linkshand}
@@ -554,20 +556,21 @@ export function TrapboundPage() {
             />
           </label>
           <p className={styles.hinweis}>
-            Steuerung am Rechner: <b>A</b>/<b>D</b> oder Pfeiltasten, <b>W</b>/<b>Leertaste</b>{' '}
-            springen, <b>R</b> neu starten, <b>Esc</b> Pause.
+            {tb.steuerung} <b>A</b>/<b>D</b> {tb.steuerungOder} <b>W</b>/
+            <b>{tb.steuerungLeertaste}</b> {tb.steuerungSpringen} <b>R</b> {tb.steuerungNeu}{' '}
+            <b>Esc</b> {tb.steuerungPause}
           </p>
           <button
             type="button"
             className={styles.gefahrKnopf}
             onClick={() => {
-              if (!window.confirm('Wirklich den ganzen Fortschritt löschen?')) return
+              if (!window.confirm(tb.loeschenFrage)) return
               loescheStand()
               setStand(leseStand())
               setLevelNr(1)
             }}
           >
-            Fortschritt löschen
+            {tb.loeschen}
           </button>
         </div>
       </main>
@@ -581,14 +584,14 @@ export function TrapboundPage() {
       <main className={styles.page}>
         <header className={styles.top}>
           <button type="button" className={styles.back} onClick={() => setAnsicht('menue')}>
-            {'←'} Menü
+            {'←'} {tb.menue}
           </button>
-          <h1 className={styles.kopfTitel}>Sammlung</h1>
+          <h1 className={styles.kopfTitel}>{tb.sammlung}</h1>
         </header>
         <div className={styles.karte2}>
           <p className={styles.hinweis}>
-            In manchen Leveln liegt ein <b>Schattenkristall</b>. Er ist nie auf dem Weg zum Ausgang
-            – man findet ihn nur, wenn man dorthin geht, wo man eigentlich nicht hin soll.
+            {tb.kristallText1} <b>{tb.kristall}</b>
+            {tb.kristallText2}
           </p>
           <div className={styles.kristallGitter}>
             {levelMitKristall().map((l) => {
@@ -596,13 +599,13 @@ export function TrapboundPage() {
               return (
                 <div key={l.nr} className={styles.kristallPlatz}>
                   <span className={gefunden ? styles.kristallDa : styles.kristallWeg}>◆</span>
-                  <span>{gefunden ? l.name : `Level ${l.nr}`}</span>
+                  <span>{gefunden ? l.name : tb.level(l.nr)}</span>
                 </div>
               )
             })}
           </div>
           <p className={styles.hinweis}>
-            {kristalle(stand)} von {levelMitKristall().length} gefunden.
+            {tb.gefunden(kristalle(stand), levelMitKristall().length)}
           </p>
         </div>
       </main>
@@ -616,26 +619,16 @@ export function TrapboundPage() {
       <main className={styles.page}>
         <header className={styles.top}>
           <button type="button" className={styles.back} onClick={() => setAnsicht('menue')}>
-            {'←'} Menü
+            {'←'} {tb.menue}
           </button>
-          <h1 className={styles.kopfTitel}>Über das Spiel</h1>
+          <h1 className={styles.kopfTitel}>{tb.ueber}</h1>
         </header>
         <div className={styles.karte2}>
           <p>
-            <b>TRAPBOUND</b> ist ein Fallen-Jump-and-Run: kurze Level, die harmlos aussehen und es
-            nicht sind. Sterben gehört dazu; jeder Tod ist erklärbar, und nach dem Tod geht es
-            sofort weiter.
+            <b>TRAPBOUND</b> {tb.ueberText}
           </p>
-          <p className={styles.hinweis}>
-            Eigenständig entwickelt für TE-Mini Games – eigene Figur, eigene Welt, eigene Level,
-            eigene Fallen. Alle Grafiken und Töne entstehen im Browser, es werden keine fremden
-            Vorlagen verwendet.
-          </p>
-          <p className={styles.hinweis}>
-            Welt 1 „Die Höhlen“ mit zehn Leveln ist fertig. Die Level liegen als Daten vor, damit
-            weitere Welten – Fabrik, Turm, verdrehte Welt – ohne Umbau der Spielengine dazukommen
-            können.
-          </p>
+          <p className={styles.hinweis}>{tb.ueberEigen}</p>
+          <p className={styles.hinweis}>{tb.ueberWelten}</p>
         </div>
       </main>
     )
@@ -651,7 +644,7 @@ export function TrapboundPage() {
     <main className={styles.spielSeite}>
       <div className={styles.hud}>
         <button type="button" className={styles.hudKnopf} onClick={() => setAnsicht('karte')}>
-          Karte
+          {tb.karte}
         </button>
         <div className={styles.hudMitte}>
           <span className={styles.hudLevel}>
@@ -662,7 +655,7 @@ export function TrapboundPage() {
           </span>
         </div>
         <div className={styles.hudRechts}>
-          <span className={styles.hudWert} title="Tode in diesem Anlauf">
+          <span className={styles.hudWert} title={tb.todeTitel}>
             ☠ {hud.tode}
           </span>
           <span className={styles.hudWert}>{hud.zeit.toFixed(1)}s</span>
@@ -671,7 +664,7 @@ export function TrapboundPage() {
               type="button"
               className={styles.werkzeug}
               onClick={neustart}
-              aria-label="Level neu starten"
+              aria-label={tb.neuStarten}
             >
               ↻
             </button>
@@ -679,7 +672,7 @@ export function TrapboundPage() {
               type="button"
               className={styles.werkzeug}
               onClick={() => setPause((p) => !p)}
-              aria-label="Pause"
+              aria-label={tb.pause}
             >
               {pause ? '▶' : '❚❚'}
             </button>
@@ -687,7 +680,7 @@ export function TrapboundPage() {
               type="button"
               className={styles.werkzeug}
               onClick={vollbild}
-              aria-label="Vollbild"
+              aria-label={tb.vollbild}
             >
               ⛶
             </button>
@@ -706,7 +699,7 @@ export function TrapboundPage() {
             <button
               type="button"
               className={styles.padKnopf}
-              aria-label="links"
+              aria-label={tb.links}
               onPointerDown={(e) => {
                 e.preventDefault()
                 halte('links', true)
@@ -720,7 +713,7 @@ export function TrapboundPage() {
             <button
               type="button"
               className={styles.padKnopf}
-              aria-label="rechts"
+              aria-label={tb.rechts}
               onPointerDown={(e) => {
                 e.preventDefault()
                 halte('rechts', true)
@@ -735,7 +728,7 @@ export function TrapboundPage() {
           <button
             type="button"
             className={`${styles.padKnopf} ${styles.padSprung}`}
-            aria-label="springen"
+            aria-label={tb.springen}
             onPointerDown={(e) => {
               e.preventDefault()
               halte('sprung', true)
@@ -751,17 +744,17 @@ export function TrapboundPage() {
         {pause && !ende && (
           <div className={styles.overlay}>
             <div className={styles.dialog}>
-              <h2>Pause</h2>
+              <h2>{tb.pause}</h2>
               <p className={styles.hinweis}>{daten.name}</p>
               <div className={styles.dialogKnoepfe}>
                 <button type="button" onClick={() => setPause(false)}>
-                  Weiter
+                  {tb.weiter}
                 </button>
                 <button type="button" onClick={neustart}>
-                  Neu starten
+                  {tb.neustart}
                 </button>
                 <button type="button" onClick={() => setAnsicht('karte')}>
-                  Karte
+                  {tb.karte}
                 </button>
               </div>
             </div>
@@ -774,24 +767,22 @@ export function TrapboundPage() {
               <div className={styles.sterne} aria-hidden="true">
                 {'★'.repeat(Math.max(1, ende.sterne))}
               </div>
-              <h2>Ausgang erreicht</h2>
-              <p>
-                {ende.punkte} Punkte · +{ende.xp} XP
-              </p>
+              <h2>{tb.ausgang}</h2>
+              <p>{tb.ergebnis(ende.punkte, ende.xp)}</p>
               <p className={styles.hinweis}>
-                {ende.zeit.toFixed(1)} Sekunden · {ende.tode} {ende.tode === 1 ? 'Tod' : 'Tode'}
-                {ende.kristall ? ' · Kristall gefunden ◆' : ''}
+                {tb.zeitTode(ende.zeit.toFixed(1), ende.tode)}
+                {ende.kristall ? tb.kristallGefunden : ''}
               </p>
               <div className={styles.dialogKnoepfe}>
                 <button type="button" onClick={() => setAnsicht('karte')}>
-                  Karte
+                  {tb.karte}
                 </button>
                 <button type="button" onClick={neustart}>
-                  Nochmal
+                  {tb.nochmal}
                 </button>
                 {levelNr < LEVEL_ANZAHL && (
                   <button type="button" className={styles.primaer} onClick={weiter}>
-                    Weiter
+                    {tb.weiter}
                   </button>
                 )}
               </div>

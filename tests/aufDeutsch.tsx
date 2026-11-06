@@ -6,15 +6,11 @@
  * deshalb beides: die Sprache ausdrücklich gesetzt und den Provider darüber.
  * Siehe docs/design/zweisprachig/README.md.
  */
-import type { ReactElement, ReactNode } from 'react'
+import type { ReactElement } from 'react'
 import { render } from '@testing-library/react'
 import { SprachProvider } from '@/i18n/SprachProvider'
 
-function Deutsch({ children }: { children: ReactNode }) {
-  return <SprachProvider>{children}</SprachProvider>
-}
-
 export function renderAufDeutsch(ui: ReactElement) {
   localStorage.setItem('te-sprache', 'de')
-  return render(ui, { wrapper: Deutsch })
+  return render(<SprachProvider>{ui}</SprachProvider>)
 }

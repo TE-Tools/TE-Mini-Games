@@ -117,6 +117,14 @@ render(
 )
 ```
 
+Kürzer geht es mit `tests/aufDeutsch.tsx`: Es setzt die Sprache und den
+Provider in einem. Wer einen Baustein ohne Router rendert, ersetzt nur den
+Import:
+
+```ts
+import { renderAufDeutsch as render } from './aufDeutsch'
+```
+
 `tests/sprache.test.tsx` prüft, was TypeScript nicht sieht: ob eine Textfunktion
 in der Übersetzung zur festen Zeichenkette wurde, ob jemand die deutsche
 Fassung kopiert hat, ob ein Text leer blieb. Alle drei Fälle sind
@@ -150,6 +158,7 @@ gegengeprüft -- sie fallen.
 - Die perfekte Sekunde
 - Sudoku vollständig, inklusive der siebzehn Lösungstechniken
 - Impressum, Datenschutzerklärung, Konto löschen (Teil 5)
+- Kniffel solo und online, Bienen-Flow, Squishy Dumplings, Trapbound (Teil 6)
 
 **Offen, gemessen am 6.11.2026** -- Zahl der noch deutschen Textstellen je
 Datei:
@@ -159,24 +168,49 @@ Datei:
 | `pages/play/SchuetzenrundeOnline.tsx`   | 52    |
 | `pages/play/FindeDenImposterOnline.tsx` | 52    |
 | `pages/play/FindeDenImposterPage.tsx`   | 51    |
-| `pages/play/TrapboundPage.tsx`          | 45    |
-| `pages/play/KniffelOnline.tsx`          | 42    |
-| `pages/play/SquishyDumplingsPage.tsx`   | 40    |
 | `pages/play/SchuetzenrundePage.tsx`     | 39    |
 | `pages/play/SchuetzenopolyOnline.tsx`   | 39    |
 | `pages/play/WerBinIchOnline.tsx`        | 37    |
 | `pages/play/TexasHoldemOnline.tsx`      | 37    |
 | `pages/play/MauMauOnline.tsx`           | 35    |
-| `pages/play/BienenFlowPage.tsx`         | 34    |
 | `pages/play/WerBinIchPage.tsx`          | 33    |
 | `pages/play/StadtLandFlussOnline.tsx`   | 33    |
 | `pages/play/SchuetzenopolyPage.tsx`     | 32    |
-| `pages/play/KniffelPage.tsx`            | 31    |
 | `pages/play/StadtLandFlussPage.tsx`     | 26    |
 
 Dazu die Spielmodule unter `src/games/` -- dort steckt viel Inhalt, der nach
 der Regel oben gar nicht übersetzt wird, und wenig Oberfläche, die es soll.
 Vor dem Anfassen trennen.
+
+**Namen aus dem Spielmodul: Kennung behalten, beim Rendern nachschlagen.** So
+sind die Motive von Bienen-Flow, die Sammelknödel von Squishy und die
+Kniffel-Felder gemacht. Das Modul liefert weiter den deutschen Namen als
+Kennung (er steckt in Caches und Tests), die Seite schlägt ihn im Wörterbuch
+nach und fällt sonst auf ihn zurück:
+
+```ts
+const motiv = (b.motive as Record<string, string | undefined>)[cfg.motiv] ?? cfg.motiv
+```
+
+**Protokolle aus der Engine** (Kniffel) bleiben deutsch -- Tests und Logs
+lesen sie. Daneben führt die Engine die letzte Meldung als Daten
+(`KniffelZustand.meldung`), und die Seite sagt sie in ihrer Sprache. An den
+Regeln ändert das nichts. Schützenopoly und die Kartenspiele haben dasselbe
+Muster vor sich.
+
+**Noch deutsch in Teil 6:**
+
+- Trapbound: die Namen der Level, Welten und Abschnitte. Das sind Hunderte,
+  sie stehen in `src/games/trapbound/` und sind Inhalt -- ein eigener Schritt.
+  Der Text „Über das Spiel“ spricht außerdem noch von zehn Leveln in Welt 1;
+  das ist in beiden Sprachen veraltet und eine Sache für Thomas, keine
+  Übersetzung.
+- Die Zonen auf der Levelkarte: Namen, Beschreibungen und Tore der fünf
+  Zeitreise-Zonen (`src/progression/zones.ts`) und der Trapbound-Welten
+  (`src/games/trapbound/welten.ts`). Die festen Texte der Karte selbst
+  (gesperrt, aktuell, Tor öffnen ...) sind seit Teil 6 übersetzt.
+- Fehlermeldungen vom Server (Kniffel online). Sie kommen aus SQL und
+  `RAUM_GESCHLOSSEN_TEXT` aus dem Dienst; das gehört zu den Online-Varianten.
 
 Die Zahl je Datei bekommt man so:
 
@@ -187,8 +221,10 @@ grep -oE ">[^<>{}]*[a-zäöüß]{4,}[^<>{}]*<|'[^']*[äöüßÄÖÜ][^']*'" DATE
 Sie ist eine Hausnummer: Kommentare und Code rutschen mit hinein. Vor dem
 Übersetzen immer in die Datei schauen.
 
-**Vorgeschlagene Reihenfolge:** Die Rechtsseiten sind erledigt. Weiter mit
-den Einzelspieler-Spielen nach Beliebtheit, zuletzt den Online-Varianten.
+**Vorgeschlagene Reihenfolge:** Rechtsseiten und die großen Einzelspieler-Spiele
+sind erledigt. Weiter mit Schützenopoly und den Kartenspielen (Mau-Mau,
+Texas), dann den Partyspielen (Schützenrunde, Imposter, Wer bin ich?,
+Stadt-Land-Fluss), zuletzt den übrigen Online-Varianten.
 
 **Noch offen, unabhängig davon:** 28 Stellen formatieren Zahlen und Daten fest
 mit `toLocaleString('de-DE')`. Sie gehören auf `toLocaleString(sprache)` aus
