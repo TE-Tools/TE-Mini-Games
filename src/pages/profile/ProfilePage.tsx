@@ -110,7 +110,7 @@ export function ProfilePage() {
               setGespeichert(false)
             }}
             maxLength={NAME_MAX}
-            placeholder="Wie sollen dich die anderen sehen?"
+            placeholder={t.profil.namePlatzhalter}
             autoComplete="nickname"
             spellCheck={false}
           />

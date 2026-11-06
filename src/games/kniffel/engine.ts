@@ -56,6 +56,12 @@ export interface KniffelZustand {
   /** Wievielte von dreizehn Runden. */
   runde: number
   protokoll: string[]
+  /**
+   * Dasselbe wie die letzte Protokollzeile, aber als Daten -- damit die
+   * Oberfläche sie in ihrer Sprache sagen kann. Das Protokoll selbst
+   * bleibt deutsch. Fehlt bei Partien, die vor dem 06.11.2026 begannen.
+   */
+  meldung?: KniffelMeldung
   seed: number
   rngZaehler: number
   siegerId: string | null
@@ -63,6 +69,13 @@ export interface KniffelZustand {
 }
 
 export const ZUSTAND_VERSION = 1
+
+export type KniffelMeldung =
+  | { art: 'start' }
+  | { art: 'eingetragen'; name: string; punkte: number; zusatz: boolean }
+  | { art: 'gestrichen'; name: string; zusatz: boolean }
+  | { art: 'sieg'; name: string; punkte: number }
+  | { art: 'endstand'; punkte: number }
 
 export interface SpielerEinrichtung {
   name: string
@@ -105,6 +118,7 @@ export function erstellePartie(optionen: PartieOptionen): KniffelZustand {
     wurfNummer: 0,
     runde: 1,
     protokoll: ['Der Becher steht bereit. Viel Glück!'],
+    meldung: { art: 'start' },
     seed,
     rngZaehler: 0,
     siegerId: null,
@@ -122,8 +136,12 @@ export function spielerMit(state: KniffelZustand, id: string): KniffelSpieler | 
   return state.spieler.find((s) => s.id === id)
 }
 
-function mitLog(state: KniffelZustand, text: string): KniffelZustand {
-  return { ...state, protokoll: [...state.protokoll, text].slice(-40) }
+function mitLog(state: KniffelZustand, text: string, meldung?: KniffelMeldung): KniffelZustand {
+  return {
+    ...state,
+    protokoll: [...state.protokoll, text].slice(-40),
+    meldung: meldung ?? state.meldung,
+  }
 }
 
 function mitSpieler(
@@ -231,6 +249,9 @@ export function eintragen(state: KniffelZustand, feld: KategorieId): KniffelZust
     punkte > 0
       ? `${spieler.name} trägt ${punkte} Punkte ein.`
       : `${spieler.name} muss ein Feld streichen.`,
+    punkte > 0
+      ? { art: 'eingetragen', name: spieler.name, punkte, zusatz }
+      : { art: 'gestrichen', name: spieler.name, zusatz },
   )
   return naechsterZug(s)
 }
@@ -277,6 +298,9 @@ export function beenden(state: KniffelZustand): KniffelZustand {
       state.spieler.length === 1
         ? `Endstand: ${sieger.punkte} Punkte.`
         : `${sieger.name} gewinnt mit ${sieger.punkte} Punkten.`,
+      state.spieler.length === 1
+        ? { art: 'endstand', punkte: sieger.punkte }
+        : { art: 'sieg', name: sieger.name, punkte: sieger.punkte },
     )
   }
   return s

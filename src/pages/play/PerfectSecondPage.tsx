@@ -252,7 +252,7 @@ export function PerfectSecondPage() {
           type="button"
           className={styles.back}
           onClick={() => (phase === 'map' ? navigate('/') : setPhase('map'))}
-          aria-label="Zurück"
+          aria-label={t.allgemein.zurueck}
         >
           ←
         </button>

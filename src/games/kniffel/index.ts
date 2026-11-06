@@ -62,6 +62,7 @@ export type {
   SpielerEinrichtung,
   PartieOptionen,
   Endstand,
+  KniffelMeldung,
 } from './engine'
 
 export { kiSchritt, kiFeldwahl, kiHaltewahl } from './ki'

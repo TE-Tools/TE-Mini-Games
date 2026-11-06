@@ -31,9 +31,11 @@ import {
 import { RAUM_PARAM } from '@/services/raeume'
 import { spielerNameOderDu } from '@/services/spielername'
 import { spiele, setzeTon, tonAn } from '@/services/sound'
+import { useSprache } from '@/i18n/sprache'
 
 import { Einsatzleiste } from './texas/Einsatzleiste'
 import { PokerTisch } from './texas/PokerTisch'
+import { protokollZeile } from './texas/texasText'
 import { TexasHoldemOnline } from './TexasHoldemOnline'
 import { buchePartie } from './texas/partieBuchen'
 import shell from './PlayShell.module.css'
@@ -41,15 +43,14 @@ import styles from './TexasHoldemPage.module.css'
 
 type Ansicht = 'menue' | 'aufbau' | 'online' | 'tisch'
 
-const STUFEN: { id: KiStufe; label: string; erklaerung: string }[] = [
-  { id: 'leicht', label: 'Leicht', erklaerung: 'Geht fast immer mit und erhöht selten.' },
-  { id: 'normal', label: 'Normal', erklaerung: 'Rechnet mit dem Topf und spielt solide.' },
-  { id: 'schwer', label: 'Schwer', erklaerung: 'Rechnet knapp, setzt Druck auf und blufft.' },
-]
+/** Die Texte dazu stehen im Wörterbuch unter texas.stufen / texas.stufenText. */
+const STUFEN: readonly KiStufe[] = ['leicht', 'normal', 'schwer']
 
+/** Namen, keine Wörter -- sie bleiben in jeder Sprache gleich. */
 const GEGNER_NAMEN = ['Ida', 'Bruno', 'Lotte', 'Hans', 'Mira']
 
 export function TexasHoldemPage() {
+  const { t } = useSprache()
   const navigate = useNavigate()
   // Mit ?raum=CODE (von der Seite „Offene Spiele") geht es direkt in den
   // Online-Teil; der tritt dann von selbst bei.
@@ -155,10 +156,7 @@ export function TexasHoldemPage() {
       <main className={shell.page}>
         <Kopf onZurueck={() => navigate('/')} ton={ton} onTon={tonUmschalten} />
         <section className={styles.menue}>
-          <p className={styles.einleitung}>
-            Zwei Karten für dich, fünf für alle in der Mitte. Wer am Ende die besten fünf aus sieben
-            hat, nimmt den Topf – oder alle anderen werfen vorher weg.
-          </p>
+          <p className={styles.einleitung}>{t.texas.einleitung}</p>
           <button
             type="button"
             className={styles.grosserKnopf}
@@ -168,8 +166,8 @@ export function TexasHoldemPage() {
               🃏
             </span>
             <span>
-              <strong>Turnier gegen den Rechner</strong>
-              <small>Alle mit {START_CHIPS} Chips, bis einer alles hat</small>
+              <strong>{t.texas.turnier}</strong>
+              <small>{t.texas.turnierText(START_CHIPS)}</small>
             </span>
           </button>
           <button
@@ -181,15 +179,13 @@ export function TexasHoldemPage() {
               🌐
             </span>
             <span>
-              <strong>Online mit anderen</strong>
-              <small>Tisch aufmachen, Code weitergeben – bis zu sechs</small>
+              <strong>{t.texas.mitAnderen}</strong>
+              <small>{t.texas.onlineText}</small>
             </span>
           </button>
-          <p className={styles.spielgeld}>
-            Gespielt wird mit Spielgeld. Es gibt nichts zu kaufen und nichts zu gewinnen.
-          </p>
+          <p className={styles.spielgeld}>{t.texas.spielgeld}</p>
           <Link to="/" className={shell.homeLink}>
-            Zum Menü
+            {t.texas.zumMenue}
           </Link>
         </section>
       </main>
@@ -210,10 +206,10 @@ export function TexasHoldemPage() {
       <main className={shell.page}>
         <Kopf onZurueck={() => setAnsicht('menue')} ton={ton} onTon={tonUmschalten} />
         <section className={shell.section}>
-          <h2 className={styles.ueberschrift}>Turnier gegen den Rechner</h2>
+          <h2 className={styles.ueberschrift}>{t.texas.turnier}</h2>
 
           <fieldset className={styles.gruppe}>
-            <legend>Wie viele Gegner?</legend>
+            <legend>{t.texas.wieVieleGegner}</legend>
             <div className={styles.knopfreihe}>
               {[1, 2, 3, 4, 5].map((n) => (
                 <button
@@ -230,24 +226,24 @@ export function TexasHoldemPage() {
           </fieldset>
 
           <fieldset className={styles.gruppe}>
-            <legend>Wie stark?</legend>
+            <legend>{t.texas.wieStark}</legend>
             <div className={styles.knopfreihe}>
               {STUFEN.map((s) => (
                 <button
-                  key={s.id}
+                  key={s}
                   type="button"
-                  className={stufe === s.id ? styles.wahlAn : styles.wahlAus}
-                  onClick={() => setStufe(s.id)}
+                  className={stufe === s ? styles.wahlAn : styles.wahlAus}
+                  onClick={() => setStufe(s)}
                 >
-                  {s.label}
+                  {t.texas.stufen[s]}
                 </button>
               ))}
             </div>
-            <p className={styles.erklaerung}>{STUFEN.find((s) => s.id === stufe)?.erklaerung}</p>
+            <p className={styles.erklaerung}>{t.texas.stufenText[stufe]}</p>
           </fieldset>
 
           <button type="button" className={styles.start} onClick={starten}>
-            🃏 Los geht&apos;s
+            {t.texas.losGehts}
           </button>
         </section>
       </main>
@@ -292,8 +288,8 @@ export function TexasHoldemPage() {
         <section className={shell.section}>
           <p className={gewonnen ? shell.correct : shell.wrong}>
             {gewonnen
-              ? '🏆 Turnier gewonnen!'
-              : `Platz ${platz ?? '–'} von ${zustand.spieler.length}`}
+              ? t.texas.gewonnen
+              : t.texas.platzVon(String(platz ?? '–'), zustand.spieler.length)}
           </p>
           <ol className={styles.endstand}>
             {[...zustand.spieler]
@@ -301,27 +297,25 @@ export function TexasHoldemPage() {
               .map((s) => (
                 <li key={s.id} className={styles.endEintrag}>
                   <span className={styles.endPlatz}>{s.platz ?? '–'}.</span>
-                  <span className={styles.endName}>{s.mensch ? 'Du' : s.name}</span>
-                  <span className={styles.endWert}>{s.chips} Chips</span>
+                  <span className={styles.endName}>{s.mensch ? t.texas.du : s.name}</span>
+                  <span className={styles.endWert}>{t.texas.chips(s.chips)}</span>
                 </li>
               ))}
           </ol>
-          <p className={styles.handZahl}>
-            {zustand.handNr} {zustand.handNr === 1 ? 'Hand' : 'Hände'} gespielt
-          </p>
+          <p className={styles.handZahl}>{t.texas.haendeGespielt(zustand.handNr)}</p>
           <div className={shell.resultActions}>
             <button type="button" className={shell.primaryBtn} onClick={starten}>
-              Noch ein Turnier
+              {t.texas.nochEinTurnier}
             </button>
             <button
               type="button"
               className={shell.secondaryBtn}
               onClick={() => setAnsicht('menue')}
             >
-              Zurück
+              {t.texas.zurueck}
             </button>
             <Link to="/" className={shell.homeLink}>
-              Zum Menü
+              {t.texas.zumMenue}
             </Link>
           </div>
         </section>
@@ -344,7 +338,7 @@ export function TexasHoldemPage() {
       <PokerTisch
         spieler={zustand.spieler.map((s) => ({
           id: s.id,
-          name: s.mensch ? 'Du' : s.name,
+          name: s.mensch ? t.texas.du : s.name,
           karten: s.karten,
           chips: s.chips,
           einsatz: s.einsatz,
@@ -359,14 +353,19 @@ export function TexasHoldemPage() {
         blinds={{ klein, gross }}
         gezeigt={gezeigt}
         zaehltMit={zaehltMit}
-        protokoll={zustand.protokoll}
+        // Die Engine schreibt deutsch; gesagt wird in der Sprache der
+        // Oberfläche. Beide Seiten gehen durch dieselbe Übersetzung, damit
+        // der Tisch das Ergebnis im Protokoll wiedererkennt.
+        protokoll={zustand.protokoll.map((zeile) => protokollZeile(t, zeile))}
         ergebnisText={
-          zustand.ergebnis && zustand.phase === 'showdown' ? zustand.ergebnis.text : null
+          zustand.ergebnis && zustand.phase === 'showdown'
+            ? protokollZeile(t, zustand.ergebnis.text)
+            : null
         }
         aktionen={
           zustand.phase === 'showdown' ? (
             <button type="button" className={styles.start} onClick={weiterSpielen}>
-              Nächste Hand
+              {t.texas.naechsteHand}
             </button>
           ) : meinZug ? (
             <Einsatzleiste
@@ -384,8 +383,8 @@ export function TexasHoldemPage() {
           ) : (
             <p className={styles.wartet} aria-live="polite">
               {ich?.status === 'aktiv' || ich?.status === 'allin'
-                ? `${zustand.spieler[zustand.amZug]?.name ?? 'Jemand'} ist dran …`
-                : 'Die anderen spielen die Hand zu Ende …'}
+                ? t.texas.istDran(zustand.spieler[zustand.amZug]?.name ?? t.texas.jemand)
+                : t.texas.andereSpielenZuEnde}
             </p>
           )
         }
@@ -403,9 +402,10 @@ function Kopf({
   ton: boolean
   onTon: () => void
 }) {
+  const { t } = useSprache()
   return (
     <header className={shell.header}>
-      <button type="button" className={shell.back} onClick={onZurueck} aria-label="Zurück">
+      <button type="button" className={shell.back} onClick={onZurueck} aria-label={t.texas.zurueck}>
         ←
       </button>
       <h1 className={shell.title}>Texas Hold&apos;em</h1>
@@ -413,7 +413,7 @@ function Kopf({
         type="button"
         className={styles.tonKnopf}
         onClick={onTon}
-        aria-label={ton ? 'Ton ausschalten' : 'Ton einschalten'}
+        aria-label={ton ? t.texas.tonAus : t.texas.tonAn}
       >
         {ton ? '🔊' : '🔈'}
       </button>

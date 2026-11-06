@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getCurrentUser } from '@/auth/authService'
+import { spielName, useSprache } from '@/i18n/sprache'
 import { ermittleSpielerName, istEchterName } from '@/services/spielername'
 import { aktiveRegeln, passt, type Karte, type Spielart } from '@/games/maumau'
 import {
@@ -60,9 +61,11 @@ function vorlage(art: Spielart): HausregelStand {
 }
 
 export function MauMauOnline({ spiel, onZurueck }: Props) {
+  const { t } = useSprache()
   const klassisch = spiel === 'maumau'
-  const titel = klassisch ? 'Mau-Mau online' : 'Letzte Karte online'
-  const ansage = klassisch ? 'Mau!' : 'Letzte Karte!'
+  const name = spielName(t, spiel, klassisch ? 'Mau-Mau' : 'Letzte Karte')
+  const titel = t.maumau.online.titel(name)
+  const ansage = klassisch ? t.maumau.ansageMau : t.maumau.ansageLetzteKarte
 
   const [matchId, setMatchId] = useState<string | null>(null)
   const [state, setState] = useState<MauOnlineState | null>(null)
@@ -89,23 +92,26 @@ export function MauMauOnline({ spiel, onZurueck }: Props) {
     setHausregeln(vorlage(neu))
   }, [])
 
-  const laden = useCallback(async (id: string) => {
-    try {
-      const neu = await fetchMauMauState(id)
-      setState(neu)
-      setFehler(null)
-    } catch (err) {
-      // Der Server löscht Räume, in denen zwanzig Minuten niemand mehr war
-      // (Migration 018). Dann zurück in die Lobby, mit Erklärung.
-      if (istRaumWeg(err) && aktuellerRaum.current === id) {
-        setMatchId(null)
-        setState(null)
-        setFehler(RAUM_GESCHLOSSEN_TEXT)
-        return
+  const laden = useCallback(
+    async (id: string) => {
+      try {
+        const neu = await fetchMauMauState(id)
+        setState(neu)
+        setFehler(null)
+      } catch (err) {
+        // Der Server löscht Räume, in denen zwanzig Minuten niemand mehr war
+        // (Migration 018). Dann zurück in die Lobby, mit Erklärung.
+        if (istRaumWeg(err) && aktuellerRaum.current === id) {
+          setMatchId(null)
+          setState(null)
+          setFehler(RAUM_GESCHLOSSEN_TEXT)
+          return
+        }
+        setFehler(err instanceof Error ? err.message : t.maumau.online.ladeFehler)
       }
-      setFehler(err instanceof Error ? err.message : 'Die Runde ließ sich nicht laden.')
-    }
-  }, [])
+    },
+    [t.maumau.online.ladeFehler],
+  )
 
   /* Erst nachsehen, ob jemand angemeldet ist -- ohne Konto den Knopf
      anzubieten und dann abzulehnen wäre die schlechtere Reihenfolge. */
@@ -160,7 +166,7 @@ export function MauMauOnline({ spiel, onZurueck }: Props) {
       await was()
       if (matchId) await laden(matchId)
     } catch (err) {
-      setFehler(err instanceof Error ? err.message : 'Das hat nicht geklappt.')
+      setFehler(err instanceof Error ? err.message : t.maumau.online.fehler)
       if (matchId) await laden(matchId)
     } finally {
       setLaeuft(false)
@@ -196,8 +202,8 @@ export function MauMauOnline({ spiel, onZurueck }: Props) {
    * dem Solomodus.
    */
   async function nameFuerDieRunde(): Promise<string> {
-    const name = await ermittleSpielerName().catch(() => null)
-    return istEchterName(name) ? (name as string) : 'Spieler'
+    const kontoName = await ermittleSpielerName().catch(() => null)
+    return istEchterName(kontoName) ? (kontoName as string) : t.maumau.online.ersatzName
   }
 
   const eroeffnen = () =>
@@ -226,10 +232,10 @@ export function MauMauOnline({ spiel, onZurueck }: Props) {
     if (!raumCode) return
     autoBeigetreten.current = true
     // Nicht direkt im Effekt: der Aufruf setzt sofort Zustand, das mag React nicht.
-    const t = window.setTimeout(() => {
+    const uhr = window.setTimeout(() => {
       void beitreten(raumCode.toUpperCase())
     }, 0)
-    return () => window.clearTimeout(t)
+    return () => window.clearTimeout(uhr)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [angemeldet])
 
@@ -241,7 +247,7 @@ export function MauMauOnline({ spiel, onZurueck }: Props) {
     try {
       if (matchId) await leaveMauMauMatch(matchId)
     } catch (err) {
-      setFehler(err instanceof Error ? err.message : 'Das hat nicht geklappt.')
+      setFehler(err instanceof Error ? err.message : t.maumau.online.fehler)
     } finally {
       setMatchId(null)
       setState(null)
@@ -257,7 +263,12 @@ export function MauMauOnline({ spiel, onZurueck }: Props) {
     return (
       <main className={shell.page}>
         <header className={shell.header}>
-          <button type="button" className={shell.back} onClick={onZurueck} aria-label="Zurück">
+          <button
+            type="button"
+            className={shell.back}
+            onClick={onZurueck}
+            aria-label={t.allgemein.zurueck}
+          >
             ←
           </button>
           <h1 className={shell.title}>{titel}</h1>
@@ -266,31 +277,25 @@ export function MauMauOnline({ spiel, onZurueck }: Props) {
 
         {angemeldet === null && (
           <section className={styles.menue}>
-            <p className={styles.einleitung}>Einen Moment…</p>
+            <p className={styles.einleitung}>{t.maumau.online.moment}</p>
           </section>
         )}
 
         {angemeldet === false && (
           <section className={styles.menue}>
-            <p className={styles.einleitung}>
-              Online spielst du mit deinem Konto – nur so weiß der Server, wer gerade legt, und
-              niemand kann sich seine Karten selbst aussuchen.
-            </p>
+            <p className={styles.einleitung}>{t.maumau.online.ohneKonto}</p>
             <Link to="/auth" className={styles.start} style={{ textAlign: 'center' }}>
-              Anmelden
+              {t.maumau.online.anmelden}
             </Link>
             <button type="button" className={styles.grosserKnopf} onClick={onZurueck}>
-              Lieber gegen den Rechner
+              {t.maumau.online.lieberRechner}
             </button>
           </section>
         )}
 
         {angemeldet === true && (
           <section className={styles.menue}>
-            <p className={styles.einleitung}>
-              Einer eröffnet den Tisch und gibt den Code weiter. Gemischt wird auf dem Server – und
-              niemand sieht die Karten der anderen, auch nicht, wer nachsieht.
-            </p>
+            <p className={styles.einleitung}>{t.maumau.online.einleitung}</p>
 
             {!klassisch && <Spielartwahl art={art} onArt={waehleArt} gesperrt={laeuft} />}
             <Hausregelwahl
@@ -307,21 +312,21 @@ export function MauMauOnline({ spiel, onZurueck }: Props) {
                 onChange={(e) => setOeffentlich(e.target.checked)}
               />
               <span>
-                Öffentlicher Tisch
-                <small>Steht für alle in der Lobby, mit deinem Namen. Jeder kann beitreten.</small>
+                {t.maumau.online.oeffentlich}
+                <small>{t.maumau.online.oeffentlichText}</small>
               </span>
             </label>
 
             <button type="button" className={styles.start} onClick={eroeffnen} disabled={laeuft}>
-              ➕ Tisch eröffnen
+              {t.maumau.online.eroeffnen}
             </button>
 
             <div className={styles.trenner}>
-              <span>oder</span>
+              <span>{t.maumau.online.oder}</span>
             </div>
 
             <label className={styles.feld}>
-              <span>Spielcode</span>
+              <span>{t.maumau.online.spielcode}</span>
               <input
                 className={styles.codeEingabe}
                 value={code}
@@ -339,7 +344,7 @@ export function MauMauOnline({ spiel, onZurueck }: Props) {
               onClick={() => beitreten()}
               disabled={laeuft || code.length < 4}
             >
-              Beitreten
+              {t.maumau.online.beitreten}
             </button>
 
             <OeffentlicheRaeume
@@ -350,14 +355,15 @@ export function MauMauOnline({ spiel, onZurueck }: Props) {
 
             {offene.length > 0 && (
               <div className={styles.offeneListe}>
-                <h3>Deine offenen Tische</h3>
+                <h3>{t.maumau.online.offeneTische}</h3>
                 <ul>
                   {offene.map((m) => (
                     <li key={m.match_id}>
                       <button type="button" onClick={() => setMatchId(m.match_id)}>
                         <strong>{m.code}</strong>
                         <span>
-                          {m.phase === 'lobby' ? 'wartet' : 'läuft'} · {m.size} Spieler
+                          {m.phase === 'lobby' ? t.maumau.online.wartet : t.maumau.online.laeuft} ·{' '}
+                          {t.maumau.online.spieler(m.size)}
                         </span>
                       </button>
                     </li>
@@ -373,7 +379,7 @@ export function MauMauOnline({ spiel, onZurueck }: Props) {
             )}
 
             <Link to="/" className={shell.homeLink}>
-              Zum Menü
+              {t.allgemein.zumMenue}
             </Link>
           </section>
         )}
@@ -385,7 +391,7 @@ export function MauMauOnline({ spiel, onZurueck }: Props) {
 
   const { match, me, players } = state
   const ichBinDran = match.am_zug === me.seat && match.phase === 'spiel'
-  const amZugName = players.find((p) => p.seat === match.am_zug)?.name ?? 'Jemand'
+  const amZugName = players.find((p) => p.seat === match.am_zug)?.name ?? t.maumau.online.jemand
 
   /* ------------------------------------------------------- Warteraum */
 
@@ -393,19 +399,25 @@ export function MauMauOnline({ spiel, onZurueck }: Props) {
     return (
       <main className={shell.page}>
         <header className={shell.header}>
-          <button type="button" className={shell.back} onClick={verlassen} aria-label="Zurück">
+          <button
+            type="button"
+            className={shell.back}
+            onClick={verlassen}
+            aria-label={t.allgemein.zurueck}
+          >
             ←
           </button>
-          <h1 className={shell.title}>Warteraum</h1>
+          <h1 className={shell.title}>{t.maumau.online.warteraum}</h1>
           <span aria-hidden="true" />
         </header>
 
         <section className={styles.menue}>
-          <p className={styles.codeLabel}>Spielcode</p>
+          <p className={styles.codeLabel}>{t.maumau.online.spielcode}</p>
           <p className={styles.code}>{match.code}</p>
           <p className={styles.einleitung}>
-            Gib den Code weiter. Sobald alle da sind, startet{' '}
-            {match.is_host ? 'du' : 'der Gastgeber'} die Runde. Bis zu vier passen an den Tisch.
+            {match.is_host
+              ? t.maumau.online.codeWeitergebenHost
+              : t.maumau.online.codeWeitergebenGast}
           </p>
 
           <ul className={styles.spielerListe}>
@@ -413,7 +425,7 @@ export function MauMauOnline({ spiel, onZurueck }: Props) {
               <li key={p.seat}>
                 <span className={styles.platz}>{p.seat}</span>
                 {p.name}
-                {p.is_you && <small> (du)</small>}
+                {p.is_you && <small> {t.maumau.online.du}</small>}
               </li>
             ))}
           </ul>
@@ -455,7 +467,7 @@ export function MauMauOnline({ spiel, onZurueck }: Props) {
               onClick={() => versuche(() => startMauMauMatch(matchId))}
               disabled={laeuft || players.length < 2}
             >
-              {players.length < 2 ? 'Es fehlt noch jemand' : '🎴 Runde starten'}
+              {players.length < 2 ? t.maumau.online.fehltNoch : t.maumau.online.starten}
             </button>
           )}
 
@@ -466,7 +478,7 @@ export function MauMauOnline({ spiel, onZurueck }: Props) {
           )}
 
           <button type="button" className={styles.klein} onClick={verlassen}>
-            Tisch verlassen
+            {t.maumau.online.verlassen}
           </button>
         </section>
       </main>
@@ -482,15 +494,20 @@ export function MauMauOnline({ spiel, onZurueck }: Props) {
     return (
       <main className={shell.page}>
         <header className={shell.header}>
-          <button type="button" className={shell.back} onClick={verlassen} aria-label="Zurück">
+          <button
+            type="button"
+            className={shell.back}
+            onClick={verlassen}
+            aria-label={t.allgemein.zurueck}
+          >
             ←
           </button>
-          <h1 className={shell.title}>Endstand</h1>
+          <h1 className={shell.title}>{t.maumau.online.endstand}</h1>
           <span aria-hidden="true" />
         </header>
         <section className={shell.section}>
           <p className={gewonnen ? shell.correct : shell.wrong}>
-            {gewonnen ? '🏆 Gewonnen!' : `Platz ${ich?.platz ?? '–'} von ${players.length}`}
+            {gewonnen ? t.maumau.gewonnen : t.maumau.platzVon(ich?.platz ?? '–', players.length)}
           </p>
           <ol className={styles.endstand}>
             {tabelle.map((p) => (
@@ -498,22 +515,22 @@ export function MauMauOnline({ spiel, onZurueck }: Props) {
                 <span className={styles.endPlatz}>{p.platz ?? '–'}.</span>
                 <span className={styles.endName}>
                   {p.name}
-                  {p.is_you && ' (du)'}
+                  {p.is_you && ` ${t.maumau.online.du}`}
                 </span>
                 <span className={styles.endWert}>
                   {p.karten === 0
-                    ? 'alle abgelegt'
-                    : `${p.karten} ${p.karten === 1 ? 'Karte' : 'Karten'} · ${p.punkte} Punkte`}
+                    ? t.maumau.alleAbgelegt
+                    : t.maumau.kartenUndPunkte(p.karten, p.punkte)}
                 </span>
               </li>
             ))}
           </ol>
           <div className={shell.resultActions}>
             <button type="button" className={shell.primaryBtn} onClick={verlassen}>
-              Zurück zur Lobby
+              {t.maumau.online.zurLobby}
             </button>
             <Link to="/" className={shell.homeLink}>
-              Zum Menü
+              {t.allgemein.zumMenue}
             </Link>
           </div>
         </section>
@@ -561,11 +578,16 @@ export function MauMauOnline({ spiel, onZurueck }: Props) {
   return (
     <main className={shell.page}>
       <header className={shell.header}>
-        <button type="button" className={shell.back} onClick={verlassen} aria-label="Zurück">
+        <button
+          type="button"
+          className={shell.back}
+          onClick={verlassen}
+          aria-label={t.allgemein.zurueck}
+        >
           ←
         </button>
         <h1 className={shell.title}>
-          {klassisch ? 'Mau-Mau' : 'Letzte Karte'} · {match.code}
+          {name} · {match.code}
         </h1>
         <span aria-hidden="true" />
       </header>

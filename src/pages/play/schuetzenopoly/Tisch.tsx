@@ -15,6 +15,7 @@
 
 import {
   STRAFBANK_GEBUEHR,
+  STRAFBANK_MAX_VERSUCHE,
   aktiverSpieler,
   besitzVon,
   figur,
@@ -24,13 +25,17 @@ import {
   type OnlineAktion,
   type SpielZustand,
 } from '@/games/schuetzenopoly'
+import { useSprache } from '@/i18n/sprache'
+import { karteText, protokollZeile, rollenText } from './texte'
 import styles from '../SchuetzenopolyPage.module.css'
 
 /** Die Kacheln der Mitspieler: Farbe, Geld, Besitz. */
 export function SpielerLeiste({ zustand }: { zustand: SpielZustand }) {
+  const { t, sprache } = useSprache()
+  const tx = t.schuetzenopoly.tisch
   const aktiv = aktiverSpieler(zustand)
   return (
-    <ul className={styles.spielerLeiste} aria-label="Mitspieler">
+    <ul className={styles.spielerLeiste} aria-label={tx.mitspieler}>
       {zustand.spieler.map((s) => (
         <li
           key={s.id}
@@ -44,10 +49,10 @@ export function SpielerLeiste({ zustand }: { zustand: SpielZustand }) {
             {s.typ === 'ki' && <small className={styles.kiMarke}>🤖</small>}
           </span>
           <span className={styles.spielerGeld}>
-            {s.insolvent ? 'raus' : `${s.taler.toLocaleString('de-DE')} 🪙`}
+            {s.insolvent ? tx.raus : `${s.taler.toLocaleString(sprache)} 🪙`}
           </span>
           <span className={styles.spielerBesitz}>
-            {besitzVon(zustand, s.id).length} Felder
+            {tx.felder(besitzVon(zustand, s.id).length)}
             {s.aufStrafbank && ' · 🚧'}
           </span>
         </li>
@@ -58,6 +63,7 @@ export function SpielerLeiste({ zustand }: { zustand: SpielZustand }) {
 
 /** Die Mitte des Bretts: Würfel und wer gerade dran ist. */
 export function BrettMitte({ zustand }: { zustand: SpielZustand }) {
+  const { t, sprache } = useSprache()
   const aktiv = aktiverSpieler(zustand)
   return (
     <>
@@ -68,14 +74,14 @@ export function BrettMitte({ zustand }: { zustand: SpielZustand }) {
         key={zustand.wuerfel ? zustand.wuerfel.join('-') + '-' + zustand.runde : 'leer'}
         className={styles.wuerfelPaar}
         role="img"
-        aria-label="Würfel"
+        aria-label={t.schuetzenopoly.tisch.wuerfel}
       >
         <span className={styles.wuerfel}>{zustand.wuerfel ? augen(zustand.wuerfel[0]) : '·'}</span>
         <span className={styles.wuerfel}>{zustand.wuerfel ? augen(zustand.wuerfel[1]) : '·'}</span>
       </div>
-      <p className={styles.mitteGeld}>{aktiv.taler.toLocaleString('de-DE')} 🪙</p>
+      <p className={styles.mitteGeld}>{aktiv.taler.toLocaleString(sprache)} 🪙</p>
       <p className={styles.mitteRunde}>
-        Runde {zustand.runde} von {zustand.rundenLimit}
+        {t.schuetzenopoly.tisch.runde(zustand.runde, zustand.rundenLimit)}
       </p>
     </>
   )
@@ -83,11 +89,12 @@ export function BrettMitte({ zustand }: { zustand: SpielZustand }) {
 
 /** Die letzten drei Zeilen aus dem Spielprotokoll. */
 export function Protokoll({ zustand }: { zustand: SpielZustand }) {
+  const { t, sprache } = useSprache()
   return (
     <div className={styles.protokoll} aria-live="polite">
       {zustand.protokoll.slice(-3).map((eintrag, i) => (
         <p key={`${zustand.protokoll.length}-${i}`} className={styles.logZeile}>
-          {eintrag.text}
+          {protokollZeile(t, sprache, eintrag)}
         </p>
       ))}
     </div>
@@ -116,21 +123,24 @@ export function Handlungsleiste({
   onBauen,
   onHandeln,
 }: LeisteProps) {
+  const { t, sprache } = useSprache()
+  const tx = t.schuetzenopoly.tisch
   const aktiv = aktiverSpieler(zustand)
   const bonus = rollenBonus(aktiv.rolle)
-  const rollenDaten = rolleMit(aktiv.rolle)
+  const rollenDaten = rollenText(t, aktiv.rolle)
+  const rollenIcon = rolleMit(aktiv.rolle).icon
   const meineHandkarten = handkarten(zustand, aktiv.id)
+  const offeneKarte = zustand.offeneKarte ? karteText(t, zustand.offeneKarte) : null
 
   return (
     <div className={styles.leiste}>
-      {!darfZiehen && <p className={styles.wartet}>{aktiv.name} ist am Zug…</p>}
+      {!darfZiehen && <p className={styles.wartet}>{tx.istAmZug(aktiv.name)}</p>}
 
       {darfZiehen && zustand.phase === 'wuerfeln' && (
         <>
           {aktiv.aufStrafbank && (
             <p className={styles.hinweisZeile}>
-              Du sitzt auf der Strafbank (Versuch {aktiv.strafbankVersuche + 1} von 3). Ein Pasch
-              bringt dich frei.
+              {tx.aufDerStrafbank(aktiv.strafbankVersuche + 1, STRAFBANK_MAX_VERSUCHE)}
             </p>
           )}
           <button
@@ -138,7 +148,7 @@ export function Handlungsleiste({
             className={styles.hauptKnopf}
             onClick={() => onAktion({ art: 'wuerfeln' })}
           >
-            🎲 Würfeln
+            {tx.wuerfeln}
           </button>
           {aktiv.aufStrafbank && (
             <div className={styles.nebenKnoepfe}>
@@ -148,7 +158,7 @@ export function Handlungsleiste({
                   className={styles.nebenKnopf}
                   onClick={() => onAktion({ art: 'freikarte' })}
                 >
-                  🎫 Fürsprache einsetzen
+                  {tx.fuersprache}
                 </button>
               )}
               <button
@@ -157,7 +167,7 @@ export function Handlungsleiste({
                 disabled={aktiv.taler < STRAFBANK_GEBUEHR}
                 onClick={() => onAktion({ art: 'strafbank_frei' })}
               >
-                Freikaufen · {STRAFBANK_GEBUEHR} 🪙
+                {tx.freikaufen(STRAFBANK_GEBUEHR.toLocaleString(sprache))}
               </button>
             </div>
           )}
@@ -167,7 +177,7 @@ export function Handlungsleiste({
               className={styles.nebenKnopf}
               onClick={() => onAktion({ art: 'koenigsaktion' })}
             >
-              👑 Königsaktion · +{bonus.koenigsaktion} 🪙
+              {tx.koenigsaktion(bonus.koenigsaktion.toLocaleString(sprache))}
             </button>
           )}
         </>
@@ -184,27 +194,27 @@ export function Handlungsleiste({
       {darfZiehen && zustand.phase === 'feld' && zustand.kaufAngebot && !karteOffen && (
         <>
           <p className={styles.hinweisZeile}>
-            Noch frei – {zustand.kaufAngebot.preis.toLocaleString('de-DE')} 🪙
+            {tx.nochFrei(zustand.kaufAngebot.preis.toLocaleString(sprache))}
           </p>
           <button type="button" className={styles.hauptKnopf} onClick={onKarteAnsehen}>
-            🪪 Karte ansehen
+            {tx.karteAnsehen}
           </button>
         </>
       )}
 
-      {darfZiehen && zustand.offeneKarte && (
+      {darfZiehen && zustand.offeneKarte && offeneKarte && (
         <div className={styles.karte}>
           <p className={styles.karteTitel}>
-            <span aria-hidden="true">{zustand.offeneKarte.icon}</span> {zustand.offeneKarte.titel}
+            <span aria-hidden="true">{zustand.offeneKarte.icon}</span> {offeneKarte.titel}
           </p>
-          <p className={styles.karteText}>{zustand.offeneKarte.text}</p>
+          <p className={styles.karteText}>{offeneKarte.text}</p>
           <div className={styles.nebenKnoepfe}>
             <button
               type="button"
               className={styles.hauptKnopf}
               onClick={() => onAktion({ art: 'karte' })}
             >
-              Weiter
+              {tx.weiter}
             </button>
             {bonus.karteNeuJePartie && !aktiv.karteNeuGenutzt && (
               <button
@@ -212,7 +222,7 @@ export function Handlungsleiste({
                 className={styles.nebenKnopf}
                 onClick={() => onAktion({ art: 'karte_neu' })}
               >
-                🃏 Neu ziehen
+                {tx.neuZiehen}
               </button>
             )}
           </div>
@@ -224,12 +234,12 @@ export function Handlungsleiste({
           <div className={styles.nebenKnoepfe}>
             {onBauen && (
               <button type="button" className={styles.nebenKnopf} onClick={onBauen}>
-                🏗️ Bauen
+                {tx.bauen}
               </button>
             )}
             {onHandeln && (
               <button type="button" className={styles.nebenKnopf} onClick={onHandeln}>
-                🤝 Handeln
+                {tx.handeln}
               </button>
             )}
             {bonus.duellJePartie && !aktiv.duellGenutzt && (
@@ -238,7 +248,7 @@ export function Handlungsleiste({
                 className={styles.nebenKnopf}
                 onClick={() => onAktion({ art: 'duell' })}
               >
-                ⚔️ Duell
+                {tx.duell}
               </button>
             )}
           </div>
@@ -247,13 +257,13 @@ export function Handlungsleiste({
             className={styles.hauptKnopf}
             onClick={() => onAktion({ art: 'zug_ende' })}
           >
-            {zustand.paschSerie > 0 ? 'Pasch – noch mal würfeln' : 'Zug beenden'}
+            {zustand.paschSerie > 0 ? tx.paschNochmal : tx.zugBeenden}
           </button>
         </>
       )}
 
       <p className={styles.rollenZeile}>
-        {rollenDaten.icon} {rollenDaten.name}: {rollenDaten.beschreibung}
+        {rollenIcon} {rollenDaten.name}: {rollenDaten.beschreibung}
       </p>
     </div>
   )

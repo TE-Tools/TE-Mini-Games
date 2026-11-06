@@ -11,6 +11,8 @@ import {
   activeWbiPlayer,
   wbiStarter,
   othersFor,
+  MIN_SPIELER,
+  MAX_SPIELER,
   type WbiState,
 } from '@/games/wer-bin-ich'
 import {
@@ -20,12 +22,32 @@ import {
   isCustomCategory,
   type CustomCategory,
 } from '@/games/finde-den-imposter'
+import { spielName, useSprache, type Texte } from '@/i18n/sprache'
 import { WerBinIchOnline } from './WerBinIchOnline'
 import styles from './WerBinIchPage.module.css'
 
 const DEFAULT_NAMES = 'Thomas\nMarina\nPhillip\nSonja'
 
+/**
+ * Dieselben Prüfungen wie in der Engine, nur mit Text aus dem Wörterbuch --
+ * die Engine wirft deutsch und bleibt so (Tests lesen ihre Meldungen).
+ */
+function namenFehler(names: string[], w: Texte['werBinIch']): string | null {
+  if (names.length < MIN_SPIELER) return w.mindestensSpieler(MIN_SPIELER)
+  if (names.length > MAX_SPIELER) return w.hoechstensSpieler(MAX_SPIELER)
+  const gesehen = new Set<string>()
+  for (const n of names) {
+    const key = n.toLowerCase()
+    if (gesehen.has(key)) return w.nameDoppelt(n)
+    gesehen.add(key)
+  }
+  return null
+}
+
 export function WerBinIchPage() {
+  const { t } = useSprache()
+  const w = t.werBinIch
+  const titel = spielName(t, 'wer-bin-ich', 'Wer bin ich?')
   const [state, setState] = useState<WbiState | null>(null)
   const [namesText, setNamesText] = useState(DEFAULT_NAMES)
   const [categoryId, setCategoryId] = useState(CATEGORIES[0]?.id ?? 'tiere')
@@ -53,6 +75,11 @@ export function WerBinIchPage() {
         .split(/[\n,;]+/)
         .map((n) => n.trim())
         .filter(Boolean)
+      const fehler = namenFehler(names, w)
+      if (fehler) {
+        setError(fehler)
+        return
+      }
       const eigeneKategorie = isCustomCategory(categoryId)
         ? customCategoryById(categoryId)
         : undefined
@@ -66,14 +93,16 @@ export function WerBinIchPage() {
       )
       setGuessText('')
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Start fehlgeschlagen')
+      setError(e instanceof Error ? e.message : w.startFehlgeschlagen)
     }
-  }, [namesText, categoryId])
+  }, [namesText, categoryId, w])
 
   if (online) {
     return (
       <main className={styles.page}>
-        <p className={styles.meta}>Wer bin ich? · online</p>
+        <p className={styles.meta}>
+          {titel} · {w.online}
+        </p>
         <WerBinIchOnline onBack={() => setOnline(false)} />
       </main>
     )
@@ -83,18 +112,15 @@ export function WerBinIchPage() {
     return (
       <main className={styles.page}>
         <Link to="/" className={styles.back}>
-          {'←'} Zurück
+          {'←'} {t.allgemein.zurueck}
         </Link>
-        <h1 className={styles.title}>🤔 Wer bin ich?</h1>
-        <p className={styles.subtitle}>
-          Jeder bekommt einen Begriff, den alle sehen – nur er selbst nicht. Reihum eine
-          Ja/Nein-Frage stellen, bis der Groschen fällt.
-        </p>
+        <h1 className={styles.title}>🤔 {titel}</h1>
+        <p className={styles.subtitle}>{w.einleitung}</p>
 
         <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Spieler (2–12)</h2>
+          <h2 className={styles.cardTitle}>{w.spielerTitel(MIN_SPIELER, MAX_SPIELER)}</h2>
           <label className={styles.label}>
-            Namen (eine Zeile pro Person)
+            {w.namenLabel}
             <textarea
               className={styles.textarea}
               value={namesText}
@@ -102,18 +128,20 @@ export function WerBinIchPage() {
               autoComplete="off"
             />
           </label>
-          <p className={styles.meta}>{playerCount} Spieler</p>
+          <p className={styles.meta}>{w.anzahlSpieler(playerCount)}</p>
         </div>
 
         <div className={styles.card}>
           <label className={styles.label}>
-            Kategorie
+            {w.kategorie}
             <select
               className={styles.select}
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
             >
-              <optgroup label="Eingebaut">
+              {/* Die Namen der Kategorien bleiben deutsch: Sie gehören zu
+                  den deutschen Wortlisten, siehe docs/design/zweisprachig. */}
+              <optgroup label={w.eingebaut}>
                 {CATEGORIES.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.label}
@@ -121,7 +149,7 @@ export function WerBinIchPage() {
                 ))}
               </optgroup>
               {eigene.length > 0 && (
-                <optgroup label="Eigene">
+                <optgroup label={w.eigene}>
                   {eigene.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.label} ({c.words.length})
@@ -132,40 +160,37 @@ export function WerBinIchPage() {
             </select>
           </label>
           <p className={styles.meta}>
-            Die Kategorien und eigenen Wortlisten teilt sich das Spiel mit „Finde den Imposter" –
-            angelegt werden sie dort.
+            {w.kategorienHinweis(spielName(t, 'finde-den-imposter', 'Finde den Imposter'))}
           </p>
         </div>
 
         {error && <p className={styles.error}>{error}</p>}
 
         <button type="button" className={styles.btn} onClick={start}>
-          Am einen Gerät spielen
+          {w.amEinenGeraet}
         </button>
         <button type="button" className={styles.btnSecondary} onClick={() => setOnline(true)}>
-          🌐 Online mit eigenen Handys
+          {w.onlineHandys}
         </button>
       </main>
     )
   }
 
   const ap = activeWbiPlayer(state)
-  const rundeLabel = `Runde ${state.roundIndex + 1}`
+  const rundeLabel = w.runde(state.roundIndex + 1)
 
   if (state.phase === 'handoff') {
     return (
       <main key="uebergabe" className={styles.page}>
         <p className={styles.meta}>
-          Begriffe ansehen · {rundeLabel} · {state.categoryLabel}
+          {w.begriffeAnsehen} · {rundeLabel} · {state.categoryLabel}
         </p>
         <div className={`${styles.card} ${styles.cover}`}>
-          <p className={styles.subtitle}>Gerät weitergeben an</p>
+          <p className={styles.subtitle}>{w.geraetWeitergeben}</p>
           <p className={styles.coverName}>{ap.name}</p>
-          <p className={styles.meta}>
-            Du siehst gleich, wer die anderen sind – deinen eigenen Begriff nicht.
-          </p>
+          <p className={styles.meta}>{w.gleichSiehstDu}</p>
           <button type="button" className={styles.btn} onClick={() => setState(openReveal(state))}>
-            Ich bin {ap.name} – ansehen
+            {w.ichBinAnsehen(ap.name)}
           </button>
         </div>
       </main>
@@ -176,17 +201,15 @@ export function WerBinIchPage() {
     return (
       <main key="aufdecken" className={styles.page}>
         <p className={styles.meta}>
-          Nur für {ap.name} · {rundeLabel}
+          {w.nurFuer(ap.name)} · {rundeLabel}
         </p>
         {/* Das Kästchen mit „Du bist ???" stand hier mal. Es nahm die halbe
             Seite ein, um mitzuteilen, was ohnehin jeder weiß (02.09.2026,
             Thomas: „ist das nicht einfach zu viel und unnötig?"). Der eine
             Satz reicht – die Liste der anderen ist das, worauf es ankommt. */}
-        <p className={styles.subtitle}>
-          Deinen eigenen Begriff siehst du nicht – den musst du erfragen.
-        </p>
+        <p className={styles.subtitle}>{w.eigenerVerdeckt}</p>
         <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Die anderen</h2>
+          <h2 className={styles.cardTitle}>{w.dieAnderen}</h2>
           <ul className={styles.list}>
             {othersFor(state).map((p) => (
               <li key={p.id}>
@@ -197,7 +220,7 @@ export function WerBinIchPage() {
           </ul>
         </div>
         <button type="button" className={styles.btn} onClick={() => setState(confirmReveal(state))}>
-          Gesehen – weiter
+          {w.gesehenWeiter}
         </button>
       </main>
     )
@@ -208,18 +231,15 @@ export function WerBinIchPage() {
     return (
       <main className={styles.page}>
         <p className={styles.meta}>
-          Fragerunde · {rundeLabel} · {state.categoryLabel}
+          {w.fragerunde} · {rundeLabel} · {state.categoryLabel}
         </p>
         <div className={`${styles.card} ${styles.cover}`}>
-          <p className={styles.subtitle}>Jetzt fängt an</p>
+          <p className={styles.subtitle}>{w.jetztFaengtAn}</p>
           <p className={styles.coverName}>{starter.name}</p>
-          <p className={styles.hint}>
-            Reihum eine Ja/Nein-Frage stellen. Wer ein „Ja" bekommt, darf gleich noch eine – bei
-            „Nein" ist der Nächste dran.
-          </p>
+          <p className={styles.hint}>{w.fragerundeRegel}</p>
         </div>
         <button type="button" className={styles.btn} onClick={() => setState(startGuessing(state))}>
-          Jetzt raten
+          {w.jetztRaten}
         </button>
       </main>
     )
@@ -228,16 +248,18 @@ export function WerBinIchPage() {
   if (state.phase === 'guess') {
     return (
       <main key="raten" className={styles.page}>
-        <p className={styles.meta}>Raten · {rundeLabel}</p>
+        <p className={styles.meta}>
+          {w.raten} · {rundeLabel}
+        </p>
         <div className={`${styles.card} ${styles.cover}`}>
-          <p className={styles.subtitle}>Gerät an</p>
+          <p className={styles.subtitle}>{w.geraetAn}</p>
           <p className={styles.coverName}>{ap.name}</p>
-          <p className={styles.hint}>Wer bist du?</p>
+          <p className={styles.hint}>{w.werBistDu}</p>
           <input
             className={styles.input}
             value={guessText}
             onChange={(e) => setGuessText(e.target.value)}
-            placeholder="Dein Tipp…"
+            placeholder={w.deinTippPlatzhalter}
             autoComplete="off"
           />
           <button
@@ -249,7 +271,7 @@ export function WerBinIchPage() {
               setGuessText('')
             }}
           >
-            Tipp abgeben
+            {w.tippAbgeben}
           </button>
         </div>
       </main>
@@ -259,16 +281,18 @@ export function WerBinIchPage() {
   if (state.phase === 'guess_result') {
     return (
       <main key="ergebnis" className={styles.page} data-ok={ap.correct}>
-        <p className={styles.meta}>Raten · {rundeLabel}</p>
+        <p className={styles.meta}>
+          {w.raten} · {rundeLabel}
+        </p>
         <div className={`${styles.card} ${styles.cover}`}>
           <h2 className={styles.cardTitle}>
-            {ap.correct ? `Richtig, ${ap.name}!` : `Leider daneben, ${ap.name}`}
+            {ap.correct ? w.richtigName(ap.name) : w.danebenName(ap.name)}
           </h2>
-          <p className={styles.subtitle}>Du warst</p>
+          <p className={styles.subtitle}>{w.duWarst}</p>
           <p className={styles.unknownWord}>{ap.word}</p>
-          {!ap.correct && <p className={styles.meta}>Dein Tipp: „{ap.guess}"</p>}
+          {!ap.correct && <p className={styles.meta}>{w.deinTipp(ap.guess ?? '')}</p>}
           <button type="button" className={styles.btn} onClick={() => setState(nextGuesser(state))}>
-            Weiter
+            {t.allgemein.weiter}
           </button>
         </div>
       </main>
@@ -279,32 +303,30 @@ export function WerBinIchPage() {
 
   return (
     <main className={styles.page}>
-      <h1 className={styles.title}>Auflösung</h1>
-      <p className={styles.meta}>
-        {richtige} von {state.players.length} haben sich erraten
-      </p>
+      <h1 className={styles.title}>{w.aufloesung}</h1>
+      <p className={styles.meta}>{w.habenSichErraten(richtige, state.players.length)}</p>
       <div className={styles.card}>
         <ul className={styles.list}>
           {state.players.map((p) => (
             <li key={p.id}>
               <span>
-                {p.name} war <strong>{p.word}</strong>
+                {p.name} {w.war} <strong>{p.word}</strong>
               </span>
               <strong className={p.correct ? styles.ok : styles.bad}>
-                {p.correct ? 'erraten' : `„${p.guess ?? '–'}"`}
+                {p.correct ? w.erraten : w.tippZitat(p.guess ?? '–')}
               </strong>
             </li>
           ))}
         </ul>
       </div>
       <button type="button" className={styles.btn} onClick={() => setState(nextWbiRound(state))}>
-        Nächste Runde
+        {w.naechsteRunde}
       </button>
       <button type="button" className={styles.btnSecondary} onClick={() => setState(null)}>
-        Neue Partie
+        {w.neuePartie}
       </button>
       <Link to="/" className={styles.back}>
-        Zum Menü
+        {t.allgemein.zumMenue}
       </Link>
     </main>
   )

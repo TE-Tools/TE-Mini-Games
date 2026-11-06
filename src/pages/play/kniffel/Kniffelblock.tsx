@@ -26,6 +26,7 @@ import {
   type Block,
   type KategorieId,
 } from '@/games/kniffel'
+import { useSprache } from '@/i18n/sprache'
 import styles from './Kniffelblock.module.css'
 
 export interface BlockSpalte {
@@ -47,6 +48,8 @@ interface KniffelblockProps {
 }
 
 export function Kniffelblock({ spalten, wuerfel, eintragbar, onEintragen }: KniffelblockProps) {
+  const { t } = useSprache()
+  const b = t.kniffel.block
   const gewuerfelt = wuerfel.some((w) => w > 0)
   const zeilenProps = { spalten, wuerfel, gewuerfelt, eintragbar, onEintragen }
 
@@ -67,16 +70,22 @@ export function Kniffelblock({ spalten, wuerfel, eintragbar, onEintragen }: Knif
       <div className={styles.haelfte}>
         <div className={styles.huelle}>
           <table className={styles.block}>
-            <caption className={styles.blockTitel}>Oberer Block</caption>
+            <caption className={styles.blockTitel}>{b.oben}</caption>
             <Kopfzeile spalten={spalten} />
             <tbody>
               {KATEGORIEN.filter((k) => k.teil === 'oben').map((k) => (
-                <Zeile key={k.id} feld={k.id} name={k.name} kurz={k.kurz} {...zeilenProps} />
+                <Zeile
+                  key={k.id}
+                  feld={k.id}
+                  name={t.kniffel.felder[k.id].name}
+                  kurz={t.kniffel.felder[k.id].kurz}
+                  {...zeilenProps}
+                />
               ))}
 
               <tr className={styles.summeZeile}>
                 <th scope="row" className={styles.summeName}>
-                  Zwischensumme
+                  {b.zwischensumme}
                 </th>
                 {spalten.map((sp) => (
                   <td key={sp.id} className={styles.summeWert}>
@@ -87,15 +96,15 @@ export function Kniffelblock({ spalten, wuerfel, eintragbar, onEintragen }: Knif
 
               <tr className={styles.bonusZeile}>
                 <th scope="row" className={styles.summeName}>
-                  Bonus ab {BONUS_GRENZE}
-                  <span className={styles.kurz}>{BONUS_PUNKTE} Punkte</span>
+                  {b.bonusAb(BONUS_GRENZE)}
+                  <span className={styles.kurz}>{b.punkte(BONUS_PUNKTE)}</span>
                 </th>
                 {spalten.map((sp) => (
                   <td key={sp.id} className={styles.summeWert}>
                     {bonusErreicht(sp.block) ? (
                       <strong className={styles.bonusDa}>+{BONUS_PUNKTE}</strong>
                     ) : (
-                      <span className={styles.bonusFehlt}>noch {bisZumBonus(sp.block)}</span>
+                      <span className={styles.bonusFehlt}>{b.noch(bisZumBonus(sp.block))}</span>
                     )}
                   </td>
                 ))}
@@ -108,11 +117,17 @@ export function Kniffelblock({ spalten, wuerfel, eintragbar, onEintragen }: Knif
       <div className={styles.haelfte}>
         <div className={styles.huelle}>
           <table className={styles.block}>
-            <caption className={styles.blockTitel}>Unterer Block</caption>
+            <caption className={styles.blockTitel}>{b.unten}</caption>
             <Kopfzeile spalten={spalten} />
             <tbody>
               {KATEGORIEN.filter((k) => k.teil === 'unten').map((k) => (
-                <Zeile key={k.id} feld={k.id} name={k.name} kurz={k.kurz} {...zeilenProps} />
+                <Zeile
+                  key={k.id}
+                  feld={k.id}
+                  name={t.kniffel.felder[k.id].name}
+                  kurz={t.kniffel.felder[k.id].kurz}
+                  {...zeilenProps}
+                />
               ))}
 
               {/*
@@ -124,10 +139,8 @@ export function Kniffelblock({ spalten, wuerfel, eintragbar, onEintragen }: Knif
               */}
               <tr className={styles.bonusZeile}>
                 <th scope="row" className={styles.summeName}>
-                  Zusatzkniffel
-                  <span className={styles.kurz}>
-                    Jeder weitere – {ZUSATZ_KNIFFEL_PUNKTE} Punkte
-                  </span>
+                  {b.zusatzkniffel}
+                  <span className={styles.kurz}>{b.jederWeitere(ZUSATZ_KNIFFEL_PUNKTE)}</span>
                 </th>
                 {spalten.map((sp) => (
                   <td key={sp.id} className={styles.summeWert}>
@@ -150,7 +163,7 @@ export function Kniffelblock({ spalten, wuerfel, eintragbar, onEintragen }: Knif
 
               <tr className={styles.summeZeile}>
                 <th scope="row" className={styles.summeName}>
-                  Zwischensumme
+                  {b.zwischensumme}
                 </th>
                 {spalten.map((sp) => (
                   <td key={sp.id} className={styles.summeWert}>
@@ -165,7 +178,7 @@ export function Kniffelblock({ spalten, wuerfel, eintragbar, onEintragen }: Knif
 
       {/* Die Endsumme steht unter beiden Haelften -- sie gehoert zu keiner. */}
       <div className={styles.gesamt}>
-        <span className={styles.gesamtName}>Gesamt</span>
+        <span className={styles.gesamtName}>{b.gesamt}</span>
         <div className={styles.gesamtWerte}>
           {spalten.map((sp) => (
             <span key={sp.id} className={styles.gesamtWert}>
@@ -180,11 +193,12 @@ export function Kniffelblock({ spalten, wuerfel, eintragbar, onEintragen }: Knif
 }
 
 function Kopfzeile({ spalten }: { spalten: BlockSpalte[] }) {
+  const { t } = useSprache()
   return (
     <thead>
       <tr>
         <th scope="col" className={styles.ecke}>
-          Feld
+          {t.kniffel.block.feld}
         </th>
         {spalten.map((sp) => (
           <th
@@ -221,6 +235,7 @@ function Zeile({
   eintragbar,
   onEintragen,
 }: ZeileProps) {
+  const { t } = useSprache()
   return (
     <tr>
       <th scope="row" className={styles.feldName}>
@@ -249,7 +264,7 @@ function Zeile({
               className={punkte > 0 ? styles.vorschlag : styles.vorschlagNull}
               onClick={() => onEintragen(feld)}
               disabled={!eintragbar}
-              aria-label={`${name} mit ${punkte} Punkten eintragen`}
+              aria-label={t.kniffel.block.eintragen(name, punkte)}
             >
               {punkte}
             </button>

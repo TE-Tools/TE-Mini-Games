@@ -156,4 +156,19 @@ describe('Konto löschen in der App', () => {
     expect(screen.getByText(/Bestenlisten/)).toBeInTheDocument()
     expect(screen.getByText(/te-alltagshelfer@outlook\.de/)).toBeInTheDocument()
   })
+
+  it('erklärt den Weg auch auf Englisch, mit dem Wort, das die Kontoseite verlangt', async () => {
+    localStorage.setItem('te-sprache', 'en')
+    render(
+      <SprachProvider>
+        <MemoryRouter>
+          <KontoLoeschenPage />
+        </MemoryRouter>
+      </SprachProvider>,
+    )
+    expect(await screen.findByRole('heading', { name: 'Delete account' })).toBeInTheDocument()
+    expect(screen.getByText(/leaderboards/)).toBeInTheDocument()
+    expect(screen.getByText(/cannot be undone/)).toBeInTheDocument()
+    expect(screen.queryByText(/Bestenlisten/)).toBeNull()
+  })
 })

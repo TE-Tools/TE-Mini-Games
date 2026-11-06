@@ -15,7 +15,7 @@
  */
 import 'fake-indexeddb/auto'
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import {
@@ -27,6 +27,7 @@ import {
 } from '@/games/schuetzenopoly'
 import { Brett } from '@/pages/play/schuetzenopoly/Brett'
 import { SchuetzenopolyPage } from '@/pages/play/SchuetzenopolyPage'
+import { renderAufDeutsch as render } from './aufDeutsch'
 
 // Töne brauchen einen AudioContext, den jsdom nicht hat.
 vi.mock('@/services/sound', () => ({

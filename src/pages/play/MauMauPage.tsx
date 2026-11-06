@@ -29,6 +29,7 @@ import {
   type Spielart,
 } from '@/games/maumau'
 import type { GameId } from '@/games/types'
+import { spielName, useSprache } from '@/i18n/sprache'
 import { RAUM_PARAM } from '@/services/raeume'
 import { spielerNameOderDu } from '@/services/spielername'
 import { spiele, setzeTon, tonAn, vibriere } from '@/services/sound'
@@ -46,18 +47,8 @@ type Ansicht = 'menue' | 'aufbau' | 'online' | 'tisch'
 
 const GEGNER_NAMEN = ['Ida', 'Bruno', 'Lotte']
 
-const STUFEN: { id: KiStufe; label: string; erklaerung: string }[] = [
-  {
-    id: 'leicht',
-    label: 'Leicht',
-    erklaerung: 'Legt die erste Karte, die passt – und vergisst auch mal Mau.',
-  },
-  {
-    id: 'normal',
-    label: 'Normal',
-    erklaerung: 'Wählt aus, hebt sich die schwarzen Karten auf und sagt immer Mau.',
-  },
-]
+/** Die Stärken des Rechners; Name und Erklärung stehen im Wörterbuch. */
+const STUFEN: KiStufe[] = ['leicht', 'normal']
 
 interface Props {
   /** Welche Kachel: das klassische Mau-Mau oder das bunte Blatt. */
@@ -66,16 +57,19 @@ interface Props {
 
 export function MauMauPage({ spiel }: Props) {
   const navigate = useNavigate()
+  const { t } = useSprache()
   const klassisch = spiel === 'maumau'
-  const titel = klassisch ? 'Mau-Mau' : 'Letzte Karte'
+  const titel = spielName(t, spiel, klassisch ? 'Mau-Mau' : 'Letzte Karte')
   /** Beim klassischen Blatt sagt man „Mau“, beim bunten „Letzte Karte“. */
-  const ansage = klassisch ? 'Mau!' : 'Letzte Karte!'
+  const ansage = klassisch ? t.maumau.ansageMau : t.maumau.ansageLetzteKarte
 
   // Mit ?raum=CODE (von der Seite „Offene Spiele") geht es direkt in den
   // Online-Teil; der tritt dann von selbst bei.
   const [ansicht, setAnsicht] = useState<Ansicht>(() =>
     new URLSearchParams(window.location.search).has(RAUM_PARAM) ? 'online' : 'menue',
   )
+  // Der eigene Name geht nur in die Engine; angezeigt wird der Mensch
+  // als t.maumau.du bzw. in den Protokollzeilen „Du …“ (übersetzt in MauTisch).
   const [spielerName, setSpielerName] = useState('Du')
   const [gegner, setGegner] = useState(2)
   const [stufe, setStufe] = useState<KiStufe>('normal')
@@ -216,9 +210,7 @@ export function MauMauPage({ spiel }: Props) {
         <Kopf titel={titel} onZurueck={() => navigate('/')} ton={ton} onTon={tonUmschalten} />
         <section className={styles.menue}>
           <p className={styles.einleitung}>
-            {klassisch
-              ? 'Farbe oder Zahl muss passen. Die 7 schickt zwei Karten, die 8 lässt aussetzen, die 9 dreht die Runde – und der Bube wünscht sich eine Farbe.'
-              : 'Farbe oder Aufdruck muss passen. Aussetzen, Richtungswechsel, Ziehkarten – und wer nur noch eine Karte hat, sagt es besser rechtzeitig.'}
+            {klassisch ? t.maumau.einleitungKlassisch : t.maumau.einleitungBunt}
           </p>
           <button
             type="button"
@@ -229,8 +221,8 @@ export function MauMauPage({ spiel }: Props) {
               {klassisch ? '🂡' : '🎴'}
             </span>
             <span>
-              <strong>Gegen den Rechner</strong>
-              <small>Bis zu drei Mitspieler</small>
+              <strong>{t.allgemein.gegenRechner}</strong>
+              <small>{t.maumau.bisDreiMitspieler}</small>
             </span>
           </button>
           <button
@@ -242,12 +234,12 @@ export function MauMauPage({ spiel }: Props) {
               🌐
             </span>
             <span>
-              <strong>Online mit anderen</strong>
-              <small>Tisch aufmachen, Code weitergeben – oder beitreten</small>
+              <strong>{t.maumau.onlineMitAnderen}</strong>
+              <small>{t.maumau.onlineMitAnderenText}</small>
             </span>
           </button>
           <Link to="/" className={shell.homeLink}>
-            Zum Menü
+            {t.allgemein.zumMenue}
           </Link>
         </section>
       </main>
@@ -268,14 +260,14 @@ export function MauMauPage({ spiel }: Props) {
       <main className={shell.page}>
         <Kopf titel={titel} onZurueck={() => setAnsicht('menue')} ton={ton} onTon={tonUmschalten} />
         <section className={shell.section}>
-          <h2 className={styles.ueberschrift}>Gegen den Rechner</h2>
+          <h2 className={styles.ueberschrift}>{t.allgemein.gegenRechner}</h2>
 
           {!klassisch && <Spielartwahl art={art} onArt={waehleArt} />}
 
           <Hausregelwahl klassisch={klassisch} stand={hausregeln} onStand={setHausregeln} />
 
           <fieldset className={styles.gruppe}>
-            <legend>Wie viele Mitspieler?</legend>
+            <legend>{t.maumau.wieVieleMitspieler}</legend>
             <div className={styles.knopfreihe}>
               {[1, 2, 3].map((n) => (
                 <button
@@ -292,24 +284,24 @@ export function MauMauPage({ spiel }: Props) {
           </fieldset>
 
           <fieldset className={styles.gruppe}>
-            <legend>Wie stark?</legend>
+            <legend>{t.maumau.wieStark}</legend>
             <div className={styles.knopfreihe}>
-              {STUFEN.map((s) => (
+              {STUFEN.map((id) => (
                 <button
-                  key={s.id}
+                  key={id}
                   type="button"
-                  className={stufe === s.id ? styles.wahlAn : styles.wahlAus}
-                  onClick={() => setStufe(s.id)}
+                  className={stufe === id ? styles.wahlAn : styles.wahlAus}
+                  onClick={() => setStufe(id)}
                 >
-                  {s.label}
+                  {t.maumau.stufen[id].name}
                 </button>
               ))}
             </div>
-            <p className={styles.erklaerung}>{STUFEN.find((s) => s.id === stufe)?.erklaerung}</p>
+            <p className={styles.erklaerung}>{t.maumau.stufen[stufe].erklaerung}</p>
           </fieldset>
 
           <button type="button" className={styles.start} onClick={starten}>
-            🂡 Los geht&apos;s
+            {t.maumau.losGehts}
           </button>
         </section>
       </main>
@@ -333,7 +325,7 @@ export function MauMauPage({ spiel }: Props) {
         <Kopf titel={titel} onZurueck={() => setAnsicht('menue')} ton={ton} onTon={tonUmschalten} />
         <section className={shell.section}>
           <p className={gewonnen ? shell.correct : shell.wrong}>
-            {gewonnen ? `🏆 Gewonnen!` : `Platz ${platz} von ${zustand.spieler.length}`}
+            {gewonnen ? t.maumau.gewonnen : t.maumau.platzVon(platz, zustand.spieler.length)}
           </p>
           <ol className={styles.endstand}>
             {[...zustand.spieler]
@@ -341,31 +333,31 @@ export function MauMauPage({ spiel }: Props) {
               .map((s) => (
                 <li key={s.id} className={styles.endEintrag}>
                   <span className={styles.endPlatz}>{s.platz ?? '–'}.</span>
-                  <span className={styles.endName}>{s.mensch ? 'Du' : s.name}</span>
+                  <span className={styles.endName}>{s.mensch ? t.maumau.du : s.name}</span>
                   <span className={styles.endWert}>
                     {s.hand.length === 0
-                      ? 'alle abgelegt'
-                      : `${s.hand.length} ${s.hand.length === 1 ? 'Karte' : 'Karten'} · ${handPunkte(s.hand)} Punkte`}
+                      ? t.maumau.alleAbgelegt
+                      : t.maumau.kartenUndPunkte(s.hand.length, handPunkte(s.hand))}
                   </span>
                 </li>
               ))}
           </ol>
           <p className={styles.punktzeile}>
-            <strong>{punkte}</strong> Punkte für diese Runde
+            <strong>{punkte}</strong> {t.maumau.punkteFuerRunde}
           </p>
           <div className={shell.resultActions}>
             <button type="button" className={shell.primaryBtn} onClick={starten}>
-              Noch eine Runde
+              {t.maumau.nochEineRunde}
             </button>
             <button
               type="button"
               className={shell.secondaryBtn}
               onClick={() => setAnsicht('menue')}
             >
-              Zurück
+              {t.allgemein.zurueck}
             </button>
             <Link to="/" className={shell.homeLink}>
-              Zum Menü
+              {t.allgemein.zumMenue}
             </Link>
           </div>
         </section>
@@ -435,9 +427,15 @@ function Kopf({
   ton: boolean
   onTon: () => void
 }) {
+  const { t } = useSprache()
   return (
     <header className={shell.header}>
-      <button type="button" className={shell.back} onClick={onZurueck} aria-label="Zurück">
+      <button
+        type="button"
+        className={shell.back}
+        onClick={onZurueck}
+        aria-label={t.allgemein.zurueck}
+      >
         ←
       </button>
       <h1 className={shell.title}>{titel}</h1>
@@ -445,7 +443,7 @@ function Kopf({
         type="button"
         className={styles.tonKnopf}
         onClick={onTon}
-        aria-label={ton ? 'Ton ausschalten' : 'Ton einschalten'}
+        aria-label={ton ? t.maumau.tonAus : t.maumau.tonEin}
       >
         {ton ? '🔊' : '🔈'}
       </button>

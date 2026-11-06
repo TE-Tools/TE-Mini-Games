@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CATEGORIES, ONLINE_MODES, modeOf, chaosRuleLabel } from '@/games/finde-den-imposter'
+import { CATEGORIES, ONLINE_MODES, modeOf } from '@/games/finde-den-imposter'
 import { loadCustomCategories } from '@/games/finde-den-imposter/customCategories'
 import { getCurrentUser } from '@/auth/authService'
+import { useSprache } from '@/i18n/sprache'
 import {
   isImposterOnlineAvailable,
   createOnlineMatch,
@@ -27,6 +28,7 @@ import {
 } from '@/services/imposterOnline'
 import { HERZSCHLAG_MS, RAUM_GESCHLOSSEN_TEXT, RAUM_PARAM, istRaumWeg } from '@/services/raeume'
 import { OeffentlicheRaeume } from './OeffentlicheRaeume'
+import { chaosRegel, modusName, modusText } from './imposter/imposterText'
 import raum from './OeffentlicheRaeume.module.css'
 import styles from './FindeDenImposterPage.module.css'
 
@@ -41,6 +43,9 @@ const POLL_MS = 3000
 const EIGEN_PREFIX = 'eigen:'
 
 export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
+  const { t } = useSprache()
+  const tx = t.imposter
+  const to = t.imposter.online
   const [ready, setReady] = useState(false)
   const [signedIn, setSignedIn] = useState(false)
 
@@ -96,22 +101,25 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
     (c) => !eigene.some((e) => e.label.toLowerCase() === c.label.toLowerCase()),
   )
 
-  const laden = useCallback(async (id: string) => {
-    try {
-      setState(await fetchOnlineState(id))
-      setError(null)
-    } catch (e) {
-      // Der Server löscht Räume, in denen zwanzig Minuten niemand mehr war
-      // (Migration 018). Dann zurück in den Vorraum, mit Erklärung.
-      if (istRaumWeg(e) && aktuellerRaum.current === id) {
-        setMatchId(null)
-        setState(null)
-        setError(RAUM_GESCHLOSSEN_TEXT)
-        return
+  const laden = useCallback(
+    async (id: string) => {
+      try {
+        setState(await fetchOnlineState(id))
+        setError(null)
+      } catch (e) {
+        // Der Server löscht Räume, in denen zwanzig Minuten niemand mehr war
+        // (Migration 018). Dann zurück in den Vorraum, mit Erklärung.
+        if (istRaumWeg(e) && aktuellerRaum.current === id) {
+          setMatchId(null)
+          setState(null)
+          setError(RAUM_GESCHLOSSEN_TEXT)
+          return
+        }
+        setError(e instanceof Error ? e.message : to.ladeFehler)
       }
-      setError(e instanceof Error ? e.message : 'Der Spielstand kam nicht an.')
-    }
-  }, [])
+    },
+    [to],
+  )
 
   useEffect(() => {
     if (!matchId) return
@@ -143,8 +151,8 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
 
   useEffect(() => {
     if (!laeuft) return
-    const t = window.setInterval(() => setJetzt(Date.now()), 250)
-    return () => window.clearInterval(t)
+    const takt = window.setInterval(() => setJetzt(Date.now()), 250)
+    return () => window.clearInterval(takt)
   }, [laeuft])
 
   const uhrEnde =
@@ -155,28 +163,31 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
   useEffect(() => {
     if (uhrEnde === null || !uhrMatchId || !binGastgeber) return
     let gesendet = false
-    const t = window.setInterval(() => {
+    const wache = window.setInterval(() => {
       if (gesendet || Date.now() < uhrEnde) return
       gesendet = true
-      window.clearInterval(t)
+      window.clearInterval(wache)
       // Fehler sind hier egal: Wenn jemand schon weitergeschaltet hat, lehnt
       // der Server ab, und der nächste Spielstand zeigt ohnehin die Anklage.
       void toAccusePhase(uhrMatchId).catch(() => undefined)
     }, 250)
-    return () => window.clearInterval(t)
+    return () => window.clearInterval(wache)
   }, [uhrEnde, uhrMatchId, binGastgeber])
 
-  const run = useCallback(async (job: () => Promise<unknown>) => {
-    setBusy(true)
-    setError(null)
-    try {
-      await job()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Das hat nicht geklappt.')
-    } finally {
-      setBusy(false)
-    }
-  }, [])
+  const run = useCallback(
+    async (job: () => Promise<unknown>) => {
+      setBusy(true)
+      setError(null)
+      try {
+        await job()
+      } catch (e) {
+        setError(e instanceof Error ? e.message : to.fehler)
+      } finally {
+        setBusy(false)
+      }
+    },
+    [to],
+  )
 
   // Von "Offene Spiele" mit ?raum=CODE gekommen: einmal von selbst beitreten.
   const autoBeigetreten = useRef(false)
@@ -186,42 +197,36 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
     if (!raumCode) return
     autoBeigetreten.current = true
     // Nicht direkt im Effekt: der Aufruf setzt sofort Zustand, das mag React nicht.
-    const t = window.setTimeout(() => {
+    const verzoegert = window.setTimeout(() => {
       void run(async () => {
         setMatchId(await joinOnlineMatch(raumCode))
       })
     }, 0)
-    return () => window.clearTimeout(t)
+    return () => window.clearTimeout(verzoegert)
   }, [signedIn, run])
 
   if (!isImposterOnlineAvailable) {
     return (
       <div className={styles.card}>
-        <p className={styles.subtitle}>
-          Für Online-Runden fehlt die Verbindung zum Konto-Server. Am einen Gerät geht es trotzdem
-          jederzeit.
-        </p>
+        <p className={styles.subtitle}>{to.ohneServer}</p>
         <button type="button" className={styles.btn} onClick={onBack}>
-          Zurück zum Spiel am einen Gerät
+          {to.zurueckZumGeraet}
         </button>
       </div>
     )
   }
 
-  if (!ready) return <p className={styles.meta}>Laden…</p>
+  if (!ready) return <p className={styles.meta}>{to.laden}</p>
 
   if (!signedIn) {
     return (
       <div className={styles.card}>
-        <p className={styles.subtitle}>
-          Online spielst du mit deinem Konto – so weiß der Server, wem er welches Wort schicken
-          darf.
-        </p>
+        <p className={styles.subtitle}>{to.ohneKonto}</p>
         <Link to="/auth" className={styles.btn} style={{ textAlign: 'center' }}>
-          Anmelden
+          {to.anmelden}
         </Link>
         <button type="button" className={styles.btnSecondary} onClick={onBack}>
-          Lieber am einen Gerät
+          {to.lieberGeraet}
         </button>
       </div>
     )
@@ -235,19 +240,19 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
         {error && <p className={styles.error}>{error}</p>}
 
         <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Neue Runde eröffnen</h2>
+          <h2 className={styles.cardTitle}>{to.neueRunde}</h2>
           <label className={styles.label}>
-            Dein Name
+            {to.deinName}
             <input
               className={styles.input}
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={20}
-              placeholder="wie du am Tisch heißt"
+              placeholder={to.namePlatzhalter}
             />
           </label>
           <label className={styles.label}>
-            Kategorie
+            {tx.kategorie}
             <select
               className={styles.select}
               value={categoryId}
@@ -259,10 +264,10 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
                 </option>
               ))}
               {eigene.length > 0 && (
-                <optgroup label="Eigene Listen">
+                <optgroup label={to.eigeneListen}>
                   {eigene.map((c) => (
                     <option key={c.id} value={`${EIGEN_PREFIX}${c.id}`}>
-                      {c.label} ({c.word_count} Wörter)
+                      {to.listeMitWoertern(c.label, c.word_count)}
                     </option>
                   ))}
                 </optgroup>
@@ -270,7 +275,7 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
             </select>
           </label>
           <label className={styles.label}>
-            Modus
+            {tx.modus}
             <select
               className={styles.select}
               value={mode}
@@ -278,19 +283,16 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
             >
               {ONLINE_MODES.map((m) => (
                 <option key={m.id} value={m.id}>
-                  {m.label}
-                  {m.minPlayers > 3 ? ` (ab ${m.minPlayers})` : ''}
+                  {modusName(t, m.id)}
+                  {m.minPlayers > 3 ? tx.abSpielern(m.minPlayers) : ''}
                 </option>
               ))}
             </select>
           </label>
-          <p className={styles.subtitle}>{modeOf(mode).description}</p>
+          <p className={styles.subtitle}>{modusText(t, mode)}</p>
           {nochNichtHochgeladen.length > 0 && (
             <div className={styles.meta}>
-              <p>
-                Auf diesem Gerät liegen {nochNichtHochgeladen.length} eigene Listen, die der Server
-                noch nicht kennt.
-              </p>
+              <p>{to.nichtHochgeladen(nochNichtHochgeladen.length)}</p>
               <button
                 type="button"
                 className={styles.btnSecondary}
@@ -304,16 +306,12 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
                   })
                 }
               >
-                Für Online-Runden hochladen
+                {to.hochladen}
               </button>
             </div>
           )}
           {(categoryId.startsWith(EIGEN_PREFIX) || eigene.length > 0) && (
-            <p className={styles.meta}>
-              Bei einer eigenen Liste kennst du als Gastgeber die Wörter – du erfährst aber nicht,
-              welches gezogen wurde. Je kürzer die Liste, desto leichter hast du es trotzdem bei der
-              letzten Chance.
-            </p>
+            <p className={styles.meta}>{to.eigeneListeHinweis}</p>
           )}
           <label className={raum.oeffentlich}>
             <input
@@ -322,8 +320,8 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
               onChange={(e) => setOeffentlich(e.target.checked)}
             />
             <span>
-              Öffentliche Runde
-              <small>Steht für alle in der Lobby, mit deinem Namen. Jeder kann beitreten.</small>
+              {to.oeffentlich}
+              <small>{to.oeffentlichText}</small>
             </span>
           </label>
           <button
@@ -346,18 +344,18 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
               })
             }
           >
-            Runde eröffnen
+            {to.eroeffnen}
           </button>
         </div>
 
         <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Mit Code beitreten</h2>
+          <h2 className={styles.cardTitle}>{to.mitCode}</h2>
           <input
             className={styles.input}
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
             maxLength={5}
-            placeholder="z. B. K4T9P"
+            placeholder={to.codePlatzhalter}
             autoCapitalize="characters"
           />
           <button
@@ -370,7 +368,7 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
               })
             }
           >
-            Beitreten
+            {to.beitreten}
           </button>
         </div>
 
@@ -386,19 +384,17 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
 
         {open.length > 0 && (
           <div className={styles.card}>
-            <h2 className={styles.cardTitle}>Deine laufenden Runden</h2>
+            <h2 className={styles.cardTitle}>{to.laufendeRunden}</h2>
             <ul className={styles.hintList}>
               {open.map((m) => (
                 <li key={m.match_id}>
-                  <span>
-                    {m.code} · Runde {m.round}
-                  </span>
+                  <span>{to.codeRunde(m.code, m.round)}</span>
                   <button
                     type="button"
                     className={styles.voteBtn}
                     onClick={() => setMatchId(m.match_id)}
                   >
-                    weiter ({m.size})
+                    {to.weiterMit(m.size)}
                   </button>
                 </li>
               ))}
@@ -407,7 +403,7 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
         )}
 
         <button type="button" className={styles.btnSecondary} onClick={onBack}>
-          Zurück zum Spiel am einen Gerät
+          {to.zurueckZumGeraet}
         </button>
       </>
     )
@@ -422,7 +418,8 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
     m.timer_seconds && m.phase_at ? Date.parse(m.phase_at) + m.timer_seconds * 1000 : null
   const restSekunden =
     ablauf === null || jetzt === 0 ? null : Math.max(0, Math.ceil((ablauf - jetzt) / 1000))
-  const chaosRegel = chaosRuleLabel(m.special_rule)
+  const chaos = chaosRegel(t, m.special_rule)
+  const angeklagt = state.players.find((p) => p.seat === m.accused_seat)?.name ?? '–'
   const istDuell = m.mode === 'duel'
   // Im Duell sucht jedes Team in den eigenen Reihen.
   const waehlbar = istDuell ? state.players.filter((p) => p.team === me.team) : state.players
@@ -442,23 +439,24 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
       {error && <p className={styles.error}>{error}</p>}
 
       <p className={styles.meta}>
-        Code <strong>{m.code}</strong> · {m.size} dabei · Runde {m.round}
+        {to.code} <strong>{m.code}</strong>
+        {to.kopfzeile(m.size, m.round)}
         {m.category_label ? ` · ${m.category_label}` : ''}
       </p>
-      {chaosRegel && <p className={styles.badge}>Chaos: {chaosRegel}</p>}
+      {chaos && <p className={styles.badge}>{tx.chaos(chaos)}</p>}
 
       {m.phase === 'lobby' && (
         <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Vorraum</h2>
+          <h2 className={styles.cardTitle}>{to.vorraum}</h2>
           <p className={styles.subtitle}>
-            {modeOf(m.mode).label} · Gebt den Code weiter.{' '}
-            {m.is_host ? 'Du startest, wenn alle da sind.' : 'Der Gastgeber startet.'}
+            {to.codeWeitergeben(modusName(t, m.mode))}{' '}
+            {m.is_host ? to.duStartest : to.gastgeberStartet}
           </p>
           <ul className={styles.hintList}>
             {state.players.map((p) => (
               <li key={p.seat}>
                 <span>{p.name}</span>
-                <strong>{p.is_you ? 'du' : 'dabei'}</strong>
+                <strong>{p.is_you ? to.du : to.dabei}</strong>
               </li>
             ))}
           </ul>
@@ -470,12 +468,12 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
               onClick={() => void run(() => startOnlineMatch(m.id))}
             >
               {m.size < modeOf(m.mode).minPlayers
-                ? `Mindestens ${modeOf(m.mode).minPlayers} Mitspielende`
-                : 'Runde starten'}
+                ? to.mindestens(modeOf(m.mode).minPlayers)
+                : to.starten}
             </button>
           )}
           <button type="button" className={styles.btnSecondary} onClick={verlassen}>
-            Verlassen
+            {to.verlassen}
           </button>
         </div>
       )}
@@ -484,29 +482,27 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
         <div className={`${styles.card} ${styles.secretBox}`}>
           {me.is_imposter ? (
             <>
-              <p className={styles.roleImposter}>IMPOSTER</p>
+              <p className={styles.roleImposter}>{tx.imposterRolle}</p>
               {m.imposter_sees === 'helper' && (
                 <>
-                  <p className={styles.subtitle}>Hilfswort</p>
+                  <p className={styles.subtitle}>{tx.hilfswort}</p>
                   <p className={styles.secretWord}>{me.helper_word}</p>
                 </>
               )}
               {m.imposter_sees === 'category' && (
                 <>
-                  <p className={styles.subtitle}>Kategorie</p>
+                  <p className={styles.subtitle}>{tx.kategorie}</p>
                   <p className={styles.secretWord}>{m.category_label}</p>
                 </>
               )}
               {m.imposter_sees === 'nothing' && (
-                <p className={styles.playHint}>
-                  Du siehst nichts – kein Wort, keine Kategorie. Hör gut zu und bluff dich durch.
-                </p>
+                <p className={styles.playHint}>{tx.siehstNichts}</p>
               )}
             </>
           ) : (
             <>
-              <p className={styles.roleCitizen}>Du bist unschuldig</p>
-              <p className={styles.subtitle}>Geheimes Wort</p>
+              <p className={styles.roleCitizen}>{tx.unschuldig}</p>
+              <p className={styles.subtitle}>{tx.geheimesWort}</p>
               <p className={styles.secretWord}>{me.word}</p>
             </>
           )}
@@ -515,15 +511,13 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
 
       {m.phase === 'discussion' && (
         <div className={styles.card}>
-          <p className={styles.subtitle}>Jetzt fängt an</p>
+          <p className={styles.subtitle}>{tx.jetztFaengtAn}</p>
           <p className={styles.coverName}>
             {starter?.name ?? '–'}
-            {starter?.is_you ? ' (du)' : ''}
+            {starter?.is_you ? to.duKlammer : ''}
           </p>
           <p className={styles.playHint}>
-            {restSekunden === null
-              ? 'Jetzt redet miteinander – klärt selbst, wie viele Runden ihr dreht.'
-              : 'Jetzt redet miteinander – die Uhr läuft.'}
+            {restSekunden === null ? tx.redetMiteinander : tx.redetUhrLaeuft}
           </p>
           {restSekunden !== null && (
             <p className={styles.secretWord}>
@@ -537,25 +531,25 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
               disabled={busy}
               onClick={() => void run(() => toAccusePhase(m.id))}
             >
-              Imposter erraten
+              {tx.imposterErraten}
             </button>
           ) : (
-            <p className={styles.meta}>Der Gastgeber startet das Raten, wenn ihr so weit seid.</p>
+            <p className={styles.meta}>{to.gastgeberStartetRaten}</p>
           )}
         </div>
       )}
 
       {m.phase === 'accuse' && (
         <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Wer ist der Imposter?</h2>
+          <h2 className={styles.cardTitle}>{tx.werIstImposter}</h2>
           <p className={styles.subtitle}>
             {me.vote_seat
               ? istDuell
-                ? 'Deine Stimme ist abgegeben – warte auf dein Team.'
-                : 'Deine Stimme ist abgegeben – warte auf die anderen.'
+                ? to.stimmeAbgegebenTeam
+                : to.stimmeAbgegeben
               : istDuell
-                ? 'Tippe auf jemanden aus deinem Team. Es zählt, wer im Team die meisten Stimmen bekommt.'
-                : 'Tippe auf einen Namen. Es zählt, wer die meisten Stimmen bekommt.'}
+                ? to.tippeTeam
+                : to.tippe}
           </p>
           <div className={styles.voteGrid}>
             {/* Im Duell steht nur das eigene Team zur Wahl -- der Server weist
@@ -576,11 +570,7 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
             ))}
           </div>
           {istDuell && (
-            <p className={styles.meta}>
-              {meinTeamFertig
-                ? 'Euer Team ist durch. Jetzt fehlt noch das andere Team.'
-                : 'Beide Teams stimmen getrennt ab – ausgewertet wird erst, wenn beide fertig sind.'}
-            </p>
+            <p className={styles.meta}>{meinTeamFertig ? to.teamDurch : to.teamsGetrennt}</p>
           )}
         </div>
       )}
@@ -589,15 +579,13 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
         <div className={styles.card}>
           {me.my_turn_last_chance ? (
             <>
-              <h2 className={styles.cardTitle}>Erwischt!</h2>
-              <p className={styles.subtitle}>
-                Letzte Chance: Rate das geheime Wort und dreh die Runde doch noch.
-              </p>
+              <h2 className={styles.cardTitle}>{to.erwischt}</h2>
+              <p className={styles.subtitle}>{to.letzteChanceText}</p>
               <input
                 className={styles.input}
                 value={ratetext}
                 onChange={(e) => setGuess({ round: m.round, text: e.target.value })}
-                placeholder="Geheimes Wort…"
+                placeholder={tx.wortPlatzhalter}
                 autoComplete="off"
               />
               <button
@@ -606,24 +594,18 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
                 disabled={busy || !ratetext.trim()}
                 onClick={() => void run(() => lastChanceOnline(m.id, ratetext))}
               >
-                Wort abschicken
+                {tx.wortAbschicken}
               </button>
             </>
           ) : (
             <>
-              <h2 className={styles.cardTitle}>Letzte Chance</h2>
-              <p className={styles.subtitle}>
-                {state.players.find((p) => p.seat === m.accused_seat)?.name} wurde erwischt und rät
-                jetzt das geheime Wort.
-              </p>
+              <h2 className={styles.cardTitle}>{to.letzteChance}</h2>
+              <p className={styles.subtitle}>{to.raetJetzt(angeklagt)}</p>
               {/* Im Duell können beide Imposter erwischt worden sein -- dann
                   kommen sie nacheinander dran, und wer wartet, soll wissen,
                   dass danach noch jemand kommt. */}
               {istDuell && m.correct_accusation === true && (
-                <p className={styles.meta}>
-                  Im Duell rät jeder Erwischte einzeln. Trifft einer von beiden, ist die Runde für
-                  die Imposter gedreht.
-                </p>
+                <p className={styles.meta}>{to.duellEinzeln}</p>
               )}
             </>
           )}
@@ -635,39 +617,37 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
           <div className={styles.card}>
             <h2 className={styles.cardTitle}>
               {m.correct_accusation && m.last_chance_success === false
-                ? 'Enttarnt!'
-                : 'Der Imposter gewinnt'}
+                ? tx.enttarnt
+                : tx.imposterGewinnt}
             </h2>
-            <p className={styles.subtitle}>Das geheime Wort war</p>
+            <p className={styles.subtitle}>{tx.wortWar}</p>
             <p className={styles.secretWord}>{m.secret_word}</p>
             {!m.show_category && m.category_label && (
-              <p className={styles.meta}>Kategorie: {m.category_label}</p>
+              <p className={styles.meta}>{tx.kategorieWar(m.category_label)}</p>
             )}
           </div>
           <div className={styles.card}>
-            <h2 className={styles.cardTitle}>Wer war wer</h2>
+            <h2 className={styles.cardTitle}>{to.werWarWer}</h2>
             <ul className={styles.hintList}>
               {state.players.map((p) => (
                 <li key={p.seat}>
                   <span>
                     {p.name}
-                    {p.is_you ? ' (du)' : ''}
+                    {p.is_you ? to.duKlammer : ''}
                   </span>
-                  <strong>{p.is_imposter ? 'Imposter' : 'unschuldig'}</strong>
+                  <strong>{p.is_imposter ? to.imposter : to.unschuldig}</strong>
                 </li>
               ))}
             </ul>
             {m.accused_seat !== null && (
               <p className={styles.meta}>
-                Getippt auf {state.players.find((p) => p.seat === m.accused_seat)?.name} –{' '}
-                {m.correct_accusation ? 'richtig' : 'daneben'}
+                {to.getipptAuf(angeklagt)}
+                {m.correct_accusation ? to.richtig : tx.daneben}
                 {m.last_chance_success !== null &&
-                  (m.last_chance_success ? ', letzte Chance getroffen' : ', letzte Chance daneben')}
+                  (m.last_chance_success ? to.letzteChanceGetroffen : to.letzteChanceDaneben)}
               </p>
             )}
-            {m.accused_seat === null && (
-              <p className={styles.meta}>Gleichstand – niemand wurde angeklagt.</p>
-            )}
+            {m.accused_seat === null && <p className={styles.meta}>{to.gleichstand}</p>}
           </div>
           {m.is_host && (
             <button
@@ -676,11 +656,11 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
               disabled={busy}
               onClick={() => void run(() => nextRoundOnline(m.id))}
             >
-              Nächste Runde
+              {tx.naechsteRunde}
             </button>
           )}
           <button type="button" className={styles.btnSecondary} onClick={verlassen}>
-            Runde verlassen
+            {to.rundeVerlassen}
           </button>
         </>
       )}

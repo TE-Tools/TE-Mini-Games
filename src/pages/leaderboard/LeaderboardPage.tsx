@@ -19,7 +19,7 @@ import { holeVerloreneErgebnisseNach } from '@/services/nachtragen'
 import { getSyncPendingCount } from '@/services/sync'
 import type { GameId } from '@/games/types'
 import styles from './LeaderboardPage.module.css'
-import { useSprache } from '@/i18n/sprache'
+import { useSprache, spielName } from '@/i18n/sprache'
 
 type Tab = 'overall' | 'mine' | 'global-ps' | 'global-wim' | 'global-sr' | 'global-rf' | 'global-kr'
 
@@ -290,18 +290,17 @@ export function LeaderboardPage() {
                   <span className={styles.rank}>{e.rank}.</span>
                   <span className={styles.rowMain}>
                     {e.username}
-                    {e.username === myName ? ' (du)' : ''}
+                    {e.username === myName ? t.rangliste.du : ''}
                     <span className={styles.sub}>
                       {' '}
-                      {e.playerLevel > 0 ? `Level ${e.playerLevel} · ` : ''}
-                      {e.playCount} {e.playCount === 1 ? 'Runde' : 'Runden'} · {e.gameCount}{' '}
-                      {e.gameCount === 1 ? 'Spiel' : 'Spiele'}
+                      {e.playerLevel > 0 ? t.rangliste.levelVorne(e.playerLevel) : ''}
+                      {t.rangliste.rundenZahl(e.playCount)} · {t.rangliste.spieleZahl(e.gameCount)}
                     </span>
                   </span>
                   <span className={styles.rowRight}>
-                    <span className={styles.rowScore}>{e.totalXp.toLocaleString('de-DE')} XP</span>
+                    <span className={styles.rowScore}>{e.totalXp.toLocaleString(sprache)} XP</span>
                     <span className={styles.rowXp}>
-                      {e.totalScore.toLocaleString('de-DE')} Pkt.
+                      {t.rangliste.punkte(e.totalScore.toLocaleString(sprache))}
                     </span>
                   </span>
                 </li>
@@ -362,17 +361,19 @@ export function LeaderboardPage() {
             <p className={styles.empty}>{t.rangliste.nochKeineErgebnisse}</p>
           ) : (
             <ul className={styles.list}>
-              {totals.map((t) => (
-                <li key={t.gameId} className={`${styles.row} ${styles.rowNoRank}`}>
+              {totals.map((eintrag) => (
+                <li key={eintrag.gameId} className={`${styles.row} ${styles.rowNoRank}`}>
                   <span className={styles.rowMain}>
-                    {gameLabel(t.gameId)}
-                    <span className={styles.sub}> · {t.playCount} Runden</span>
+                    {spielName(t, eintrag.gameId, gameLabel(eintrag.gameId))}
+                    <span className={styles.sub}> · {t.rangliste.runden(eintrag.playCount)}</span>
                   </span>
                   <span className={styles.rowRight}>
                     <span className={styles.rowScore}>
-                      {t.totalScore.toLocaleString('de-DE')} Pkt.
+                      {t.rangliste.punkte(eintrag.totalScore.toLocaleString(sprache))}
                     </span>
-                    <span className={styles.rowXp}>{t.totalXp.toLocaleString('de-DE')} XP</span>
+                    <span className={styles.rowXp}>
+                      {eintrag.totalXp.toLocaleString(sprache)} XP
+                    </span>
                   </span>
                 </li>
               ))}
@@ -423,19 +424,21 @@ export function LeaderboardPage() {
                   <span className={styles.rank}>{e.rank}.</span>
                   <span className={styles.rowMain}>
                     {e.displayName}
-                    {e.displayName === myName ? ' (du)' : ''}
+                    {e.displayName === myName ? t.rangliste.du : ''}
                     <span className={styles.sub}>
                       {' '}
-                      {e.level > 0 ? `Level ${e.level} · ` : ''}
-                      {e.playCount} {e.playCount === 1 ? 'Runde' : 'Runden'}
+                      {e.level > 0 ? t.rangliste.levelVorne(e.level) : ''}
+                      {t.rangliste.rundenZahl(e.playCount ?? 0)}
                       {e.achievedAt
-                        ? ` · zuletzt ${new Date(e.achievedAt).toLocaleDateString('de-DE')}`
+                        ? t.rangliste.zuletzt(new Date(e.achievedAt).toLocaleDateString(sprache))
                         : ''}
                     </span>
                   </span>
                   <span className={styles.rowRight}>
-                    <span className={styles.rowScore}>{e.xp?.toLocaleString('de-DE')} XP</span>
-                    <span className={styles.rowXp}>{e.score.toLocaleString('de-DE')} Pkt.</span>
+                    <span className={styles.rowScore}>{e.xp?.toLocaleString(sprache)} XP</span>
+                    <span className={styles.rowXp}>
+                      {t.rangliste.punkte(e.score.toLocaleString(sprache))}
+                    </span>
                   </span>
                 </li>
               ))}

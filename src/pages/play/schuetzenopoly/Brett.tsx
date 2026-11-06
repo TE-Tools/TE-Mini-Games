@@ -32,6 +32,8 @@ import {
   standardZoom,
   zoomStufe,
 } from './brettPositionen'
+import { useSprache } from '@/i18n/sprache'
+import { feldAnzeige } from './texte'
 import styles from './Brett.module.css'
 
 interface BrettProps {
@@ -72,11 +74,14 @@ const Feld = memo(function Feld({
   hervorgehoben: boolean
   onTippen: () => void
 }) {
+  const { t } = useSprache()
   const platz = rasterplatz(feld.position)
   const farbe = farbeVon(feld)
   const seite = kante(feld.position)
   const istEcke = feld.position % 10 === 0
-  const anzeige = brettKurzname(feld.name)
+  // Grundstücke heißen in jeder Sprache gleich; nur die übrigen Felder werden übersetzt.
+  const benannt = feldAnzeige(t, feld)
+  const anzeige = benannt.kurz ?? brettKurzname(benannt.name)
   const marke = besitzer ? figur(besitzer.figurId) : null
 
   return (
@@ -90,7 +95,9 @@ const Feld = memo(function Feld({
         borderWidth: marke ? 2 : undefined,
       }}
       onClick={onTippen}
-      aria-label={`${feld.name}${besitzer ? `, gehört ${besitzer.name}` : ''}`}
+      aria-label={
+        besitzer ? t.schuetzenopoly.brett.gehoert(benannt.name, besitzer.name) : benannt.name
+      }
       data-seite={seite}
       data-position={feld.position}
     >
@@ -146,6 +153,8 @@ export function Brett({
   className,
   ohneZoom = false,
 }: BrettProps) {
+  const { t } = useSprache()
+  const tb = t.schuetzenopoly.brett
   const spielerJeId = new Map(spieler.map((s) => [s.id, s]))
   const rahmenRef = useRef<HTMLDivElement | null>(null)
   const fensterRef = useRef<HTMLDivElement | null>(null)
@@ -263,7 +272,7 @@ export function Brett({
         <div
           className={styles.brett}
           role="group"
-          aria-label="Spielbrett"
+          aria-label={tb.spielbrett}
           style={brettBreite > 0 ? { width: `${brettBreite}px` } : undefined}
         >
           {BRETT.map((feld) => {
@@ -298,7 +307,7 @@ export function Brett({
             className={styles.zoomKnopf}
             onClick={() => setzeZoom(zoomStufe(stufe, -1))}
             disabled={stufe <= ZOOM_MIN}
-            aria-label="Brett kleiner"
+            aria-label={tb.kleiner}
           >
             −
           </button>
@@ -308,19 +317,19 @@ export function Brett({
             onClick={() => setzeZoom(ZOOM_MIN)}
             disabled={stufe <= ZOOM_MIN}
           >
-            Ganzes Brett
+            {tb.ganzesBrett}
           </button>
           <button
             type="button"
             className={styles.zoomKnopf}
             onClick={() => setzeZoom(zoomStufe(stufe, 1))}
             disabled={stufe >= ZOOM_MAX}
-            aria-label="Brett größer"
+            aria-label={tb.groesser}
           >
             +
           </button>
           <span className={styles.zoomMass} aria-live="polite">
-            {geschoben ? 'Ausschnitt' : 'Ganzes Brett'}
+            {geschoben ? tb.ausschnitt : tb.ganzesBrett}
           </span>
         </div>
       )}

@@ -134,3 +134,32 @@ describe('Erreichbarkeit von der Startseite', () => {
     screen.getByRole('link', { name: '← Zurück' })
   })
 })
+
+describe('Auf Englisch', () => {
+  beforeEach(() => {
+    localStorage.setItem('te-sprache', 'en')
+  })
+
+  it('zeigt die Datenschutzerklärung englisch, mit denselben Diensten und Zusagen', () => {
+    const { container } = zeige(<DatenschutzPage />)
+    const text = container.textContent ?? ''
+    expect(screen.getByRole('heading', { level: 1, name: 'Privacy policy' })).toBeTruthy()
+    for (const dienst of ['Supabase', 'Cloudflare', 'PayPal']) expect(text).toContain(dienst)
+    expect(text).toContain('Without an account, everything stays on your device')
+    expect(text).toContain('We do not set cookies')
+    expect(text).toContain('the German version applies')
+    expect(text).not.toContain('Ohne Konto')
+  })
+
+  it('zeigt das Impressum englisch, die Pflichtangaben bleiben', () => {
+    const { container } = zeige(<ImpressumPage />)
+    const text = container.textContent ?? ''
+    expect(screen.getByRole('heading', { level: 1, name: 'Legal notice' })).toBeTruthy()
+    for (const angabe of ['Holbeinstraße 6', '§ 5 DDG', '§ 19 UStG', '§ 18 Abs. 2 MStV']) {
+      expect(text).toContain(angabe)
+    }
+    expect(screen.getByRole('link', { name: 'Privacy policy' }).getAttribute('href')).toBe(
+      '/datenschutz',
+    )
+  })
+})

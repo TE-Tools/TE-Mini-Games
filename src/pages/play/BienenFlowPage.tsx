@@ -34,6 +34,7 @@ import {
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
 import { LevelMap } from '@/components/level-map/LevelMap'
+import { useSprache } from '@/i18n/sprache'
 import styles from './BienenFlowPage.module.css'
 
 type Phase = 'map' | 'play' | 'won' | 'lost'
@@ -84,6 +85,8 @@ function schriftFarbe(hex: string): string {
 }
 
 export function BienenFlowPage() {
+  const { t } = useSprache()
+  const b = t.bienenFlow
   const [level, setLevel] = useState(1)
   const [highest, setHighest] = useState(1)
   const [avatarId, setAvatarId] = useState<string | null>(null)
@@ -240,7 +243,7 @@ export function BienenFlowPage() {
         )
         setBienen((prev) => [...prev, ...flug])
         window.setTimeout(
-          () => setBienen((prev) => prev.filter((b) => !flug.some((f) => f.id === b.id))),
+          () => setBienen((prev) => prev.filter((x) => !flug.some((f) => f.id === x.id))),
           FLUG_MS,
         )
 
@@ -269,7 +272,7 @@ export function BienenFlowPage() {
     if (!state || phase !== 'play') return
     if (state.phase === 'play') return
     const gen = lauf.current
-    const t = window.setTimeout(() => {
+    const uhr = window.setTimeout(() => {
       if (lauf.current !== gen) return
       if (state.phase === 'won') void finishWon(state)
       else {
@@ -277,7 +280,7 @@ export function BienenFlowPage() {
         setPhase('lost')
       }
     }, ENDE_MS)
-    return () => window.clearTimeout(t)
+    return () => window.clearTimeout(uhr)
   }, [state, phase, finishWon])
 
   const onTapSpalte = useCallback(
@@ -295,7 +298,7 @@ export function BienenFlowPage() {
   if (loading) {
     return (
       <main className={styles.page}>
-        <p className={styles.muted}>Laden…</p>
+        <p className={styles.muted}>{b.laden}</p>
       </main>
     )
   }
@@ -305,28 +308,20 @@ export function BienenFlowPage() {
       <main className={styles.page}>
         <header className={styles.top}>
           <Link to="/" className={styles.back}>
-            {'←'} Zurück
+            {'←'} {b.zurueck}
           </Link>
           <h1 className={styles.title}>
-            <span aria-hidden="true">🐝</span> Bienen-Flow
+            <span aria-hidden="true">🐝</span> {t.spiele['bienen-flow']}
           </h1>
         </header>
-        <p className={styles.hint}>
-          Schieb einen Block auf einen freien Platz – von dort holen die Bienen Pixel seiner Farbe
-          aus dem Bild. Sie kommen nur an das heran, was von außen zugänglich ist. Der Block ist
-          voll, wenn seine Zahl bei null ist; passt seine Farbe gerade nirgends, wartet er und
-          belegt den Platz. Fünf wartende Plätze, und die Kolonie steht. Ab Level 21 wird es Stück
-          für Stück schwerer, dazwischen liegen leichtere Runden; alle zwanzig Level steht ein Tor,
-          das sich nur über eine bestimmte Reihenfolge öffnet. Wer an einem Level zehnmal scheitert,
-          bekommt dort einen sechsten Platz.
-        </p>
+        <p className={styles.hint}>{b.regeln}</p>
         <LevelMap
           currentLevel={level}
           highestLevel={Math.min(highest, BIENEN_MAX_LEVEL)}
           avatarId={avatarId}
           maxLevel={BIENEN_MAX_LEVEL}
           onSelectLevel={onSelectLevel}
-          gameLabel="Bienen-Flow"
+          gameLabel={t.spiele['bienen-flow']}
         />
       </main>
     )
@@ -342,25 +337,27 @@ export function BienenFlowPage() {
   const rest = restPixel(state)
   /** Der sechste Platz aus zehn Fehlversuchen. */
   const bonus = state.slotCount > SLOT_COUNT
+  const motiv = (b.motive as Record<string, string | undefined>)[cfg.motiv] ?? cfg.motiv
+  const stufe = (b.stufen as Record<string, string | undefined>)[cfg.label] ?? cfg.label
 
   return (
     <main className={styles.page}>
       <header className={styles.top}>
         <button type="button" className={styles.back} onClick={() => setPhase('map')}>
-          {'←'} Karte
+          {'←'} {b.karte}
         </button>
-        <h1 className={styles.title}>Level {state.level}</h1>
+        <h1 className={styles.title}>{b.level(state.level)}</h1>
         <button type="button" className={styles.retry} onClick={() => startLevel(state.level)}>
-          Neu
+          {b.neu}
         </button>
       </header>
 
       <div className={styles.meta}>
         <span>
-          {cfg.motiv} · {cfg.label}
+          {motiv} · {stufe}
         </span>
         <span className={belegt >= state.slotCount - 1 ? styles.metaEng : undefined}>
-          Plätze {belegt}/{state.slotCount}
+          {b.plaetze(belegt, state.slotCount)}
           {bonus ? ' ★' : ''}
         </span>
       </div>
@@ -373,7 +370,7 @@ export function BienenFlowPage() {
             gridTemplateColumns: `repeat(${state.cols}, ${pixelGroesse}px)`,
             gridTemplateRows: `repeat(${state.rows}, ${pixelGroesse}px)`,
           }}
-          aria-label={`Bild: ${cfg.motiv}`}
+          aria-label={b.bild(motiv)}
         >
           {state.board.map((echt, i) => {
             // Was gerade abgeholt wird, liegt noch da, bis die Biene zugreift.
@@ -396,7 +393,7 @@ export function BienenFlowPage() {
          * Schwarm -- im Original ist das die Ameisenstraße am Bildrand.
          */}
         <div className={styles.nest}>
-          <span className={styles.zaehler} aria-label={`Noch ${rest} Pixel`}>
+          <span className={styles.zaehler} aria-label={b.nochPixel(rest)}>
             <span key={rest} className={styles.zaehlerZahl}>
               {rest}
             </span>
@@ -415,57 +412,57 @@ export function BienenFlowPage() {
           </span>
         </div>
 
-        <div className={styles.slots} ref={slotsRef} aria-label="Plätze der Kolonie">
-          {state.slots.map((b, i) => {
-            const start = b ? (startMenge.get(b.id) ?? b.amount) : 0
-            const voll = b && start > 0 ? 1 - b.amount / start : 0
+        <div className={styles.slots} ref={slotsRef} aria-label={b.plaetzeDerKolonie}>
+          {state.slots.map((platz, i) => {
+            const start = platz ? (startMenge.get(platz.id) ?? platz.amount) : 0
+            const voll = platz && start > 0 ? 1 - platz.amount / start : 0
             return (
               <div
-                key={b ? b.id : `leer-${i}`}
-                className={`${styles.slot} ${b ? styles.slotBelegt : ''} ${
+                key={platz ? platz.id : `leer-${i}`}
+                className={`${styles.slot} ${platz ? styles.slotBelegt : ''} ${
                   bonus && i === state.slotCount - 1 ? styles.slotBonus : ''
                 }`}
                 style={
-                  b
+                  platz
                     ? {
-                        background: COLOR_HEX[b.color] ?? '#888',
-                        color: schriftFarbe(COLOR_HEX[b.color] ?? '#888'),
+                        background: COLOR_HEX[platz.color] ?? '#888',
+                        color: schriftFarbe(COLOR_HEX[platz.color] ?? '#888'),
                       }
                     : undefined
                 }
               >
-                {b && (
+                {platz && (
                   <i
                     className={styles.honig}
                     style={{ transform: `scaleY(${voll})` }}
                     aria-hidden="true"
                   />
                 )}
-                {b ? <span className={styles.slotZahl}>{b.amount}</span> : '⬡'}
+                {platz ? <span className={styles.slotZahl}>{platz.amount}</span> : '⬡'}
               </div>
             )
           })}
         </div>
 
-        {bienen.map((b) => (
+        {bienen.map((biene) => (
           <span
-            key={b.id}
+            key={biene.id}
             className={styles.biene}
             style={
               {
-                '--von-x': `${b.vonX}px`,
-                '--von-y': `${b.vonY}px`,
-                '--ziel-x': `${b.zielX}px`,
-                '--ziel-y': `${b.zielY}px`,
-                '--ende-x': `${b.endeX}px`,
-                '--ende-y': `${b.endeY}px`,
+                '--von-x': `${biene.vonX}px`,
+                '--von-y': `${biene.vonY}px`,
+                '--ziel-x': `${biene.zielX}px`,
+                '--ziel-y': `${biene.zielY}px`,
+                '--ende-x': `${biene.endeX}px`,
+                '--ende-y': `${biene.endeY}px`,
                 '--dur': `${FLUG_MS}ms`,
               } as CSSProperties
             }
             aria-hidden="true"
           >
             🐝
-            <i className={styles.fracht} style={{ background: COLOR_HEX[b.color] ?? '#888' }} />
+            <i className={styles.fracht} style={{ background: COLOR_HEX[biene.color] ?? '#888' }} />
           </span>
         ))}
       </div>
@@ -473,33 +470,35 @@ export function BienenFlowPage() {
       <div
         className={styles.spalten}
         style={{ gridTemplateColumns: `repeat(${sichtbar.length}, 1fr)` }}
-        aria-label="Nachschub"
+        aria-label={b.nachschub}
       >
         {sichtbar.map((spalte, si) => (
           <div key={si} className={styles.spalte}>
-            {spalte.map((b, bi) => {
+            {spalte.map((block, bi) => {
               const oben = bi === 0
-              const passt = oben && passtNoch(state, b)
+              const passt = oben && passtNoch(state, block)
               return (
                 <button
-                  key={b.id}
+                  key={block.id}
                   type="button"
                   className={`${styles.block} ${oben ? styles.blockOben : styles.blockTief} ${
                     passt ? styles.blockPasst : ''
                   }`}
                   style={{
-                    background: COLOR_HEX[b.color] ?? '#888',
-                    color: schriftFarbe(COLOR_HEX[b.color] ?? '#888'),
+                    background: COLOR_HEX[block.color] ?? '#888',
+                    color: schriftFarbe(COLOR_HEX[block.color] ?? '#888'),
                   }}
                   disabled={!oben || !kannTippen(state, si)}
                   onClick={() => onTapSpalte(si)}
                   aria-label={
                     oben
-                      ? `Block mit ${b.amount} abschicken${passt ? ', geht genau auf' : ''}`
-                      : `Block mit ${b.amount}, wartet`
+                      ? passt
+                        ? b.abschickenPasst(block.amount)
+                        : b.abschicken(block.amount)
+                      : b.wartet(block.amount)
                   }
                 >
-                  {b.amount}
+                  {block.amount}
                 </button>
               )
             })}
@@ -509,10 +508,8 @@ export function BienenFlowPage() {
       </div>
 
       <p className={styles.regelHinweis}>
-        {bonus && '★ Bonus-Platz aktiv. '}
-        {verdeckt > 0
-          ? `Noch ${verdeckt} Blöcke unter dem sichtbaren Stapel – halte einen Platz frei.`
-          : 'Alle Blöcke sind zu sehen.'}
+        {bonus && b.bonusAktiv}
+        {verdeckt > 0 ? b.verdeckt(verdeckt) : b.alleSichtbar}
       </p>
 
       {phase === 'won' && (
@@ -521,18 +518,14 @@ export function BienenFlowPage() {
             <div className={styles.confetti} aria-hidden="true">
               {'⭐'.repeat(Math.max(1, sterne))}
             </div>
-            <h2>Bild abgetragen!</h2>
-            <p>
-              Level {state.level} · {score} Punkte · +{xpGained} XP
-            </p>
+            <h2>{b.abgetragen}</h2>
+            <p>{b.ergebnis(state.level, score, xpGained)}</p>
             <p className={styles.muted}>
-              {state.tote === 0
-                ? 'Kein Block zu viel – genau aufgegangen.'
-                : `${state.tote} ${state.tote === 1 ? 'Block' : 'Blöcke'} blieben liegen`}
+              {state.tote === 0 ? b.genauAufgegangen : b.liegenGeblieben(state.tote)}
             </p>
             <div className={styles.actions}>
               <button type="button" onClick={() => setPhase('map')}>
-                Karte
+                {b.karte}
               </button>
               {state.level < BIENEN_MAX_LEVEL && (
                 <button
@@ -540,7 +533,7 @@ export function BienenFlowPage() {
                   className={styles.primary}
                   onClick={() => startLevel(state.level + 1)}
                 >
-                  Weiter
+                  {b.weiter}
                 </button>
               )}
             </div>
@@ -551,28 +544,25 @@ export function BienenFlowPage() {
       {phase === 'lost' && (
         <div className={styles.overlay}>
           <div className={styles.card}>
-            <h2>Die Kolonie steht</h2>
-            <p>
-              Alle {state.slotCount} Plätze sind belegt, und keine dieser Farben liegt gerade frei.
-              Damit kommt keine Biene mehr an ein Pixel heran.
-            </p>
+            <h2>{b.koloniesteht}</h2>
+            <p>{b.koloniestehtText(state.slotCount)}</p>
             <p className={styles.muted}>
               {pleiten >= BONUS_AB
-                ? `${pleiten}. Versuch – du spielst mit einem sechsten Platz.`
+                ? b.versuchMitBonus(pleiten)
                 : pleiten >= BONUS_AB - 3
-                  ? `${pleiten}. Versuch – nach ${BONUS_AB} gibt es einen sechsten Platz.`
-                  : `${pleiten}. Versuch`}
+                  ? b.versuchBaldBonus(pleiten, BONUS_AB)
+                  : b.versuch(pleiten)}
             </p>
             <div className={styles.actions}>
               <button type="button" onClick={() => setPhase('map')}>
-                Karte
+                {b.karte}
               </button>
               <button
                 type="button"
                 className={styles.primary}
                 onClick={() => startLevel(state.level)}
               >
-                Nochmal
+                {b.nochmal}
               </button>
             </div>
           </div>

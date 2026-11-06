@@ -10,14 +10,41 @@ import {
   SPALTEN,
   STANDARD_SPALTEN,
   spalteLabel,
+  MIN_SPIELER,
+  MAX_SPIELER,
   type SlfState,
 } from '@/games/stadt-land-fluss'
+import { spielName, useSprache, type Texte } from '@/i18n/sprache'
 import { StadtLandFlussOnline } from './StadtLandFlussOnline'
 import styles from './StadtLandFlussPage.module.css'
 
 const DEFAULT_NAMES = 'Thomas\nMarina\nPhillip\nSonja'
 
+/** Spaltenname nach Kennung -- im Zustand steht nur die Kennung. */
+function spalteName(s: Texte['stadtLandFluss'], id: string): string {
+  return (s.spaltenNamen as Record<string, string | undefined>)[id] ?? spalteLabel(id)
+}
+
+/**
+ * Dieselben Prüfungen wie in der Engine, nur mit Text aus dem Wörterbuch --
+ * die Engine wirft deutsch und bleibt so (Tests lesen ihre Meldungen).
+ */
+function namenFehler(names: string[], s: Texte['stadtLandFluss']): string | null {
+  if (names.length < MIN_SPIELER) return s.mindestensSpieler(MIN_SPIELER)
+  if (names.length > MAX_SPIELER) return s.hoechstensSpieler(MAX_SPIELER)
+  const gesehen = new Set<string>()
+  for (const n of names) {
+    const key = n.toLowerCase()
+    if (gesehen.has(key)) return s.nameDoppelt(n)
+    gesehen.add(key)
+  }
+  return null
+}
+
 export function StadtLandFlussPage() {
+  const { t } = useSprache()
+  const s = t.stadtLandFluss
+  const titel = spielName(t, 'stadt-land-fluss', 'Stadt-Land-Fluss')
   const [state, setState] = useState<SlfState | null>(null)
   const [namesText, setNamesText] = useState(DEFAULT_NAMES)
   const [spalten, setSpalten] = useState<string[]>(STANDARD_SPALTEN)
@@ -43,10 +70,10 @@ export function StadtLandFlussPage() {
     [namesText],
   )
 
-  const abgeben = useCallback((s: SlfState, antworten: Record<string, string>) => {
+  const abgeben = useCallback((st: SlfState, antworten: Record<string, string>) => {
     setAblauf(null)
     setRest(null)
-    const next = submitAnswers(s, antworten)
+    const next = submitAnswers(st, antworten)
     setFelder({})
     setState(next)
   }, [])
@@ -56,15 +83,15 @@ export function StadtLandFlussPage() {
   // eingetippten Felder mit und nicht die von vor zehn Sekunden.
   useEffect(() => {
     if (ablauf === null) return
-    const t = window.setInterval(() => {
+    const takt = window.setInterval(() => {
       const uebrig = Math.max(0, Math.ceil((ablauf - Date.now()) / 1000))
       setRest(uebrig)
       if (uebrig === 0) {
-        window.clearInterval(t)
+        window.clearInterval(takt)
         if (state && state.phase === 'write') abgeben(state, felder)
       }
     }, 250)
-    return () => window.clearInterval(t)
+    return () => window.clearInterval(takt)
   }, [ablauf, state, felder, abgeben])
 
   const start = useCallback(() => {
@@ -74,19 +101,26 @@ export function StadtLandFlussPage() {
         .split(/[\n,;]+/)
         .map((n) => n.trim())
         .filter(Boolean)
+      const fehler = namenFehler(names, s)
+      if (fehler) {
+        setError(fehler)
+        return
+      }
       setState(createSlfMatch({ names, spalten, seconds: sekunden }))
       setFelder({})
       setAblauf(null)
       setRest(null)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Start fehlgeschlagen')
+      setError(e instanceof Error ? e.message : s.startFehlgeschlagen)
     }
-  }, [namesText, spalten, sekunden])
+  }, [namesText, spalten, sekunden, s])
 
   if (online) {
     return (
       <main className={styles.page}>
-        <p className={styles.meta}>Stadt-Land-Fluss · online</p>
+        <p className={styles.meta}>
+          {titel} · {s.online}
+        </p>
         <StadtLandFlussOnline onBack={() => setOnline(false)} />
       </main>
     )
@@ -96,18 +130,15 @@ export function StadtLandFlussPage() {
     return (
       <main className={styles.page}>
         <Link to="/" className={styles.back}>
-          {'←'} Zurück
+          {'←'} {t.allgemein.zurueck}
         </Link>
-        <h1 className={styles.title}>✏️ Stadt-Land-Fluss</h1>
-        <p className={styles.subtitle}>
-          Ein Buchstabe, ein paar Spalten, die Uhr läuft. Am einen Gerät geht es reihum – online
-          schreiben alle gleichzeitig.
-        </p>
+        <h1 className={styles.title}>✏️ {titel}</h1>
+        <p className={styles.subtitle}>{s.einleitung}</p>
 
         <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Spieler (2–12)</h2>
+          <h2 className={styles.cardTitle}>{s.spielerTitel(MIN_SPIELER, MAX_SPIELER)}</h2>
           <label className={styles.label}>
-            Namen (eine Zeile pro Person)
+            {s.namenLabel}
             <textarea
               className={styles.textarea}
               value={namesText}
@@ -115,33 +146,33 @@ export function StadtLandFlussPage() {
               autoComplete="off"
             />
           </label>
-          <p className={styles.meta}>{playerCount} Spieler</p>
+          <p className={styles.meta}>{s.anzahlSpieler(playerCount)}</p>
         </div>
 
         <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Spalten</h2>
+          <h2 className={styles.cardTitle}>{s.spalten}</h2>
           <div className={styles.spaltenWahl}>
-            {SPALTEN.map((s) => {
-              const an = spalten.includes(s.id)
+            {SPALTEN.map((sp) => {
+              const an = spalten.includes(sp.id)
               return (
                 <button
-                  key={s.id}
+                  key={sp.id}
                   type="button"
                   className={an ? styles.chipAktiv : styles.chip}
                   aria-pressed={an}
                   onClick={() =>
                     setSpalten((alt) =>
-                      alt.includes(s.id) ? alt.filter((x) => x !== s.id) : [...alt, s.id],
+                      alt.includes(sp.id) ? alt.filter((x) => x !== sp.id) : [...alt, sp.id],
                     )
                   }
                 >
-                  {s.label}
+                  {spalteName(s, sp.id)}
                 </button>
               )
             })}
           </div>
           <label className={styles.label}>
-            Zeit je Person: {sekunden} s
+            {s.zeitJePerson(sekunden)}
             <input
               type="range"
               min={30}
@@ -154,7 +185,7 @@ export function StadtLandFlussPage() {
         </div>
 
         {error && <p className={styles.error}>{error}</p>}
-        {spalten.length === 0 && <p className={styles.error}>Wähle mindestens eine Spalte.</p>}
+        {spalten.length === 0 && <p className={styles.error}>{s.mindestensEineSpalte}</p>}
 
         <button
           type="button"
@@ -162,32 +193,29 @@ export function StadtLandFlussPage() {
           disabled={spalten.length === 0}
           onClick={start}
         >
-          Am einen Gerät spielen
+          {s.amEinenGeraet}
         </button>
         <button type="button" className={styles.btnSecondary} onClick={() => setOnline(true)}>
-          🌐 Online mit eigenen Handys
+          {s.onlineHandys}
         </button>
       </main>
     )
   }
 
   const ap = activeSlfPlayer(state)
-  const rundeLabel = `Runde ${state.roundIndex + 1}`
+  const rundeLabel = s.runde(state.roundIndex + 1)
 
   if (state.phase === 'handoff') {
     return (
       <main key="uebergabe" className={styles.page}>
         <p className={styles.meta}>
-          {rundeLabel} · Buchstabe {state.buchstabe}
+          {rundeLabel} · {s.buchstabe(state.buchstabe)}
         </p>
         <div className={`${styles.card} ${styles.cover}`}>
-          <p className={styles.subtitle}>Gerät weitergeben an</p>
+          <p className={styles.subtitle}>{s.geraetWeitergeben}</p>
           <p className={styles.coverName}>{ap.name}</p>
           <p className={styles.letter}>{state.buchstabe}</p>
-          <p className={styles.hint}>
-            {state.seconds} Sekunden für {state.spalten.length}{' '}
-            {state.spalten.length === 1 ? 'Spalte' : 'Spalten'}. Andere nicht mitlesen lassen!
-          </p>
+          <p className={styles.hint}>{s.zeitFuerSpalten(state.seconds, state.spalten.length)}</p>
           <button
             type="button"
             className={styles.btn}
@@ -198,7 +226,7 @@ export function StadtLandFlussPage() {
               setRest(state.seconds)
             }}
           >
-            Los geht's
+            {s.losGehts}
           </button>
         </div>
       </main>
@@ -220,19 +248,19 @@ export function StadtLandFlussPage() {
         <div className={styles.card}>
           {state.spalten.map((sp) => (
             <label key={sp} className={styles.label}>
-              {spalteLabel(sp)}
+              {spalteName(s, sp)}
               <input
                 className={styles.input}
                 value={felder[sp] ?? ''}
                 onChange={(e) => setFelder((f) => ({ ...f, [sp]: e.target.value }))}
                 autoComplete="off"
-                placeholder={`${spalteLabel(sp)} mit ${state.buchstabe}…`}
+                placeholder={s.platzhalter(spalteName(s, sp), state.buchstabe)}
               />
             </label>
           ))}
         </div>
         <button type="button" className={styles.btn} onClick={() => abgeben(state, felder)}>
-          Fertig
+          {s.fertig}
         </button>
       </main>
     )
@@ -242,9 +270,9 @@ export function StadtLandFlussPage() {
 
   return (
     <main className={styles.page}>
-      <h1 className={styles.title}>Auswertung</h1>
+      <h1 className={styles.title}>{s.auswertung}</h1>
       <p className={styles.meta}>
-        {rundeLabel} · Buchstabe {state.buchstabe}
+        {rundeLabel} · {s.buchstabe(state.buchstabe)}
       </p>
 
       <div className={styles.card}>
@@ -252,7 +280,7 @@ export function StadtLandFlussPage() {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>Spalte</th>
+                <th>{s.spalte}</th>
                 {state.players.map((p) => (
                   <th key={p.id}>{p.name}</th>
                 ))}
@@ -261,7 +289,7 @@ export function StadtLandFlussPage() {
             <tbody>
               {state.spalten.map((sp) => (
                 <tr key={sp}>
-                  <th scope="row">{spalteLabel(sp)}</th>
+                  <th scope="row">{spalteName(s, sp)}</th>
                   {state.players.map((p) => {
                     const punkte = state.wertung?.proSpalte[sp]?.[p.id] ?? 0
                     return (
@@ -276,7 +304,7 @@ export function StadtLandFlussPage() {
                 </tr>
               ))}
               <tr>
-                <th scope="row">Runde</th>
+                <th scope="row">{s.rundenpunkte}</th>
                 {state.players.map((p) => (
                   <td key={p.id} className={styles.punkte}>
                     {p.roundScore}
@@ -289,7 +317,7 @@ export function StadtLandFlussPage() {
       </div>
 
       <div className={styles.card}>
-        <h2 className={styles.cardTitle}>Gesamt</h2>
+        <h2 className={styles.cardTitle}>{s.gesamt}</h2>
         <ul className={styles.list}>
           {rang.map((p, i) => (
             <li key={p.id}>
@@ -310,13 +338,13 @@ export function StadtLandFlussPage() {
           setState(nextSlfRound(state))
         }}
       >
-        Nächste Runde
+        {s.naechsteRunde}
       </button>
       <button type="button" className={styles.btnSecondary} onClick={() => setState(null)}>
-        Neue Partie
+        {s.neuePartie}
       </button>
       <Link to="/" className={styles.back}>
-        Zum Menü
+        {t.allgemein.zumMenue}
       </Link>
     </main>
   )
