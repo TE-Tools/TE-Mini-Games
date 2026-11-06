@@ -1095,6 +1095,231 @@ export const en: Texte = {
     },
   },
 
+  schuetzenrunde: {
+    titel: 'Marksmen Round',
+    online: 'online',
+    einleitung:
+      'The Brotherhood is meeting. There are saboteurs among you – find them by day, or sabotage by night yourself.',
+    deinName: 'Your name',
+    duName: 'You',
+    wieVieleMitglieder: 'How many members?',
+    saboteureAnzahl: (anzahl: number) => (anzahl === 3 ? 'Three saboteurs' : 'Two saboteurs'),
+    groessenHinweis: (min: number, max: number) =>
+      `${min}–${max} members possible · the bigger the round, the more offices`,
+    deinZug: 'Your platoon',
+    schuetzenfestWahl: 'Shooting festival: three shots and a bird shoot at the end',
+    zeitdruck: (nacht: number, tag: number, abstimmung: number) =>
+      `With a clock (${nacht}/${tag}/${abstimmung} s)`,
+    starten: 'Start round',
+    onlineMitFreunden: '🌐 Play online with friends',
+    zugBilanz: 'Platoon standings',
+    bilanzZeile: (punkte: number, runden: number) =>
+      `${punkte} ${punkte === 1 ? 'point' : 'points'} · ${runden} ${runden === 1 ? 'round' : 'rounds'}`,
+    lokalHinweis: 'A local round against rule-based players – no network, no AI.',
+    zurStartseite: 'To the home page',
+    schuetzenfest: 'Shooting festival',
+    ausgeschieden: 'You are out – you can only watch now.',
+    erkenntnisse: 'Your findings',
+    mitspieler: 'Players',
+    du: 'you',
+    dabei: 'in play',
+    nacht: (runde: number) => `Night ${runde}`,
+    wenAusschalten: 'Who do you take out?',
+    wenPruefen: 'Who do you check?',
+    wenEinschliessenHeute: 'Who do you lock in the armoury tonight?',
+    wenEinschliessen: 'Who do you lock in the armoury?',
+    kannstSchiessen: (schuss: number) =>
+      `You can shoot – ${schuss} ${schuss === 1 ? 'shot' : 'shots'} left.`,
+    schuesseVerbraucht: 'Your shots are used up.',
+    schussAbgeben: 'Fire at the selected person',
+    geruechtStreuen: 'Spread a rumour about the selected person',
+    nachtBeenden: 'End the night',
+    duSchlaefst: 'You are asleep. The others are busy.',
+    nachtAbwarten: 'Wait out the night',
+    tagDiskussion: (runde: number) => `Day ${runde} · Discussion`,
+    tagAbstimmung: (runde: number) => `Day ${runde} · Vote`,
+    zuhoeren: 'Listen to what is being said. Then it is time to vote.',
+    zurAbstimmung: 'To the vote',
+    waehleAusschluss: 'Pick someone to expel – or abstain.',
+    stimmstNichtMehr: 'You are out and no longer vote.',
+    stimmeAbgeben: 'Cast vote',
+    ohneEigeneStimme: 'Vote without me',
+    ergebnis: 'Result',
+    naechsteNacht: 'Next night',
+    gewonnen: '🏆 You won!',
+    verloren: 'You lost',
+    sabotageSieg: 'The saboteurs have taken over the Brotherhood.',
+    bruderschaftSieg: 'The Brotherhood has unmasked every saboteur.',
+    koenigswuerde: (wer: string | null) =>
+      wer === null ? 'You wear the crown.' : `${wer} wears the crown.`,
+    punkte: 'points',
+    wirdGespeichert: '(saving…)',
+    zugpunkte: (zug: string, punkte: number) =>
+      `${zug}: +${punkte} platoon ${punkte === 1 ? 'point' : 'points'}`,
+    neueRunde: 'New round',
+    andereEinstellungen: 'Change settings',
+    verlauf: 'History',
+    fraktion: {
+      bruderschaft: 'Brotherhood',
+      saboteure: 'Saboteurs',
+    },
+    rollen: {
+      brudermeister: {
+        name: 'Grand Master',
+        text: 'Your vote counts double.',
+      },
+      stellvertreter: {
+        name: 'Deputy Grand Master',
+        text: 'While the Grand Master is in the game, you are an ordinary member. Once the Grand Master is gone, your vote counts double.',
+      },
+      schiessmeister: {
+        name: 'Range Master',
+        text: 'Every night you check one person and learn their faction.',
+      },
+      schuetze: {
+        name: 'Marksman',
+        text: 'You have one free shot per game – up to three at the shooting festival.',
+      },
+      zeugwart: {
+        name: 'Armourer',
+        text: 'Every night you lock one person in the armoury – the saboteurs cannot get to them there. Not the same person twice in a row.',
+      },
+      oberst: {
+        name: 'Colonel',
+        text: 'Old school: you survive the first attack of the saboteurs.',
+      },
+      schriftfuehrer: {
+        name: 'Secretary',
+        text: 'You keep the minutes: every night you learn about two members whether at least one of them is a saboteur.',
+      },
+      hornist: {
+        name: 'Bugler',
+        text: 'An ordinary member of the Brotherhood – your vote helps decide.',
+      },
+      kassierer: {
+        name: 'Treasurer',
+        text: 'You keep the books – in the game, only your vote counts.',
+      },
+      musikbeauftragter: {
+        name: 'Music Officer',
+        text: 'You take care of the music – in the game, only your vote counts.',
+      },
+      saboteur: {
+        name: 'Saboteur',
+        text: 'Together with your partners, you take out one person every night.',
+      },
+      intrigant: {
+        name: 'Schemer',
+        text: 'You sabotage along with the others and steer suspicion onto others by day.',
+      },
+      falschspieler: {
+        name: 'Cardsharp',
+        text: 'You sabotage along with the others – and to the Range Master you look like a member of the Brotherhood.',
+      },
+      geruechtemacher: {
+        name: 'Rumourmonger',
+        text: 'You sabotage along with the others, and once per game you get a member talked about – from then on the Range Master takes them for a saboteur.',
+      },
+    },
+    zuege: {
+      jaeger: { name: 'Rifle Platoon', kurz: 'Rifles' },
+      grenadier: { name: 'Grenadier Platoon', kurz: 'Grenadiers' },
+      fahnen: { name: 'Colour Platoon', kurz: 'Colours' },
+      hornisten: { name: 'Bugler Platoon', kurz: 'Buglers' },
+    },
+    protokoll: {
+      treffen: (mitglieder: number, saboteure: number) =>
+        `The Brotherhood is meeting – ${mitglieder} members, ${
+          saboteure === 3 ? 'three saboteurs' : 'two saboteurs'
+        } among you.`,
+      fest: 'Shooting festival! The Marksman has three shots – and a king is crowned at the end.',
+      zeughaus: (runde: number) => `Night ${runde}: The armoury was locked – the attack missed.`,
+      alterHase: (runde: number) =>
+        `Night ${runde}: The attack hit an old hand – he is still standing.`,
+      erwischt: (runde: number, wer: string | null) =>
+        wer === null
+          ? `Night ${runde}: The saboteurs got you.`
+          : `Night ${runde}: The saboteurs got ${wer}.`,
+      schuss: (runde: number, wer: string | null) =>
+        wer === null
+          ? `Night ${runde}: A shot rang out – you are out.`
+          : `Night ${runde}: A shot rang out – ${wer} is out.`,
+      ausgeschlossen: (runde: number, wer: string | null, rolle: string, fraktion: string) =>
+        `Day ${runde}: ${wer === null ? 'You were' : `${wer} was`} expelled (${rolle}, ${fraktion}).`,
+      ausgeschlossenFraktion: { bruderschaft: 'Brotherhood', saboteure: 'Saboteur' },
+      unentschieden: (runde: number) => `Day ${runde}: The vote was a tie – nobody is expelled.`,
+      vogel: (wer: string | null) =>
+        `Bird shoot: ${wer === null ? 'You bring' : `${wer} brings`} the bird down from the pole and wears the crown.`,
+    },
+    notizen: {
+      gehoertZu: (runde: number, wer: string, saboteur: boolean) =>
+        `Night ${runde}: ${wer} belongs to ${saboteur ? 'the saboteurs' : 'the Brotherhood'}.`,
+      gerede: (runde: number, wer: string) =>
+        `Night ${runde}: You got people talking about ${wer}.`,
+      mindestensEiner: (runde: number, a: string, b: string) =>
+        `Night ${runde}: At least one of ${a} and ${b} is a saboteur.`,
+      keiner: (runde: number, a: string, b: string) =>
+        `Night ${runde}: Neither ${a} nor ${b} is a saboteur.`,
+    },
+    aussagen: {
+      vorwuerfe: [
+        (wer: string) => `I don't trust ${wer}.`,
+        (wer: string) => `${wer} was acting strangely yesterday.`,
+        (wer: string) => `Look at ${wer} – too quiet for my liking.`,
+        (wer: string) => `${wer} looks like sabotage to me.`,
+        (wer: string) => `I heard ${wer} outside last night.`,
+        (wer: string) => `${wer} talks a lot and says nothing.`,
+      ],
+      verteidigungen: [
+        'I was at the shooting range all night, honestly.',
+        "You're barking up the wrong tree – I'm with the Brotherhood.",
+        "Throw me out and you'll be sorry tomorrow.",
+        "I've been in the platoon for thirty years, you can look it up.",
+      ],
+    },
+    onlineTeil: {
+      keinServer:
+        'Online rounds need the connection to the account server, which is missing. You can still play offline against bots at any time.',
+      zurueckZuBots: 'Back to playing against bots',
+      ohneKonto: 'Online you play with your account – so the others know who is at the table.',
+      anmelden: 'Sign in',
+      lieberBots: 'Play bots instead',
+      ladeFehler: 'The game state did not arrive.',
+      fehler: 'That did not work.',
+      wieVielePlaetze: 'How many seats?',
+      freiePlaetze:
+        'Rule-based players take over free seats at the start – so you do not need a full table.',
+      oeffentlich: 'Public round',
+      oeffentlichText: 'Listed in the lobby for everyone, with your name. Anyone can join.',
+      eroeffnen: 'Open a round',
+      mitCode: 'Or join with a code',
+      codeBeispiel: 'e.g. K4T9P',
+      beitreten: 'Join',
+      laufendeRunden: 'Your ongoing rounds',
+      vorraum: 'Waiting room',
+      runde: (runde: number) => `Round ${runde}`,
+      code: 'Game code',
+      plaetze: (belegt: number, gesamt: number) => `${belegt}/${gesamt} seats`,
+      bereit: 'ready',
+      fertig: 'done',
+      ueberlegt: 'thinking…',
+      codeWeitergeben: 'Share the code.',
+      duStartest: "You start when you're all ready.",
+      gastgeberStartet: 'The host starts the round.',
+      verlassen: 'Leave',
+      duBistRaus: 'You are out – the others play on.',
+      aktionAbgegeben: 'Your action is in. Waiting for the others…',
+      aktionAbgeben: 'Submit action',
+      sagWas: 'Say something…',
+      senden: 'Send',
+      warteAufAndere: 'Waiting for the others…',
+      bereitZurAbstimmung: 'Ready to vote',
+      stimmeAbgegeben: 'Vote cast',
+      enthalten: 'Abstain',
+      enthaltung: 'Abstained',
+    },
+  },
+
   kniffel: {
     du: 'You',
     rechner: (nr: number) => `Computer ${nr}`,

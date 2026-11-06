@@ -1101,6 +1101,244 @@ export const de = {
     },
   },
 
+  schuetzenrunde: {
+    titel: 'Schützenrunde',
+    online: 'online',
+    einleitung:
+      'Die Bruderschaft trifft sich. Unter euch sitzen Saboteure – findet sie bei Tag, oder sabotiert selbst bei Nacht.',
+    deinName: 'Dein Name',
+    /** Vorbelegung des Namensfelds -- nur auf diesem Gerät, geht nie an einen Server. */
+    duName: 'Du',
+    wieVieleMitglieder: 'Wie viele Mitglieder?',
+    saboteureAnzahl: (anzahl: number): string =>
+      anzahl === 3 ? 'Drei Saboteure' : 'Zwei Saboteure',
+    groessenHinweis: (min: number, max: number) =>
+      `${min}–${max} Mitglieder möglich · je größer die Runde, desto mehr Ämter`,
+    deinZug: 'Dein Zug',
+    schuetzenfestWahl: 'Schützenfest: drei Schuss und Vogelschießen am Ende',
+    zeitdruck: (nacht: number, tag: number, abstimmung: number) =>
+      `Mit Zeitdruck (${nacht}/${tag}/${abstimmung} s)`,
+    starten: 'Runde starten',
+    onlineMitFreunden: '🌐 Online mit Freunden spielen',
+    zugBilanz: 'Zug-Bilanz',
+    bilanzZeile: (punkte: number, runden: number) => `${punkte} Punkte · ${runden} Runden`,
+    lokalHinweis: 'Eine lokale Runde gegen regelbasierte Mitspieler – ohne Netzwerk, ohne KI.',
+    zurStartseite: 'Zur Startseite',
+    schuetzenfest: 'Schützenfest',
+    ausgeschieden: 'Du bist ausgeschieden – du schaust nur noch zu.',
+    erkenntnisse: 'Deine Erkenntnisse',
+    mitspieler: 'Mitspieler',
+    du: 'du',
+    dabei: 'dabei',
+    nacht: (runde: number) => `Nacht ${runde}`,
+    wenAusschalten: 'Wen schaltet ihr aus?',
+    wenPruefen: 'Wen prüfst du?',
+    wenEinschliessenHeute: 'Wen schließt du heute Nacht im Zeughaus ein?',
+    wenEinschliessen: 'Wen schließt du im Zeughaus ein?',
+    kannstSchiessen: (schuss: number) =>
+      `Du kannst schießen – noch ${schuss} ${schuss === 1 ? 'Schuss' : 'Schüsse'}.`,
+    schuesseVerbraucht: 'Deine Schüsse sind verbraucht.',
+    schussAbgeben: 'Schuss auf die gewählte Person abgeben',
+    geruechtStreuen: 'Gerücht über die gewählte Person streuen',
+    nachtBeenden: 'Nacht beenden',
+    duSchlaefst: 'Du schläfst. Die anderen sind aktiv.',
+    nachtAbwarten: 'Nacht abwarten',
+    tagDiskussion: (runde: number) => `Tag ${runde} · Diskussion`,
+    tagAbstimmung: (runde: number) => `Tag ${runde} · Abstimmung`,
+    zuhoeren: 'Hör dir an, was geredet wird. Danach wird abgestimmt.',
+    zurAbstimmung: 'Zur Abstimmung',
+    waehleAusschluss: 'Wähle eine Person zum Ausschluss – oder stimme nicht ab.',
+    stimmstNichtMehr: 'Du bist raus und stimmst nicht mehr mit ab.',
+    stimmeAbgeben: 'Stimme abgeben',
+    ohneEigeneStimme: 'Abstimmen ohne eigene Stimme',
+    ergebnis: 'Ergebnis',
+    naechsteNacht: 'Nächste Nacht',
+    gewonnen: '🏆 Gewonnen!',
+    verloren: 'Verloren',
+    sabotageSieg: 'Die Saboteure haben die Bruderschaft übernommen.',
+    bruderschaftSieg: 'Die Bruderschaft hat alle Saboteure entlarvt.',
+    /** `wer` ist null, wenn man selbst gemeint ist. */
+    koenigswuerde: (wer: string | null) =>
+      wer === null ? 'Du trägst die Königswürde.' : `${wer} trägt die Königswürde.`,
+    punkte: 'Punkte',
+    wirdGespeichert: '(wird gespeichert…)',
+    zugpunkte: (zug: string, punkte: number) => `${zug}: +${punkte} Zugpunkte`,
+    neueRunde: 'Neue Runde',
+    andereEinstellungen: 'Andere Einstellungen',
+    verlauf: 'Verlauf',
+    fraktion: {
+      bruderschaft: 'Bruderschaft',
+      saboteure: 'Saboteure',
+    },
+    /** Nach Kennung aus `src/games/schuetzenrunde/roles.ts`; dort steht der deutsche Name als Rückfall. */
+    rollen: {
+      brudermeister: {
+        name: 'Brudermeister',
+        text: 'Deine Stimme zählt bei der Abstimmung doppelt.',
+      },
+      stellvertreter: {
+        name: 'Stellvertretender Brudermeister',
+        text: 'Solange der Brudermeister dabei ist, bist du einfaches Mitglied. Fällt er aus, zählt deine Stimme doppelt.',
+      },
+      schiessmeister: {
+        name: 'Schießmeister',
+        text: 'Du prüfst jede Nacht eine Person und erfährst ihre Fraktion.',
+      },
+      schuetze: {
+        name: 'Schütze',
+        text: 'Du hast einen freien Schuss pro Partie – beim Schützenfest bis zu drei.',
+      },
+      zeugwart: {
+        name: 'Zeugwart',
+        text: 'Du schließt jede Nacht eine Person im Zeughaus ein – die Saboteure kommen dort nicht an sie heran. Zweimal hintereinander dieselbe Person geht nicht.',
+      },
+      oberst: {
+        name: 'Oberst',
+        text: 'Alte Schule: Den ersten Anschlag der Saboteure überstehst du.',
+      },
+      schriftfuehrer: {
+        name: 'Schriftführer',
+        text: 'Du führst Protokoll: Jede Nacht erfährst du über zwei Mitglieder, ob mindestens eines davon zu den Saboteuren gehört.',
+      },
+      hornist: {
+        name: 'Hornist',
+        text: 'Einfaches Mitglied der Bruderschaft – deine Stimme entscheidet mit.',
+      },
+      kassierer: {
+        name: 'Kassierer',
+        text: 'Du führst die Kasse – im Spiel zählt allein deine Stimme.',
+      },
+      musikbeauftragter: {
+        name: 'Musikbeauftragter',
+        text: 'Du sorgst für die Musik – im Spiel zählt allein deine Stimme.',
+      },
+      saboteur: {
+        name: 'Saboteur',
+        text: 'Du schaltest gemeinsam mit deinen Partnern jede Nacht eine Person aus.',
+      },
+      intrigant: {
+        name: 'Intrigant',
+        text: 'Du sabotierst mit und lenkst am Tag den Verdacht auf andere.',
+      },
+      falschspieler: {
+        name: 'Falschspieler',
+        text: 'Du sabotierst mit – und beim Schießmeister erscheinst du als Mitglied der Bruderschaft.',
+      },
+      geruechtemacher: {
+        name: 'Gerüchtemacher',
+        text: 'Du sabotierst mit und bringst einmal pro Partie ein Mitglied ins Gerede – der Schießmeister hält es fortan für einen Saboteur.',
+      },
+    },
+    /** Nach Kennung aus `src/games/schuetzenrunde/zuege.ts`. */
+    zuege: {
+      jaeger: { name: 'Jägerzug', kurz: 'Jäger' },
+      grenadier: { name: 'Grenadierzug', kurz: 'Grenadier' },
+      fahnen: { name: 'Fahnenzug', kurz: 'Fahnen' },
+      hornisten: { name: 'Hornistenzug', kurz: 'Hornisten' },
+    },
+    /**
+     * Die Zeilen, die Engine und Server (Migration 007) ins Protokoll schreiben.
+     * Die deutsche Fassung muss genau die Zeile der Engine ergeben -- die Seite
+     * erkennt sie daran wieder (`pages/play/schuetzenrunde/srText.ts`).
+     * `wer` ist null, wenn man selbst gemeint ist.
+     */
+    protokoll: {
+      treffen: (mitglieder: number, saboteure: number) =>
+        `Die Bruderschaft trifft sich – ${mitglieder} Mitglieder, ${
+          saboteure === 3 ? 'drei Saboteure' : 'zwei Saboteure'
+        } unter euch.`,
+      fest: 'Schützenfest! Der Schütze hat drei Schuss – und am Ende wird ein König gekrönt.',
+      zeughaus: (runde: number) =>
+        `Nacht ${runde}: Das Zeughaus war verschlossen – der Anschlag ging daneben.`,
+      alterHase: (runde: number) =>
+        `Nacht ${runde}: Der Anschlag traf einen alten Hasen – er steht noch.`,
+      erwischt: (runde: number, wer: string | null) =>
+        wer === null
+          ? `Nacht ${runde}: Du wurdest von den Saboteuren erwischt.`
+          : `Nacht ${runde}: ${wer} wurde von den Saboteuren erwischt.`,
+      schuss: (runde: number, wer: string | null) =>
+        wer === null
+          ? `Nacht ${runde}: Ein Schuss fiel – Du bist raus.`
+          : `Nacht ${runde}: Ein Schuss fiel – ${wer} ist raus.`,
+      ausgeschlossen: (runde: number, wer: string | null, rolle: string, fraktion: string) =>
+        `Tag ${runde}: ${wer === null ? 'Du wurdest' : `${wer} wurde`} ausgeschlossen (${rolle}, ${fraktion}).`,
+      /** Die Fraktion in `ausgeschlossen` -- in der Einzahl, wie die Engine sie schreibt. */
+      ausgeschlossenFraktion: { bruderschaft: 'Bruderschaft', saboteure: 'Saboteur' },
+      unentschieden: (runde: number) =>
+        `Tag ${runde}: Die Abstimmung endete unentschieden – niemand fliegt raus.`,
+      vogel: (wer: string | null) =>
+        `Vogelschießen: ${wer === null ? 'Du holst' : `${wer} holt`} den Vogel von der Stange und trägt die Königswürde.`,
+    },
+    /** Private Erkenntnisse (Schießmeister, Gerüchtemacher, Schriftführer). */
+    notizen: {
+      gehoertZu: (runde: number, wer: string, saboteur: boolean) =>
+        `Nacht ${runde}: ${wer} gehört zu ${saboteur ? 'den Saboteuren' : 'der Bruderschaft'}.`,
+      gerede: (runde: number, wer: string) => `Nacht ${runde}: Du hast ${wer} ins Gerede gebracht.`,
+      mindestensEiner: (runde: number, a: string, b: string) =>
+        `Nacht ${runde}: Unter ${a} und ${b} ist mindestens ein Saboteur.`,
+      keiner: (runde: number, a: string, b: string) =>
+        `Nacht ${runde}: Weder ${a} noch ${b} gehören zu den Saboteuren.`,
+    },
+    /** Was die regelbasierten Mitspieler am Tag sagen -- in Engine und Migration 007 dieselben Sätze. */
+    aussagen: {
+      vorwuerfe: [
+        (wer: string) => `Ich traue ${wer} nicht.`,
+        (wer: string) => `${wer} hat sich gestern merkwürdig verhalten.`,
+        (wer: string) => `Schaut euch ${wer} an – zu ruhig für meinen Geschmack.`,
+        (wer: string) => `Für mich sieht ${wer} nach Sabotage aus.`,
+        (wer: string) => `Ich habe ${wer} heute Nacht draußen gehört.`,
+        (wer: string) => `${wer} redet viel und sagt nichts.`,
+      ],
+      verteidigungen: [
+        'Ich war die ganze Nacht am Schießstand, ehrlich.',
+        'Ihr rennt in die falsche Richtung – ich gehöre zur Bruderschaft.',
+        'Wenn ihr mich rauswerft, habt ihr morgen den Salat.',
+        'Ich bin seit dreißig Jahren im Zug, das könnt ihr nachlesen.',
+      ],
+    },
+    onlineTeil: {
+      keinServer:
+        'Für Online-Runden fehlt die Verbindung zum Konto-Server. Offline gegen Bots geht trotzdem jederzeit.',
+      zurueckZuBots: 'Zurück zum Spiel gegen Bots',
+      ohneKonto: 'Online spielst du mit deinem Konto – so wissen die anderen, wer am Tisch sitzt.',
+      anmelden: 'Anmelden',
+      lieberBots: 'Lieber gegen Bots',
+      ladeFehler: 'Der Spielstand kam nicht an.',
+      fehler: 'Das hat nicht geklappt.',
+      wieVielePlaetze: 'Wie viele Plätze?',
+      freiePlaetze:
+        'Freie Plätze übernehmen beim Start regelbasierte Mitspieler – ihr müsst also nicht vollzählig sein.',
+      oeffentlich: 'Öffentliche Runde',
+      oeffentlichText: 'Steht für alle in der Lobby, mit deinem Namen. Jeder kann beitreten.',
+      eroeffnen: 'Runde eröffnen',
+      mitCode: 'Oder mit Code beitreten',
+      codeBeispiel: 'z. B. K4T9P',
+      beitreten: 'Beitreten',
+      laufendeRunden: 'Deine laufenden Runden',
+      vorraum: 'Vorraum',
+      runde: (runde: number) => `Runde ${runde}`,
+      code: 'Code',
+      plaetze: (belegt: number, gesamt: number) => `${belegt}/${gesamt} Plätze`,
+      bereit: 'bereit',
+      fertig: 'fertig',
+      ueberlegt: 'überlegt…',
+      codeWeitergeben: 'Gib den Code weiter.',
+      duStartest: 'Du startest, wenn ihr so weit seid.',
+      gastgeberStartet: 'Der Gastgeber startet die Runde.',
+      verlassen: 'Verlassen',
+      duBistRaus: 'Du bist raus – die anderen spielen weiter.',
+      aktionAbgegeben: 'Deine Aktion ist abgegeben. Warte auf die anderen…',
+      aktionAbgeben: 'Aktion abgeben',
+      sagWas: 'Sag was…',
+      senden: 'Senden',
+      warteAufAndere: 'Warte auf die anderen…',
+      bereitZurAbstimmung: 'Bereit zur Abstimmung',
+      stimmeAbgegeben: 'Stimme abgegeben',
+      enthalten: 'Enthalten',
+      enthaltung: 'Enthaltung',
+    },
+  },
+
   kniffel: {
     du: 'Du',
     rechner: (nr: number) => `Rechner ${nr}`,
