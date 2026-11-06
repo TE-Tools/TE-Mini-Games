@@ -819,6 +819,69 @@ export const de = {
     },
   },
 
+  squishy: {
+    laden: 'Laden…',
+    zurueck: 'Zurück',
+    karte: 'Karte',
+    neu: 'Neu',
+    level: (nr: number) => `Level ${nr}`,
+    regeln:
+      'Zieh einen Knödel auf seinen Nachbarn – oder tipp beide an. Stehen dadurch drei gleiche in einer Reihe, verschwinden sie und von oben fallen neue nach. Sammle das Ziel, bevor die Zeit um ist. Wer vier in eine Reihe bringt, bekommt einen diagonalen Knödel, wer fünf schafft, einen goldenen in dieser Farbe. Beide bleiben liegen und zählen ganz normal mit: Bringst du sie noch einmal in eine Reihe, fegt der Diagonale beide Schrägen leer und der Goldene lässt alle Knödel seiner Farbe platzen. Später kommen Käfige dazu: Ein Knödel im Käfig lässt sich nicht schieben und zerreißt jede Reihe – er springt auf, wenn direkt daneben etwas verschwindet.',
+    sammlung: 'Deine Sammlung',
+    sammlungStand: (hab: number, von: number) => `${hab} von ${von} Knödeln`,
+    naechsterAb: (level: number) => ` · nächster ab Level ${level}`,
+    alleGesammelt: ' · alle gesammelt!',
+    abLevel: (name: string, level: number) => `${name} – ab Level ${level}`,
+    zielStand: (hab: number, ziel: number) => `${hab} / ${ziel} Knödel`,
+    farben: (n: number) => `${n} Farben`,
+    kaefige: (offen: number, von: number) => `Käfige ${offen}/${von}`,
+    spielfeld: 'Spielfeld',
+    imKaefig: ' im Käfig',
+    golden: ', golden',
+    diagonal: ', diagonal',
+    besteKette: (n: number) => `Beste Kette: ${n} Auflösungen hintereinander`,
+    tipp: 'Tipp: Knödel ziehen oder zwei antippen. Vier in einer Reihe geben einen diagonalen, fünf einen goldenen.',
+    geschafft: 'Geschafft!',
+    ergebnis: (level: number, punkte: number, xp: number) =>
+      `Level ${level} · ${punkte} Punkte · +${xp} XP`,
+    neuerKnoedel: 'Neuer Knödel!',
+    gehoertDir: (name: string) => `${name} gehört jetzt dir – du kannst ihn als Figur tragen.`,
+    weiter: 'Weiter',
+    zeitUm: 'Zeit um!',
+    verloren: (hab: number, ziel: number, kaefige: number) =>
+      `${hab} von ${ziel} Knödeln` +
+      (kaefige > 0
+        ? ` – und ${kaefige} ${kaefige === 1 ? 'Käfig war' : 'Käfige waren'} noch zu.`
+        : '.'),
+    kettenTipp:
+      'Ketten bringen am meisten: ein Zug, nach dem von allein weiter etwas zusammenfällt.',
+    nochmal: 'Nochmal',
+    farbName: (nr: number) => ['', 'Rot', 'Lila', 'Grün', 'Blau', 'Gelb', 'Rosa'][nr] ?? '',
+    stufen: {
+      Tor: 'Tor',
+      Knifflig: 'Knifflig',
+      Mittel: 'Mittel',
+      Locker: 'Locker',
+    },
+    knoedel: {
+      'bao-klassik': 'Klassischer Bao',
+      'bao-rot': 'Chili-Bao',
+      'bao-matcha': 'Matcha-Bao',
+      'bao-taro': 'Taro-Bao',
+      'bao-butterfly': 'Schmetterlingsblüte',
+      'bao-custard': 'Custard-Bao',
+      'bao-sakura': 'Sakura-Bao',
+      'bao-sesam': 'Schwarzer Sesam',
+      'bao-kuerbis': 'Kürbis-Bao',
+      'bao-minze': 'Minz-Bao',
+      'bao-beere': 'Beeren-Bao',
+      'bao-milch': 'Milchbrötchen',
+      'bao-honig': 'Honig-Bao',
+      'bao-mond': 'Mondkuchen',
+      'bao-gold': 'Goldener Bao',
+    },
+  },
+
   allgemein: {
     zurueck: 'Zurück',
     weiter: 'Weiter',

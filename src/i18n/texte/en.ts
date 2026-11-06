@@ -813,6 +813,68 @@ export const en: Texte = {
     },
   },
 
+  squishy: {
+    laden: 'Loading…',
+    zurueck: 'Back',
+    karte: 'Map',
+    neu: 'Restart',
+    level: (nr: number) => `Level ${nr}`,
+    regeln:
+      'Drag a dumpling onto its neighbour – or tap both. If that lines up three alike, they vanish and new ones drop from above. Collect the target before time runs out. Line up four and you get a diagonal dumpling, five and you get a golden one in that colour. Both stay on the board and count as normal: line them up again and the diagonal one sweeps both diagonals clear, while the golden one pops every dumpling of its colour. Later, cages appear: a caged dumpling cannot be moved and breaks any line – it springs open when something right next to it disappears.',
+    sammlung: 'Your collection',
+    sammlungStand: (hab: number, von: number) => `${hab} of ${von} dumplings`,
+    naechsterAb: (level: number) => ` · next one from level ${level}`,
+    alleGesammelt: ' · all collected!',
+    abLevel: (name: string, level: number) => `${name} – from level ${level}`,
+    zielStand: (hab: number, ziel: number) => `${hab} / ${ziel} dumplings`,
+    farben: (n: number) => `${n} colours`,
+    kaefige: (offen: number, von: number) => `Cages ${offen}/${von}`,
+    spielfeld: 'Board',
+    imKaefig: ' in a cage',
+    golden: ', golden',
+    diagonal: ', diagonal',
+    besteKette: (n: number) => `Best chain: ${n} clears in a row`,
+    tipp: 'Tip: drag a dumpling or tap two. Four in a row give a diagonal one, five a golden one.',
+    geschafft: 'Done!',
+    ergebnis: (level: number, punkte: number, xp: number) =>
+      `Level ${level} · ${punkte} points · +${xp} XP`,
+    neuerKnoedel: 'New dumpling!',
+    gehoertDir: (name: string) => `${name} is yours now – you can wear it as your figure.`,
+    weiter: 'Next',
+    zeitUm: "Time's up!",
+    verloren: (hab: number, ziel: number, kaefige: number) =>
+      `${hab} of ${ziel} dumplings` +
+      (kaefige > 0
+        ? ` – and ${kaefige} ${kaefige === 1 ? 'cage was' : 'cages were'} still closed.`
+        : '.'),
+    kettenTipp: 'Chains score the most: a move after which more things fall together on their own.',
+    nochmal: 'Try again',
+    farbName: (nr: number) => ['', 'Red', 'Purple', 'Green', 'Blue', 'Yellow', 'Pink'][nr] ?? '',
+    stufen: {
+      Tor: 'Gate',
+      Knifflig: 'Tricky',
+      Mittel: 'Medium',
+      Locker: 'Easy',
+    },
+    knoedel: {
+      'bao-klassik': 'Classic bao',
+      'bao-rot': 'Chilli bao',
+      'bao-matcha': 'Matcha bao',
+      'bao-taro': 'Taro bao',
+      'bao-butterfly': 'Butterfly pea',
+      'bao-custard': 'Custard bao',
+      'bao-sakura': 'Sakura bao',
+      'bao-sesam': 'Black sesame',
+      'bao-kuerbis': 'Pumpkin bao',
+      'bao-minze': 'Mint bao',
+      'bao-beere': 'Berry bao',
+      'bao-milch': 'Milk bun',
+      'bao-honig': 'Honey bao',
+      'bao-mond': 'Mooncake',
+      'bao-gold': 'Golden bao',
+    },
+  },
+
   allgemein: {
     zurueck: 'Back',
     weiter: 'Next',
