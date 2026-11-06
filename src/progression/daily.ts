@@ -17,7 +17,9 @@ export function dailySeed(dateKey: string, gameId: GameId): string {
 
 export function dailyGameId(dateKey: string): GameId {
   const [y, m, d] = dateKey.split('-').map(Number)
-  const dayOfYear = Math.floor((Date.UTC(y!, m! - 1, d!) - Date.UTC(y!, 0, 0)) / 86400000)
+  const dayOfYear = Math.floor(
+    (Date.UTC(y!, m! - 1, d!) - Date.UTC(y!, 0, 0)) / 86400000,
+  )
   return dayOfYear % 2 === 0 ? 'perfect-second' : 'what-is-missing'
 }
 

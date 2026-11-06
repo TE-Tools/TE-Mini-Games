@@ -469,7 +469,10 @@ export function evaluateAchievements(ctx: AchievementContext): AchievementId[] {
     unlocked.push('perfectionist')
   }
 
-  if (typeof ctx.whatIsMissingHighestLevel === 'number' && ctx.whatIsMissingHighestLevel >= 50) {
+  if (
+    typeof ctx.whatIsMissingHighestLevel === 'number' &&
+    ctx.whatIsMissingHighestLevel >= 50
+  ) {
     unlocked.push('eagle-eye')
   }
 

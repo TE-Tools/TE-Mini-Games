@@ -91,7 +91,9 @@ export async function countSchuetzenrundeOnlineWins(
 }
 
 /** Runden mit Königswürde gewonnen – lokal und online zusammen. */
-export async function countSchuetzenrundeKingWins(userId: string = GUEST_USER_ID): Promise<number> {
+export async function countSchuetzenrundeKingWins(
+  userId: string = GUEST_USER_ID,
+): Promise<number> {
   const results = await schuetzenrundeResults(userId)
   return results.filter((r) => {
     const f = schuetzenrundeFlags(r)

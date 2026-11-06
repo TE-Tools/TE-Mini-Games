@@ -24,13 +24,8 @@
   font-weight: 600;
 }
 
-.back:hover {
-  background: var(--grad-surface-hover);
-}
-.back:focus-visible {
-  outline: 2px solid var(--color-gold);
-  outline-offset: 2px;
-}
+.back:hover { background: var(--grad-surface-hover); }
+.back:focus-visible { outline: 2px solid var(--color-gold); outline-offset: 2px; }
 
 .title {
   margin: 0 0 var(--space-2);
@@ -45,11 +40,7 @@
   color: var(--color-text-muted);
 }
 
-.text {
-  color: var(--color-text);
-  font-size: var(--text-sm);
-  line-height: 1.65;
-}
+.text { color: var(--color-text); font-size: var(--text-sm); line-height: 1.65; }
 .text h2 {
   margin: var(--space-6) 0 var(--space-2);
   font-size: var(--text-lg);
@@ -61,22 +52,11 @@
   font-size: var(--text-base);
   color: var(--color-gold-light);
 }
-.text p {
-  margin: 0 0 var(--space-3);
-}
-.text ul {
-  margin: 0 0 var(--space-3);
-  padding-left: 1.2rem;
-}
-.text li {
-  margin: 0 0 var(--space-1);
-}
-.text a {
-  color: var(--color-gold);
-}
-.text strong {
-  color: var(--color-text);
-}
+.text p { margin: 0 0 var(--space-3); }
+.text ul { margin: 0 0 var(--space-3); padding-left: 1.2rem; }
+.text li { margin: 0 0 var(--space-1); }
+.text a { color: var(--color-gold); }
+.text strong { color: var(--color-text); }
 
 .kasten {
   margin: var(--space-4) 0;
@@ -85,9 +65,7 @@
   background: var(--grad-primary-soft);
   border: 1px solid var(--hairline);
 }
-.kasten p:last-child {
-  margin-bottom: 0;
-}
+.kasten p:last-child { margin-bottom: 0; }
 
 .fuss {
   margin-top: var(--space-8);
@@ -95,6 +73,4 @@
   border-top: 1px solid var(--hairline);
   font-size: var(--text-sm);
 }
-.fuss a {
-  color: var(--color-gold);
-}
+.fuss a { color: var(--color-gold); }

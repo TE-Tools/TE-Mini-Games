@@ -113,7 +113,11 @@
   height: 38%;
   width: 2px;
   margin-left: -1px;
-  background: repeating-linear-gradient(180deg, var(--color-gold) 0 6px, transparent 6px 12px);
+  background: repeating-linear-gradient(
+    180deg,
+    var(--color-gold) 0 6px,
+    transparent 6px 12px
+  );
 }
 
 .vogel {
@@ -144,13 +148,8 @@
   border-radius: 50%;
   cursor: pointer;
   padding: 0;
-  background: radial-gradient(
-    circle,
-    #fff 0 18%,
-    #d64545 18% 42%,
-    #f7f3e8 42% 66%,
-    #d64545 66% 100%
-  );
+  background:
+    radial-gradient(circle, #fff 0 18%, #d64545 18% 42%, #f7f3e8 42% 66%, #d64545 66% 100%);
   box-shadow: 0 3px 10px rgb(0 0 0 / 0.5);
   animation: auftauchen 160ms ease-out;
 }

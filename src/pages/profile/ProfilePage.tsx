@@ -76,12 +76,7 @@ export function ProfilePage() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <button
-          type="button"
-          className={styles.back}
-          onClick={() => navigate('/')}
-          aria-label="Zurück"
-        >
+        <button type="button" className={styles.back} onClick={() => navigate('/')} aria-label="Zurück">
           ←
         </button>
         <h1 className={styles.title}>Profil</h1>
@@ -97,8 +92,8 @@ export function ProfilePage() {
           Dein Name im Spiel
         </label>
         <p className={styles.nameHinweis}>
-          So stehst du in Runden und in der Rangliste. Angemeldet wird er auch auf deine anderen
-          Geräte übernommen.
+          So stehst du in Runden und in der Rangliste. Angemeldet wird er auch auf
+          deine anderen Geräte übernommen.
         </p>
         <div className={styles.nameZeile}>
           <input
@@ -187,7 +182,9 @@ export function ProfilePage() {
         </span>
         <span className={styles.accountText}>
           <span className={styles.accountTitle}>Konto &amp; Anmeldung</span>
-          <span className={styles.accountHint}>Benutzername, Anmeldung, Synchronisierung</span>
+          <span className={styles.accountHint}>
+            Benutzername, Anmeldung, Synchronisierung
+          </span>
         </span>
         <span aria-hidden="true">›</span>
       </Link>
