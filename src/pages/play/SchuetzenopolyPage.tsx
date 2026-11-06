@@ -46,6 +46,7 @@ import {
   type SpielZustand,
   type SpielerEinrichtung,
 } from '@/games/schuetzenopoly'
+import { useSprache } from '@/i18n/sprache'
 import { addXp, saveGameResult } from '@/offline'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
@@ -90,11 +91,15 @@ const KARTE_ZURUECK_MS = 220
 type Ansicht = 'laden' | 'menue' | 'aufbau' | 'spiel' | 'online'
 
 export function SchuetzenopolyPage() {
+  const { t, sprache } = useSprache()
+  const ts = t.schuetzenopoly
   const navigate = useNavigate()
   const [ansicht, setAnsicht] = useState<Ansicht>('laden')
   const [zustand, setZustand] = useState<SpielZustand | null>(null)
   const [fortsetzbar, setFortsetzbar] = useState<SpielZustand | null>(null)
-  const [spielerName, setSpielerName] = useState('Du')
+  // 'Du' ist die Kennung des Dienstes für "kein Name" -- angezeigt wird es übersetzt.
+  const [gespeicherterName, setSpielerName] = useState('Du')
+  const spielerName = gespeicherterName === 'Du' ? ts.du : gespeicherterName
 
   const [feldKarte, setFeldKarte] = useState<BrettFeld | null>(null)
   /** Schwingt die Karte gerade zurück? Dann bleibt sie noch kurz stehen. */
@@ -465,7 +470,7 @@ export function SchuetzenopolyPage() {
   if (ansicht === 'laden') {
     return (
       <main className={shell.page}>
-        <p className={shell.muted}>Laden…</p>
+        <p className={shell.muted}>{t.allgemein.laden}</p>
       </main>
     )
   }
@@ -475,13 +480,10 @@ export function SchuetzenopolyPage() {
       <main className={shell.page}>
         <Kopf onZurueck={() => navigate('/')} ton={ton} onTon={tonUmschalten} />
         <section className={shell.section}>
-          <p className={styles.willkommen}>
-            Kauf dir die schönsten Schützenfeste Deutschlands, bau Festzelte und Königshäuser,
-            kassier Standgeld – und schieß am Stand um Gold.
-          </p>
+          <p className={styles.willkommen}>{ts.willkommen}</p>
           {fortsetzbar && (
             <button type="button" className={shell.primaryBtn} onClick={fortsetzen}>
-              ▶ Partie fortsetzen (Runde {fortsetzbar.runde})
+              {ts.fortsetzen(fortsetzbar.runde)}
             </button>
           )}
           <button
@@ -489,13 +491,13 @@ export function SchuetzenopolyPage() {
             className={fortsetzbar ? shell.secondaryBtn : shell.primaryBtn}
             onClick={neuAnfangen}
           >
-            🎲 Neue Partie
+            {ts.neuePartie}
           </button>
           <button type="button" className={shell.secondaryBtn} onClick={() => setAnsicht('online')}>
-            🌐 Online spielen
+            {ts.onlineSpielen}
           </button>
           <Link to="/" className={shell.homeLink}>
-            Zum Menü
+            {t.allgemein.zumMenue}
           </Link>
         </section>
       </main>
@@ -542,7 +544,7 @@ export function SchuetzenopolyPage() {
         <Kopf onZurueck={() => navigate('/')} ton={ton} onTon={tonUmschalten} />
         <section className={shell.section}>
           <p className={gewonnen ? shell.correct : shell.wrong}>
-            {gewonnen ? '🏆 Du hast gewonnen!' : `${tabelle[0]?.name} gewinnt.`}
+            {gewonnen ? ts.gewonnen : ts.gewinnt(tabelle[0]?.name ?? '')}
           </p>
           <ol className={styles.endstand}>
             {tabelle.map((eintrag, i) => (
@@ -551,25 +553,27 @@ export function SchuetzenopolyPage() {
                 <span className={styles.endName}>{eintrag.name}</span>
                 <span className={styles.endWert}>
                   {eintrag.insolvent
-                    ? 'ausgeschieden'
-                    : `${eintrag.vermoegen.toLocaleString('de-DE')} 🪙`}
+                    ? ts.ausgeschieden
+                    : `${eintrag.vermoegen.toLocaleString(sprache)} 🪙`}
                 </span>
               </li>
             ))}
           </ol>
           {menschSpieler && menschSpieler.medaillen.length > 0 && (
             <p className={shell.hint}>
-              Am Schießstand: {menschSpieler.medaillen.filter((m) => m === 'gold').length}× Gold,{' '}
-              {menschSpieler.medaillen.filter((m) => m === 'silber').length}× Silber,{' '}
-              {menschSpieler.medaillen.filter((m) => m === 'bronze').length}× Bronze.
+              {ts.medaillenBilanz(
+                menschSpieler.medaillen.filter((m) => m === 'gold').length,
+                menschSpieler.medaillen.filter((m) => m === 'silber').length,
+                menschSpieler.medaillen.filter((m) => m === 'bronze').length,
+              )}
             </p>
           )}
           <div className={shell.resultActions}>
             <button type="button" className={shell.primaryBtn} onClick={neuAnfangen}>
-              Noch eine Partie
+              {ts.nochEine}
             </button>
             <Link to="/" className={shell.homeLink}>
-              Zum Menü
+              {t.allgemein.zumMenue}
             </Link>
           </div>
         </section>
@@ -593,14 +597,14 @@ export function SchuetzenopolyPage() {
     ? [
         {
           id: 'kaufen',
-          text: `Kaufen · ${kaufKarte.preis.toLocaleString('de-DE')} 🪙`,
+          text: ts.kaufen(kaufKarte.preis.toLocaleString(sprache)),
           haupt: true,
           gesperrt: aktiv.taler < kaufKarte.preis,
           onKlick: mensch ? () => knopfDruck('kaufen', () => anwenden(kaufen)) : undefined,
         },
         {
           id: 'ablehnen',
-          text: 'Stehen lassen',
+          text: ts.stehenLassen,
           onKlick: mensch ? () => knopfDruck('ablehnen', () => anwenden(kaufAblehnen)) : undefined,
         },
       ]
@@ -707,8 +711,8 @@ export function SchuetzenopolyPage() {
               type="button"
               className={styles.tonKnopf}
               onClick={() => setTischWahl(false)}
-              aria-label="Tischmodus verlassen"
-              title="Normale Ansicht"
+              aria-label={ts.tischVerlassen}
+              title={ts.normaleAnsicht}
             >
               📱
             </button>
@@ -716,7 +720,7 @@ export function SchuetzenopolyPage() {
               type="button"
               className={styles.tonKnopf}
               onClick={tonUmschalten}
-              aria-label={ton ? 'Ton ausschalten' : 'Ton einschalten'}
+              aria-label={ton ? ts.tonAus : ts.tonAn}
             >
               {ton ? '🔊' : '🔈'}
             </button>
@@ -732,7 +736,7 @@ export function SchuetzenopolyPage() {
         onZurueck={() => setAnsicht('menue')}
         ton={ton}
         onTon={tonUmschalten}
-        runde={`Runde ${zustand.runde}/${zustand.rundenLimit}`}
+        runde={ts.rundeKurz(zustand.runde, zustand.rundenLimit)}
         onTisch={tischMoeglich ? () => setTischWahl(true) : undefined}
       />
 
@@ -758,13 +762,13 @@ export function SchuetzenopolyPage() {
           type="button"
           className={styles.aufgeben}
           onClick={() => {
-            if (window.confirm('Wirklich aufgeben?')) {
+            if (window.confirm(ts.aufgebenFrage)) {
               const menschSpieler = zustand.spieler.find((s) => s.typ === 'mensch')
               if (menschSpieler) anwenden((s) => aufgeben(s, menschSpieler.id))
             }
           }}
         >
-          Partie aufgeben
+          {ts.aufgeben}
         </button>
       </section>
 
@@ -789,20 +793,27 @@ function Kopf({
   /** Nur auf einem Tablet: das Brett flach in die Mitte, jeder an seine Seite. */
   onTisch?: () => void
 }) {
+  const { t } = useSprache()
+  const ts = t.schuetzenopoly
   return (
     <header className={shell.header}>
-      <button type="button" className={shell.back} onClick={onZurueck} aria-label="Zurück">
+      <button
+        type="button"
+        className={shell.back}
+        onClick={onZurueck}
+        aria-label={t.allgemein.zurueck}
+      >
         ←
       </button>
-      <h1 className={shell.title}>Schützenopoly</h1>
+      <h1 className={shell.title}>{t.spiele.schuetzenopoly}</h1>
       <span className={styles.kopfKnoepfe}>
         {onTisch && (
           <button
             type="button"
             className={styles.tonKnopf}
             onClick={onTisch}
-            aria-label="Tischmodus: jeder spielt von seiner Seite"
-            title="Tischmodus"
+            aria-label={ts.tischmodusLang}
+            title={ts.tischmodus}
           >
             🍽️
           </button>
@@ -811,7 +822,7 @@ function Kopf({
           type="button"
           className={styles.tonKnopf}
           onClick={onTon}
-          aria-label={ton ? 'Ton ausschalten' : 'Ton einschalten'}
+          aria-label={ton ? ts.tonAus : ts.tonAn}
           title={runde}
         >
           {ton ? '🔊' : '🔈'}

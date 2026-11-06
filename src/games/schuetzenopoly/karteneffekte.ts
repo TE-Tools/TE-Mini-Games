@@ -78,6 +78,7 @@ export function wendeKarteAn(state: SpielZustand, karte: Karte): KartenFolge {
     spielerId: spieler.id,
     art: 'karte',
     text: `${spieler.name}: ${karte.icon} ${karte.titel} – ${karte.text}`,
+    meldung: { art: 'karte', name: spieler.name, karteId: karte.id },
   })
 
   if (istSchlecht(karte) && spieler.schutzschild) {
@@ -86,6 +87,7 @@ export function wendeKarteAn(state: SpielZustand, karte: Karte): KartenFolge {
       spielerId: spieler.id,
       art: 'karte',
       text: 'Der Vorstandsbeschluss fängt das ab – die Karte verfällt.',
+      meldung: { art: 'vorstand' },
     })
     return { state: { ...s, offeneKarte: null }, feldAuswerten: false }
   }
@@ -136,6 +138,7 @@ export function wendeKarteAn(state: SpielZustand, karte: Karte): KartenFolge {
           spielerId: spieler.id,
           art: 'karte',
           text: 'Nichts gebaut, nichts zu reparieren.',
+          meldung: { art: 'nichtsZuReparieren' },
         })
       break
     }

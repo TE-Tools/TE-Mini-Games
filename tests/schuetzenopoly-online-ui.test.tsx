@@ -8,10 +8,11 @@
  */
 import 'fake-indexeddb/auto'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render as testRender, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import type { SchopolyOnlineState } from '@/services/schuetzenopolyOnline'
+import { renderAufDeutsch as render } from './aufDeutsch'
 import {
   amZugSitz,
   wendeAn,
@@ -183,10 +184,16 @@ describe('Schützenopoly online', () => {
     vi.resetModules()
     vi.doMock('@/auth/authService', () => ({ getCurrentUser: vi.fn(async () => null) }))
     const mod = await import('@/pages/play/SchuetzenopolyOnline')
-    render(
-      <MemoryRouter>
-        <mod.SchuetzenopolyOnline eigenerName="Du" onZurueck={() => {}} />
-      </MemoryRouter>,
+    // Nach resetModules gibt es einen frischen Sprachkontext -- der Provider
+    // muss aus derselben Ladung kommen wie die Seite, sonst findet sie ihn nicht.
+    const { SprachProvider } = await import('@/i18n/SprachProvider')
+    localStorage.setItem('te-sprache', 'de')
+    testRender(
+      <SprachProvider>
+        <MemoryRouter>
+          <mod.SchuetzenopolyOnline eigenerName="Du" onZurueck={() => {}} />
+        </MemoryRouter>
+      </SprachProvider>,
     )
     expect(await screen.findByRole('link', { name: 'Anmelden' })).toBeInTheDocument()
   })

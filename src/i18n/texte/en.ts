@@ -616,6 +616,485 @@ export const en: Texte = {
    * Kniffel is a German name; the English side avoids the trademarked
    * name of the commercial game and says "five of a kind" instead.
    */
+  /*
+   * Schützenopoly. The 22 properties are not in here: they are named after
+   * real festivals and keep their German names in every language, as do the
+   * event names and the sourced fact on the property card.
+   */
+  schuetzenopoly: {
+    du: 'You',
+    willkommen:
+      "Buy Germany's finest Schützenfeste, build festival tents and king's houses, collect rent – and shoot for gold at the range.",
+    fortsetzen: (runde: number) => `▶ Continue game (round ${runde})`,
+    neuePartie: '🎲 New game',
+    onlineSpielen: '🌐 Play online',
+    gewonnen: '🏆 You won!',
+    gewinnt: (name: string) => `${name} wins.`,
+    ausgeschieden: 'out',
+    medaillenBilanz: (gold: number, silber: number, bronze: number) =>
+      `At the shooting range: ${gold}× gold, ${silber}× silver, ${bronze}× bronze.`,
+    nochEine: 'Play again',
+    kaufen: (preis: string) => `Buy · ${preis} 🪙`,
+    stehenLassen: 'Leave it',
+    tischVerlassen: 'Leave table mode',
+    normaleAnsicht: 'Normal view',
+    tischmodus: 'Table mode',
+    tischmodusLang: 'Table mode: everyone plays from their own side',
+    tonAus: 'Turn sound off',
+    tonAn: 'Turn sound on',
+    rundeKurz: (runde: number, limit: number) => `Round ${runde}/${limit}`,
+    aufgebenFrage: 'Really give up?',
+    aufgeben: 'Give up',
+    tisch: {
+      mitspieler: 'Players',
+      raus: 'out',
+      felder: (n: number) => `${n} ${n === 1 ? 'field' : 'fields'}`,
+      wuerfel: 'Dice',
+      runde: (runde: number, limit: number) => `Round ${runde} of ${limit}`,
+      istAmZug: (name: string) => `${name}'s turn…`,
+      aufDerStrafbank: (versuch: number, von: number) =>
+        `You are on the penalty bench (try ${versuch} of ${von}). Doubles get you out.`,
+      wuerfeln: '🎲 Roll',
+      fuersprache: '🎫 Use Good Word',
+      freikaufen: (betrag: string) => `Pay to leave · ${betrag} 🪙`,
+      koenigsaktion: (betrag: string) => `👑 King's bounty · +${betrag} 🪙`,
+      nochFrei: (preis: string) => `Still free – ${preis} 🪙`,
+      karteAnsehen: '🪪 View card',
+      weiter: 'Next',
+      neuZiehen: '🃏 Draw again',
+      bauen: '🏗️ Build',
+      handeln: '🤝 Trade',
+      duell: '⚔️ Duel',
+      paschNochmal: 'Doubles – roll again',
+      zugBeenden: 'End turn',
+      platzVon: (name: string) => `${name}'s seat`,
+      rechner: 'Computer',
+      amZug: 'Your turn',
+    },
+    brett: {
+      spielbrett: 'Game board',
+      gehoert: (feld: string, name: string) => `${feld}, owned by ${name}`,
+      kleiner: 'Zoom out',
+      groesser: 'Zoom in',
+      ganzesBrett: 'Whole board',
+      ausschnitt: 'Zoomed in',
+    },
+    felder: {
+      start: { name: 'Start', kurz: 'Start' },
+      strafbank: { name: 'Penalty Bench', kurz: 'Bench' },
+      freies_fest: { name: 'Free Festival', kurz: 'Free' },
+      zur_strafbank: { name: 'Go to Penalty Bench', kurz: 'To bench' },
+      ereignis: { name: 'Event', kurz: 'Event' },
+      vereinskarte: { name: 'Club Card', kurz: 'Club' },
+      minispiel: { name: 'Shooting Range', kurz: 'Range' },
+      festzug: { name: 'Festival Parade', kurz: 'Parade' },
+      schuetzenumzug: { name: "Marksmen's March", kurz: 'March' },
+      musikzug: { name: 'Marching Band', kurz: 'Band' },
+      koenigsfahrt: { name: "King's Outing", kurz: 'King' },
+      schiesssportverband: { name: 'Shooting Sports Association', kurz: 'Assoc.' },
+      // A real federation -- its name stays German, like the festivals.
+      schuetzenbund: { name: 'Deutscher Schützenbund', kurz: 'DSB' },
+    },
+    ausbau: ['Plot', 'Festival Tent', 'Club Hall', "King's House", 'Shooting Centre'],
+    medaillen: {
+      gold: 'Gold',
+      silber: 'Silver',
+      bronze: 'Bronze',
+      keine: 'none',
+    },
+    karte: {
+      arten: {
+        schuetzenfest: 'Shooting festival',
+        kirmes: 'Funfair',
+        umzug: 'Parade',
+        volksfest: 'Folk festival',
+      },
+      veranstaltung: 'Event',
+      standgeld: 'Rent',
+      gruppeKomplett: 'Group complete – rents raised.',
+      kaufpreis: 'Price',
+      ausbauJeStufe: 'Each building level',
+      felderImBesitz: (n: number) => `${n} ${n === 1 ? 'field' : 'fields'} owned`,
+      einVerband: 'One association',
+      beideVerbaende: 'Both associations',
+      wuerfelMal: (faktor: number) => `Dice × ${faktor}`,
+      imBesitzVon: 'Owned by',
+      nochFrei: 'Still free',
+      entscheidet: (name: string) => `${name} is deciding …`,
+      stehtHier: (name: string) => `${name} is here.`,
+      weglegen: 'Put card away',
+      schliessen: 'Close',
+      feldArt: {
+        start: 'Fairground',
+        strafbank: 'Penalty Bench',
+        freies_fest: 'Free Festival',
+        ereignis: 'Event card',
+        vereinskarte: 'Club card',
+        minispiel: 'Shooting range',
+        sonderfeld: 'Parade',
+        verband: 'Association',
+        feld: 'Field',
+      },
+      beschreibung: {
+        start: "Anyone passing here collects the fairground's pitch fees.",
+        strafbank:
+          'Just visiting – unless you are the one sitting here. Doubles, a payment or the Good Word card gets you out again.',
+        freies_fest:
+          'Free entry, and the landlord adds a little something. A round to catch your breath.',
+        zur_strafbank: 'From here it is straight to the penalty bench – without passing START.',
+        ereignis: 'Draw an event card. It is usually about money.',
+        vereinskarte: 'Draw a club card. These affect later turns and the other players.',
+        minispiel: 'At the shooting range it is all about bronze, silver or gold.',
+      },
+    },
+    aufbau: {
+      werSpieltMit: "Who's playing?",
+      nameVon: (nr: number) => `Name of player ${nr}`,
+      entfernen: (name: string) => `Remove ${name}`,
+      spielerart: 'Player type',
+      mensch: '👤 Human',
+      rechner: '🤖 Computer',
+      schwierigkeit: 'Difficulty',
+      stufen: {
+        leicht: 'Easy',
+        normal: 'Medium',
+        schwer: 'Hard',
+      },
+      stufenText: {
+        leicht: 'Buys on a whim, rarely builds, never trades.',
+        normal: 'Collects groups, builds sensibly, trades now and then.',
+        schwer: 'Counts the rent, blocks you, trades with a plan.',
+      },
+      plusMitspieler: '+ Player',
+      spieldauer: 'Length:',
+      runden: (n: number) => `${n} rounds`,
+      dauerKurz: 'Short game, about 10 minutes.',
+      dauerMittel: 'About 15 to 25 minutes.',
+      dauerLang: 'Long game – time for some serious building.',
+      zufall: (rollen: number, figuren: number) =>
+        `Roles and tokens are dealt at random at the start. There are ${rollen} roles and ${figuren} tokens.`,
+      fehlerName: 'Every player needs a name.',
+      fehlerDoppelt: 'Two players have the same name.',
+      starten: '🎲 Start game',
+      rechnerEins: 'Clubhouse',
+      rechnerZwei: 'Beer Tent',
+      gegner: (nr: number) => `Opponent ${nr}`,
+    },
+    aktionen: {
+      bauenLabel: 'Build and sell',
+      deinBesitz: '🏗️ Your property',
+      nichts: "You don't own anything yet.",
+      keinGrundstueck: 'Not a plot',
+      sonderfeld: 'Special field',
+      bauen: (kosten: string) => `Build · ${kosten} 🪙`,
+      rueckbau: (betrag: string) => `Demolish · +${betrag} 🪙`,
+      verkauf: (betrag: string) => `Sell · +${betrag} 🪙`,
+      fertig: 'Done',
+      bauGrund: {
+        unbekannt: 'Unknown field',
+        keinGrundstueck: 'Nothing can be built here',
+        nichtDeins: "It isn't yours",
+        voll: 'Fully built',
+        baustopp: 'Building freeze',
+        gruppeUnvollstaendig: 'Group not complete yet',
+        gleichmaessig: 'Build up the rest of the group first',
+        zuWenigTaler: 'Not enough coins',
+      },
+      wahlLabel: 'Card: choice',
+      wenBaustopp: '🚧 Who gets the building freeze?',
+      welchesSchuetzen: '🛡️ Which plot do you want to protect?',
+      welcherTausch: '🔄 Which swap?',
+      duZahlst: (betrag: string) => `(you pay ${betrag} 🪙)`,
+      duErhaeltst: (betrag: string) => `(you get ${betrag} 🪙)`,
+      verfallen: 'Let it lapse',
+    },
+    handel: {
+      titel: '🤝 Trade',
+      label: 'Trade',
+      niemand: 'There is nobody left to trade with.',
+      mitWem: 'With whom?',
+      duGibst: 'You give',
+      duBekommst: 'You get',
+      nichtsHandelbares: 'Nothing to trade.',
+      talerDazu: (betrag: string) => `Plus coins: ${betrag} 🪙`,
+      gehtNicht: "That won't work.",
+      winktAb: (name: string) => `${name} waves it off: "I'd be losing out."`,
+      lehntAb: (name: string) => `${name} thinks it over and declines: "Not enough."`,
+      anbieten: 'Make an offer',
+      zurueck: 'Back to the game',
+      grund: {
+        unbekannt: 'Unknown player',
+        selbst: 'Not with yourself',
+        ausgeschieden: 'That player is out',
+        negativ: 'Negative amounts are not allowed',
+        zuWenigAnbieter: "You don't have that much",
+        zuWenigPartner: "They don't have that much",
+        leer: 'Empty offer',
+      },
+      nichtSeins: (feld: string) => `${feld} isn't theirs to give`,
+      gebaeude: (feld: string) => `There is a building on ${feld}`,
+    },
+    minispiele: {
+      koenigsschiessen: {
+        name: "King's Shoot",
+        anleitung:
+          'The bird swings back and forth. Tap when it is in the middle – the closer, the more points. Three tries.',
+      },
+      ringschiessen: {
+        name: 'Ring Shooting',
+        anleitung:
+          'Targets pop up and disappear again. Small targets score more. A miss costs 50 points.',
+      },
+      praezision: {
+        name: 'Precision Shooting',
+        anleitung:
+          'A crosshair moves across the target. Tap to stop it. The closer to the centre, the more points. Five shots.',
+      },
+      schiessen: 'Shoot',
+      vogelHinweis: 'Tap when the bird is in the middle',
+      scheibe: (groesse: string) => `${groesse} target`,
+      groessen: {
+        klein: 'Small',
+        mittel: 'Medium',
+        gross: 'Large',
+      },
+      scheibenHinweis: 'Small targets score more',
+      fadenkreuzHinweis: 'Stop the crosshair in the middle',
+      punkte: (n: number) => `${n} points`,
+      schuss: (nr: number, von: number) => `Shot ${nr} of ${von}`,
+      gold: '🥇 Gold',
+      silber: '🥈 Silver',
+      bronze: '🥉 Bronze',
+      daneben: '🎯 Just missed',
+      schwellen: (bronze: number, silber: number, gold: number) =>
+        `Bronze from ${bronze} · Silver from ${silber} · Gold from ${gold}`,
+    },
+    rollen: {
+      jungschuetze: {
+        name: 'Junior Marksman',
+        beschreibung: 'A better shot at the range: +15 % points in every mini-game.',
+      },
+      schuetze: {
+        name: 'Marksman',
+        beschreibung: 'Earns more for medals: +25 % mini-game reward.',
+      },
+      unteroffizier: {
+        name: 'Sergeant',
+        beschreibung: 'Haggles 25 % off one fee per round.',
+      },
+      leutnant: {
+        name: 'Lieutenant',
+        beschreibung: 'Calls a duel at the shooting range once per game.',
+      },
+      oberleutnant: {
+        name: 'First Lieutenant',
+        beschreibung: 'Knows the right people: +20 % on good card amounts.',
+      },
+      hauptmann: {
+        name: 'Captain',
+        beschreibung: 'Protects one plot from fees once per game.',
+      },
+      major: {
+        name: 'Major',
+        beschreibung: 'Collects more: +12 % on all fees received.',
+      },
+      oberst: {
+        name: 'Colonel',
+        beschreibung: 'Turns down one card per game and draws again.',
+      },
+      koenig: {
+        name: 'Marksman King',
+        beschreibung: 'Once per game: the club treasury pays out 1,500 coins.',
+      },
+    },
+    karten: {
+      e_koenig: {
+        titel: 'Marksman King',
+        text: 'You shot down the bird and are crowned Marksman King.',
+      },
+      e_musikzug: {
+        titel: 'Marching Band',
+        text: 'Your marching band strikes up and puts everyone in the best of moods.',
+      },
+      e_meisterschuetze: {
+        titel: 'Master Marksman',
+        text: 'You win the competition at the shooting range.',
+      },
+      e_ausverkauft: {
+        titel: 'Sold Out',
+        text: 'Your festival tent is packed to the last seat.',
+      },
+      e_wetter: {
+        titel: 'Bad Weather',
+        text: 'Non-stop rain all festival weekend. Half the crowd stays at home.',
+      },
+      e_reparatur: {
+        titel: 'Repairs',
+        text: 'The club hall needs a new roof. 150 coins per building level.',
+      },
+      e_ehrenrunde: {
+        titel: 'Lap of Honour',
+        text: 'The club celebrates you. Every other player hands over 250 coins.',
+      },
+      e_freibier: {
+        titel: 'Free Beer',
+        text: 'You buy a round for the whole tent: 300 coins to every other player.',
+      },
+      e_zum_start: {
+        titel: 'Off to the Fairground',
+        text: 'The festival starts all over again. Go to START.',
+      },
+      e_ordnungsamt: {
+        titel: 'Public Order Office',
+        text: 'Someone missed closing time. Off to the penalty bench.',
+      },
+      e_standgeld: {
+        titel: 'Pitch Fees',
+        text: 'The pitch fees for the funfair are due.',
+      },
+      e_schiessstand: {
+        titel: 'At the Range',
+        text: 'The shooting range is free. Show what you can do.',
+      },
+      e_koenigsfahrt: {
+        titel: "Invitation to the King's Outing",
+        text: "The coach is waiting. Ride to the King's Outing.",
+      },
+      e_spende: {
+        titel: 'Donation',
+        text: 'A sponsor supports the festival.',
+      },
+      v_freundschaft: {
+        titel: 'Club Friendship',
+        text: 'Everyone knows everyone. Your next fee is waived.',
+      },
+      v_baustopp: {
+        titel: 'Building Freeze',
+        text: 'An opponent of your choice may not build until their next turn.',
+      },
+      v_zuschuss: {
+        titel: 'Club Grant',
+        text: 'The association approves your application.',
+      },
+      v_tausch: {
+        titel: 'Property Swap',
+        text: 'Swap one of your plots for one of equal value.',
+      },
+      v_vorstand: {
+        titel: 'Board Resolution',
+        text: 'The board has your back: the next bad event card has no effect.',
+      },
+      v_freikarte: {
+        titel: 'Good Word',
+        text: 'Keep this card. It gets you off the penalty bench once.',
+      },
+      v_hausrecht: {
+        titel: 'House Rights',
+        text: 'A plot of your choice is shielded from others for one round.',
+      },
+      v_jubilaeum: {
+        titel: 'Club Anniversary',
+        text: 'Everyone joins in: every other player chips in 400 coins.',
+      },
+      v_kassenpruefung: {
+        titel: 'Audit',
+        text: 'The auditors find a hole in the books.',
+      },
+      v_wettkampf: {
+        titel: 'Club Contest',
+        text: 'The club sends you to the range.',
+      },
+    },
+    protokoll: {
+      start: 'The festival begins. Good luck!',
+      wurf: (name: string, a: number, b: number) => `${name} rolls ${a} and ${b}.`,
+      dritterPasch: (name: string) =>
+        `Third doubles in a row – ${name} has to go to the penalty bench.`,
+      paschFrei: (name: string, felder: number) =>
+        `Doubles! ${name} is free and moves ${felder} fields.`,
+      strafbankBezahlt: (name: string, betrag: string) =>
+        `${name} pays ${betrag} 🪙 and may move on.`,
+      keinPasch: (name: string, versuch: number, von: number) =>
+        `No doubles – ${name} stays on the penalty bench (try ${versuch} of ${von}).`,
+      freigekauft: (name: string, betrag: string) =>
+        `${name} pays ${betrag} 🪙 to leave the penalty bench.`,
+      fuersprache: (name: string) =>
+        `${name} plays the Good Word card and leaves the penalty bench.`,
+      startBonus: (name: string, betrag: string) => `${name} passes START: +${betrag} 🪙.`,
+      besuch: (name: string) => `${name} drops by the penalty bench – just visiting.`,
+      freiesFest: (name: string, betrag: string) =>
+        `Free Festival: ${name} collects ${betrag} 🪙 in fees.`,
+      zurStrafbank: (name: string) => `${name} goes straight to the penalty bench.`,
+      geschuetzt: (feld: string) => `${feld} is protected – no fee due.`,
+      gebuehrErlassen: (name: string) => `Club Friendship: ${name} pays nothing this time.`,
+      rabatt: (name: string) => `${name} haggles the fee down.`,
+      gebuehr: (name: string, betrag: string, an: string, feld: string) =>
+        `${name} pays ${betrag} 🪙 to ${an} for ${feld}.`,
+      dieBank: 'the bank',
+      kauf: (name: string, feld: string, preis: string) => `${name} buys ${feld} for ${preis} 🪙.`,
+      karteNeu: (name: string) => `${name} puts the card back and draws again.`,
+      baustopp: (name: string) => `Building freeze for ${name} until their next turn.`,
+      hausrecht: (feld: string) => `${feld} is under house rights for one round.`,
+      tausch: (mein: string, fremd: string) => `Swap: ${mein} for ${fremd}.`,
+      schiessstandLeer: (name: string) => `${name} comes away from the range empty-handed.`,
+      medaille: (name: string, medaille: string, betrag: string) =>
+        `${name} wins ${medaille.toUpperCase()} and collects ${betrag} 🪙.`,
+      duell: (name: string) => `${name} calls a duel at the shooting range.`,
+      koenigsaktion: (name: string, betrag: string) =>
+        `King's bounty: ${name} receives ${betrag} 🪙 from the club treasury.`,
+      bau: (name: string, feld: string, stufe: number) =>
+        `${name} builds on ${feld} (level ${stufe}).`,
+      rueckbau: (name: string, feld: string, betrag: string) =>
+        `${name} demolishes a level on ${feld} (+${betrag} 🪙).`,
+      rueckgabe: (name: string, feld: string, betrag: string) =>
+        `${name} sells ${feld} back to the bank (+${betrag} 🪙).`,
+      sieg: (name: string, vermoegen: string) =>
+        `${name} wins with a total worth of ${vermoegen} 🪙.`,
+      aufgabe: (name: string) => `${name} gives up.`,
+      versilbern: (name: string, feld: string, betrag: string) =>
+        `${name} has to sell off ${feld} (+${betrag} 🪙).`,
+      pleite: (name: string, betrag: string) => `${name} cannot raise ${betrag} 🪙 and is out.`,
+      handel: (von: string, gibt: string, an: string, fuer: string) =>
+        `Trade: ${von} gives ${gibt} to ${an} for ${fuer}.`,
+      nichts: 'nothing',
+      karte: (name: string, icon: string, titel: string, text: string) =>
+        `${name}: ${icon} ${titel} – ${text}`,
+      vorstand: 'The board resolution steps in – the card has no effect.',
+      nichtsZuReparieren: 'Nothing built, nothing to repair.',
+    },
+    online: {
+      titel: 'Schützenopoly online',
+      ladeFehler: 'The game could not be loaded.',
+      zugFehler: "The move didn't go through.",
+      fehler: "That didn't work.",
+      einenMoment: 'One moment…',
+      kontoNoetig:
+        'Online you play with your account – that is the only way the server knows whose turn it is and who owns which festival.',
+      anmelden: 'Sign in',
+      lieberRechner: 'Play the computer instead',
+      einleitung:
+        'One player opens a table and shares the code. Two to four can play; there are no computer opponents online.',
+      oeffentlich: 'Public table',
+      oeffentlichText: 'Listed under "Open games" for everyone, with your name. Anyone can join.',
+      tischAufmachen: '➕ Open a table',
+      spielcode: 'Game code',
+      beitreten: 'Join',
+      offenePartien: 'Your open games',
+      wartet: 'waiting',
+      laeuft: 'in progress',
+      spieler: (n: number) => `${n} ${n === 1 ? 'player' : 'players'}`,
+      warteraum: 'Waiting room',
+      codeWeitergeben: (gastgeber: boolean) =>
+        `Share the code. Once everyone is here, ${gastgeber ? 'you start' : 'the host starts'} the game.`,
+      du: '(you)',
+      runden: 'Rounds',
+      fehltNoch: 'Waiting for another player',
+      starten: '🎲 Start game',
+      nachspielen: 'Replaying the game…',
+      zurLobby: 'Back to the lobby',
+    },
+  },
+
   kniffel: {
     du: 'You',
     rechner: (nr: number) => `Computer ${nr}`,
