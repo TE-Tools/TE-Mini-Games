@@ -22,6 +22,7 @@ import { DATA_PULLED_EVENT } from '@/services/remotePull'
 import { getLevelStand, type LevelStandEintrag } from '@/services/leaderboard'
 import { milestoneBonusXp } from '@/games/milestones'
 import { LevelMap } from '@/components/level-map/LevelMap'
+import { spielName, useSprache } from '@/i18n/sprache'
 import shell from './PlayShell.module.css'
 import styles from './KopfrechnenPage.module.css'
 
@@ -31,6 +32,8 @@ const MAX_GAME_LEVEL = kopfrechnenGame.maxLevel
 
 export function KopfrechnenPage() {
   const navigate = useNavigate()
+  const { t } = useSprache()
+  const k = t.kopfrechnen
   const [level, setLevel] = useState(1)
   const [highest, setHighest] = useState(1)
   const [avatarId, setAvatarId] = useState<string | null>(null)
@@ -39,7 +42,10 @@ export function KopfrechnenPage() {
   const [index, setIndex] = useState(0)
   const [antwort, setAntwort] = useState('')
   const [treffer, setTreffer] = useState<boolean[]>([])
-  const [rueckmeldung, setRueckmeldung] = useState<string | null>(null)
+  /** Was die letzte Antwort war -- als Daten, der Satz entsteht beim Rendern. */
+  const [rueckmeldung, setRueckmeldung] = useState<{ richtig: boolean; loesung: number } | null>(
+    null,
+  )
   const [ablauf, setAblauf] = useState<number | null>(null)
   const [restSekunden, setRestSekunden] = useState<number | null>(null)
   const [scoreResult, setScoreResult] = useState<KopfrechnenScoreResult | null>(null)
@@ -171,15 +177,15 @@ export function KopfrechnenPage() {
   // sonst stimmte sie nicht mehr, wenn das Handy zwischendurch schlief.
   useEffect(() => {
     if (ablauf === null || !config) return
-    const t = window.setInterval(() => {
+    const uhr = window.setInterval(() => {
       const uebrig = Math.max(0, Math.ceil((ablauf - Date.now()) / 1000))
       setRestSekunden(uebrig)
       if (uebrig === 0) {
-        window.clearInterval(t)
+        window.clearInterval(uhr)
         void beenden(trefferRef.current, 0, config)
       }
     }, 200)
-    return () => window.clearInterval(t)
+    return () => window.clearInterval(uhr)
   }, [ablauf, config, beenden])
 
   const selectLevel = useCallback((L: number) => {
@@ -217,7 +223,7 @@ export function KopfrechnenPage() {
     const neu = [...treffer, richtig]
     setTreffer(neu)
     trefferRef.current = neu
-    setRueckmeldung(richtig ? 'Richtig' : `Falsch – ${aufgabe.answer}`)
+    setRueckmeldung({ richtig, loesung: aufgabe.answer })
     setAntwort('')
 
     if (neu.length >= config.tasks.length) {
@@ -253,12 +259,13 @@ export function KopfrechnenPage() {
   if (loading || !config) {
     return (
       <main className={shell.page}>
-        <p className={shell.muted}>Laden…</p>
+        <p className={shell.muted}>{t.allgemein.laden}</p>
       </main>
     )
   }
 
   const aufgabe = config.tasks[index]
+  const titel = spielName(t, 'kopfrechnen', 'Kopfrechnen')
 
   return (
     <main className={shell.page}>
@@ -271,11 +278,11 @@ export function KopfrechnenPage() {
             if (phase === 'map') navigate('/')
             else setPhase('map')
           }}
-          aria-label="Zurück"
+          aria-label={t.allgemein.zurueck}
         >
           ←
         </button>
-        <h1 className={shell.title}>Kopfrechnen</h1>
+        <h1 className={shell.title}>{titel}</h1>
         <span className={shell.levelBadge}>L{config.level}</span>
       </header>
 
@@ -287,34 +294,28 @@ export function KopfrechnenPage() {
             avatarId={avatarId}
             maxLevel={MAX_GAME_LEVEL}
             onSelectLevel={selectLevel}
-            gameLabel="Kopfrechnen"
+            gameLabel={titel}
             mitspieler={mitspieler}
           />
           <button type="button" className={shell.primaryBtn} onClick={() => selectLevel(level)}>
-            Weiter spielen · Level {level}
+            {t.spiel.weiterSpielen(level)}
           </button>
-          <p className={shell.hint}>Oder tippe ein freies Level auf der Karte an.</p>
+          <p className={shell.hint}>{t.levelSpiele.freiesLevel}</p>
           <Link to="/profile" className={shell.homeLink}>
-            Avatar ändern
+            {t.spiel.avatarAendern}
           </Link>
         </section>
       )}
 
       {phase === 'ready' && (
         <section className={shell.section}>
-          <p className={shell.info}>
-            {config.tasks.length} Aufgaben · {config.seconds} s
-          </p>
-          <p className={shell.hint}>
-            Rechne im Kopf und tippe die Zahl ein. {NOETIG_ZUM_BESTEHEN} von {AUFGABEN_JE_RUNDE}{' '}
-            richtig, dann ist das Level geschafft – wer alle hat, bekommt für die übrige Zeit noch
-            Punkte dazu.
-          </p>
+          <p className={shell.info}>{k.info(config.tasks.length, config.seconds)}</p>
+          <p className={shell.hint}>{k.anleitung(NOETIG_ZUM_BESTEHEN, AUFGABEN_JE_RUNDE)}</p>
           <button type="button" className={shell.primaryBtn} onClick={startRound}>
-            Start
+            {t.levelSpiele.start}
           </button>
           <button type="button" className={shell.secondaryBtn} onClick={() => setPhase('map')}>
-            Zur Karte
+            {t.levelSpiele.zurKarte}
           </button>
         </section>
       )}
@@ -327,9 +328,7 @@ export function KopfrechnenPage() {
           >
             {restSekunden ?? config.seconds} s
           </p>
-          <p className={styles.counter}>
-            Aufgabe {index + 1} von {config.tasks.length}
-          </p>
+          <p className={styles.counter}>{k.aufgabe(index + 1, config.tasks.length)}</p>
           <p key={index} className={styles.task}>
             {aufgabe.text} =
           </p>
@@ -353,21 +352,25 @@ export function KopfrechnenPage() {
               onChange={(e) => setAntwort(e.target.value.replace(/[^\d-]/g, ''))}
               // Die iPhone-Zahlentastatur hat kein Minus. Gibt es negative
               // Ergebnisse, braucht es die normale Tastatur (03.11.2026).
-              inputMode={config.tasks.some((t) => t.answer < 0) ? 'text' : 'numeric'}
+              inputMode={config.tasks.some((a) => a.answer < 0) ? 'text' : 'numeric'}
               autoComplete="off"
               autoFocus
-              aria-label="Deine Antwort"
+              aria-label={k.deineAntwort}
               placeholder="?"
             />
             <button type="submit" className={shell.primaryBtn} disabled={!antwort.trim()}>
-              Weiter
+              {k.weiter}
             </button>
           </form>
           <p
             key={`r${index}`}
-            className={rueckmeldung?.startsWith('Richtig') ? styles.feedbackOk : styles.feedbackBad}
+            className={rueckmeldung?.richtig ? styles.feedbackOk : styles.feedbackBad}
           >
-            {rueckmeldung ?? ' '}
+            {rueckmeldung
+              ? rueckmeldung.richtig
+                ? k.richtig
+                : k.falsch(rueckmeldung.loesung)
+              : ' '}
           </p>
           <div className={styles.marks} aria-hidden="true">
             {Array.from({ length: config.tasks.length }, (_, i) => (
@@ -385,37 +388,35 @@ export function KopfrechnenPage() {
       {phase === 'result' && scoreResult && (
         <section className={shell.section}>
           <p className={scoreResult.passed ? shell.correct : shell.wrong}>
-            {treffer.filter(Boolean).length} von {config.tasks.length} richtig
+            {k.ergebnis(treffer.filter(Boolean).length, config.tasks.length)}
           </p>
-          <p className={shell.stars} aria-label={`${scoreResult.stars} von 5 Sternen`}>
+          <p className={shell.stars} aria-label={t.levelSpiele.sterne(scoreResult.stars)}>
             {'★'.repeat(scoreResult.stars)}
             {'☆'.repeat(5 - scoreResult.stars)}
           </p>
           <p className={shell.scoreLine}>
-            <strong>{scoreResult.score}</strong> Punkte
-            {scoreResult.timeBonus > 0 && <> (davon {scoreResult.timeBonus} für die Zeit)</>}
+            <strong>{scoreResult.score}</strong> {t.levelSpiele.punkte}
+            {scoreResult.timeBonus > 0 && <>{k.davonZeit(scoreResult.timeBonus)}</>}
             {scoreResult.xp > 0 && <> · {scoreResult.xp} XP</>}
-            {milestoneXp > 0 && <> · +{milestoneXp} Meilenstein-XP</>}
+            {milestoneXp > 0 && <> · {t.levelSpiele.meilensteinXp(milestoneXp)}</>}
           </p>
           {!scoreResult.passed && (
-            <p className={shell.hint}>
-              Ab {NOETIG_ZUM_BESTEHEN} Richtigen gibt es XP und das nächste Level.
-            </p>
+            <p className={shell.hint}>{k.abRichtigen(NOETIG_ZUM_BESTEHEN)}</p>
           )}
           <div className={shell.resultActions}>
             {scoreResult.passed && completedLevel !== null && completedLevel < MAX_GAME_LEVEL && (
               <button type="button" className={shell.primaryBtn} onClick={goToNextLevel}>
-                Level {completedLevel + 1}
+                {t.levelSpiele.level(completedLevel + 1)}
               </button>
             )}
             <button type="button" className={shell.secondaryBtn} onClick={playAgain}>
-              Noch mal
+              {t.levelSpiele.nochMal}
             </button>
             <button type="button" className={shell.secondaryBtn} onClick={() => setPhase('map')}>
-              Zur Karte
+              {t.levelSpiele.zurKarte}
             </button>
             <Link to="/" className={shell.homeLink}>
-              Zum Menü
+              {t.allgemein.zumMenue}
             </Link>
           </div>
         </section>
