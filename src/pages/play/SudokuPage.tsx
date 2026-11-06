@@ -26,7 +26,6 @@ import {
   stufeVon,
   SCHWIERIGKEITEN,
   STUFEN_NAME,
-  STUFEN_TEXT,
   LEVEL_PRO_STUFE,
   SUDOKU_MAX_LEVEL,
   NACHBARN,
@@ -58,6 +57,7 @@ import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
 import { LevelMap } from '@/components/level-map/LevelMap'
 import shell from './PlayShell.module.css'
+import { useSprache } from '@/i18n/sprache'
 import styles from './SudokuPage.module.css'
 
 type Ansicht = 'menue' | 'karte' | 'spiel'
@@ -92,6 +92,7 @@ function gitterText(werte: number[]): string {
 }
 
 export function SudokuPage() {
+  const { t } = useSprache()
   const [ansicht, setAnsicht] = useState<Ansicht>('menue')
   const [stand, setStand] = useState<Stand>(() => leseStand())
   const [stufe, setStufe] = useState<Schwierigkeit>('leicht')
@@ -414,9 +415,9 @@ export function SudokuPage() {
     merkeVerlauf()
     const kand = alleKandidaten(Uint8Array.from(werte))
     setNotizen(Array.from(kand))
-    setTipps((t) => t + 1)
-    zeigeMeldung('Alle Kandidaten eingetragen -- zählt wie ein Tipp.')
-  }, [ende, pause, werte, merkeVerlauf, zeigeMeldung])
+    setTipps((anzahl) => anzahl + 1)
+    zeigeMeldung(t.sudoku.alleKandidaten)
+  }, [ende, pause, werte, merkeVerlauf, zeigeMeldung, t.sudoku.alleKandidaten])
 
   const tippHolen = useCallback(() => {
     if (ende || pause) return
@@ -524,16 +525,13 @@ export function SudokuPage() {
           <Link to="/" className={shell.back} aria-label="Zurück">
             ←
           </Link>
-          <h1 className={shell.title}>Sudoku</h1>
+          <h1 className={shell.title}>{t.sudoku.titel}</h1>
           <span className={shell.levelBadge}>
             {Object.values(stand.level).filter((l) => l.fertig).length}/{SUDOKU_MAX_LEVEL}
           </span>
         </header>
 
-        <p className={shell.hint}>
-          Drei Stufen zu je {LEVEL_PRO_STUFE} Rätseln. Jede Stufe ist eine eigene Strecke -- du
-          musst nicht erst alle leichten lösen.
-        </p>
+        <p className={shell.hint}>{t.sudoku.einleitung(LEVEL_PRO_STUFE)}</p>
 
         <div className={styles.stufen}>
           {SCHWIERIGKEITEN.map((s) => {
@@ -546,12 +544,12 @@ export function SudokuPage() {
             return (
               <section key={s} className={`${styles.stufe} ${styles[`stufe_${s}`]}`}>
                 <div className={styles.stufeKopf}>
-                  <h2 className={styles.stufeName}>{STUFEN_NAME[s]}</h2>
+                  <h2 className={styles.stufeName}>{t.sudoku.stufen[s]}</h2>
                   <span className={styles.stufeStand}>
                     {fertig}/{LEVEL_PRO_STUFE}
                   </span>
                 </div>
-                <p className={styles.stufeText}>{STUFEN_TEXT[s]}</p>
+                <p className={styles.stufeText}>{t.sudoku.stufenText[s]}</p>
                 <div className={styles.stufeBalken} aria-hidden="true">
                   <span style={{ width: `${(fertig / LEVEL_PRO_STUFE) * 100}%` }} />
                 </div>
@@ -562,10 +560,12 @@ export function SudokuPage() {
                     onClick={() => starteLevel(angefangen ? angefangen.nr : naechste)}
                   >
                     {angefangen
-                      ? `Fortsetzen · ${levelName(angefangen.nr)}`
+                      ? t.sudoku.fortsetzen(levelName(angefangen.nr))
                       : fertig >= LEVEL_PRO_STUFE
-                        ? 'Alle gelöst · noch mal'
-                        : `${fertig > 0 ? 'Weiter' : 'Spielen'} · Stufe ${frei}`}
+                        ? t.sudoku.alleGeloest
+                        : fertig > 0
+                          ? t.sudoku.weiterStufe(frei)
+                          : t.sudoku.spielenStufe(frei)}
                   </button>
                   <button
                     type="button"
@@ -576,7 +576,7 @@ export function SudokuPage() {
                       setAnsicht('karte')
                     }}
                   >
-                    Karte
+                    {t.sudoku.karte}
                   </button>
                 </div>
               </section>
@@ -584,12 +584,12 @@ export function SudokuPage() {
           })}
         </div>
 
-        <section className={styles.einstellungen} aria-label="Einstellungen">
-          <h2 className={styles.einstTitel}>Einstellungen</h2>
+        <section className={styles.einstellungen} aria-label={t.sudoku.einstellungen}>
+          <h2 className={styles.einstTitel}>{t.sudoku.einstellungen}</h2>
           <label className={styles.reihe}>
             <span>
-              Fehler sofort rot zeigen
-              <small>Bei Schwer wird nichts verraten.</small>
+              {t.sudoku.fehlerZeigen}
+              <small>{t.sudoku.fehlerZeigenHinweis}</small>
             </span>
             <input
               type="checkbox"
@@ -604,8 +604,8 @@ export function SudokuPage() {
           </label>
           <label className={styles.reihe}>
             <span>
-              Notizen aufräumen
-              <small>Eine gesetzte Ziffer verschwindet aus den Notizen ringsum.</small>
+              {t.sudoku.notizenAufraeumen}
+              <small>{t.sudoku.notizenAufraeumenHinweis}</small>
             </span>
             <input
               type="checkbox"
@@ -619,7 +619,7 @@ export function SudokuPage() {
             />
           </label>
           <label className={styles.reihe}>
-            <span>Gleiche Ziffern hervorheben</span>
+            <span>{t.sudoku.gleicheZeigen}</span>
             <input
               type="checkbox"
               checked={einst.gleicheZeigen}
@@ -632,7 +632,7 @@ export function SudokuPage() {
             />
           </label>
           <label className={styles.reihe}>
-            <span>Ton</span>
+            <span>{t.allgemein.ton}</span>
             <input
               type="checkbox"
               checked={einst.ton && tonAn()}
@@ -643,19 +643,21 @@ export function SudokuPage() {
             />
           </label>
           <p className={styles.tastatur}>
-            Am Rechner: <b>1</b>–<b>9</b> eintragen, <b>Pfeile</b> bewegen, <b>N</b> Notizen,{' '}
-            <b>Strg+Z</b> zurück, <b>Esc</b> Pause.
+            {t.sudoku.tastatur.amRechner} <b>1</b>–<b>9</b> {t.sudoku.tastatur.eintragen}{' '}
+            <b>{t.sudoku.tastatur.pfeile}</b> {t.sudoku.tastatur.bewegen} <b>N</b>{' '}
+            {t.sudoku.tastatur.notizen} <b>Strg+Z</b> {t.sudoku.tastatur.zurueck} <b>Esc</b>{' '}
+            {t.sudoku.tastatur.pause}
           </p>
           <button
             type="button"
             className={styles.gefahr}
             onClick={() => {
-              if (!window.confirm('Wirklich den ganzen Sudoku-Fortschritt löschen?')) return
+              if (!window.confirm(t.sudoku.fortschrittLoeschenFrage)) return
               loescheStand()
               setStand(leseStand())
             }}
           >
-            Fortschritt löschen
+            {t.sudoku.fortschrittLoeschen}
           </button>
         </section>
       </main>
@@ -677,7 +679,9 @@ export function SudokuPage() {
           >
             ←
           </button>
-          <h1 className={shell.title}>Sudoku · {STUFEN_NAME[stufe]}</h1>
+          <h1 className={shell.title}>
+            {t.sudoku.titel} · {t.sudoku.stufen[stufe]}
+          </h1>
           <span className={shell.levelBadge}>
             {geloeste(stufe, stand)}/{LEVEL_PRO_STUFE}
           </span>
@@ -827,22 +831,22 @@ export function SudokuPage() {
         {pause && !ende && (
           <div className={styles.overlay}>
             <div className={styles.dialog}>
-              <h2>Pause</h2>
+              <h2>{t.sudoku.pause}</h2>
               <p className={styles.leise}>
                 {levelName(nr)} · {zeitText(sekunden)}
               </p>
               <div className={styles.dialogKnoepfe}>
                 <button type="button" className={styles.primaer} onClick={() => setPause(false)}>
-                  Weiter
+                  {t.sudoku.weiter}
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    if (!window.confirm('Dieses Rätsel von vorn anfangen?')) return
+                    if (!window.confirm(t.sudoku.vonVornFrage)) return
                     starteLevel(nr, true)
                   }}
                 >
-                  Von vorn
+                  {t.sudoku.vonVorn}
                 </button>
                 <button
                   type="button"
@@ -865,28 +869,28 @@ export function SudokuPage() {
                 {'★'.repeat(ende.wertung.sterne)}
                 {'☆'.repeat(5 - ende.wertung.sterne)}
               </div>
-              <h2>Gelöst!</h2>
+              <h2>{t.sudoku.geloest}</h2>
               <p>
-                <strong>{ende.wertung.punkte}</strong> Punkte · +{ende.wertung.xp} XP
+                <strong>{ende.wertung.punkte}</strong> {t.sudoku.punkte} +{ende.wertung.xp} XP
               </p>
               <p className={styles.leise}>
-                {zeitText(ende.sekunden)} · {ende.fehler} Fehler · {ende.tipps}{' '}
-                {ende.tipps === 1 ? 'Tipp' : 'Tipps'}
-                {ende.wertung.zeitBonus > 0 && ` · +${ende.wertung.zeitBonus} für die Zeit`}
+                {zeitText(ende.sekunden)} · {ende.fehler} {t.sudoku.fehler} · {ende.tipps}{' '}
+                {ende.tipps === 1 ? t.sudoku.tipp : t.sudoku.tipps}
+                {ende.wertung.zeitBonus > 0 && t.sudoku.zeitBonus(ende.wertung.zeitBonus)}
               </p>
               <p className={styles.leise}>
-                Schwerster nötiger Schritt: <b>{technikName(r.technik)}</b>
+                {t.sudoku.schwersterSchritt} <b>{t.sudoku.techniken[r.technik]}</b>
               </p>
               <div className={styles.dialogKnoepfe}>
                 <button type="button" onClick={() => setAnsicht('karte')}>
                   Karte
                 </button>
                 <button type="button" onClick={() => starteLevel(nr, true)}>
-                  Noch mal
+                  {t.sudoku.nochMal}
                 </button>
                 {stufeVon(nr) < LEVEL_PRO_STUFE ? (
                   <button type="button" className={styles.primaer} onClick={weiter}>
-                    Weiter
+                    {t.sudoku.weiter}
                   </button>
                 ) : (
                   <button
@@ -951,7 +955,7 @@ export function SudokuPage() {
             className={`${styles.taste} ${uebrig[d]! <= 0 ? styles.tasteFertig : ''}`}
             onClick={() => auswahl !== null && setzeZiffer(auswahl, d)}
             disabled={pause || Boolean(ende) || auswahl === null}
-            aria-label={`${d} eintragen, noch ${Math.max(0, uebrig[d]!)} übrig`}
+            aria-label={t.sudoku.zifferEintragen(d, Math.max(0, uebrig[d]!))}
           >
             <span className={styles.tasteZiffer}>{d}</span>
             <span className={styles.tasteRest}>{Math.max(0, uebrig[d]!)}</span>
@@ -967,14 +971,14 @@ export function SudokuPage() {
               <p className={styles.tippTechnik}>
                 {tipp.techniken.length > 1
                   ? `Dafür braucht es: ${tipp.techniken.map(technikName).join(' → ')}`
-                  : `Technik: ${technikName(tipp.techniken[0]!)}`}
+                  : t.sudoku.technik(t.sudoku.techniken[tipp.techniken[0]!])}
               </p>
               <div className={styles.tippKnoepfe}>
                 <button type="button" className={styles.primaer} onClick={tippEintragen}>
-                  {tipp.ziffer} eintragen
+                  {t.sudoku.zifferSetzen(tipp.ziffer)}
                 </button>
                 <button type="button" onClick={() => setTipp(null)}>
-                  Selbst weiter
+                  {t.sudoku.selbstWeiter}
                 </button>
               </div>
             </>
@@ -990,12 +994,10 @@ export function SudokuPage() {
         onClick={notizenFuellen}
         disabled={pause || Boolean(ende)}
       >
-        Alle Notizen eintragen (zählt als Tipp)
+        {t.sudoku.alleNotizen}
       </button>
       <p className={styles.fussnote}>
-        {schwierigkeit === 'schwer'
-          ? 'Schwer: Fehler werden nicht angezeigt. Ein Tipp verrät, ob etwas Falsches im Gitter steht.'
-          : 'Tippe ein Feld an, dann eine Ziffer. Mit Notizen an trägst du Kandidaten ein.'}
+        {schwierigkeit === 'schwer' ? t.sudoku.fussSchwer : t.sudoku.fussNormal}
       </p>
     </main>
   )

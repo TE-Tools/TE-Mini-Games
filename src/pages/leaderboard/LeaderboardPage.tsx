@@ -19,7 +19,7 @@ import { holeVerloreneErgebnisseNach } from '@/services/nachtragen'
 import { getSyncPendingCount } from '@/services/sync'
 import type { GameId } from '@/games/types'
 import styles from './LeaderboardPage.module.css'
-import { useSprache } from '@/i18n/sprache'
+import { useSprache, spielName } from '@/i18n/sprache'
 
 type Tab = 'overall' | 'mine' | 'global-ps' | 'global-wim' | 'global-sr' | 'global-rf' | 'global-kr'
 
@@ -362,17 +362,19 @@ export function LeaderboardPage() {
             <p className={styles.empty}>{t.rangliste.nochKeineErgebnisse}</p>
           ) : (
             <ul className={styles.list}>
-              {totals.map((t) => (
-                <li key={t.gameId} className={`${styles.row} ${styles.rowNoRank}`}>
+              {totals.map((eintrag) => (
+                <li key={eintrag.gameId} className={`${styles.row} ${styles.rowNoRank}`}>
                   <span className={styles.rowMain}>
-                    {gameLabel(t.gameId)}
-                    <span className={styles.sub}> · {t.playCount} Runden</span>
+                    {spielName(t, eintrag.gameId, gameLabel(eintrag.gameId))}
+                    <span className={styles.sub}> · {t.rangliste.runden(eintrag.playCount)}</span>
                   </span>
                   <span className={styles.rowRight}>
                     <span className={styles.rowScore}>
-                      {t.totalScore.toLocaleString('de-DE')} Pkt.
+                      {t.rangliste.punkte(eintrag.totalScore.toLocaleString(sprache))}
                     </span>
-                    <span className={styles.rowXp}>{t.totalXp.toLocaleString('de-DE')} XP</span>
+                    <span className={styles.rowXp}>
+                      {eintrag.totalXp.toLocaleString(sprache)} XP
+                    </span>
                   </span>
                 </li>
               ))}
