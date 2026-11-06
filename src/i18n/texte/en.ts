@@ -757,6 +757,198 @@ export const en: Texte = {
     wuerfeltGerade: (name: string) => `${name} is rolling. You're up after that.`,
   },
 
+  maumau: {
+    ansageMau: 'Mau!',
+    ansageLetzteKarte: 'Last card!',
+    tonAus: 'Turn sound off',
+    tonEin: 'Turn sound on',
+    einleitungKlassisch:
+      'Suit or rank must match. The 7 sends two cards, the 8 makes the next player miss a turn, the 9 reverses play – and the Jack picks a suit.',
+    einleitungBunt:
+      'Colour or symbol must match. Skip, reverse, draw cards – and when you are down to one card, you had better say so in time.',
+    bisDreiMitspieler: 'Up to three opponents',
+    onlineMitAnderen: 'Online with others',
+    onlineMitAnderenText: 'Open a table, share the code – or join one',
+    wieVieleMitspieler: 'How many opponents?',
+    wieStark: 'How strong?',
+    stufen: {
+      leicht: {
+        name: 'Easy',
+        erklaerung: 'Plays the first card that fits – and sometimes forgets to say Mau.',
+      },
+      normal: {
+        name: 'Normal',
+        erklaerung: 'Picks with care, saves its black cards and always says Mau.',
+      },
+    },
+    losGehts: "🂡 Let's go",
+    gewonnen: '🏆 You won!',
+    platzVon: (platz: number | string, von: number) => `Place ${platz} of ${von}`,
+    du: 'You',
+    alleAbgelegt: 'all cards played',
+    kartenUndPunkte: (karten: number, punkte: number) =>
+      `${karten} ${karten === 1 ? 'card' : 'cards'} · ${punkte} points`,
+    punkteFuerRunde: 'points for this round',
+    nochEineRunde: 'Another round',
+
+    tischmitte: 'Middle of the table',
+    wasBisherGeschah: 'What happened so far',
+    farbeWuenschen: 'Choose a colour',
+    welcheFarbe: 'Which colour?',
+    farbeWuenschenKlassisch: 'Choose a suit',
+    welcheFarbeKlassisch: 'Which suit?',
+    duBistDran: 'Your turn',
+    istDran: (name: string) => `${name}'s turn …`,
+    gezogenLegen: 'Drawn – play it?',
+    behalten: 'Keep',
+    nichtsPasst: 'Nothing fits – draw a card from the pile.',
+    karten: (n: number) => `${n} ${n === 1 ? 'card' : 'cards'}`,
+    deineKarten: 'Your cards',
+    verdeckteKarte: 'face-down card',
+    karteLegen: (karte: string) => `Play ${karte}`,
+    nachziehstapel: (n: number) => `Draw pile, ${n} cards`,
+
+    wieWirdGespielt: 'How do you want to play?',
+    hausregeln: 'House rules',
+    spielarten: {
+      klassisch: {
+        name: 'Mau-Mau',
+        erklaerung:
+          '32 cards. 7 makes the next player draw two, 8 skips, 9 reverses, the Jack picks a suit.',
+      },
+      bunt: {
+        name: 'Standard',
+        erklaerung: '108 cards in four colours, with skip, reverse and draw cards.',
+      },
+      extrem: {
+        name: 'Extreme',
+        erklaerung:
+          'Like Standard, but penalty cards can be passed on, you draw until a card fits, and the zero moves every hand along.',
+      },
+    },
+    konter: {
+      zweiAufZwei: {
+        name: '+2 on +2',
+        nameKlassisch: '7 on 7',
+        erklaerung: 'The penalty moves on and grows.',
+      },
+      vierAufVier: {
+        name: '+4 on +4',
+        nameKlassisch: '+4 on +4',
+        erklaerung: 'Four and four make eight for the next player.',
+      },
+      zweiAufVier: {
+        name: '+2 on +4',
+        nameKlassisch: '+2 on +4',
+        erklaerung: 'The small card may go on the big one, too.',
+      },
+      vierAufZwei: {
+        name: '+4 on +2',
+        nameKlassisch: '+4 on +2',
+        erklaerung: 'And the other way round.',
+      },
+      schwarzAufSchwarz: {
+        name: 'Black on black',
+        nameKlassisch: 'Black on black',
+        erklaerung:
+          'The wild card counters: you do not draw, and the next player faces the same number.',
+      },
+    },
+    ziehenBisPassend: 'Draw until it fits',
+    ziehenBisPassendText: 'Otherwise you draw one card and that is it.',
+    haendeWandern: 'Zero swaps the hands',
+    haendeWandernText: 'Everyone passes their hand on in the direction of play.',
+
+    farben: {
+      herz: 'Hearts',
+      karo: 'Diamonds',
+      pik: 'Spades',
+      kreuz: 'Clubs',
+      rot: 'Red',
+      blau: 'Blue',
+      gruen: 'Green',
+      gelb: 'Yellow',
+    },
+    schwarz: 'Black',
+    bildEcke: { B: 'J', D: 'Q', K: 'K', A: 'A' },
+    bildName: { B: 'Jack', D: 'Queen', K: 'King', A: 'Ace' },
+    wirkungen: {
+      aussetzen: 'Skip',
+      richtung: 'Reverse',
+      zieh2: 'Draw two',
+      zieh4: 'Draw four',
+      wunsch: 'Wild',
+    },
+    karteFranz: (farbe: string, rang: string, wirkung: string | null) =>
+      wirkung ? `${rang} of ${farbe} (${wirkung.toLowerCase()})` : `${rang} of ${farbe}`,
+    karteBunt: (farbe: string, was: string) => `${farbe} ${was}`,
+    wunschKurz: 'Wild',
+    protokoll: {
+      neuGemischt: 'The draw pile is reshuffled',
+      stapelLeer: 'The draw pile is empty',
+      niemandKann: 'Nobody can play any more',
+      haendeWandern: 'The hands move on',
+      esLiegt: (karte: string) => `Face up: ${karte}`,
+      duLegst: (karte: string) => `You play ${karte}`,
+      legt: (wer: string, karte: string) => `${wer} plays ${karte}`,
+      duZiehst: (n: number) => `You draw ${n}`,
+      zieht: (wer: string, n: number) => `${wer} draws ${n}`,
+      duMau: 'You: Mau!',
+      mau: (wer: string) => `${wer}: Mau!`,
+      duMauVergessen: (n: number) => `You forgot to say Mau and draw ${n}`,
+      mauVergessen: (wer: string, n: number) => `${wer} forgot to say Mau and draws ${n}`,
+    },
+
+    online: {
+      titel: (spiel: string) => `${spiel} online`,
+      ladeFehler: 'The game could not be loaded.',
+      fehler: 'That did not work.',
+      moment: 'One moment…',
+      ohneKonto:
+        'Online you play with your account – that is the only way the server knows who is playing, and nobody can pick their own cards.',
+      anmelden: 'Sign in',
+      lieberRechner: 'Play the computer instead',
+      einleitung:
+        'One player opens a table and shares the code. The cards are shuffled on the server – and nobody sees the others’ cards, not even someone who goes looking.',
+      oeffentlich: 'Public table',
+      oeffentlichText: 'Listed in the lobby for everyone, with your name. Anyone can join.',
+      eroeffnen: '➕ Open a table',
+      oder: 'or',
+      spielcode: 'Game code',
+      beitreten: 'Join',
+      offeneTische: 'Your open tables',
+      wartet: 'waiting',
+      laeuft: 'in progress',
+      spieler: (n: number) => `${n} ${n === 1 ? 'player' : 'players'}`,
+      jemand: 'Someone',
+      ersatzName: 'Player',
+      warteraum: 'Waiting room',
+      codeWeitergebenHost:
+        'Share the code. Once everyone is here, you start the game. Up to four fit at the table.',
+      codeWeitergebenGast:
+        'Share the code. Once everyone is here, the host starts the game. Up to four fit at the table.',
+      du: '(you)',
+      fehltNoch: 'Still waiting for someone',
+      starten: '🎴 Start the game',
+      verlassen: 'Leave table',
+      endstand: 'Final score',
+      zurLobby: 'Back to the lobby',
+    },
+  },
+
+  oeffentlicheRaeume: {
+    titel: 'Public rooms',
+    suche: 'Looking for open rooms…',
+    ladeFehler: 'The list could not be loaded.',
+    leer: 'Nobody is waiting right now. Open a public room yourself – then it shows up here for everyone.',
+    raumVon: (name: string) => `${name}'s room`,
+    personen: (n: number) => `${n} ${n === 1 ? 'person' : 'people'}`,
+    vonPlaetzen: (plaetze: number) => ` of ${plaetze}`,
+    code: (code: string) => `Code ${code}`,
+    voll: 'Full',
+    beitreten: 'Join',
+  },
+
   bienenFlow: {
     laden: 'Loading…',
     zurueck: 'Back',

@@ -762,6 +762,205 @@ export const de = {
     wuerfeltGerade: (name: string) => `${name} würfelt gerade. Du kommst danach dran.`,
   },
 
+  maumau: {
+    ansageMau: 'Mau!',
+    ansageLetzteKarte: 'Letzte Karte!',
+    tonAus: 'Ton ausschalten',
+    tonEin: 'Ton einschalten',
+    einleitungKlassisch:
+      'Farbe oder Zahl muss passen. Die 7 schickt zwei Karten, die 8 lässt aussetzen, die 9 dreht die Runde – und der Bube wünscht sich eine Farbe.',
+    einleitungBunt:
+      'Farbe oder Aufdruck muss passen. Aussetzen, Richtungswechsel, Ziehkarten – und wer nur noch eine Karte hat, sagt es besser rechtzeitig.',
+    bisDreiMitspieler: 'Bis zu drei Mitspieler',
+    onlineMitAnderen: 'Online mit anderen',
+    onlineMitAnderenText: 'Tisch aufmachen, Code weitergeben – oder beitreten',
+    wieVieleMitspieler: 'Wie viele Mitspieler?',
+    wieStark: 'Wie stark?',
+    stufen: {
+      leicht: {
+        name: 'Leicht',
+        erklaerung: 'Legt die erste Karte, die passt – und vergisst auch mal Mau.',
+      },
+      normal: {
+        name: 'Normal',
+        erklaerung: 'Wählt aus, hebt sich die schwarzen Karten auf und sagt immer Mau.',
+      },
+    },
+    losGehts: "🂡 Los geht's",
+    gewonnen: '🏆 Gewonnen!',
+    platzVon: (platz: number | string, von: number) => `Platz ${platz} von ${von}`,
+    du: 'Du',
+    alleAbgelegt: 'alle abgelegt',
+    kartenUndPunkte: (karten: number, punkte: number) =>
+      `${karten} ${karten === 1 ? 'Karte' : 'Karten'} · ${punkte} Punkte`,
+    punkteFuerRunde: 'Punkte für diese Runde',
+    nochEineRunde: 'Noch eine Runde',
+
+    tischmitte: 'Tischmitte',
+    wasBisherGeschah: 'Was bisher geschah',
+    farbeWuenschen: 'Farbe wünschen',
+    welcheFarbe: 'Welche Farbe?',
+    /** Beim französischen Blatt: die vier Farben Herz, Karo, Pik, Kreuz. */
+    farbeWuenschenKlassisch: 'Farbe wünschen',
+    welcheFarbeKlassisch: 'Welche Farbe?',
+    duBistDran: 'Du bist dran',
+    istDran: (name: string) => `${name} ist dran …`,
+    gezogenLegen: 'Gezogen – legen?',
+    behalten: 'Behalten',
+    nichtsPasst: 'Nichts passt – zieh eine Karte vom Stapel.',
+    karten: (n: number) => `${n} ${n === 1 ? 'Karte' : 'Karten'}`,
+    deineKarten: 'Deine Karten',
+    verdeckteKarte: 'verdeckte Karte',
+    karteLegen: (karte: string) => `${karte} legen`,
+    nachziehstapel: (n: number) => `Nachziehstapel, ${n} Karten`,
+
+    wieWirdGespielt: 'Wie wird gespielt?',
+    hausregeln: 'Hausregeln',
+    spielarten: {
+      klassisch: {
+        name: 'Mau-Mau',
+        erklaerung:
+          '32 Karten. 7 zieht zwei, 8 setzt aus, 9 dreht, der Bube wünscht sich eine Farbe.',
+      },
+      bunt: {
+        name: 'Bunt',
+        erklaerung: '108 Karten in vier Farben, mit Aussetzen, Richtungswechsel und Ziehkarten.',
+      },
+      extrem: {
+        name: 'Extrem',
+        erklaerung:
+          'Wie Bunt, aber Strafkarten lassen sich weiterreichen, es wird gezogen bis es passt, und die Null schiebt alle Hände weiter.',
+      },
+    },
+    konter: {
+      zweiAufZwei: {
+        name: '+2 auf +2',
+        nameKlassisch: '7 auf 7',
+        erklaerung: 'Die Strafe wandert weiter und wächst.',
+      },
+      vierAufVier: {
+        name: '+4 auf +4',
+        nameKlassisch: '+4 auf +4',
+        erklaerung: 'Vier und vier macht acht für den Nächsten.',
+      },
+      zweiAufVier: {
+        name: '+2 auf +4',
+        nameKlassisch: '+2 auf +4',
+        erklaerung: 'Auch die kleine Karte darf auf die grosse.',
+      },
+      vierAufZwei: {
+        name: '+4 auf +2',
+        nameKlassisch: '+4 auf +2',
+        erklaerung: 'Und umgekehrt.',
+      },
+      schwarzAufSchwarz: {
+        name: 'Schwarz auf Schwarz',
+        nameKlassisch: 'Schwarz auf Schwarz',
+        erklaerung:
+          'Die Wunschkarte kontert: Du ziehst nicht, der Nächste steht vor derselben Zahl.',
+      },
+    },
+    ziehenBisPassend: 'Ziehen, bis es passt',
+    ziehenBisPassendText: 'Sonst zieht man eine Karte und ist fertig.',
+    haendeWandern: 'Null tauscht die Hände',
+    haendeWandernText: 'Alle geben ihr Blatt in Spielrichtung weiter.',
+
+    farben: {
+      herz: 'Herz',
+      karo: 'Karo',
+      pik: 'Pik',
+      kreuz: 'Kreuz',
+      rot: 'Rot',
+      blau: 'Blau',
+      gruen: 'Grün',
+      gelb: 'Gelb',
+    },
+    schwarz: 'Schwarz',
+    /** Was auf der Ecke einer Bildkarte steht. */
+    bildEcke: { B: 'B', D: 'D', K: 'K', A: 'A' },
+    /** Wie eine Bildkarte vorgelesen wird. */
+    bildName: { B: 'B', D: 'D', K: 'K', A: 'A' },
+    wirkungen: {
+      aussetzen: 'Aussetzen',
+      richtung: 'Richtungswechsel',
+      zieh2: 'Zwei ziehen',
+      zieh4: 'Vier ziehen',
+      wunsch: 'Farbwunsch',
+    },
+    /** Französisches Blatt, vorgelesen. `wirkung` fehlt bei Karten ohne. */
+    karteFranz: (farbe: string, rang: string, wirkung: string | null) =>
+      `${farbe} ${wirkung ?? rang}`,
+    /** Buntes Blatt, vorgelesen. */
+    karteBunt: (farbe: string, was: string) => `${farbe} ${was}`,
+    /** Kurzform der reinen Wunschkarte im Protokoll. */
+    wunschKurz: 'Wunsch',
+    protokoll: {
+      neuGemischt: 'Der Stapel wird neu gemischt',
+      stapelLeer: 'Der Stapel ist leer',
+      niemandKann: 'Niemand kann mehr legen',
+      haendeWandern: 'Die Hände wandern weiter',
+      esLiegt: (karte: string) => `Es liegt ${karte}`,
+      duLegst: (karte: string) => `Du legst ${karte}`,
+      legt: (wer: string, karte: string) => `${wer} legt ${karte}`,
+      duZiehst: (n: number) => `Du ziehst ${n}`,
+      zieht: (wer: string, n: number) => `${wer} zieht ${n}`,
+      duMau: 'Du: Mau!',
+      mau: (wer: string) => `${wer}: Mau!`,
+      duMauVergessen: (n: number) => `Du hast Mau vergessen und ziehst ${n}`,
+      mauVergessen: (wer: string, n: number) => `${wer} hat Mau vergessen und zieht ${n}`,
+    },
+
+    online: {
+      titel: (spiel: string) => `${spiel} online`,
+      ladeFehler: 'Die Runde ließ sich nicht laden.',
+      fehler: 'Das hat nicht geklappt.',
+      moment: 'Einen Moment…',
+      ohneKonto:
+        'Online spielst du mit deinem Konto – nur so weiß der Server, wer gerade legt, und niemand kann sich seine Karten selbst aussuchen.',
+      anmelden: 'Anmelden',
+      lieberRechner: 'Lieber gegen den Rechner',
+      einleitung:
+        'Einer eröffnet den Tisch und gibt den Code weiter. Gemischt wird auf dem Server – und niemand sieht die Karten der anderen, auch nicht, wer nachsieht.',
+      oeffentlich: 'Öffentlicher Tisch',
+      oeffentlichText: 'Steht für alle in der Lobby, mit deinem Namen. Jeder kann beitreten.',
+      eroeffnen: '➕ Tisch eröffnen',
+      oder: 'oder',
+      spielcode: 'Spielcode',
+      beitreten: 'Beitreten',
+      offeneTische: 'Deine offenen Tische',
+      wartet: 'wartet',
+      laeuft: 'läuft',
+      spieler: (n: number) => `${n} Spieler`,
+      jemand: 'Jemand',
+      /** Der Name am Tisch, wenn das Konto keinen hat. */
+      ersatzName: 'Spieler',
+      warteraum: 'Warteraum',
+      codeWeitergebenHost:
+        'Gib den Code weiter. Sobald alle da sind, startest du die Runde. Bis zu vier passen an den Tisch.',
+      codeWeitergebenGast:
+        'Gib den Code weiter. Sobald alle da sind, startet der Gastgeber die Runde. Bis zu vier passen an den Tisch.',
+      du: '(du)',
+      fehltNoch: 'Es fehlt noch jemand',
+      starten: '🎴 Runde starten',
+      verlassen: 'Tisch verlassen',
+      endstand: 'Endstand',
+      zurLobby: 'Zurück zur Lobby',
+    },
+  },
+
+  oeffentlicheRaeume: {
+    titel: 'Öffentliche Räume',
+    suche: 'Suche nach offenen Räumen…',
+    ladeFehler: 'Die Liste ließ sich nicht laden.',
+    leer: 'Gerade wartet niemand. Mach selbst einen öffentlichen Raum auf – dann steht er hier für alle.',
+    raumVon: (name: string) => `Raum von ${name}`,
+    personen: (n: number) => `${n} ${n === 1 ? 'Person' : 'Personen'}`,
+    vonPlaetzen: (plaetze: number) => ` von ${plaetze}`,
+    code: (code: string) => `Code ${code}`,
+    voll: 'Voll',
+    beitreten: 'Beitreten',
+  },
+
   bienenFlow: {
     laden: 'Laden…',
     zurueck: 'Zurück',

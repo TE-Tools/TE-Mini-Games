@@ -15,7 +15,9 @@
  *                Zeichen.
  */
 
-import { FARB_NAME, FARB_ROT, FARB_ZEICHEN, karteName, type Karte } from '@/games/maumau'
+import { FARB_ROT, FARB_ZEICHEN, type Karte } from '@/games/maumau'
+import { useSprache } from '@/i18n/sprache'
+import { eckText, farbName, karteVorlesen } from './kartenText'
 import styles from './Blattkarte.module.css'
 
 interface Props {
@@ -35,13 +37,16 @@ function istFranzoesisch(karte: Karte): boolean {
 }
 
 function Gesicht({ karte }: { karte: Karte }) {
+  const { t } = useSprache()
   const franz = istFranzoesisch(karte)
   const zeichen = karte.farbe && franz ? FARB_ZEICHEN[karte.farbe] : ''
+  // Aus dem Buben wird auf Englisch ein J -- die Karte selbst bleibt 'B'.
+  const aufdruck = eckText(t, karte.text)
 
   return (
     <>
       <span className={`${styles.ecke} ${styles.eckeOben}`} aria-hidden="true">
-        <span className={styles.eckeText}>{karte.text}</span>
+        <span className={styles.eckeText}>{aufdruck}</span>
         {zeichen && <span className={styles.eckeZeichen}>{zeichen}</span>}
       </span>
 
@@ -50,13 +55,13 @@ function Gesicht({ karte }: { karte: Karte }) {
           <span className={styles.grossesZeichen}>{zeichen}</span>
         ) : (
           <span className={styles.oval}>
-            <span className={styles.ovalText}>{karte.text}</span>
+            <span className={styles.ovalText}>{aufdruck}</span>
           </span>
         )}
       </span>
 
       <span className={`${styles.ecke} ${styles.eckeUnten}`} aria-hidden="true">
-        <span className={styles.eckeText}>{karte.text}</span>
+        <span className={styles.eckeText}>{aufdruck}</span>
         {zeichen && <span className={styles.eckeZeichen}>{zeichen}</span>}
       </span>
     </>
@@ -64,6 +69,7 @@ function Gesicht({ karte }: { karte: Karte }) {
 }
 
 export function Blattkarte({ karte, zu = false, klein = false, spielbar, blass, onClick }: Props) {
+  const { t } = useSprache()
   const klassen = [
     styles.karte,
     klein ? styles.klein : '',
@@ -76,7 +82,7 @@ export function Blattkarte({ karte, zu = false, klein = false, spielbar, blass, 
       <span
         className={`${klassen.join(' ')} ${styles.rueckseite}`}
         role="img"
-        aria-label="verdeckte Karte"
+        aria-label={t.maumau.verdeckteKarte}
       >
         <span className={styles.muster} aria-hidden="true" />
       </span>
@@ -87,7 +93,7 @@ export function Blattkarte({ karte, zu = false, klein = false, spielbar, blass, 
   klassen.push(franz ? (FARB_ROT[karte.farbe!] ? styles.rot : styles.schwarz) : styles.bunt)
   if (karte.farbe === null) klassen.push(styles.wunschkarte)
 
-  const beschriftung = karteName(karte)
+  const beschriftung = karteVorlesen(t, karte)
 
   if (onClick) {
     return (
@@ -96,7 +102,7 @@ export function Blattkarte({ karte, zu = false, klein = false, spielbar, blass, 
         className={klassen.join(' ')}
         data-farbe={karte.farbe ?? 'schwarz'}
         onClick={onClick}
-        aria-label={`${beschriftung} legen`}
+        aria-label={t.maumau.karteLegen(beschriftung)}
       >
         <Gesicht karte={karte} />
       </button>
@@ -125,6 +131,7 @@ export function Ziehstapel({
   onClick?: () => void
   gesperrt?: boolean
 }) {
+  const { t } = useSprache()
   return (
     <span className={styles.stapelRahmen}>
       <span
@@ -138,7 +145,7 @@ export function Ziehstapel({
         className={`${styles.karte} ${styles.rueckseite} ${styles.stapel}`}
         onClick={onClick}
         disabled={gesperrt}
-        aria-label={`Nachziehstapel, ${anzahl} Karten`}
+        aria-label={t.maumau.nachziehstapel(anzahl)}
       >
         <span className={styles.muster} aria-hidden="true" />
         <span className={styles.stapelZahl}>{anzahl}</span>
@@ -149,10 +156,11 @@ export function Ziehstapel({
 
 /** Welche Farbe gewünscht ist. */
 export function Farbwunsch({ farbe }: { farbe: string }) {
+  const { t } = useSprache()
   return (
     <span className={styles.wunsch} data-farbe={farbe}>
       <span className={styles.wunschPunkt} aria-hidden="true" />
-      {FARB_NAME[farbe] ?? farbe}
+      {farbName(t, farbe)}
     </span>
   )
 }
