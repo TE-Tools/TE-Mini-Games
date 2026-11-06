@@ -563,6 +563,11 @@ export const en: Texte = {
     fussSchwer:
       'Hard: mistakes are not shown. A hint tells you whether something wrong is in the grid.',
     fussNormal: 'Tap a cell, then a digit. With notes on you enter candidates.',
+    zumMenue: 'To the menu',
+    zurKarte: 'To the map',
+    menue: 'Menu',
+    loeschen: 'Clear',
+    zurueck: 'Undo',
     fortsetzen: (name: string) => `Resume · ${name}`,
     alleGeloest: 'All solved · play again',
     weiterStufe: (nr: number) => `Continue · puzzle ${nr}`,

@@ -675,7 +675,7 @@ export function SudokuPage() {
             type="button"
             className={shell.back}
             onClick={() => setAnsicht('menue')}
-            aria-label="Zum Menü"
+            aria-label={t.sudoku.zumMenue}
           >
             ←
           </button>
@@ -720,7 +720,7 @@ export function SudokuPage() {
             sichern()
             setAnsicht('karte')
           }}
-          aria-label="Zur Karte"
+          aria-label={t.sudoku.zurKarte}
         >
           ←
         </button>
@@ -855,7 +855,7 @@ export function SudokuPage() {
                     setAnsicht('karte')
                   }}
                 >
-                  Karte
+                  {t.sudoku.karte}
                 </button>
               </div>
             </div>
@@ -883,7 +883,7 @@ export function SudokuPage() {
               </p>
               <div className={styles.dialogKnoepfe}>
                 <button type="button" onClick={() => setAnsicht('karte')}>
-                  Karte
+                  {t.sudoku.karte}
                 </button>
                 <button type="button" onClick={() => starteLevel(nr, true)}>
                   {t.sudoku.nochMal}
@@ -898,7 +898,7 @@ export function SudokuPage() {
                     className={styles.primaer}
                     onClick={() => setAnsicht('menue')}
                   >
-                    Menü
+                    {t.sudoku.menue}
                   </button>
                 )}
               </div>
@@ -925,7 +925,7 @@ export function SudokuPage() {
           disabled={pause || Boolean(ende) || auswahl === null}
         >
           <span aria-hidden="true">⌫</span>
-          Löschen
+          {t.sudoku.loeschen}
         </button>
         <button
           type="button"
@@ -934,7 +934,7 @@ export function SudokuPage() {
           disabled={pause || Boolean(ende) || verlauf.length === 0}
         >
           <span aria-hidden="true">↶</span>
-          Zurück
+          {t.sudoku.zurueck}
         </button>
         <button
           type="button"

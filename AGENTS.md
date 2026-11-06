@@ -83,6 +83,16 @@ corresponding feature; do not invent a competing design.
   führt der Server nur ein Zugbuch: Startwert, Sitzordnung, Aktionen. Es steht
   dort **keine** Regel, und es kommt auch keine hinein – die Mitspieler spielen
   das Buch durch dieselbe Engine nach.
+- **Zweisprachig (Deutsch/Englisch):** `docs/design/zweisprachig/` – Deutsch ist
+  die Ausgangssprache, Englisch die Übersetzung. Texte stehen in
+  `src/i18n/texte/de.ts`; TypeScript verlangt dieselbe Stelle in `en.ts`, ein
+  vergessener Text ist ein roter Build. Nicht übersetzt werden die Wortlisten
+  der Ratespiele (ein englischer Spieler braucht englische Wörter, keine
+  übersetzten deutschen) und die 22 Grundstücke von Schützenopoly, die für
+  echte Feste stehen. Wer daran weiterarbeitet, liest zuerst die vier Fallen
+  in der README – jede ist hier schon zugeschnappt, und drei davon fallen
+  weder beim Bauen noch beim eigenen Durchklicken auf.
+
 - **Level map 1–500 („Zeitreise“):** `docs/design/level-map-500/` – five biomes of
   100 levels each (jungle → volcanic → rock desert → ice age → glacier peak),
   one winding vertical path, level 500 as the final ice palace.

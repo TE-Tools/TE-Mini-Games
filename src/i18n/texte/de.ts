@@ -569,6 +569,11 @@ export const de = {
     fussSchwer:
       'Schwer: Fehler werden nicht angezeigt. Ein Tipp verrät, ob etwas Falsches im Gitter steht.',
     fussNormal: 'Tippe ein Feld an, dann eine Ziffer. Mit Notizen an trägst du Kandidaten ein.',
+    zumMenue: 'Zum Menü',
+    zurKarte: 'Zur Karte',
+    menue: 'Menü',
+    loeschen: 'Löschen',
+    zurueck: 'Zurück',
     fortsetzen: (name: string) => `Fortsetzen · ${name}`,
     alleGeloest: 'Alle gelöst · noch mal',
     weiterStufe: (nr: number) => `Weiter · Stufe ${nr}`,
