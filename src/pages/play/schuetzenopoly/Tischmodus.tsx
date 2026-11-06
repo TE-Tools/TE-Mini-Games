@@ -24,10 +24,12 @@ import {
   type Spieler,
   type SpielZustand,
 } from '@/games/schuetzenopoly'
+import { useSprache } from '@/i18n/sprache'
 import { useMedienAbfrage } from '../useMedienAbfrage'
 import { Brett } from './Brett'
 import { tischplaetze, type Tischseite } from './tischplaetze'
 import { BrettMitte } from './Tisch'
+import { protokollZeile, rollenText } from './texte'
 import styles from './Tischmodus.module.css'
 
 const DREHUNG: Record<Tischseite, string> = {
@@ -60,6 +62,8 @@ export function Tischmodus({
   ueberlagerungen,
   ecke,
 }: TischProps) {
+  const { t, sprache } = useSprache()
+  const letzte = zustand.protokoll.at(-1)
   const quer = useMedienAbfrage('(orientation: landscape)')
   const plaetze = tischplaetze(zustand.spieler.length, quer)
   const aktiv = aktiverSpieler(zustand)
@@ -87,7 +91,7 @@ export function Tischmodus({
             className={`${styles.sitz} ${amZug ? styles.sitzAmZug : ''}`}
             data-seite={seite}
             style={{ ...dreh(seite), gridArea: seite, borderColor: figur(s.figurId).farbe }}
-            aria-label={`Platz von ${s.name}`}
+            aria-label={t.schuetzenopoly.tisch.platzVon(s.name)}
           >
             <div className={styles.sitzInnen}>
               <Platzschild zustand={zustand} spieler={s} amZug={amZug} />
@@ -109,7 +113,9 @@ export function Tischmodus({
         >
           <div className={styles.mitteDreh} style={dreh(aktivSeite)}>
             <BrettMitte zustand={zustand} />
-            <p className={styles.letzteZeile}>{zustand.protokoll.at(-1)?.text}</p>
+            <p className={styles.letzteZeile}>
+              {letzte ? protokollZeile(t, sprache, letzte) : null}
+            </p>
           </div>
         </Brett>
         <div className={styles.ecke}>{ecke}</div>
@@ -131,6 +137,8 @@ function Platzschild({
   spieler: Spieler
   amZug: boolean
 }) {
+  const { t, sprache } = useSprache()
+  const tx = t.schuetzenopoly.tisch
   const f = figur(spieler.figurId)
   const r = rolle(spieler.rolle)
   return (
@@ -140,21 +148,21 @@ function Platzschild({
       </span>
       <span className={styles.name}>
         {spieler.name}
-        {spieler.typ === 'ki' && <small aria-label="Rechner"> 🤖</small>}
+        {spieler.typ === 'ki' && <small aria-label={tx.rechner}> 🤖</small>}
         <small className={styles.rolle}>
-          {r.icon} {r.name}
+          {r.icon} {rollenText(t, spieler.rolle).name}
         </small>
       </span>
       <span className={styles.werte}>
         <strong>
-          {spieler.insolvent ? 'raus' : `${spieler.taler.toLocaleString('de-DE')} 🪙`}
+          {spieler.insolvent ? tx.raus : `${spieler.taler.toLocaleString(sprache)} 🪙`}
         </strong>
         <small>
-          {besitzVon(zustand, spieler.id).length} Felder
+          {tx.felder(besitzVon(zustand, spieler.id).length)}
           {spieler.aufStrafbank && ' · 🚧'}
         </small>
       </span>
-      {amZug && <span className={styles.zugMarke}>am Zug</span>}
+      {amZug && <span className={styles.zugMarke}>{tx.amZug}</span>}
     </div>
   )
 }

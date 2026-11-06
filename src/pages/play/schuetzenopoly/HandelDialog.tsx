@@ -9,16 +9,33 @@
 import { useMemo, useState } from 'react'
 import {
   bewerteAngebot,
-  feldName,
   handelbareFelder,
   kaufpreis,
   kiNimmtAn,
   pruefeHandel,
   spielerMit,
+  type HandelPruefung,
   type Handelsangebot,
   type SpielZustand,
 } from '@/games/schuetzenopoly'
+import { useSprache, type Texte } from '@/i18n/sprache'
+import { feldNameIn } from './texte'
 import styles from './Handel.module.css'
+
+/** Der Grund kommt als Kennung; der deutsche Satz der Engine ist nur der Rückfall. */
+function grundText(t: Texte, pruefung: HandelPruefung): string | undefined {
+  const th = t.schuetzenopoly.handel
+  switch (pruefung.code) {
+    case undefined:
+      return pruefung.grund
+    case 'nichtSeins':
+      return pruefung.feldId ? th.nichtSeins(feldNameIn(t, pruefung.feldId)) : pruefung.grund
+    case 'gebaeude':
+      return pruefung.feldId ? th.gebaeude(feldNameIn(t, pruefung.feldId)) : pruefung.grund
+    default:
+      return th.grund[pruefung.code]
+  }
+}
 
 interface HandelDialogProps {
   zustand: SpielZustand
@@ -34,6 +51,8 @@ export function HandelDialog({
   onAusfuehren,
   onSchliessen,
 }: HandelDialogProps) {
+  const { t, sprache } = useSprache()
+  const th = t.schuetzenopoly.handel
   const anbieter = spielerMit(zustand, anbieterId)!
   const gegner = zustand.spieler.filter((s) => s.id !== anbieterId && !s.insolvent)
   const [partnerId, setPartnerId] = useState(gegner[0]?.id ?? '')
@@ -58,6 +77,7 @@ export function HandelDialog({
   )
 
   const pruefung = pruefeHandel(zustand, angebot)
+  const grund = grundText(t, pruefung)
   const meine = handelbareFelder(zustand, anbieterId)
   const seine = partnerId ? handelbareFelder(zustand, partnerId) : []
 
@@ -68,7 +88,7 @@ export function HandelDialog({
 
   const anbieten = () => {
     if (!pruefung.gueltig || !partner) {
-      setAntwort(pruefung.grund ?? 'Das geht so nicht.')
+      setAntwort(grund ?? th.gehtNicht)
       return
     }
     if (partner.typ === 'ki') {
@@ -77,11 +97,7 @@ export function HandelDialog({
         return
       }
       const netto = bewerteAngebot(zustand, angebot)
-      setAntwort(
-        netto <= 0
-          ? `${partner.name} winkt ab: „Da lege ich ja drauf."`
-          : `${partner.name} überlegt und lehnt ab: „Nicht genug."`,
-      )
+      setAntwort(netto <= 0 ? th.winktAb(partner.name) : th.lehntAb(partner.name))
       return
     }
     // Zwei Menschen am selben Gerät: der andere bestätigt direkt.
@@ -94,16 +110,16 @@ export function HandelDialog({
         className={styles.dialog}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
-        aria-label="Handel"
+        aria-label={th.label}
       >
-        <h3 className={styles.titel}>🤝 Handel</h3>
+        <h3 className={styles.titel}>{th.titel}</h3>
 
         {gegner.length === 0 ? (
-          <p className={styles.leer}>Es ist niemand mehr da, mit dem sich handeln ließe.</p>
+          <p className={styles.leer}>{th.niemand}</p>
         ) : (
           <>
             <label className={styles.wahl}>
-              <span>Mit wem?</span>
+              <span>{th.mitWem}</span>
               <select
                 value={partnerId}
                 onChange={(e) => {
@@ -115,16 +131,18 @@ export function HandelDialog({
               >
                 {gegner.map((g) => (
                   <option key={g.id} value={g.id}>
-                    {g.name} ({g.taler.toLocaleString('de-DE')} 🪙)
+                    {g.name} ({g.taler.toLocaleString(sprache)} 🪙)
                   </option>
                 ))}
               </select>
             </label>
 
             <section className={styles.seite}>
-              <h4 className={styles.seitenTitel}>Du gibst</h4>
+              <h4 className={styles.seitenTitel}>{th.duGibst}</h4>
               <div className={styles.felder}>
-                {meine.length === 0 && <span className={styles.leerText}>Nichts Handelbares.</span>}
+                {meine.length === 0 && (
+                  <span className={styles.leerText}>{th.nichtsHandelbares}</span>
+                )}
                 {meine.map((feldId) => (
                   <button
                     key={feldId}
@@ -132,13 +150,13 @@ export function HandelDialog({
                     className={gebeFelder.includes(feldId) ? styles.feldAn : styles.feldAus}
                     onClick={() => umschalten(gebeFelder, setGebeFelder, feldId)}
                   >
-                    {feldName(feldId)}
-                    <small>{kaufpreis(feldId).toLocaleString('de-DE')}</small>
+                    {feldNameIn(t, feldId)}
+                    <small>{kaufpreis(feldId).toLocaleString(sprache)}</small>
                   </button>
                 ))}
               </div>
               <label className={styles.taler}>
-                <span>Taler dazu: {gebeTaler.toLocaleString('de-DE')} 🪙</span>
+                <span>{th.talerDazu(gebeTaler.toLocaleString(sprache))}</span>
                 <input
                   type="range"
                   min={0}
@@ -154,9 +172,11 @@ export function HandelDialog({
             </section>
 
             <section className={styles.seite}>
-              <h4 className={styles.seitenTitel}>Du bekommst</h4>
+              <h4 className={styles.seitenTitel}>{th.duBekommst}</h4>
               <div className={styles.felder}>
-                {seine.length === 0 && <span className={styles.leerText}>Nichts Handelbares.</span>}
+                {seine.length === 0 && (
+                  <span className={styles.leerText}>{th.nichtsHandelbares}</span>
+                )}
                 {seine.map((feldId) => (
                   <button
                     key={feldId}
@@ -164,13 +184,13 @@ export function HandelDialog({
                     className={willFelder.includes(feldId) ? styles.feldAn : styles.feldAus}
                     onClick={() => umschalten(willFelder, setWillFelder, feldId)}
                   >
-                    {feldName(feldId)}
-                    <small>{kaufpreis(feldId).toLocaleString('de-DE')}</small>
+                    {feldNameIn(t, feldId)}
+                    <small>{kaufpreis(feldId).toLocaleString(sprache)}</small>
                   </button>
                 ))}
               </div>
               <label className={styles.taler}>
-                <span>Taler dazu: {willTaler.toLocaleString('de-DE')} 🪙</span>
+                <span>{th.talerDazu(willTaler.toLocaleString(sprache))}</span>
                 <input
                   type="range"
                   min={0}
@@ -190,9 +210,7 @@ export function HandelDialog({
                 {antwort}
               </p>
             )}
-            {!pruefung.gueltig && !antwort && pruefung.grund && (
-              <p className={styles.hinweis}>{pruefung.grund}</p>
-            )}
+            {!pruefung.gueltig && !antwort && grund && <p className={styles.hinweis}>{grund}</p>}
 
             <button
               type="button"
@@ -200,13 +218,13 @@ export function HandelDialog({
               onClick={anbieten}
               disabled={!pruefung.gueltig}
             >
-              Angebot machen
+              {th.anbieten}
             </button>
           </>
         )}
 
         <button type="button" className={styles.abbrechen} onClick={onSchliessen}>
-          Zurück zum Spiel
+          {th.zurueck}
         </button>
       </div>
     </div>

@@ -619,6 +619,488 @@ export const de = {
       `${ziffer} eintragen, noch ${uebrig} übrig`,
   },
 
+  /*
+   * Schützenopoly. Die 22 Grundstücke stehen nicht hier: Sie heißen nach
+   * echten Festen und bleiben in jeder Sprache, wie sie sind -- ebenso der
+   * Name der Veranstaltung und die belegte Aussage auf der Feldkarte.
+   * Karten, Rollen, Minispiele und Protokollzeilen dagegen sind Spielregeln
+   * und werden über ihre Kennung nachgeschlagen.
+   */
+  schuetzenopoly: {
+    du: 'Du',
+    willkommen:
+      'Kauf dir die schönsten Schützenfeste Deutschlands, bau Festzelte und Königshäuser, kassier Standgeld – und schieß am Stand um Gold.',
+    fortsetzen: (runde: number) => `▶ Partie fortsetzen (Runde ${runde})`,
+    neuePartie: '🎲 Neue Partie',
+    onlineSpielen: '🌐 Online spielen',
+    gewonnen: '🏆 Du hast gewonnen!',
+    gewinnt: (name: string) => `${name} gewinnt.`,
+    ausgeschieden: 'ausgeschieden',
+    medaillenBilanz: (gold: number, silber: number, bronze: number) =>
+      `Am Schießstand: ${gold}× Gold, ${silber}× Silber, ${bronze}× Bronze.`,
+    nochEine: 'Noch eine Partie',
+    kaufen: (preis: string) => `Kaufen · ${preis} 🪙`,
+    stehenLassen: 'Stehen lassen',
+    tischVerlassen: 'Tischmodus verlassen',
+    normaleAnsicht: 'Normale Ansicht',
+    tischmodus: 'Tischmodus',
+    tischmodusLang: 'Tischmodus: jeder spielt von seiner Seite',
+    tonAus: 'Ton ausschalten',
+    tonAn: 'Ton einschalten',
+    rundeKurz: (runde: number, limit: number) => `Runde ${runde}/${limit}`,
+    aufgebenFrage: 'Wirklich aufgeben?',
+    aufgeben: 'Partie aufgeben',
+    tisch: {
+      mitspieler: 'Mitspieler',
+      raus: 'raus',
+      felder: (n: number) => `${n} Felder`,
+      wuerfel: 'Würfel',
+      runde: (runde: number, limit: number) => `Runde ${runde} von ${limit}`,
+      istAmZug: (name: string) => `${name} ist am Zug…`,
+      aufDerStrafbank: (versuch: number, von: number) =>
+        `Du sitzt auf der Strafbank (Versuch ${versuch} von ${von}). Ein Pasch bringt dich frei.`,
+      wuerfeln: '🎲 Würfeln',
+      fuersprache: '🎫 Fürsprache einsetzen',
+      freikaufen: (betrag: string) => `Freikaufen · ${betrag} 🪙`,
+      koenigsaktion: (betrag: string) => `👑 Königsaktion · +${betrag} 🪙`,
+      nochFrei: (preis: string) => `Noch frei – ${preis} 🪙`,
+      karteAnsehen: '🪪 Karte ansehen',
+      weiter: 'Weiter',
+      neuZiehen: '🃏 Neu ziehen',
+      bauen: '🏗️ Bauen',
+      handeln: '🤝 Handeln',
+      duell: '⚔️ Duell',
+      paschNochmal: 'Pasch – noch mal würfeln',
+      zugBeenden: 'Zug beenden',
+      platzVon: (name: string) => `Platz von ${name}`,
+      rechner: 'Rechner',
+      amZug: 'am Zug',
+    },
+    brett: {
+      spielbrett: 'Spielbrett',
+      gehoert: (feld: string, name: string) => `${feld}, gehört ${name}`,
+      kleiner: 'Brett kleiner',
+      groesser: 'Brett größer',
+      ganzesBrett: 'Ganzes Brett',
+      ausschnitt: 'Ausschnitt',
+    },
+    /** Felder, die kein Grundstück sind: nach Feldtyp oder Sonderfeld-Kennung. */
+    felder: {
+      start: { name: 'Start', kurz: 'Start' },
+      strafbank: { name: 'Strafbank', kurz: 'Bank' },
+      freies_fest: { name: 'Freies Fest', kurz: 'Frei' },
+      zur_strafbank: { name: 'Zur Strafbank', kurz: 'Raus' },
+      ereignis: { name: 'Ereignis', kurz: 'Ereignis' },
+      vereinskarte: { name: 'Vereinskarte', kurz: 'Verein' },
+      minispiel: { name: 'Schießstand', kurz: 'Stand' },
+      festzug: { name: 'Festzug', kurz: 'Zug' },
+      schuetzenumzug: { name: 'Schützenumzug', kurz: 'Umzug' },
+      musikzug: { name: 'Musikzug', kurz: 'Musik' },
+      koenigsfahrt: { name: 'Königsfahrt', kurz: 'König' },
+      schiesssportverband: { name: 'Schießsportverband', kurz: 'Verband' },
+      schuetzenbund: { name: 'Deutscher Schützenbund', kurz: 'DSB' },
+    },
+    /** Die Ausbaustufen, Index = Stufe. */
+    ausbau: ['Grundstück', 'Festzelt', 'Schützenhalle', 'Königshaus', 'Schützenzentrum'],
+    medaillen: {
+      gold: 'Gold',
+      silber: 'Silber',
+      bronze: 'Bronze',
+      keine: 'keine',
+    },
+    karte: {
+      arten: {
+        schuetzenfest: 'Schützenfest',
+        kirmes: 'Kirmes',
+        umzug: 'Umzug',
+        volksfest: 'Volksfest',
+      },
+      veranstaltung: 'Veranstaltung',
+      standgeld: 'Standgeld',
+      gruppeKomplett: 'Gruppe komplett – Gebühren erhöht.',
+      kaufpreis: 'Kaufpreis',
+      ausbauJeStufe: 'Ausbau je Stufe',
+      felderImBesitz: (n: number) => `${n} Feld${n > 1 ? 'er' : ''} im Besitz`,
+      einVerband: 'Ein Verband',
+      beideVerbaende: 'Beide Verbände',
+      wuerfelMal: (faktor: number) => `Würfel × ${faktor}`,
+      imBesitzVon: 'Im Besitz von',
+      nochFrei: 'Noch frei',
+      entscheidet: (name: string) => `${name} entscheidet …`,
+      stehtHier: (name: string) => `${name} steht hier.`,
+      weglegen: 'Karte weglegen',
+      schliessen: 'Schließen',
+      feldArt: {
+        start: 'Festplatz',
+        strafbank: 'Strafbank',
+        freies_fest: 'Freies Fest',
+        ereignis: 'Ereigniskarte',
+        vereinskarte: 'Vereinskarte',
+        minispiel: 'Schießstand',
+        sonderfeld: 'Umzug',
+        verband: 'Verband',
+        feld: 'Feld',
+      },
+      beschreibung: {
+        start: 'Wer hier vorbeikommt, bekommt die Standgebühren des Festplatzes ausgezahlt.',
+        strafbank:
+          'Nur zu Besuch – solange man nicht selbst hier sitzt. Ein Pasch, eine Zahlung oder die Fürsprache-Karte holen einen wieder heraus.',
+        freies_fest: 'Eintritt frei, und der Wirt gibt etwas dazu. Eine Runde zum Durchatmen.',
+        zur_strafbank: 'Von hier geht es sofort auf die Strafbank – ohne über START zu kommen.',
+        ereignis: 'Zieh eine Ereigniskarte. Meist geht es dabei ums Geld.',
+        vereinskarte: 'Zieh eine Vereinskarte. Die wirken auf spätere Züge und auf die Mitspieler.',
+        minispiel: 'Am Schießstand geht es um Bronze, Silber oder Gold.',
+      },
+    },
+    aufbau: {
+      werSpieltMit: 'Wer spielt mit?',
+      nameVon: (nr: number) => `Name von Spieler ${nr}`,
+      entfernen: (name: string) => `${name} entfernen`,
+      spielerart: 'Spielerart',
+      mensch: '👤 Mensch',
+      rechner: '🤖 Rechner',
+      schwierigkeit: 'Schwierigkeit',
+      stufen: {
+        leicht: 'Leicht',
+        normal: 'Normal',
+        schwer: 'Schwer',
+      },
+      stufenText: {
+        leicht: 'Kauft nach Gefühl, baut selten, handelt nicht.',
+        normal: 'Sammelt Gruppen, baut sinnvoll, handelt gelegentlich.',
+        schwer: 'Rechnet Gebühren, blockiert, handelt gezielt.',
+      },
+      plusMitspieler: '+ Mitspieler',
+      spieldauer: 'Spieldauer:',
+      runden: (n: number) => `${n} Runden`,
+      dauerKurz: 'Kurze Partie, etwa 10 Minuten.',
+      dauerMittel: 'Etwa 15 bis 25 Minuten.',
+      dauerLang: 'Lange Partie – hier wird richtig gebaut.',
+      zufall: (rollen: number, figuren: number) =>
+        `Rollen und Figuren werden zu Beginn zufällig verteilt. Es gibt ${rollen} Rollen und ${figuren} Figuren.`,
+      fehlerName: 'Jeder Mitspieler braucht einen Namen.',
+      fehlerDoppelt: 'Zwei Mitspieler heißen gleich.',
+      starten: '🎲 Partie starten',
+      rechnerEins: 'Vereinsheim',
+      rechnerZwei: 'Festzelt',
+      gegner: (nr: number) => `Gegner ${nr}`,
+    },
+    aktionen: {
+      bauenLabel: 'Bauen und verkaufen',
+      deinBesitz: '🏗️ Dein Besitz',
+      nichts: 'Du besitzt noch nichts.',
+      keinGrundstueck: 'Kein Grundstück',
+      sonderfeld: 'Sonderfeld',
+      bauen: (kosten: string) => `Bauen · ${kosten} 🪙`,
+      rueckbau: (betrag: string) => `Rückbau · +${betrag} 🪙`,
+      verkauf: (betrag: string) => `Verkauf · +${betrag} 🪙`,
+      fertig: 'Fertig',
+      bauGrund: {
+        unbekannt: 'Unbekanntes Feld',
+        keinGrundstueck: 'Hier lässt sich nicht bauen',
+        nichtDeins: 'Gehört dir nicht',
+        voll: 'Voll ausgebaut',
+        baustopp: 'Baustopp',
+        gruppeUnvollstaendig: 'Gruppe noch nicht komplett',
+        gleichmaessig: 'Erst die anderen der Gruppe nachziehen',
+        zuWenigTaler: 'Zu wenig Taler',
+      },
+      wahlLabel: 'Karte: Auswahl',
+      wenBaustopp: '🚧 Wen trifft der Baustopp?',
+      welchesSchuetzen: '🛡️ Welches Grundstück schützen?',
+      welcherTausch: '🔄 Welchen Tausch?',
+      duZahlst: (betrag: string) => `(du zahlst ${betrag} 🪙)`,
+      duErhaeltst: (betrag: string) => `(du erhältst ${betrag} 🪙)`,
+      verfallen: 'Verfallen lassen',
+    },
+    handel: {
+      titel: '🤝 Handel',
+      label: 'Handel',
+      niemand: 'Es ist niemand mehr da, mit dem sich handeln ließe.',
+      mitWem: 'Mit wem?',
+      duGibst: 'Du gibst',
+      duBekommst: 'Du bekommst',
+      nichtsHandelbares: 'Nichts Handelbares.',
+      talerDazu: (betrag: string) => `Taler dazu: ${betrag} 🪙`,
+      gehtNicht: 'Das geht so nicht.',
+      winktAb: (name: string) => `${name} winkt ab: „Da lege ich ja drauf."`,
+      lehntAb: (name: string) => `${name} überlegt und lehnt ab: „Nicht genug."`,
+      anbieten: 'Angebot machen',
+      zurueck: 'Zurück zum Spiel',
+      grund: {
+        unbekannt: 'Spieler unbekannt',
+        selbst: 'Nicht mit sich selbst',
+        ausgeschieden: 'Spieler ist ausgeschieden',
+        negativ: 'Negative Beträge gibt es nicht',
+        zuWenigAnbieter: 'So viel hat er nicht',
+        zuWenigPartner: 'So viel hat der andere nicht',
+        leer: 'Leeres Angebot',
+      },
+      nichtSeins: (feld: string) => `${feld} gehört ihm nicht`,
+      gebaeude: (feld: string) => `Auf ${feld} steht ein Gebäude`,
+    },
+    minispiele: {
+      koenigsschiessen: {
+        name: 'Königsschießen',
+        anleitung:
+          'Der Vogel schwingt hin und her. Tippe, wenn er in der Mitte steht – je genauer, desto mehr Punkte. Drei Versuche.',
+      },
+      ringschiessen: {
+        name: 'Ringschießen',
+        anleitung:
+          'Zielscheiben tauchen auf und verschwinden wieder. Kleine Scheiben zählen mehr. Danebentippen kostet 50 Punkte.',
+      },
+      praezision: {
+        name: 'Präzisionsschießen',
+        anleitung:
+          'Ein Fadenkreuz läuft über die Scheibe. Tippe, um es anzuhalten. Je näher an der Mitte, desto mehr Punkte. Fünf Schüsse.',
+      },
+      schiessen: 'Schießen',
+      vogelHinweis: 'Tippen, wenn der Vogel in der Mitte steht',
+      scheibe: (groesse: string) => `Zielscheibe ${groesse}`,
+      groessen: {
+        klein: 'klein',
+        mittel: 'mittel',
+        gross: 'groß',
+      },
+      scheibenHinweis: 'Kleine Scheiben zählen mehr',
+      fadenkreuzHinweis: 'Halte das Fadenkreuz in der Mitte an',
+      punkte: (n: number) => `${n} Punkte`,
+      schuss: (nr: number, von: number) => `Schuss ${nr} von ${von}`,
+      gold: '🥇 Gold',
+      silber: '🥈 Silber',
+      bronze: '🥉 Bronze',
+      daneben: '🎯 Knapp daneben',
+      schwellen: (bronze: number, silber: number, gold: number) =>
+        `Bronze ab ${bronze} · Silber ab ${silber} · Gold ab ${gold}`,
+    },
+    rollen: {
+      jungschuetze: {
+        name: 'Jungschütze',
+        beschreibung: 'Trifft am Stand besser: +15 % Punkte in jedem Minispiel.',
+      },
+      schuetze: {
+        name: 'Schütze',
+        beschreibung: 'Bekommt für Medaillen mehr: +25 % Minispiel-Belohnung.',
+      },
+      unteroffizier: {
+        name: 'Unteroffizier',
+        beschreibung: 'Handelt einmal je Runde 25 % einer Gebühr herunter.',
+      },
+      leutnant: {
+        name: 'Leutnant',
+        beschreibung: 'Fordert einmal je Partie zum Duell am Schießstand.',
+      },
+      oberleutnant: {
+        name: 'Oberleutnant',
+        beschreibung: 'Kennt die richtigen Leute: +20 % auf gute Kartenbeträge.',
+      },
+      hauptmann: {
+        name: 'Hauptmann',
+        beschreibung: 'Schützt einmal je Partie ein Grundstück vor Gebühren.',
+      },
+      major: {
+        name: 'Major',
+        beschreibung: 'Kassiert mehr: +12 % auf alle eingenommenen Gebühren.',
+      },
+      oberst: {
+        name: 'Oberst',
+        beschreibung: 'Lehnt einmal je Partie eine Karte ab und zieht neu.',
+      },
+      koenig: {
+        name: 'Schützenkönig',
+        beschreibung: 'Einmal je Partie: Die Vereinskasse zahlt 1.500 Taler aus.',
+      },
+    },
+    /** Ereignis- und Vereinskarten, nach Kennung. */
+    karten: {
+      e_koenig: {
+        titel: 'Schützenkönig',
+        text: 'Du hast den Vogel abgeschossen und wirst zum Schützenkönig gekrönt.',
+      },
+      e_musikzug: {
+        titel: 'Musikzug',
+        text: 'Dein Musikzug spielt auf und sorgt für beste Stimmung.',
+      },
+      e_meisterschuetze: {
+        titel: 'Meisterschütze',
+        text: 'Du gewinnst den Wettbewerb auf dem Schießstand.',
+      },
+      e_ausverkauft: {
+        titel: 'Ausverkauft',
+        text: 'Dein Festzelt ist bis auf den letzten Platz besetzt.',
+      },
+      e_wetter: {
+        titel: 'Schlechtes Wetter',
+        text: 'Dauerregen am Festwochenende. Die Hälfte bleibt zu Hause.',
+      },
+      e_reparatur: {
+        titel: 'Reparatur',
+        text: 'Das Dach der Schützenhalle muss gedeckt werden. Je Ausbaustufe 150 Taler.',
+      },
+      e_ehrenrunde: {
+        titel: 'Ehrenrunde',
+        text: 'Der Verein feiert dich. Jeder Mitspieler gibt 250 Taler aus.',
+      },
+      e_freibier: {
+        titel: 'Freibier',
+        text: 'Du gibst eine Runde für das ganze Zelt aus: 300 Taler an jeden Mitspieler.',
+      },
+      e_zum_start: {
+        titel: 'Auf zum Festplatz',
+        text: 'Das Fest beginnt von vorn. Gehe auf START.',
+      },
+      e_ordnungsamt: {
+        titel: 'Ordnungsamt',
+        text: 'Die Sperrstunde wurde übersehen. Ab auf die Strafbank.',
+      },
+      e_standgeld: {
+        titel: 'Standgeld',
+        text: 'Die Standgebühren für die Kirmes sind fällig.',
+      },
+      e_schiessstand: {
+        titel: 'Am Schießstand',
+        text: 'Der Schießstand ist frei. Zeig, was du kannst.',
+      },
+      e_koenigsfahrt: {
+        titel: 'Einladung zur Königsfahrt',
+        text: 'Der Bus wartet. Fahre zur Königsfahrt.',
+      },
+      e_spende: {
+        titel: 'Spende',
+        text: 'Ein Sponsor unterstützt das Fest.',
+      },
+      v_freundschaft: {
+        titel: 'Vereinsfreundschaft',
+        text: 'Man kennt sich. Deine nächste fällige Gebühr entfällt.',
+      },
+      v_baustopp: {
+        titel: 'Baustopp',
+        text: 'Ein Gegner deiner Wahl darf bis zu seinem nächsten Zug nicht bauen.',
+      },
+      v_zuschuss: {
+        titel: 'Vereinszuschuss',
+        text: 'Der Verband bewilligt deinen Antrag.',
+      },
+      v_tausch: {
+        titel: 'Grundstückstausch',
+        text: 'Tausche ein Grundstück gegen eines von gleichem Wert.',
+      },
+      v_vorstand: {
+        titel: 'Vorstandsbeschluss',
+        text: 'Der Vorstand hält dir den Rücken frei: Die nächste schlechte Ereigniskarte verfällt.',
+      },
+      v_freikarte: {
+        titel: 'Fürsprache',
+        text: 'Behalte diese Karte. Sie holt dich einmal von der Strafbank.',
+      },
+      v_hausrecht: {
+        titel: 'Hausrecht',
+        text: 'Ein Grundstück deiner Wahl bleibt eine Runde lang vor fremdem Zugriff geschützt.',
+      },
+      v_jubilaeum: {
+        titel: 'Vereinsjubiläum',
+        text: 'Alle feiern mit: Jeder Mitspieler steuert 400 Taler bei.',
+      },
+      v_kassenpruefung: {
+        titel: 'Kassenprüfung',
+        text: 'Die Kassenprüfer finden eine Lücke.',
+      },
+      v_wettkampf: {
+        titel: 'Vereinswettkampf',
+        text: 'Der Verein schickt dich an den Stand.',
+      },
+    },
+    /** Die Zeilen des Spielprotokolls -- dieselben Sätze, die die Engine auf Deutsch schreibt. */
+    protokoll: {
+      start: 'Das Fest beginnt. Viel Erfolg!',
+      wurf: (name: string, a: number, b: number) => `${name} würfelt ${a} und ${b}.`,
+      dritterPasch: (name: string) => `Dritter Pasch in Folge – ${name} muss auf die Strafbank.`,
+      paschFrei: (name: string, felder: number) =>
+        `Pasch! ${name} ist frei und zieht ${felder} Felder.`,
+      strafbankBezahlt: (name: string, betrag: string) =>
+        `${name} zahlt ${betrag} 🪙 und darf weiter.`,
+      keinPasch: (name: string, versuch: number, von: number) =>
+        `Kein Pasch – ${name} bleibt auf der Strafbank (Versuch ${versuch} von ${von}).`,
+      freigekauft: (name: string, betrag: string) => `${name} kauft sich für ${betrag} 🪙 frei.`,
+      fuersprache: (name: string) => `${name} legt die Fürsprache vor und verlässt die Strafbank.`,
+      startBonus: (name: string, betrag: string) => `${name} kommt an START vorbei: +${betrag} 🪙.`,
+      besuch: (name: string) => `${name} schaut bei der Strafbank vorbei – nur zu Besuch.`,
+      freiesFest: (name: string, betrag: string) =>
+        `Freies Fest: ${name} kassiert ${betrag} 🪙 Standgeld.`,
+      zurStrafbank: (name: string) => `${name} muss sofort auf die Strafbank.`,
+      geschuetzt: (feld: string) => `${feld} ist geschützt – keine Gebühr fällig.`,
+      gebuehrErlassen: (name: string) => `Vereinsfreundschaft: ${name} zahlt diesmal nichts.`,
+      rabatt: (name: string) => `${name} handelt die Gebühr herunter.`,
+      gebuehr: (name: string, betrag: string, an: string, feld: string) =>
+        `${name} zahlt ${betrag} 🪙 an ${an} für ${feld}.`,
+      dieBank: 'die Bank',
+      kauf: (name: string, feld: string, preis: string) => `${name} kauft ${feld} für ${preis} 🪙.`,
+      karteNeu: (name: string) => `${name} legt die Karte zurück und zieht neu.`,
+      baustopp: (name: string) => `Baustopp für ${name} bis zu seinem nächsten Zug.`,
+      hausrecht: (feld: string) => `${feld} steht eine Runde lang unter Hausrecht.`,
+      tausch: (mein: string, fremd: string) => `Tausch: ${mein} gegen ${fremd}.`,
+      schiessstandLeer: (name: string) => `${name} geht am Schießstand leer aus.`,
+      medaille: (name: string, medaille: string, betrag: string) =>
+        `${name} holt ${medaille.toUpperCase()} und kassiert ${betrag} 🪙.`,
+      duell: (name: string) => `${name} fordert zum Duell am Schießstand.`,
+      koenigsaktion: (name: string, betrag: string) =>
+        `Königsaktion: ${name} erhält ${betrag} 🪙 aus der Vereinskasse.`,
+      bau: (name: string, feld: string, stufe: number) =>
+        `${name} baut auf ${feld} (Stufe ${stufe}).`,
+      rueckbau: (name: string, feld: string, betrag: string) =>
+        `${name} baut auf ${feld} zurück (+${betrag} 🪙).`,
+      rueckgabe: (name: string, feld: string, betrag: string) =>
+        `${name} gibt ${feld} zurück (+${betrag} 🪙).`,
+      sieg: (name: string, vermoegen: string) =>
+        `${name} gewinnt mit einem Vermögen von ${vermoegen} 🪙.`,
+      aufgabe: (name: string) => `${name} gibt auf.`,
+      versilbern: (name: string, feld: string, betrag: string) =>
+        `${name} muss ${feld} versilbern (+${betrag} 🪙).`,
+      pleite: (name: string, betrag: string) =>
+        `${name} kann ${betrag} 🪙 nicht aufbringen und scheidet aus.`,
+      handel: (von: string, gibt: string, an: string, fuer: string) =>
+        `Handel: ${von} gibt ${gibt} an ${an} für ${fuer}.`,
+      nichts: 'nichts',
+      karte: (name: string, icon: string, titel: string, text: string) =>
+        `${name}: ${icon} ${titel} – ${text}`,
+      vorstand: 'Der Vorstandsbeschluss fängt das ab – die Karte verfällt.',
+      nichtsZuReparieren: 'Nichts gebaut, nichts zu reparieren.',
+    },
+    online: {
+      titel: 'Schützenopoly online',
+      ladeFehler: 'Die Partie ließ sich nicht laden.',
+      zugFehler: 'Der Zug kam nicht durch.',
+      fehler: 'Das hat nicht geklappt.',
+      einenMoment: 'Einen Moment…',
+      kontoNoetig:
+        'Online spielst du mit deinem Konto – nur so weiß der Server, wer am Zug ist und wem welches Fest gehört.',
+      anmelden: 'Anmelden',
+      lieberRechner: 'Lieber gegen den Rechner',
+      einleitung:
+        'Einer macht den Tisch auf und gibt den Code weiter. Zwei bis vier spielen mit, Computergegner gibt es online nicht.',
+      oeffentlich: 'Öffentlicher Tisch',
+      oeffentlichText:
+        'Steht unter „Offene Spiele“ für alle, mit deinem Namen. Jeder kann beitreten.',
+      tischAufmachen: '➕ Tisch aufmachen',
+      spielcode: 'Spielcode',
+      beitreten: 'Beitreten',
+      offenePartien: 'Deine offenen Partien',
+      wartet: 'wartet',
+      laeuft: 'läuft',
+      spieler: (n: number) => `${n} Spieler`,
+      warteraum: 'Warteraum',
+      codeWeitergeben: (gastgeber: boolean) =>
+        `Gib den Code weiter. Sobald alle da sind, ${gastgeber ? 'startest du' : 'startet der Gastgeber'} die Partie.`,
+      du: '(du)',
+      runden: 'Runden',
+      fehltNoch: 'Es fehlt noch jemand',
+      starten: '🎲 Partie starten',
+      nachspielen: 'Die Partie wird nachgespielt…',
+      zurLobby: 'Zurück zur Lobby',
+    },
+  },
+
   kniffel: {
     du: 'Du',
     rechner: (nr: number) => `Rechner ${nr}`,

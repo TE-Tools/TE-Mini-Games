@@ -18,6 +18,7 @@ import {
   type KiStufe,
   type SpielerEinrichtung,
 } from '@/games/schuetzenopoly'
+import { useSprache } from '@/i18n/sprache'
 import styles from './Aufbau.module.css'
 
 interface AufbauProps {
@@ -32,17 +33,16 @@ interface Reihe {
   kiStufe: KiStufe
 }
 
-const STUFEN: { id: KiStufe; label: string; erklaerung: string }[] = [
-  { id: 'leicht', label: 'Leicht', erklaerung: 'Kauft nach Gefühl, baut selten, handelt nicht.' },
-  { id: 'normal', label: 'Normal', erklaerung: 'Sammelt Gruppen, baut sinnvoll, handelt gelegentlich.' },
-  { id: 'schwer', label: 'Schwer', erklaerung: 'Rechnet Gebühren, blockiert, handelt gezielt.' },
-]
+const STUFEN: KiStufe[] = ['leicht', 'normal', 'schwer']
 
 export function Spielaufbau({ vorschlagName, onStart, onAbbrechen }: AufbauProps) {
-  const [reihen, setReihen] = useState<Reihe[]>([
-    { name: vorschlagName || 'Du', typ: 'mensch', kiStufe: 'normal' },
-    { name: 'Vereinsheim', typ: 'ki', kiStufe: 'normal' },
-    { name: 'Festzelt', typ: 'ki', kiStufe: 'normal' },
+  const { t } = useSprache()
+  const ta = t.schuetzenopoly.aufbau
+  // Die Vorschläge sind nur der Anfang -- jeder Name lässt sich überschreiben.
+  const [reihen, setReihen] = useState<Reihe[]>(() => [
+    { name: vorschlagName || t.schuetzenopoly.du, typ: 'mensch', kiStufe: 'normal' },
+    { name: ta.rechnerEins, typ: 'ki', kiStufe: 'normal' },
+    { name: ta.rechnerZwei, typ: 'ki', kiStufe: 'normal' },
   ])
   const [rundenLimit, setRundenLimit] = useState(STANDARD_RUNDEN_LIMIT)
   const [fehler, setFehler] = useState<string | null>(null)
@@ -54,10 +54,7 @@ export function Spielaufbau({ vorschlagName, onStart, onAbbrechen }: AufbauProps
 
   const hinzufuegen = () => {
     if (reihen.length >= MAX_SPIELER) return
-    setReihen((alt) => [
-      ...alt,
-      { name: `Gegner ${alt.length}`, typ: 'ki', kiStufe: 'normal' },
-    ])
+    setReihen((alt) => [...alt, { name: ta.gegner(alt.length), typ: 'ki', kiStufe: 'normal' }])
   }
 
   const entfernen = (index: number) => {
@@ -68,12 +65,12 @@ export function Spielaufbau({ vorschlagName, onStart, onAbbrechen }: AufbauProps
   const starten = () => {
     const namen = reihen.map((r) => r.name.trim())
     if (namen.some((n) => !n)) {
-      setFehler('Jeder Mitspieler braucht einen Namen.')
+      setFehler(ta.fehlerName)
       return
     }
     const kleingeschrieben = namen.map((n) => n.toLowerCase())
     if (new Set(kleingeschrieben).size !== namen.length) {
-      setFehler('Zwei Mitspieler heißen gleich.')
+      setFehler(ta.fehlerDoppelt)
       return
     }
     onStart(
@@ -88,7 +85,7 @@ export function Spielaufbau({ vorschlagName, onStart, onAbbrechen }: AufbauProps
 
   return (
     <section className={styles.aufbau}>
-      <h2 className={styles.ueberschrift}>Wer spielt mit?</h2>
+      <h2 className={styles.ueberschrift}>{ta.werSpieltMit}</h2>
 
       <ul className={styles.liste}>
         {reihen.map((reihe, i) => (
@@ -99,48 +96,48 @@ export function Spielaufbau({ vorschlagName, onStart, onAbbrechen }: AufbauProps
                 value={reihe.name}
                 onChange={(e) => aendere(i, { name: e.target.value })}
                 maxLength={16}
-                aria-label={`Name von Spieler ${i + 1}`}
+                aria-label={ta.nameVon(i + 1)}
               />
               {reihen.length > MIN_SPIELER && (
                 <button
                   type="button"
                   className={styles.weg}
                   onClick={() => entfernen(i)}
-                  aria-label={`${reihe.name} entfernen`}
+                  aria-label={ta.entfernen(reihe.name)}
                 >
                   ✕
                 </button>
               )}
             </div>
 
-            <div className={styles.schalter} role="group" aria-label="Spielerart">
+            <div className={styles.schalter} role="group" aria-label={ta.spielerart}>
               <button
                 type="button"
                 className={reihe.typ === 'mensch' ? styles.schalterAn : styles.schalterAus}
                 onClick={() => aendere(i, { typ: 'mensch' })}
               >
-                👤 Mensch
+                {ta.mensch}
               </button>
               <button
                 type="button"
                 className={reihe.typ === 'ki' ? styles.schalterAn : styles.schalterAus}
                 onClick={() => aendere(i, { typ: 'ki' })}
               >
-                🤖 Rechner
+                {ta.rechner}
               </button>
             </div>
 
             {reihe.typ === 'ki' && (
-              <div className={styles.stufen} role="group" aria-label="Schwierigkeit">
-                {STUFEN.map((s) => (
+              <div className={styles.stufen} role="group" aria-label={ta.schwierigkeit}>
+                {STUFEN.map((stufe) => (
                   <button
-                    key={s.id}
+                    key={stufe}
                     type="button"
-                    className={reihe.kiStufe === s.id ? styles.stufeAn : styles.stufeAus}
-                    onClick={() => aendere(i, { kiStufe: s.id })}
-                    title={s.erklaerung}
+                    className={reihe.kiStufe === stufe ? styles.stufeAn : styles.stufeAus}
+                    onClick={() => aendere(i, { kiStufe: stufe })}
+                    title={ta.stufenText[stufe]}
                   >
-                    {s.label}
+                    {ta.stufen[stufe]}
                   </button>
                 ))}
               </div>
@@ -151,13 +148,13 @@ export function Spielaufbau({ vorschlagName, onStart, onAbbrechen }: AufbauProps
 
       {reihen.length < MAX_SPIELER && (
         <button type="button" className={styles.plus} onClick={hinzufuegen}>
-          + Mitspieler
+          {ta.plusMitspieler}
         </button>
       )}
 
       <label className={styles.dauer}>
         <span>
-          Spieldauer: <strong>{rundenLimit} Runden</strong>
+          {ta.spieldauer} <strong>{ta.runden(rundenLimit)}</strong>
         </span>
         <input
           type="range"
@@ -168,18 +165,11 @@ export function Spielaufbau({ vorschlagName, onStart, onAbbrechen }: AufbauProps
           onChange={(e) => setRundenLimit(Number(e.target.value))}
         />
         <span className={styles.dauerHinweis}>
-          {rundenLimit <= 15
-            ? 'Kurze Partie, etwa 10 Minuten.'
-            : rundenLimit <= 25
-              ? 'Etwa 15 bis 25 Minuten.'
-              : 'Lange Partie – hier wird richtig gebaut.'}
+          {rundenLimit <= 15 ? ta.dauerKurz : rundenLimit <= 25 ? ta.dauerMittel : ta.dauerLang}
         </span>
       </label>
 
-      <p className={styles.hinweis}>
-        Rollen und Figuren werden zu Beginn zufällig verteilt. Es gibt {ROLLEN.length} Rollen
-        und {FIGUREN.length} Figuren.
-      </p>
+      <p className={styles.hinweis}>{ta.zufall(ROLLEN.length, FIGUREN.length)}</p>
 
       {fehler && (
         <p className={styles.fehler} role="alert">
@@ -188,10 +178,10 @@ export function Spielaufbau({ vorschlagName, onStart, onAbbrechen }: AufbauProps
       )}
 
       <button type="button" className={styles.start} onClick={starten}>
-        🎲 Partie starten
+        {ta.starten}
       </button>
       <button type="button" className={styles.zurueck} onClick={onAbbrechen}>
-        Zurück
+        {t.allgemein.zurueck}
       </button>
     </section>
   )

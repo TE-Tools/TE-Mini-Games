@@ -31,6 +31,7 @@ export type {
   Besitz,
   Phase,
   LogEintrag,
+  ProtokollMeldung,
   KaufAngebot,
   MinispielAuftrag,
   MinispielId,
@@ -89,7 +90,7 @@ export {
   endstand,
   handkarten,
 } from './engine'
-export type { Wurf, BauPruefung, Endstand, TauschPaar } from './engine'
+export type { Wurf, BauPruefung, BauGrund, Endstand, TauschPaar } from './engine'
 
 export {
   pruefeHandel,
@@ -99,7 +100,7 @@ export {
   handelbareFelder,
   staerke,
 } from './handel'
-export type { Handelsangebot, HandelPruefung } from './handel'
+export type { Handelsangebot, HandelPruefung, HandelGrund } from './handel'
 
 export {
   kiSchritt,

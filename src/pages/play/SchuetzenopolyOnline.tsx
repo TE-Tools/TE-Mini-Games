@@ -18,6 +18,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getCurrentUser } from '@/auth/authService'
+import { useSprache } from '@/i18n/sprache'
 import { ermittleSpielerName, istEchterName } from '@/services/spielername'
 import {
   MAX_RUNDEN_LIMIT,
@@ -73,6 +74,14 @@ interface Props {
 }
 
 export function SchuetzenopolyOnline({ eigenerName, onZurueck }: Props) {
+  const { t, sprache } = useSprache()
+  const ts = t.schuetzenopoly
+  const to = ts.online
+  // Für Fehlertexte aus Rückrufen, die nicht bei jedem Sprachwechsel neu entstehen sollen.
+  const texteRef = useRef(to)
+  useEffect(() => {
+    texteRef.current = to
+  }, [to])
   const [matchId, setMatchId] = useState<string | null>(null)
   const [stand, setStand] = useState<SchopolyOnlineState | null>(null)
   const [zugbuch, setZugbuch] = useState<ZugbuchEintrag[]>([])
@@ -120,7 +129,7 @@ export function SchuetzenopolyOnline({ eigenerName, onZurueck }: Props) {
         setFehler(RAUM_GESCHLOSSEN_TEXT)
         return
       }
-      setFehler(err instanceof Error ? err.message : 'Die Partie ließ sich nicht laden.')
+      setFehler(err instanceof Error ? err.message : texteRef.current.ladeFehler)
     }
   }, [])
 
@@ -207,7 +216,7 @@ export function SchuetzenopolyOnline({ eigenerName, onZurueck }: Props) {
       try {
         await sendeAktion(matchId, aktion, amZugSitz(nachher), nachher.phase === 'ende')
       } catch (err) {
-        setFehler(err instanceof Error ? err.message : 'Der Zug kam nicht durch.')
+        setFehler(err instanceof Error ? err.message : texteRef.current.zugFehler)
         letzteNr.current = 0
         await laden(matchId, true)
       }
@@ -284,7 +293,7 @@ export function SchuetzenopolyOnline({ eigenerName, onZurueck }: Props) {
     try {
       await was()
     } catch (err) {
-      setFehler(err instanceof Error ? err.message : 'Das hat nicht geklappt.')
+      setFehler(err instanceof Error ? err.message : to.fehler)
     } finally {
       setLaeuft(false)
     }
@@ -314,8 +323,8 @@ export function SchuetzenopolyOnline({ eigenerName, onZurueck }: Props) {
     const raumCode = new URLSearchParams(window.location.search).get(RAUM_PARAM)
     if (!raumCode) return
     autoBeigetreten.current = true
-    const t = window.setTimeout(() => void beitreten(raumCode.toUpperCase()), 0)
-    return () => window.clearTimeout(t)
+    const uhr = window.setTimeout(() => void beitreten(raumCode.toUpperCase()), 0)
+    return () => window.clearTimeout(uhr)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [angemeldet])
 
@@ -325,7 +334,7 @@ export function SchuetzenopolyOnline({ eigenerName, onZurueck }: Props) {
     try {
       if (matchId) await leaveSchopolyMatch(matchId)
     } catch (err) {
-      setFehler(err instanceof Error ? err.message : 'Das hat nicht geklappt.')
+      setFehler(err instanceof Error ? err.message : to.fehler)
     } finally {
       setMatchId(null)
       setStand(null)
@@ -341,36 +350,35 @@ export function SchuetzenopolyOnline({ eigenerName, onZurueck }: Props) {
     return (
       <main className={`${shell.page} ${styles.breiteSeite}`}>
         <header className={shell.header}>
-          <button type="button" className={shell.back} onClick={onZurueck} aria-label="Zurück">
+          <button
+            type="button"
+            className={shell.back}
+            onClick={onZurueck}
+            aria-label={t.allgemein.zurueck}
+          >
             ←
           </button>
-          <h1 className={shell.title}>Schützenopoly online</h1>
+          <h1 className={shell.title}>{to.titel}</h1>
           <span aria-hidden="true" />
         </header>
 
-        {angemeldet === null && <p className={shell.muted}>Einen Moment…</p>}
+        {angemeldet === null && <p className={shell.muted}>{to.einenMoment}</p>}
 
         {angemeldet === false && (
           <section className={styles.lobby}>
-            <p className={styles.willkommen}>
-              Online spielst du mit deinem Konto – nur so weiß der Server, wer am Zug ist und wem
-              welches Fest gehört.
-            </p>
+            <p className={styles.willkommen}>{to.kontoNoetig}</p>
             <Link to="/auth" className={shell.primaryBtn} style={{ textAlign: 'center' }}>
-              Anmelden
+              {to.anmelden}
             </Link>
             <button type="button" className={shell.secondaryBtn} onClick={onZurueck}>
-              Lieber gegen den Rechner
+              {to.lieberRechner}
             </button>
           </section>
         )}
 
         {angemeldet === true && (
           <section className={styles.lobby}>
-            <p className={styles.willkommen}>
-              Einer macht den Tisch auf und gibt den Code weiter. Zwei bis vier spielen mit,
-              Computergegner gibt es online nicht.
-            </p>
+            <p className={styles.willkommen}>{to.einleitung}</p>
 
             <label className={raumStil.oeffentlich}>
               <input
@@ -379,10 +387,8 @@ export function SchuetzenopolyOnline({ eigenerName, onZurueck }: Props) {
                 onChange={(e) => setOeffentlich(e.target.checked)}
               />
               <span>
-                Öffentlicher Tisch
-                <small>
-                  Steht unter „Offene Spiele“ für alle, mit deinem Namen. Jeder kann beitreten.
-                </small>
+                {to.oeffentlich}
+                <small>{to.oeffentlichText}</small>
               </span>
             </label>
 
@@ -392,11 +398,11 @@ export function SchuetzenopolyOnline({ eigenerName, onZurueck }: Props) {
               onClick={eroeffnen}
               disabled={laeuft}
             >
-              ➕ Tisch aufmachen
+              {to.tischAufmachen}
             </button>
 
             <label className={styles.feldZeile}>
-              <span>Spielcode</span>
+              <span>{to.spielcode}</span>
               <input
                 className={styles.codeEingabe}
                 value={code}
@@ -414,7 +420,7 @@ export function SchuetzenopolyOnline({ eigenerName, onZurueck }: Props) {
               onClick={() => beitreten()}
               disabled={laeuft || code.length < 4}
             >
-              Beitreten
+              {to.beitreten}
             </button>
 
             <OeffentlicheRaeume
@@ -425,14 +431,14 @@ export function SchuetzenopolyOnline({ eigenerName, onZurueck }: Props) {
 
             {offene.length > 0 && (
               <div className={styles.offeneListe}>
-                <h3>Deine offenen Partien</h3>
+                <h3>{to.offenePartien}</h3>
                 <ul>
                   {offene.map((m) => (
                     <li key={m.match_id}>
                       <button type="button" onClick={() => setMatchId(m.match_id)}>
                         <strong>{m.code}</strong>
                         <span>
-                          {m.phase === 'lobby' ? 'wartet' : 'läuft'} · {m.size} Spieler
+                          {m.phase === 'lobby' ? to.wartet : to.laeuft} · {to.spieler(m.size)}
                         </span>
                       </button>
                     </li>
@@ -448,7 +454,7 @@ export function SchuetzenopolyOnline({ eigenerName, onZurueck }: Props) {
             )}
 
             <Link to="/" className={shell.homeLink}>
-              Zum Menü
+              {t.allgemein.zumMenue}
             </Link>
           </section>
         )}
@@ -464,27 +470,29 @@ export function SchuetzenopolyOnline({ eigenerName, onZurueck }: Props) {
     return (
       <main className={`${shell.page} ${styles.breiteSeite}`}>
         <header className={shell.header}>
-          <button type="button" className={shell.back} onClick={verlassen} aria-label="Zurück">
+          <button
+            type="button"
+            className={shell.back}
+            onClick={verlassen}
+            aria-label={t.allgemein.zurueck}
+          >
             ←
           </button>
-          <h1 className={shell.title}>Warteraum</h1>
+          <h1 className={shell.title}>{to.warteraum}</h1>
           <span aria-hidden="true" />
         </header>
 
         <section className={styles.lobby}>
-          <p className={styles.codeLabel}>Spielcode</p>
+          <p className={styles.codeLabel}>{to.spielcode}</p>
           <p className={styles.code}>{match.code}</p>
-          <p className={styles.willkommen}>
-            Gib den Code weiter. Sobald alle da sind, startet{' '}
-            {match.is_host ? 'du' : 'der Gastgeber'} die Partie.
-          </p>
+          <p className={styles.willkommen}>{to.codeWeitergeben(match.is_host)}</p>
 
           <ul className={styles.spielerListe}>
             {players.map((p) => (
               <li key={p.seat}>
                 <span className={styles.platz}>{p.seat}</span>
                 {p.name}
-                {p.is_you && <small> (du)</small>}
+                {p.is_you && <small> {to.du}</small>}
               </li>
             ))}
           </ul>
@@ -492,7 +500,7 @@ export function SchuetzenopolyOnline({ eigenerName, onZurueck }: Props) {
           {match.is_host && (
             <>
               <label className={styles.feldZeile}>
-                <span>Runden</span>
+                <span>{to.runden}</span>
                 <input
                   type="number"
                   className={styles.codeEingabe}
@@ -508,7 +516,7 @@ export function SchuetzenopolyOnline({ eigenerName, onZurueck }: Props) {
                 onClick={() => versuche(() => startSchopolyMatch(matchId, runden))}
                 disabled={laeuft || players.length < 2}
               >
-                {players.length < 2 ? 'Es fehlt noch jemand' : '🎲 Partie starten'}
+                {players.length < 2 ? to.fehltNoch : to.starten}
               </button>
             </>
           )}
@@ -526,7 +534,7 @@ export function SchuetzenopolyOnline({ eigenerName, onZurueck }: Props) {
   if (!zustand) {
     return (
       <main className={shell.page}>
-        <p className={shell.muted}>Die Partie wird nachgespielt…</p>
+        <p className={shell.muted}>{to.nachspielen}</p>
       </main>
     )
   }
@@ -547,15 +555,20 @@ export function SchuetzenopolyOnline({ eigenerName, onZurueck }: Props) {
     return (
       <main className={`${shell.page} ${styles.breiteSeite}`}>
         <header className={shell.header}>
-          <button type="button" className={shell.back} onClick={verlassen} aria-label="Zurück">
+          <button
+            type="button"
+            className={shell.back}
+            onClick={verlassen}
+            aria-label={t.allgemein.zurueck}
+          >
             ←
           </button>
-          <h1 className={shell.title}>Schützenopoly online</h1>
+          <h1 className={shell.title}>{to.titel}</h1>
           <span aria-hidden="true" />
         </header>
         <section className={shell.section}>
           <p className={gewonnen ? shell.correct : shell.wrong}>
-            {gewonnen ? '🏆 Du hast gewonnen!' : `${tabelle[0]?.name} gewinnt.`}
+            {gewonnen ? ts.gewonnen : ts.gewinnt(tabelle[0]?.name ?? '')}
           </p>
           <ol className={styles.endstand}>
             {tabelle.map((eintrag, i) => (
@@ -564,14 +577,14 @@ export function SchuetzenopolyOnline({ eigenerName, onZurueck }: Props) {
                 <span className={styles.endName}>{eintrag.name}</span>
                 <span className={styles.endWert}>
                   {eintrag.insolvent
-                    ? 'ausgeschieden'
-                    : `${eintrag.vermoegen.toLocaleString('de-DE')} 🪙`}
+                    ? ts.ausgeschieden
+                    : `${eintrag.vermoegen.toLocaleString(sprache)} 🪙`}
                 </span>
               </li>
             ))}
           </ol>
           <button type="button" className={shell.primaryBtn} onClick={verlassen}>
-            Zurück zur Lobby
+            {to.zurLobby}
           </button>
         </section>
       </main>
@@ -586,14 +599,14 @@ export function SchuetzenopolyOnline({ eigenerName, onZurueck }: Props) {
     ? [
         {
           id: 'kaufen',
-          text: `Kaufen · ${kaufKarte.preis.toLocaleString('de-DE')} 🪙`,
+          text: ts.kaufen(kaufKarte.preis.toLocaleString(sprache)),
           haupt: true,
           gesperrt: aktiv.taler < kaufKarte.preis,
           onKlick: binDran ? () => knopfDruck('kaufen', { art: 'kaufen' }) : undefined,
         },
         {
           id: 'ablehnen',
-          text: 'Stehen lassen',
+          text: ts.stehenLassen,
           onKlick: binDran ? () => knopfDruck('ablehnen', { art: 'ablehnen' }) : undefined,
         },
       ]
@@ -604,10 +617,15 @@ export function SchuetzenopolyOnline({ eigenerName, onZurueck }: Props) {
   return (
     <main className={`${shell.page} ${styles.breiteSeite}`}>
       <header className={shell.header}>
-        <button type="button" className={shell.back} onClick={verlassen} aria-label="Zurück">
+        <button
+          type="button"
+          className={shell.back}
+          onClick={verlassen}
+          aria-label={t.allgemein.zurueck}
+        >
           ←
         </button>
-        <h1 className={shell.title}>Schützenopoly</h1>
+        <h1 className={shell.title}>{t.spiele.schuetzenopoly}</h1>
         <span className={shell.levelBadge}>{match.code}</span>
       </header>
 
@@ -648,11 +666,11 @@ export function SchuetzenopolyOnline({ eigenerName, onZurueck }: Props) {
           type="button"
           className={styles.aufgeben}
           onClick={() => {
-            if (window.confirm('Wirklich aufgeben?')) void tu({ art: 'aufgeben' })
+            if (window.confirm(ts.aufgebenFrage)) void tu({ art: 'aufgeben' })
           }}
           disabled={Boolean(ichSelbst?.insolvent)}
         >
-          Partie aufgeben
+          {ts.aufgeben}
         </button>
       </section>
 
