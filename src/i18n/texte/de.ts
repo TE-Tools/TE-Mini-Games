@@ -342,6 +342,147 @@ export const de = {
     zustandGesperrt: 'noch gesperrt',
   },
 
+  anmeldung: {
+    titelGast: 'TE-Mini Games',
+    titelAnmelden: 'Anmelden',
+    titelRegistrieren: 'Konto erstellen',
+    einleitungGast:
+      'Melde dich an, damit dein Fortschritt geladen wird – oder spiele als Gast ohne Cloud.',
+    einleitung: 'Mit Konto speicherst du Fortschritt online.',
+    email: 'E-Mail *',
+    passwort: 'Passwort *',
+    neuesPasswort: 'Neues Passwort *',
+    neuesPasswortTitel: 'Neues Passwort',
+    neuesPasswortText: 'Wähle ein neues Passwort für dein Konto.',
+    passwortSpeichern: 'Passwort speichern',
+    benutzername: 'Benutzername',
+    benutzernamePflicht: 'Benutzername *',
+    anzeigename: 'Anzeigename (optional)',
+    bereitsVergeben: 'Bereits vergeben',
+    benutzernameSpeichern: 'Benutzername speichern',
+    benutzernameWirdGespeichert: 'Speichere…',
+    benutzernameGespeichert: 'Benutzername gespeichert – du bist ab jetzt in der Rangliste.',
+    fehltBenutzername: 'Dir fehlt noch ein Benutzername',
+    fehltBenutzernameText:
+      'In den Ranglisten steht dein Benutzername, nicht deine E-Mail. Ohne ihn tauchst du dort nicht auf.',
+    mitGoogle: 'Mit Google anmelden',
+    passwortVergessen: 'Passwort vergessen?',
+    wechselZuRegistrieren: 'Noch kein Konto? Registrieren',
+    wechselZuAnmelden: 'Schon Konto? Anmelden',
+    alsGast: 'Als Gast spielen',
+    gastHinweis:
+      'Gast: nichts vom Konto wird geladen – nur lokal auf diesem Gerät, ohne Cloud-Sync.',
+    zurStartseite: 'Zur Startseite',
+    nichtKonfiguriert:
+      'Online-Login ist noch nicht konfiguriert. Du kannst als Gast spielen – ohne Cloud-Laden.',
+    nichtKonfiguriertHinweis:
+      'Für Konto-Login: Supabase-Keys in Cloudflare setzen (siehe docs/supabase-setup.md).',
+    nichtAktiv: 'Online-Login ist noch nicht aktiv. Du kannst offline als Gast spielen.',
+    konto: 'Konto',
+    angemeldet: 'Angemeldet',
+    abmelden: 'Abmelden',
+    abbrechen: 'Abbrechen',
+    synchronisiert: 'Synchronisiere…',
+    bestaetigungLabel: 'Löschen bestätigen',
+    jetztSynchronisieren: 'Jetzt synchronisieren',
+    fortschrittZuruecksetzen: 'Fortschritt zurücksetzen',
+    fortschrittZuruecksetzenText:
+      'Löscht Level, Punkte, Rekorde, XP und Abzeichen – auf diesem Gerät und im Konto. Das lässt sich nicht rückgängig machen.',
+    kontoLoeschen: 'Konto löschen',
+    kontoLoeschenKnopf: 'Konto endgültig löschen',
+    kontoWirdGeloescht: 'Lösche…',
+    kontoLoeschenText:
+      'Löscht dein Konto und alles, was daran hängt: Spielstände, Bestwerte, Abzeichen, Einträge in den Bestenlisten und deine Anmeldung. Danach kannst du dich mit dieser E-Mail nicht mehr anmelden. Das lässt sich nicht rückgängig machen.',
+    bestaetigungWort: 'LÖSCHEN',
+    bestaetigungTippe: 'Tippe',
+    bestaetigungEin: 'ein, um es zu bestätigen',
+  },
+
+  profil: {
+    titel: 'Profil',
+    zurueck: 'Zurück',
+    nameLabel: 'Dein Name im Spiel',
+    nameHinweis:
+      'So stehst du in Runden und in der Rangliste. Angemeldet wird er auch auf deine anderen Geräte übernommen.',
+    speichern: 'Speichern',
+    gespeichert: 'Gespeichert.',
+    nameAusKonto: 'Namen aus dem Konto übernehmen',
+    gesichtHinweis: 'Wähle dein Gesicht – es erscheint auf der Levelkarte.',
+    kontoTitel: 'Konto & Anmeldung',
+    kontoHinweis: 'Benutzername, Anmeldung, Synchronisierung',
+    zurStartseite: 'Zur Startseite',
+  },
+
+  rangliste: {
+    titel: 'Rangliste',
+    zurueck: 'Zurück',
+    markeLokal: 'Lokal',
+    markeNichtAngemeldet: 'Nicht angemeldet',
+    reiterAlle: 'Alle Spiele',
+    reiterRekorde: 'Meine Rekorde',
+    global: 'Global',
+    nichtAngemeldetTitel: 'Du bist nicht angemeldet',
+    nichtAngemeldetText:
+      'Deine Runden werden auf diesem Gerät gespeichert, kommen aber erst in die Rangliste, wenn du angemeldet bist.',
+    wartenNachAnmelden: (anzahl: number) =>
+      `${anzahl} ${anzahl === 1 ? 'Eintrag wartet' : 'Einträge warten'} aufs Hochladen – nach dem Anmelden gehen sie automatisch raus.`,
+    jetztAnmelden: 'Jetzt anmelden',
+    fehltNameTitel: 'Dir fehlt ein Benutzername',
+    fehltNameText:
+      'Du bist angemeldet, aber in den Ranglisten steht der Benutzername – und über Google wird keiner vergeben. Ohne ihn tauchst du hier nicht auf, auch wenn deine Runden hochgeladen werden.',
+    nameFestlegen: 'Benutzername festlegen',
+    wartenAktualisieren: (anzahl: number) =>
+      `${anzahl} ${anzahl === 1 ? 'Eintrag wartet' : 'Einträge warten'} aufs Hochladen – tippe auf „Aktualisieren“.`,
+    gesamtXpTitel: 'Gesamt-XP über alle Spiele',
+    gesamtXpText:
+      'Alle XP aus jeder Runde aller Spiele zusammengerechnet. Jede gespielte Runde zählt mit, egal ob Rekord oder nicht.',
+    brauchtSupabase: 'Die gemeinsame Rangliste braucht ein konfiguriertes Supabase-Projekt.',
+    nochKeineEintraege:
+      'Noch keine Einträge. Nach einer Runde mit Konto landen sie automatisch hier.',
+    bestleistungenTitel: 'Persönliche Bestleistungen',
+    nochKeineRekorde: 'Noch keine Rekorde – spiel eine Runde!',
+    besteRundenTitel: 'Beste Runden',
+    nochKeineErgebnisse: 'Noch keine Ergebnisse.',
+    gesamtpunkteTitel: 'Gesamtpunkte je Spiel',
+    gesamtpunkteText:
+      'Aufsummiert über alle jemals gespielten Runden dieses Spiels – wächst bei jeder Runde, unabhängig vom Rekord.',
+    globalBrauchtSupabase:
+      'Globale Ranglisten brauchen ein konfiguriertes Supabase-Projekt. Bis dahin siehst du hier deine lokalen Werte unter „Meine Rekorde“.',
+    deinPlatz: 'Dein Platz:',
+    deinPlatzMit: (xp: string, runden: number) => `mit ${xp} XP aus ${runden} Runden`,
+    summeAllerXp: 'Summe aller XP',
+    gezeigtWirdDie: 'Gezeigt wird die',
+    gezeigtWirdRest:
+      'aus jeder gespielten Runde – jede neue Runde zählt sofort mit dazu, unabhängig davon, ob sie ein Rekord war.',
+    keineEintraegeSpiel:
+      'Noch keine Einträge für dieses Spiel. Nach einer Runde landen sie automatisch hier.',
+  },
+
+  daily: {
+    titel: 'Daily Challenge',
+    levelVersuch: (level: number) => `Level ${level} · ein Versuch heute`,
+    hinweis: 'Alle Spieler bekommen heute dieselbe Aufgabe. Fair und vergleichbar.',
+    starten: 'Challenge starten',
+    timerLaeuft: 'Timer läuft…',
+    welchesObjekt: 'Welches Objekt fehlt?',
+    punkte: (p: number) => `${p} Punkte`,
+    schonGespielt: 'Komm morgen für die nächste Challenge zurück.',
+    gespeichert: 'Ergebnis gespeichert. Morgen wartet eine neue Challenge.',
+    zurStartseite: 'Zur Startseite',
+  },
+
+  familie: {
+    titel: 'Familie',
+    markeLokal: 'Lokal',
+    spielernamen: 'Spielernamen',
+    spiel: 'Spiel',
+    rundeStarten: 'Runde starten',
+    binBereit: 'Ich bin bereit',
+    welchesObjekt: 'Welches Objekt fehlt?',
+    neueRunde: 'Neue Runde',
+    zurStartseite: 'Zur Startseite',
+  },
+
   allgemein: {
     zurueck: 'Zurück',
     weiter: 'Weiter',

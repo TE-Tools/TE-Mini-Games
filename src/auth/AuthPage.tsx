@@ -25,6 +25,7 @@ import { outboxCount } from '@/offline/outbox'
 import { resetLocalProgress } from '@/offline/reset'
 import { resetRemoteProgress } from '@/services/remoteReset'
 import styles from './AuthPage.module.css'
+import { useSprache } from '@/i18n/sprache'
 
 type Props = {
   /** Mandatory entry screen – no skip into the app without login or guest. */
@@ -32,6 +33,7 @@ type Props = {
 }
 
 export function AuthPage({ gate = false }: Props) {
+  const { t } = useSprache()
   const navigate = useNavigate()
   const configured = getAuthConfigured()
   const [mode, setMode] = useState<'in' | 'up'>('in')
@@ -114,16 +116,12 @@ export function AuthPage({ gate = false }: Props) {
   if (!configured && gate) {
     return (
       <main className={styles.page}>
-        <h1 className={styles.title}>TE-Mini Games</h1>
-        <p className={styles.hint}>
-          Online-Login ist noch nicht konfiguriert. Du kannst als Gast spielen – ohne Cloud-Laden.
-        </p>
+        <h1 className={styles.title}>{t.anmeldung.titelGast}</h1>
+        <p className={styles.hint}>{t.anmeldung.nichtKonfiguriert}</p>
         <button type="button" className={styles.guestBtn} onClick={continueAsGuest}>
-          Als Gast spielen
+          {t.anmeldung.alsGast}
         </button>
-        <p className={styles.muted}>
-          Für Konto-Login: Supabase-Keys in Cloudflare setzen (siehe docs/supabase-setup.md).
-        </p>
+        <p className={styles.muted}>{t.anmeldung.nichtKonfiguriertHinweis}</p>
       </main>
     )
   }
@@ -131,12 +129,10 @@ export function AuthPage({ gate = false }: Props) {
   if (!configured) {
     return (
       <main className={styles.page}>
-        <h1 className={styles.title}>Konto</h1>
-        <p className={styles.hint}>
-          Online-Login ist noch nicht aktiv. Du kannst offline als Gast spielen.
-        </p>
+        <h1 className={styles.title}>{t.anmeldung.konto}</h1>
+        <p className={styles.hint}>{t.anmeldung.nichtAktiv}</p>
         <button type="button" className={styles.guestBtn} onClick={continueAsGuest}>
-          Als Gast spielen
+          {t.anmeldung.alsGast}
         </button>
         <p className={styles.muted}>
           Zum Aktivieren: Supabase-Projekt anlegen und in Cloudflare Pages{' '}
@@ -144,7 +140,7 @@ export function AuthPage({ gate = false }: Props) {
         </p>
         {!gate && (
           <Link to="/" className={styles.link}>
-            Zur Startseite
+            {t.anmeldung.zurStartseite}
           </Link>
         )}
       </main>
@@ -154,7 +150,7 @@ export function AuthPage({ gate = false }: Props) {
   if (userEmail && !recovery && !gate) {
     return (
       <main className={styles.page}>
-        <h1 className={styles.title}>Angemeldet</h1>
+        <h1 className={styles.title}>{t.anmeldung.angemeldet}</h1>
         <p className={styles.hint}>
           {myUsername ? `@${myUsername} \u00b7 ` : ''}
           {userEmail}
@@ -162,7 +158,7 @@ export function AuthPage({ gate = false }: Props) {
 
         {myUsername === null && (
           <section className={styles.claimBox}>
-            <p className={styles.claimTitle}>Dir fehlt noch ein Benutzername</p>
+            <p className={styles.claimTitle}>{t.anmeldung.fehltBenutzername}</p>
             <p className={styles.muted}>
               In den Ranglisten steht dein Benutzername, nicht deine E-Mail. Ohne ihn tauchst du
               dort nicht auf – auch wenn alles brav hochgeladen wird. Bei der Anmeldung über Google
@@ -197,14 +193,14 @@ export function AuthPage({ gate = false }: Props) {
                       return
                     }
                     setMyUsernameState(await getMyUsername())
-                    setSyncInfo(
-                      'Benutzername gespeichert \u2013 du bist ab jetzt in der Rangliste.',
-                    )
+                    setSyncInfo(t.anmeldung.benutzernameGespeichert)
                   })
                   .finally(() => setClaiming(false))
               }}
             >
-              {claiming ? 'Speichere\u2026' : 'Benutzername speichern'}
+              {claiming
+                ? t.anmeldung.benutzernameWirdGespeichert
+                : t.anmeldung.benutzernameSpeichern}
             </button>
           </section>
         )}
@@ -232,7 +228,7 @@ export function AuthPage({ gate = false }: Props) {
               .finally(() => setSyncing(false))
           }}
         >
-          {syncing ? 'Synchronisiere\u2026' : 'Jetzt synchronisieren'}
+          {syncing ? t.anmeldung.synchronisiert : t.anmeldung.jetztSynchronisieren}
         </button>
         {syncInfo && <p className={styles.hint}>{syncInfo}</p>}
         <button
@@ -245,21 +241,18 @@ export function AuthPage({ gate = false }: Props) {
             })
           }
         >
-          Abmelden
+          {t.anmeldung.abmelden}
         </button>
 
         <hr className={styles.divider} />
 
         {!confirmReset ? (
           <button type="button" className={styles.danger} onClick={() => setConfirmReset(true)}>
-            Fortschritt zurücksetzen
+            {t.anmeldung.fortschrittZuruecksetzen}
           </button>
         ) : (
           <>
-            <p className={styles.error}>
-              Löscht Level, Punkte, Rekorde, XP und Abzeichen – auf diesem Gerät und im Konto. Das
-              lässt sich nicht rückgängig machen.
-            </p>
+            <p className={styles.error}>{t.anmeldung.fortschrittZuruecksetzenText}</p>
             <button
               type="button"
               className={styles.danger}
@@ -285,7 +278,7 @@ export function AuthPage({ gate = false }: Props) {
               {resetting ? 'Setze zur\u00fcck\u2026' : 'Ja, alles l\u00f6schen'}
             </button>
             <button type="button" className={styles.switch} onClick={() => setConfirmReset(false)}>
-              Abbrechen
+              {t.anmeldung.abbrechen}
             </button>
           </>
         )}
@@ -298,29 +291,28 @@ export function AuthPage({ gate = false }: Props) {
         */}
         {!confirmDelete ? (
           <button type="button" className={styles.danger} onClick={() => setConfirmDelete(true)}>
-            Konto löschen
+            {t.anmeldung.kontoLoeschen}
           </button>
         ) : (
           <>
-            <p className={styles.error}>
-              Löscht dein Konto und alles, was daran hängt: Spielstände, Bestwerte, Abzeichen,
-              Einträge in den Bestenlisten und deine Anmeldung. Danach kannst du dich mit dieser
-              E-Mail nicht mehr anmelden. Das lässt sich nicht rückgängig machen.
-            </p>
+            <p className={styles.error}>{t.anmeldung.kontoLoeschenText}</p>
             <label className={styles.label}>
-              Tippe <strong>LÖSCHEN</strong> ein, um es zu bestätigen
+              {t.anmeldung.bestaetigungTippe} <strong>{t.anmeldung.bestaetigungWort}</strong>{' '}
+              {t.anmeldung.bestaetigungEin}
               <input
                 className={styles.input}
                 value={deleteWord}
                 onChange={(e) => setDeleteWord(e.target.value)}
                 autoComplete="off"
-                aria-label="Löschen bestätigen"
+                aria-label={t.anmeldung.bestaetigungLabel}
               />
             </label>
             <button
               type="button"
               className={styles.danger}
-              disabled={deleting || deleteWord.trim().toUpperCase() !== 'LÖSCHEN'}
+              disabled={
+                deleting || deleteWord.trim().toUpperCase() !== t.anmeldung.bestaetigungWort
+              }
               onClick={() => {
                 setDeleting(true)
                 setError(null)
@@ -343,7 +335,7 @@ export function AuthPage({ gate = false }: Props) {
                   })
               }}
             >
-              {deleting ? 'Lösche\u2026' : 'Konto endgültig löschen'}
+              {deleting ? t.anmeldung.kontoWirdGeloescht : t.anmeldung.kontoLoeschenKnopf}
             </button>
             <button
               type="button"
@@ -353,7 +345,7 @@ export function AuthPage({ gate = false }: Props) {
                 setDeleteWord('')
               }}
             >
-              Abbrechen
+              {t.anmeldung.abbrechen}
             </button>
           </>
         )}
@@ -372,7 +364,7 @@ export function AuthPage({ gate = false }: Props) {
         )}
 
         <Link to="/" className={styles.link}>
-          Zur Startseite
+          {t.anmeldung.zurStartseite}
         </Link>
       </main>
     )
@@ -381,10 +373,10 @@ export function AuthPage({ gate = false }: Props) {
   if (recovery) {
     return (
       <main className={styles.page}>
-        <h1 className={styles.title}>Neues Passwort</h1>
-        <p className={styles.hint}>Wähle ein neues Passwort für dein Konto.</p>
+        <h1 className={styles.title}>{t.anmeldung.neuesPasswortTitel}</h1>
+        <p className={styles.hint}>{t.anmeldung.neuesPasswortText}</p>
         <label className={styles.label}>
-          Neues Passwort *
+          {t.anmeldung.neuesPasswort}
           <input
             className={styles.input}
             type="password"
@@ -484,18 +476,18 @@ export function AuthPage({ gate = false }: Props) {
   return (
     <main className={styles.page}>
       <h1 className={styles.title}>
-        {gate ? 'TE-Mini Games' : mode === 'in' ? 'Anmelden' : 'Konto erstellen'}
-      </h1>
-      <p className={styles.hint}>
         {gate
-          ? 'Melde dich an, damit dein Fortschritt geladen wird – oder spiele als Gast ohne Cloud.'
-          : 'Mit Konto speicherst du Fortschritt online.'}
-      </p>
+          ? t.anmeldung.titelGast
+          : mode === 'in'
+            ? t.anmeldung.titelAnmelden
+            : t.anmeldung.titelRegistrieren}
+      </h1>
+      <p className={styles.hint}>{gate ? t.anmeldung.einleitungGast : t.anmeldung.einleitung}</p>
 
       {mode === 'up' && (
         <>
           <label className={styles.label}>
-            Benutzername *
+            {t.anmeldung.benutzernamePflicht}
             <input
               className={styles.input}
               value={username}
@@ -511,7 +503,7 @@ export function AuthPage({ gate = false }: Props) {
             </p>
           )}
           <label className={styles.label}>
-            Anzeigename (optional)
+            {t.anmeldung.anzeigename}
             <input
               className={styles.input}
               value={displayName}
@@ -523,7 +515,7 @@ export function AuthPage({ gate = false }: Props) {
       )}
 
       <label className={styles.label}>
-        E-Mail *
+        {t.anmeldung.email}
         <input
           className={styles.input}
           type="email"
@@ -534,7 +526,7 @@ export function AuthPage({ gate = false }: Props) {
         />
       </label>
       <label className={styles.label}>
-        Passwort *
+        {t.anmeldung.passwort}
         <input
           className={styles.input}
           type="password"
@@ -574,7 +566,7 @@ export function AuthPage({ gate = false }: Props) {
         disabled={busy}
         onClick={() => void google()}
       >
-        Mit Google anmelden
+        {t.anmeldung.mitGoogle}
       </button>
 
       {mode === 'in' && (
@@ -594,7 +586,7 @@ export function AuthPage({ gate = false }: Props) {
               .finally(() => setBusy(false))
           }}
         >
-          Passwort vergessen?
+          {t.anmeldung.passwortVergessen}
         </button>
       )}
 
@@ -607,21 +599,19 @@ export function AuthPage({ gate = false }: Props) {
           setInfo(null)
         }}
       >
-        {mode === 'in' ? 'Noch kein Konto? Registrieren' : 'Schon Konto? Anmelden'}
+        {mode === 'in' ? t.anmeldung.wechselZuRegistrieren : t.anmeldung.wechselZuAnmelden}
       </button>
 
       <hr className={styles.divider} />
 
       <button type="button" className={styles.guestBtn} onClick={continueAsGuest}>
-        Als Gast spielen
+        {t.anmeldung.alsGast}
       </button>
-      <p className={styles.muted}>
-        Gast: nichts vom Konto wird geladen – nur lokal auf diesem Gerät, ohne Cloud-Sync.
-      </p>
+      <p className={styles.muted}>{t.anmeldung.gastHinweis}</p>
 
       {!gate && (
         <Link to="/" className={styles.link}>
-          Zur Startseite
+          {t.anmeldung.zurStartseite}
         </Link>
       )}
     </main>

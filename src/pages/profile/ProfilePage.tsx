@@ -11,8 +11,10 @@ import {
   setzeSpielerName,
 } from '@/services/spielername'
 import styles from './ProfilePage.module.css'
+import { useSprache } from '@/i18n/sprache'
 
 export function ProfilePage() {
+  const { t } = useSprache()
   const navigate = useNavigate()
   const [profile, setProfile] = useState<LocalProfile | null>(null)
   const [name, setName] = useState('')
@@ -76,10 +78,15 @@ export function ProfilePage() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <button type="button" className={styles.back} onClick={() => navigate('/')} aria-label="Zurück">
+        <button
+          type="button"
+          className={styles.back}
+          onClick={() => navigate('/')}
+          aria-label={t.profil.zurueck}
+        >
           ←
         </button>
-        <h1 className={styles.title}>Profil</h1>
+        <h1 className={styles.title}>{t.profil.titel}</h1>
         <span className={styles.badge}>15</span>
       </header>
 
@@ -89,12 +96,9 @@ export function ProfilePage() {
           immer "Gast" (06.09.2026, Thomas). */}
       <section className={styles.nameBlock}>
         <label className={styles.nameLabel} htmlFor="spielername">
-          Dein Name im Spiel
+          {t.profil.nameLabel}
         </label>
-        <p className={styles.nameHinweis}>
-          So stehst du in Runden und in der Rangliste. Angemeldet wird er auch auf
-          deine anderen Geräte übernommen.
-        </p>
+        <p className={styles.nameHinweis}>{t.profil.nameHinweis}</p>
         <div className={styles.nameZeile}>
           <input
             id="spielername"
@@ -116,7 +120,7 @@ export function ProfilePage() {
             onClick={() => void nameSpeichern()}
             disabled={laeuft || !name.trim()}
           >
-            Speichern
+            {t.profil.speichern}
           </button>
         </div>
 
@@ -127,7 +131,7 @@ export function ProfilePage() {
         )}
         {gespeichert && !nameFehler && (
           <p className={styles.nameOk} role="status">
-            Gespeichert.
+            {t.profil.gespeichert}
           </p>
         )}
 
@@ -137,11 +141,11 @@ export function ProfilePage() {
           onClick={() => void vomKonto()}
           disabled={laeuft}
         >
-          Namen aus dem Konto übernehmen
+          {t.profil.nameAusKonto}
         </button>
       </section>
 
-      <p className={styles.hint}>Wähle dein Gesicht – es erscheint auf der Levelkarte.</p>
+      <p className={styles.hint}>{t.profil.gesichtHinweis}</p>
 
       {profile && (
         <p className={styles.current} aria-live="polite">
@@ -181,16 +185,14 @@ export function ProfilePage() {
           ⚙️
         </span>
         <span className={styles.accountText}>
-          <span className={styles.accountTitle}>Konto &amp; Anmeldung</span>
-          <span className={styles.accountHint}>
-            Benutzername, Anmeldung, Synchronisierung
-          </span>
+          <span className={styles.accountTitle}>{t.profil.kontoTitel}</span>
+          <span className={styles.accountHint}>{t.profil.kontoHinweis}</span>
         </span>
         <span aria-hidden="true">›</span>
       </Link>
 
       <Link to="/" className={styles.homeLink}>
-        Zur Startseite
+        {t.profil.zurStartseite}
       </Link>
     </main>
   )

@@ -19,6 +19,7 @@ import { holeVerloreneErgebnisseNach } from '@/services/nachtragen'
 import { getSyncPendingCount } from '@/services/sync'
 import type { GameId } from '@/games/types'
 import styles from './LeaderboardPage.module.css'
+import { useSprache } from '@/i18n/sprache'
 
 type Tab = 'overall' | 'mine' | 'global-ps' | 'global-wim' | 'global-sr' | 'global-rf' | 'global-kr'
 
@@ -31,6 +32,7 @@ const TAB_GAME: Record<Exclude<Tab, 'mine' | 'overall'>, GameId> = {
 }
 
 export function LeaderboardPage() {
+  const { sprache, t } = useSprache()
   const navigate = useNavigate()
   const [tab, setTab] = useState<Tab>('overall')
   const [personalBests, setPersonalBests] = useState<PersonalBestRow[]>([])
@@ -132,18 +134,18 @@ export function LeaderboardPage() {
           type="button"
           className={styles.back}
           onClick={() => navigate('/')}
-          aria-label="Zurück"
+          aria-label={t.rangliste.zurueck}
         >
           ←
         </button>
-        <h1 className={styles.title}>Rangliste</h1>
+        <h1 className={styles.title}>{t.rangliste.titel}</h1>
         <span className={styles.badge}>
           {!isSupabaseConfigured
-            ? 'Lokal'
+            ? t.rangliste.markeLokal
             : signedIn === null
               ? '…'
               : !signedIn
-                ? 'Nicht angemeldet'
+                ? t.rangliste.markeNichtAngemeldet
                 : myName === null
                   ? 'Ohne Namen'
                   : 'Angemeldet'}
@@ -158,7 +160,7 @@ export function LeaderboardPage() {
           className={tab === 'overall' ? styles.tabActive : styles.tab}
           onClick={() => setTab('overall')}
         >
-          Alle Spiele
+          {t.rangliste.reiterAlle}
         </button>
         <button
           type="button"
@@ -167,7 +169,7 @@ export function LeaderboardPage() {
           className={tab === 'mine' ? styles.tabActive : styles.tab}
           onClick={() => setTab('mine')}
         >
-          Meine Rekorde
+          {t.rangliste.reiterRekorde}
         </button>
         <button
           type="button"
@@ -218,39 +220,29 @@ export function LeaderboardPage() {
 
       {isSupabaseConfigured && signedIn === false && (
         <div className={styles.warning} role="status">
-          <p className={styles.warningTitle}>Du bist nicht angemeldet</p>
+          <p className={styles.warningTitle}>{t.rangliste.nichtAngemeldetTitel}</p>
           <p className={styles.warningText}>
-            Deine Runden werden auf diesem Gerät gespeichert, kommen aber erst in die Rangliste,
-            wenn du angemeldet bist.
-            {pending > 0
-              ? ` ${pending} ${pending === 1 ? 'Eintrag wartet' : 'Einträge warten'} aufs Hochladen – nach dem Anmelden gehen sie automatisch raus.`
-              : ''}
+            {t.rangliste.nichtAngemeldetText}
+            {pending > 0 ? ` ${t.rangliste.wartenNachAnmelden(pending)}` : ''}
           </p>
           <Link to="/auth" className={styles.warningBtn}>
-            Jetzt anmelden
+            {t.rangliste.jetztAnmelden}
           </Link>
         </div>
       )}
 
       {isSupabaseConfigured && signedIn === true && myName === null && (
         <div className={styles.warning} role="status">
-          <p className={styles.warningTitle}>Dir fehlt ein Benutzername</p>
-          <p className={styles.warningText}>
-            Du bist angemeldet, aber in den Ranglisten steht der Benutzername – und über Google wird
-            keiner vergeben. Ohne ihn tauchst du hier nicht auf, auch wenn deine Runden hochgeladen
-            werden.
-          </p>
+          <p className={styles.warningTitle}>{t.rangliste.fehltNameTitel}</p>
+          <p className={styles.warningText}>{t.rangliste.fehltNameText}</p>
           <Link to="/auth" className={styles.warningBtn}>
-            Benutzername festlegen
+            {t.rangliste.nameFestlegen}
           </Link>
         </div>
       )}
 
       {isSupabaseConfigured && signedIn === true && myName !== null && pending > 0 && (
-        <p className={styles.hint}>
-          {pending} {pending === 1 ? 'Eintrag wartet' : 'Einträge warten'} aufs Hochladen – tippe
-          auf „Aktualisieren“.
-        </p>
+        <p className={styles.hint}>{t.rangliste.wartenAktualisieren(pending)}</p>
       )}
 
       {/*
@@ -276,23 +268,16 @@ export function LeaderboardPage() {
         </button>
       )}
 
-      {loading && <p className={styles.muted}>Laden…</p>}
+      {loading && <p className={styles.muted}>{t.allgemein.laden}</p>}
 
       {!loading && tab === 'overall' && (
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Gesamt-XP über alle Spiele</h2>
-          <p className={styles.hint}>
-            Alle XP aus jeder Runde aller Spiele zusammengerechnet. Jede gespielte Runde zählt mit,
-            egal ob Rekord oder nicht.
-          </p>
+          <h2 className={styles.sectionTitle}>{t.rangliste.gesamtXpTitel}</h2>
+          <p className={styles.hint}>{t.rangliste.gesamtXpText}</p>
           {!isSupabaseConfigured ? (
-            <p className={styles.hint}>
-              Die gemeinsame Rangliste braucht ein konfiguriertes Supabase-Projekt.
-            </p>
+            <p className={styles.hint}>{t.rangliste.brauchtSupabase}</p>
           ) : overall.length === 0 ? (
-            <p className={styles.empty}>
-              Noch keine Einträge. Nach einer Runde mit Konto landen sie automatisch hier.
-            </p>
+            <p className={styles.empty}>{t.rangliste.nochKeineEintraege}</p>
           ) : (
             <ol className={styles.list}>
               {overall.map((e) => (
@@ -328,9 +313,9 @@ export function LeaderboardPage() {
 
       {!loading && tab === 'mine' && (
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Persönliche Bestleistungen</h2>
+          <h2 className={styles.sectionTitle}>{t.rangliste.bestleistungenTitel}</h2>
           {personalBests.length === 0 ? (
-            <p className={styles.empty}>Noch keine Rekorde – spiel eine Runde!</p>
+            <p className={styles.empty}>{t.rangliste.nochKeineRekorde}</p>
           ) : (
             <ul className={styles.list}>
               {personalBests.map((r) => (
@@ -344,13 +329,13 @@ export function LeaderboardPage() {
             </ul>
           )}
 
-          <h2 className={styles.sectionTitle}>Beste Runden</h2>
+          <h2 className={styles.sectionTitle}>{t.rangliste.besteRundenTitel}</h2>
           <p className={styles.hint}>
             Sortiert nach Punkten – eine neue Runde taucht hier nur auf, wenn sie mehr Punkte bringt
             als eine der {recent.length} besten hier.
           </p>
           {recent.length === 0 ? (
-            <p className={styles.empty}>Noch keine Ergebnisse.</p>
+            <p className={styles.empty}>{t.rangliste.nochKeineErgebnisse}</p>
           ) : (
             <ol className={styles.list}>
               {recent.map((e) => (
@@ -368,13 +353,13 @@ export function LeaderboardPage() {
             </ol>
           )}
 
-          <h2 className={styles.sectionTitle}>Gesamtpunkte je Spiel</h2>
+          <h2 className={styles.sectionTitle}>{t.rangliste.gesamtpunkteTitel}</h2>
           <p className={styles.hint}>
-            Aufsummiert über alle jemals gespielten Runden dieses Spiels – wächst bei jeder Runde,
+            {t.rangliste.gesamtpunkteText}
             unabhängig davon, ob sie ein neuer Rekord war.
           </p>
           {totals.length === 0 ? (
-            <p className={styles.empty}>Noch keine Ergebnisse.</p>
+            <p className={styles.empty}>{t.rangliste.nochKeineErgebnisse}</p>
           ) : (
             <ul className={styles.list}>
               {totals.map((t) => (
@@ -399,21 +384,21 @@ export function LeaderboardPage() {
       {!loading && tab !== 'mine' && tab !== 'overall' && (
         <section className={styles.section}>
           {!isSupabaseConfigured && (
-            <p className={styles.hint}>
-              Globale Ranglisten brauchen ein konfiguriertes Supabase-Projekt. Bis dahin siehst du
-              hier deine lokalen Werte unter „Meine Rekorde“.
-            </p>
+            <p className={styles.hint}>{t.rangliste.globalBrauchtSupabase}</p>
           )}
           {isSupabaseConfigured && myEntry && (
             <p className={styles.myPlace}>
-              Dein Platz: <strong>#{myEntry.rank}</strong> mit {myEntry.xp?.toLocaleString('de-DE')}{' '}
-              XP aus {myEntry.playCount} Runden
+              {t.rangliste.deinPlatz} <strong>#{myEntry.rank}</strong>{' '}
+              {t.rangliste.deinPlatzMit(
+                (myEntry.xp ?? 0).toLocaleString(sprache),
+                myEntry.playCount ?? 0,
+              )}
             </p>
           )}
           {isSupabaseConfigured && (
             <p className={styles.hint}>
-              Gezeigt wird die <strong>Summe aller XP</strong> aus jeder gespielten Runde – jede
-              neue Runde zählt sofort mit dazu, unabhängig davon, ob sie ein Rekord war.
+              {t.rangliste.gezeigtWirdDie} <strong>{t.rangliste.summeAllerXp}</strong>{' '}
+              {t.rangliste.gezeigtWirdRest}
             </p>
           )}
           {isSupabaseConfigured && !myEntry && remote.length > 0 && (
@@ -424,9 +409,7 @@ export function LeaderboardPage() {
             </p>
           )}
           {isSupabaseConfigured && remote.length === 0 && (
-            <p className={styles.empty}>
-              Noch keine Einträge für dieses Spiel. Nach einer Runde landen sie automatisch hier.
-            </p>
+            <p className={styles.empty}>{t.rangliste.keineEintraegeSpiel}</p>
           )}
           {remote.length > 0 && (
             <ol className={styles.list}>

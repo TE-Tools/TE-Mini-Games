@@ -1,27 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import {
-  getDailyChallenge,
-  type DailyChallengeConfig,
-} from '@/progression/daily'
-import {
-  hasCompletedDaily,
-  getDailyAttempt,
-  saveDailyAttempt,
-} from '@/offline/daily'
+import { getDailyChallenge, type DailyChallengeConfig } from '@/progression/daily'
+import { hasCompletedDaily, getDailyAttempt, saveDailyAttempt } from '@/offline/daily'
 import {
   createPerfectSecondLevel,
   calculateScore,
   createTimer,
   formatTime,
 } from '@/games/perfect-second'
-import {
-  createWhatIsMissingLevel,
-  calculateWhatIsMissingScore,
-} from '@/games/what-is-missing'
+import { createWhatIsMissingLevel, calculateWhatIsMissingScore } from '@/games/what-is-missing'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
 import styles from './DailyPage.module.css'
+import { useSprache } from '@/i18n/sprache'
 
 type Phase =
   | 'loading'
@@ -33,6 +24,7 @@ type Phase =
   | 'already'
 
 export function DailyPage() {
+  const { t } = useSprache()
   const navigate = useNavigate()
   const [phase, setPhase] = useState<Phase>('loading')
   const [config, setConfig] = useState<DailyChallengeConfig | null>(null)
@@ -124,10 +116,7 @@ export function DailyPage() {
       const t = window.setTimeout(() => setPhase('play-missing-choose'), 0)
       return () => window.clearTimeout(t)
     }
-    const t = window.setTimeout(
-      () => setWimCountdown((c) => Math.round((c - 0.1) * 10) / 10),
-      100,
-    )
+    const t = window.setTimeout(() => setWimCountdown((c) => Math.round((c - 0.1) * 10) / 10), 100)
     return () => window.clearTimeout(t)
   }, [phase, wimCountdown])
 
@@ -147,13 +136,12 @@ export function DailyPage() {
     [wimConfig, finish],
   )
 
-  const gameLabel =
-    config?.gameId === 'perfect-second' ? 'Die perfekte Sekunde' : 'Was fehlt?'
+  const gameLabel = config?.gameId === 'perfect-second' ? 'Die perfekte Sekunde' : 'Was fehlt?'
 
   if (phase === 'loading' || !config) {
     return (
       <main className={styles.page}>
-        <p className={styles.muted}>Laden…</p>
+        <p className={styles.muted}>{t.allgemein.laden}</p>
       </main>
     )
   }
@@ -161,22 +149,25 @@ export function DailyPage() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <button type="button" className={styles.back} onClick={() => navigate('/')} aria-label="Zurück">
+        <button
+          type="button"
+          className={styles.back}
+          onClick={() => navigate('/')}
+          aria-label="Zurück"
+        >
           ←
         </button>
-        <h1 className={styles.title}>Daily Challenge</h1>
+        <h1 className={styles.title}>{t.daily.titel}</h1>
         <span className={styles.badge}>{config.dateKey}</span>
       </header>
 
       {phase === 'ready' && (
         <section className={styles.ready}>
           <p className={styles.gameName}>{gameLabel}</p>
-          <p className={styles.info}>Level {config.level} · ein Versuch heute</p>
-          <p className={styles.hint}>
-            Alle Spieler bekommen heute dieselbe Aufgabe. Fair und vergleichbar.
-          </p>
+          <p className={styles.info}>{t.daily.levelVersuch(config.level)}</p>
+          <p className={styles.hint}>{t.daily.hinweis}</p>
           <button type="button" className={styles.primaryBtn} onClick={start}>
-            Challenge starten
+            {t.daily.starten}
           </button>
         </section>
       )}
@@ -194,7 +185,7 @@ export function DailyPage() {
           )}
           {psPhase === 'running' && (
             <>
-              <p className={styles.running}>Timer läuft…</p>
+              <p className={styles.running}>{t.daily.timerLaeuft}</p>
               <button type="button" className={styles.stopBtn} onClick={() => void psStop()}>
                 STOP
               </button>
@@ -219,11 +210,15 @@ export function DailyPage() {
 
       {phase === 'play-missing-choose' && (
         <section className={styles.play}>
-          <p className={styles.question}>Welches Objekt fehlt?</p>
+          <p className={styles.question}>{t.daily.welchesObjekt}</p>
           <ul className={styles.choiceGrid}>
             {wimConfig.choiceObjects.map((o) => (
               <li key={o.id}>
-                <button type="button" className={styles.choiceBtn} onClick={() => void wimPick(o.id)}>
+                <button
+                  type="button"
+                  className={styles.choiceBtn}
+                  onClick={() => void wimPick(o.id)}
+                >
                   <span className={styles.emoji}>{o.emoji}</span>
                   <span className={styles.objLabel}>{o.label}</span>
                 </button>
@@ -238,14 +233,12 @@ export function DailyPage() {
           <p className={styles.doneTitle}>
             {phase === 'already' ? 'Heute schon gespielt' : 'Geschafft!'}
           </p>
-          <p className={styles.score}>{score !== null ? `${score} Punkte` : '—'}</p>
+          <p className={styles.score}>{score !== null ? t.daily.punkte(score) : '—'}</p>
           <p className={styles.hint}>
-            {phase === 'already'
-              ? 'Komm morgen für die nächste Challenge zurück.'
-              : 'Ergebnis gespeichert. Morgen wartet eine neue Challenge.'}
+            {phase === 'already' ? t.daily.schonGespielt : t.daily.gespeichert}
           </p>
           <Link to="/" className={styles.homeLink}>
-            Zur Startseite
+            {t.daily.zurStartseite}
           </Link>
         </section>
       )}
