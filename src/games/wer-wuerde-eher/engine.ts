@@ -10,7 +10,7 @@
  */
 
 import { createRng, shuffle } from '@/games/rng'
-import { fragenFuer, type Frage, type FrageModus } from './fragen'
+import { fragenFuer, type Frage, type FragenSprache, type FrageModus } from './fragen'
 
 export type WweePhase = 'handoff' | 'vote' | 'result' | 'done'
 
@@ -31,6 +31,12 @@ export interface WweeState {
    * „personen" eine Spieler-Kennung, bei „entweder" 'a' oder 'b'.
    */
   votes: Record<string, string>
+  /**
+   * Sprache der Fragen. Die Fragen stehen schon im Zustand, das Feld sagt
+   * nur, woher sie kamen; fehlt es (Stand von vor den englischen Fragen),
+   * gilt Deutsch.
+   */
+  sprache?: FragenSprache
   seed: number
 }
 
@@ -39,6 +45,8 @@ export interface CreateWweeOptions {
   modi?: FrageModus[]
   /** Wie viele Fragen die Partie hat. */
   rounds?: number
+  /** Sprache der Fragen, Standard Deutsch. */
+  sprache?: FragenSprache
   seed?: number
 }
 
@@ -61,9 +69,10 @@ function normalizeNames(names: string[]): string[] {
 
 export function createWweeMatch(options: CreateWweeOptions): WweeState {
   const names = normalizeNames(options.names)
-  const seed = options.seed ?? ((Date.now() ^ (Math.random() * 0x100000000)) >>> 0)
+  const seed = options.seed ?? (Date.now() ^ (Math.random() * 0x100000000)) >>> 0
   const rng = createRng(String(seed))
-  const vorrat = shuffle(fragenFuer(options.modi ?? []), rng)
+  const sprache: FragenSprache = options.sprache === 'en' ? 'en' : 'de'
+  const vorrat = shuffle(fragenFuer(options.modi ?? [], sprache), rng)
   if (vorrat.length === 0) throw new Error('Keine Fragen für diese Auswahl')
   const anzahl = Math.max(1, Math.min(vorrat.length, options.rounds ?? STANDARD_RUNDEN))
 
@@ -74,6 +83,7 @@ export function createWweeMatch(options: CreateWweeOptions): WweeState {
     fragen: vorrat.slice(0, anzahl),
     frageIndex: 0,
     votes: {},
+    sprache,
     seed,
   }
 }

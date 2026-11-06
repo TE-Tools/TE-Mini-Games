@@ -12,7 +12,7 @@
  */
 
 import { createRng } from '@/games/rng'
-import { silbenFuer, type Silbe, type SilbenStufe } from './silben'
+import { silbenFuer, type Silbe, type SilbenSprache, type SilbenStufe } from './silben'
 
 export type WortbombePhase = 'handoff' | 'boom' | 'game_over'
 
@@ -29,6 +29,11 @@ export interface WortbombeState {
   activePlayerIndex: number
   silbe: string
   stufen: SilbenStufe[]
+  /**
+   * Sprache der Silben. Fehlt das Feld (Stand von vor den englischen Silben),
+   * gilt Deutsch.
+   */
+  sprache?: SilbenSprache
   /** Kürzeste und längste Laufzeit der Bombe in Sekunden. */
   minSeconds: number
   maxSeconds: number
@@ -41,6 +46,8 @@ export interface WortbombeState {
 export interface CreateWortbombeOptions {
   names: string[]
   stufen?: SilbenStufe[]
+  /** Sprache der Silben, Standard Deutsch. */
+  sprache?: SilbenSprache
   lives?: number
   minSeconds?: number
   maxSeconds?: number
@@ -68,8 +75,9 @@ export function ziehSilbe(
   rng: () => number,
   stufen: SilbenStufe[],
   ausser?: string,
+  sprache: SilbenSprache = 'de',
 ): string {
-  const pool: Silbe[] = silbenFuer(stufen)
+  const pool: Silbe[] = silbenFuer(stufen, sprache)
   const ohneAlte = pool.filter((s) => s.text !== ausser)
   const auswahl = ohneAlte.length > 0 ? ohneAlte : pool
   return auswahl[Math.floor(rng() * auswahl.length)]!.text
@@ -78,10 +86,11 @@ export function ziehSilbe(
 export function createWortbombeMatch(options: CreateWortbombeOptions): WortbombeState {
   const names = normalizeNames(options.names)
   const stufen = options.stufen?.length ? options.stufen : (['leicht', 'mittel'] as SilbenStufe[])
-  const seed = options.seed ?? ((Date.now() ^ (Math.random() * 0x100000000)) >>> 0)
+  const seed = options.seed ?? (Date.now() ^ (Math.random() * 0x100000000)) >>> 0
   const rng = createRng(String(seed))
   const min = Math.max(5, Math.min(60, options.minSeconds ?? 10))
   const max = Math.max(min + 1, Math.min(90, options.maxSeconds ?? 25))
+  const sprache: SilbenSprache = options.sprache === 'en' ? 'en' : 'de'
 
   return {
     phase: 'handoff',
@@ -92,8 +101,9 @@ export function createWortbombeMatch(options: CreateWortbombeOptions): Wortbombe
       out: false,
     })),
     activePlayerIndex: 0,
-    silbe: ziehSilbe(rng, stufen),
+    silbe: ziehSilbe(rng, stufen, undefined, sprache),
     stufen,
+    sprache,
     minSeconds: min,
     maxSeconds: max,
     passes: 0,
@@ -154,7 +164,7 @@ export function nextWortbombeRound(state: WortbombeState): WortbombeState {
     ...state,
     phase: 'handoff',
     activePlayerIndex: start,
-    silbe: ziehSilbe(rng, state.stufen, state.silbe),
+    silbe: ziehSilbe(rng, state.stufen, state.silbe, state.sprache ?? 'de'),
     passes: 0,
     roundIndex: nextIndex,
     seed,
