@@ -483,6 +483,44 @@ export const de = {
     zurStartseite: 'Zur Startseite',
   },
 
+  spiel: {
+    zurueck: 'Zurück',
+    zurStartseite: 'Zur Startseite',
+    zurUebersicht: 'Zur Übersicht',
+    nochEinmal: 'Noch einmal',
+    weiterSpielen: (level: number) => `Weiter spielen · Level ${level}`,
+    avatarAendern: 'Avatar ändern',
+    neuerRekord: '🏆 Neuer Rekord!',
+    levelGeschafft: 'Level geschafft!',
+    punkteUndXp: 'Punkte ·',
+  },
+
+  perfekteSekunde: {
+    zielzeit: 'Zielzeit',
+    jetzt: 'Jetzt!',
+    deineZeit: 'Deine Zeit:',
+    daneben: 'Daneben – versuch’s nochmal',
+    ziel: 'Ziel',
+    abweichung: 'Abweichung',
+    alleTreffer: 'Alle Treffer:',
+    meilenstein: (xp: number) => `🎉 Meilenstein-Bonus +${xp} XP!`,
+    haargenau: '✨ Haargenau! Sonder-XP für perfekten Treffer',
+  },
+
+  levelkarte: {
+    titel: 'Levelübersicht',
+    karteVon: (spiel: string) => `Levelkarte ${spiel}`,
+    level: (nr: number) => `Level ${nr}`,
+    freiBis: (nr: number) => ` · frei bis ${nr}`,
+    torOffen: ' · Tor oben ist offen',
+    duBistHier: 'Du bist hier:',
+    abschnitt: (nr: number) => `Abschnitt ${nr}`,
+    zurueckZuAbschnitt: (nr: number) => `Zurück zu Abschnitt ${nr}`,
+    abschnittVonBis: (nr: number, von: number, bis: number) =>
+      `Abschnitt ${nr} · Level ${von}–${bis}`,
+    torOeffnet: (level: number) => ` · Tor öffnet nach Level ${level}`,
+  },
+
   allgemein: {
     zurueck: 'Zurück',
     weiter: 'Weiter',

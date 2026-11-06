@@ -24,12 +24,14 @@ import { getLevelStand, type LevelStandEintrag } from '@/services/leaderboard'
 import { milestoneBonusXp } from '@/games/milestones'
 import { LevelMap } from '@/components/level-map/LevelMap'
 import styles from './PerfectSecondPage.module.css'
+import { useSprache } from '@/i18n/sprache'
 
 type Phase = 'map' | 'ready' | 'running' | 'result'
 
 const MAX_GAME_LEVEL = perfectSecondGame.maxLevel
 
 export function PerfectSecondPage() {
+  const { t } = useSprache()
   const navigate = useNavigate()
   const [level, setLevel] = useState(1)
   const [highest, setHighest] = useState(1)
@@ -238,7 +240,7 @@ export function PerfectSecondPage() {
   if (loading) {
     return (
       <main className={styles.page}>
-        <p className={styles.muted}>Laden…</p>
+        <p className={styles.muted}>{t.allgemein.laden}</p>
       </main>
     )
   }
@@ -254,7 +256,7 @@ export function PerfectSecondPage() {
         >
           ←
         </button>
-        <h1 className={styles.title}>Die perfekte Sekunde</h1>
+        <h1 className={styles.title}>{t.spiele['perfect-second']}</h1>
         <span className={styles.levelBadge}>L{config.level}</span>
       </header>
 
@@ -266,21 +268,21 @@ export function PerfectSecondPage() {
             avatarId={avatarId}
             maxLevel={MAX_GAME_LEVEL}
             onSelectLevel={selectLevel}
-            gameLabel="Die perfekte Sekunde"
+            gameLabel={t.spiele['perfect-second']}
             mitspieler={mitspieler}
           />
           <button type="button" className={styles.primaryBtn} onClick={() => selectLevel(level)}>
-            Weiter spielen · Level {level}
+            {t.spiel.weiterSpielen(level)}
           </button>
           <Link to="/profile" className={styles.homeLink}>
-            Avatar ändern
+            {t.spiel.avatarAendern}
           </Link>
         </section>
       )}
 
       {phase === 'ready' && (
         <section className={styles.ready}>
-          <p className={styles.targetLabel}>Zielzeit</p>
+          <p className={styles.targetLabel}>{t.perfekteSekunde.zielzeit}</p>
           <p className={styles.targetValue}>{formatTime(config.targetTime)} s</p>
           <p className={styles.tolerance}>
             ±{formatTime(config.tolerance)} s · Treffer {hitsDone}/{config.hitsRequired}
@@ -302,14 +304,14 @@ export function PerfectSecondPage() {
             {hitsDone > 0 ? 'Nächster Treffer' : 'Start'}
           </button>
           <button type="button" className={styles.secondaryBtn} onClick={() => setPhase('map')}>
-            Zur Übersicht
+            {t.spiel.zurUebersicht}
           </button>
         </section>
       )}
 
       {phase === 'running' && (
         <section className={styles.running}>
-          <p className={styles.runningHint}>Jetzt!</p>
+          <p className={styles.runningHint}>{t.perfekteSekunde.jetzt}</p>
           <p className={styles.targetDuring}>Ziel: {formatTime(config.targetTime)} s</p>
           <button type="button" className={styles.stopBtn} onClick={() => void stopTimer()}>
             STOP
@@ -319,34 +321,35 @@ export function PerfectSecondPage() {
 
       {phase === 'result' && scoreResult && (
         <section className={styles.result}>
-          {isRecord && <p className={styles.record}>🏆 Neuer Rekord!</p>}
+          {isRecord && <p className={styles.record}>{t.spiel.neuerRekord}</p>}
           {scoreResult.withinTolerance || scoreResult.score > 0 ? (
-            <p className={styles.record}>Level geschafft!</p>
+            <p className={styles.record}>{t.spiel.levelGeschafft}</p>
           ) : (
-            <p className={styles.muted}>Daneben – versuch’s nochmal</p>
+            <p className={styles.muted}>{t.perfekteSekunde.daneben}</p>
           )}
           <p className={styles.resultTime}>
-            Deine Zeit: <strong>{formatTime(hitTimes.at(-1) ?? 0)} s</strong>
-            {' · '}Ziel {formatTime(config.targetTime)} s
+            {t.perfekteSekunde.deineZeit} <strong>{formatTime(hitTimes.at(-1) ?? 0)} s</strong>
+            {' · '}
+            {t.perfekteSekunde.ziel} {formatTime(config.targetTime)} s
           </p>
           <p className={styles.tolerance}>
-            Abweichung {formatTime(scoreResult.absoluteDeviation)} s
+            {t.perfekteSekunde.abweichung} {formatTime(scoreResult.absoluteDeviation)} s
           </p>
           {hitTimes.length > 1 && (
             <p className={styles.tolerance}>
-              Alle Treffer: {hitTimes.map((t) => `${formatTime(t)} s`).join(' · ')}
+              {t.perfekteSekunde.alleTreffer}{' '}
+              {hitTimes.map((zeit) => `${formatTime(zeit)} s`).join(' · ')}
             </p>
           )}
           <p className={styles.stars}>{'⭐'.repeat(scoreResult.stars) || '—'}</p>
           <p className={styles.scoreLine}>
-            <strong>{scoreResult.score}</strong> Punkte · <strong>+{scoreResult.xp}</strong> XP
+            <strong>{scoreResult.score}</strong> {t.spiel.punkteUndXp}{' '}
+            <strong>+{scoreResult.xp}</strong> XP
           </p>
           {milestoneXp > 0 && (
-            <p className={styles.record}>🎉 Meilenstein-Bonus +{milestoneXp} XP!</p>
+            <p className={styles.record}>{t.perfekteSekunde.meilenstein(milestoneXp)}</p>
           )}
-          {hadPerfectHit && (
-            <p className={styles.record}>✨ Haargenau! Sonder-XP für perfekten Treffer</p>
-          )}
+          {hadPerfectHit && <p className={styles.record}>{t.perfekteSekunde.haargenau}</p>}
           <div className={styles.resultActions}>
             {completedLevel != null && scoreResult.score > 0 && (
               <button
@@ -385,7 +388,7 @@ export function PerfectSecondPage() {
                 setHadPerfectHit(false)
               }}
             >
-              Noch einmal
+              {t.spiel.nochEinmal}
             </button>
             <button
               type="button"
@@ -400,11 +403,11 @@ export function PerfectSecondPage() {
                 setHadPerfectHit(false)
               }}
             >
-              Zur Übersicht
+              {t.spiel.zurUebersicht}
             </button>
           </div>
           <Link to="/" className={styles.homeLink}>
-            Zur Startseite
+            {t.spiel.zurStartseite}
           </Link>
         </section>
       )}

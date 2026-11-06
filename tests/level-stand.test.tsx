@@ -11,21 +11,25 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { LevelMap } from '@/components/level-map/LevelMap'
+import { SprachProvider } from '@/i18n/SprachProvider'
 
 function karte(
   mitspieler: { username: string; level: number }[],
   currentLevel = 3,
   highestLevel = currentLevel,
 ) {
+  localStorage.setItem('te-sprache', 'de')
   return render(
-    <LevelMap
-      currentLevel={currentLevel}
-      highestLevel={highestLevel}
-      avatarId={null}
-      onSelectLevel={() => undefined}
-      gameLabel="Die perfekte Sekunde"
-      mitspieler={mitspieler}
-    />,
+    <SprachProvider>
+      <LevelMap
+        currentLevel={currentLevel}
+        highestLevel={highestLevel}
+        avatarId={null}
+        onSelectLevel={() => undefined}
+        gameLabel="Die perfekte Sekunde"
+        mitspieler={mitspieler}
+      />
+    </SprachProvider>,
   )
 }
 
@@ -70,15 +74,18 @@ describe('LevelMap: Stand der anderen', () => {
 
   it('lässt die Stufe antippbar', () => {
     const gedrueckt = vi.fn()
+    localStorage.setItem('te-sprache', 'de')
     render(
-      <LevelMap
-        currentLevel={3}
-        highestLevel={5}
-        avatarId={null}
-        onSelectLevel={gedrueckt}
-        gameLabel="Die perfekte Sekunde"
-        mitspieler={[{ username: 'anna', level: 4 }]}
-      />,
+      <SprachProvider>
+        <LevelMap
+          currentLevel={3}
+          highestLevel={5}
+          avatarId={null}
+          onSelectLevel={gedrueckt}
+          gameLabel="Die perfekte Sekunde"
+          mitspieler={[{ username: 'anna', level: 4 }]}
+        />
+      </SprachProvider>,
     )
     screen.getByRole('button', { name: /^Level 4 spielen$/ }).click()
     expect(gedrueckt).toHaveBeenCalledWith(4)
