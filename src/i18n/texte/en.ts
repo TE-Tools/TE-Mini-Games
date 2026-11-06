@@ -477,6 +477,44 @@ export const en: Texte = {
     zurStartseite: 'To the home screen',
   },
 
+  spiel: {
+    zurueck: 'Back',
+    zurStartseite: 'To the home screen',
+    zurUebersicht: 'To the overview',
+    nochEinmal: 'Again',
+    weiterSpielen: (level: number) => `Continue · level ${level}`,
+    avatarAendern: 'Change avatar',
+    neuerRekord: '🏆 New record!',
+    levelGeschafft: 'Level complete!',
+    punkteUndXp: 'points ·',
+  },
+
+  perfekteSekunde: {
+    zielzeit: 'Target time',
+    jetzt: 'Now!',
+    deineZeit: 'Your time:',
+    daneben: 'Missed – try again',
+    ziel: 'Target',
+    abweichung: 'Deviation',
+    alleTreffer: 'All hits:',
+    meilenstein: (xp: number) => `🎉 Milestone bonus +${xp} XP!`,
+    haargenau: '✨ Spot on! Bonus XP for a perfect hit',
+  },
+
+  levelkarte: {
+    titel: 'Level map',
+    karteVon: (spiel: string) => `Level map ${spiel}`,
+    level: (nr: number) => `Level ${nr}`,
+    freiBis: (nr: number) => ` · open up to ${nr}`,
+    torOffen: ' · the gate above is open',
+    duBistHier: 'You are here:',
+    abschnitt: (nr: number) => `Section ${nr}`,
+    zurueckZuAbschnitt: (nr: number) => `Back to section ${nr}`,
+    abschnittVonBis: (nr: number, von: number, bis: number) =>
+      `Section ${nr} · levels ${von}–${bis}`,
+    torOeffnet: (level: number) => ` · gate opens after level ${level}`,
+  },
+
   allgemein: {
     zurueck: 'Back',
     weiter: 'Next',
