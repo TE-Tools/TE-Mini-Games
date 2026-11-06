@@ -38,7 +38,7 @@ export function AchievementsPage() {
           type="button"
           className={styles.back}
           onClick={() => navigate('/')}
-          aria-label="Zurück"
+          aria-label={t.allgemein.zurueck}
         >
           ←
         </button>

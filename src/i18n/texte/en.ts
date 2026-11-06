@@ -49,6 +49,13 @@ export const en: Texte = {
     fortschrittZuLevel: (level: number) => `Progress to level ${level}`,
     bereiche: 'Sections',
     spielen: 'Play',
+    menue: 'Menu',
+    ranglisteHinweis: 'Who is ahead this week.',
+    ranglisteOhneKonto:
+      'This needs an account and a username – then you can see here where the others stand.',
+    tageszielHinweis: 'One game a day, the same for everyone.',
+    loslegen: 'Get started',
+    levelZusatz: (level: number) => ` · Level ${level}`,
   },
 
   spielarten: {
@@ -356,6 +363,7 @@ export const en: Texte = {
     neuesPasswortText: 'Choose a new password for your account.',
     passwortSpeichern: 'Save password',
     benutzername: 'Username',
+    benutzernameBeispiel: 'e.g. thomas',
     benutzernamePflicht: 'Username *',
     anzeigename: 'Display name (optional)',
     bereitsVergeben: 'Already taken',
@@ -401,6 +409,7 @@ export const en: Texte = {
     titel: 'Profile',
     zurueck: 'Back',
     nameLabel: 'Your name in the game',
+    namePlatzhalter: 'How should the others see you?',
     nameHinweis:
       'This is how you appear in rounds and on the leaderboard. When signed in it carries over to your other devices.',
     speichern: 'Save',
@@ -447,6 +456,11 @@ export const en: Texte = {
     globalBrauchtSupabase:
       'Global leaderboards need a configured Supabase project. Until then you see your local values under “My records”.',
     runden: (anzahl: number) => `${anzahl} rounds`,
+    du: ' (you)',
+    levelVorne: (level: number) => `Level ${level} · `,
+    rundenZahl: (n: number) => `${n} ${n === 1 ? 'round' : 'rounds'}`,
+    spieleZahl: (n: number) => `${n} ${n === 1 ? 'game' : 'games'}`,
+    zuletzt: (datum: string) => ` · last ${datum}`,
     punkte: (zahl: string) => `${zahl} pts`,
     deinPlatz: 'Your place:',
     deinPlatzMit: (xp: string, runden: number) => `with ${xp} XP from ${runden} rounds`,

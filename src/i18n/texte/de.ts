@@ -50,6 +50,13 @@ export const de = {
     fortschrittZuLevel: (level: number) => `Fortschritt zu Level ${level}`,
     bereiche: 'Bereiche',
     spielen: 'Spielen',
+    menue: 'Menü',
+    ranglisteHinweis: 'Wer diese Woche vorne liegt.',
+    ranglisteOhneKonto:
+      'Dafür braucht es ein Konto und einen Benutzernamen – dann siehst du hier, wo die anderen stehen.',
+    tageszielHinweis: 'Jeden Tag ein Spiel, für alle dasselbe.',
+    loslegen: 'Loslegen',
+    levelZusatz: (level: number) => ` · Level ${level}`,
   },
 
   spielarten: {
@@ -359,6 +366,7 @@ export const de = {
     neuesPasswortText: 'Wähle ein neues Passwort für dein Konto.',
     passwortSpeichern: 'Passwort speichern',
     benutzername: 'Benutzername',
+    benutzernameBeispiel: 'z. B. thomas',
     benutzernamePflicht: 'Benutzername *',
     anzeigename: 'Anzeigename (optional)',
     bereitsVergeben: 'Bereits vergeben',
@@ -405,6 +413,7 @@ export const de = {
     titel: 'Profil',
     zurueck: 'Zurück',
     nameLabel: 'Dein Name im Spiel',
+    namePlatzhalter: 'Wie sollen dich die anderen sehen?',
     nameHinweis:
       'So stehst du in Runden und in der Rangliste. Angemeldet wird er auch auf deine anderen Geräte übernommen.',
     speichern: 'Speichern',
@@ -452,6 +461,11 @@ export const de = {
     globalBrauchtSupabase:
       'Globale Ranglisten brauchen ein konfiguriertes Supabase-Projekt. Bis dahin siehst du hier deine lokalen Werte unter „Meine Rekorde“.',
     runden: (anzahl: number) => `${anzahl} Runden`,
+    du: ' (du)',
+    levelVorne: (level: number) => `Level ${level} · `,
+    rundenZahl: (n: number) => `${n} ${n === 1 ? 'Runde' : 'Runden'}`,
+    spieleZahl: (n: number) => `${n} ${n === 1 ? 'Spiel' : 'Spiele'}`,
+    zuletzt: (datum: string) => ` · zuletzt ${datum}`,
     punkte: (zahl: string) => `${zahl} Pkt.`,
     deinPlatz: 'Dein Platz:',
     deinPlatzMit: (xp: string, runden: number) => `mit ${xp} XP aus ${runden} Runden`,

@@ -114,6 +114,33 @@
       <div class="name">TE-Mini Games</div>
       <div class="claim">Nur noch eine Runde. ✨</div>
     </div>
+    <!--
+      Der Startbildschirm steht vor React da, also auch vor dem Wörterbuch.
+      Damit er nicht auf Deutsch grüßt, wer die App auf Englisch nutzt, wählt
+      dieses Skript die Sprache nach derselben Regel wie src/i18n/sprache.ts:
+      gespeicherte Wahl, sonst Deutsch, wenn das Gerät Deutsch kann, sonst
+      Englisch. Ändert sich die Regel dort, ändert sie sich hier mit.
+    -->
+    <script>
+      ;(function () {
+        var sprache = null
+        try {
+          sprache = localStorage.getItem('te-sprache')
+        } catch (e) {}
+        if (sprache !== 'de' && sprache !== 'en') {
+          var liste = navigator.languages || [navigator.language || '']
+          sprache = liste.length === 0 ? 'de' : 'en'
+          for (var i = 0; i < liste.length; i++) {
+            if (String(liste[i]).toLowerCase().indexOf('de') === 0) sprache = 'de'
+          }
+        }
+        if (sprache !== 'en') return
+        document.documentElement.lang = 'en'
+        var splash = document.getElementById('splash')
+        splash.setAttribute('aria-label', 'TE-Mini Games is loading')
+        splash.querySelector('.claim').textContent = 'Just one more round. ✨'
+      })()
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

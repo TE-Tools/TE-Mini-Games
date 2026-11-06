@@ -173,7 +173,7 @@ export function AuthPage({ gate = false }: Props) {
                   setClaimName(e.target.value)
                   setClaimError(null)
                 }}
-                placeholder="z. B. thomas"
+                placeholder={t.anmeldung.benutzernameBeispiel}
                 autoComplete="username"
                 maxLength={20}
               />
