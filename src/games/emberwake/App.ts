@@ -40,6 +40,16 @@ import { GameView } from '@/games/emberwake/render/GameView'
 import { CameraRig } from '@/games/emberwake/render/CameraRig'
 import { AudioManager } from '@/games/emberwake/audio/AudioManager'
 import { UiRoot, type UiCallbacks } from '@/games/emberwake/ui/UiRoot'
+import {
+  gebaeudeName,
+  gegenstandName,
+  geheimnisText,
+  hinweisText,
+  levelName,
+  loreText,
+  todesursache,
+  zusatzziel,
+} from '@/games/emberwake/ui/texte'
 import type { DebugOverlay } from '@/games/emberwake/dev/DebugOverlay'
 
 /**
@@ -221,7 +231,7 @@ export class App {
     const level = getLevel(levelId)
     if (!level) {
       log.error(`Level ${levelId} existiert nicht`)
-      this.ui.toast('Dieses Level gibt es noch nicht.')
+      this.ui.toast(this.ui.tx.levelFehlt)
       return
     }
     this.teardownWorld()
@@ -266,8 +276,9 @@ export class App {
     this.loop.resume()
     void keepScreenAwake()
 
-    if (!restored && level.lore[0]) {
-      setTimeout(() => this.ui.toast(level.lore[0]!, 3500, true), 600)
+    const lore = loreText(this.ui.tx, level, 0)
+    if (!restored && lore) {
+      setTimeout(() => this.ui.toast(lore, 3500, true), 600)
     }
   }
 
@@ -283,6 +294,7 @@ export class App {
   private subscribeWorld(w: World): void {
     const ev = w.events
     const profile = this.save.data
+    const tx = this.ui.tx
     const syncStock = (): void => {
       profile.camp.stock = { ...w.camp.stock }
       this.save.requestSave()
@@ -323,7 +335,7 @@ export class App {
           0.5,
         )
       }),
-      ev.on('inventory_full', () => this.ui.hint('Rucksack voll')),
+      ev.on('inventory_full', () => this.ui.hint(tx.rucksackVoll)),
       ev.on('deposited', ({ items }) => {
         const n = Object.values(items).reduce((a, b) => a + (b ?? 0), 0)
         if (n > 0) {
@@ -338,31 +350,29 @@ export class App {
         this.audio.play('refuel')
         this.view.particles.burst(CAMP_POS.x, 1.3, CAMP_POS.z, 0xff9a4d, 20, 1.6, 0.8, 2.2)
         syncStock()
-        if (charge >= 100) this.ui.toast('Der Kern ist voll.')
+        if (charge >= 100) this.ui.toast(tx.kernVoll)
       }),
       ev.on('built', ({ building, level }) => {
         this.audio.play('build')
         this.haptics.play('hit')
         profile.camp.buildings = { ...w.camp.buildings }
         syncStock()
-        this.ui.toast(
-          `${ITEMS.wood.name === '' ? '' : ''}${building === 'core' ? 'Kernstelle' : building === 'workbench' ? 'Werkbank' : building === 'storage' ? 'Speicher' : 'Wachturm'} · Stufe ${level}`,
-        )
+        this.ui.toast(tx.gebaut(gebaeudeName(tx, building), level))
       }),
       ev.on('crafted', ({ item }) => {
         this.audio.play('build')
         profile.camp.tools = Array.from(w.player.tools)
         syncStock()
-        this.ui.toast(`${ITEMS[item].name} hergestellt`)
+        this.ui.toast(tx.hergestellt(gegenstandName(tx, item)))
       }),
       ev.on('core_threshold', ({ state }) => {
         if (state === 'low') {
-          this.ui.warning('Der Kern wird schwach', 4000)
+          this.ui.warning(tx.kernWirdSchwach, 4000)
           this.audio.play('coreLow')
           this.haptics.play('coreLow')
         }
         if (state === 'critical') {
-          this.ui.warning('Der Kern erlischt!', 6000)
+          this.ui.warning(tx.kernErlischt, 6000)
           this.audio.play('coreLow')
           this.haptics.play('coreLow')
         }
@@ -407,41 +417,39 @@ export class App {
       ev.on('enemy_seen', () => this.audio.play('ui')),
       ev.on('phase_changed', ({ phase, night }) => {
         if (phase === 'dusk') {
-          this.ui.toast('Es dämmert.')
+          this.ui.toast(tx.esDaemmert)
           this.audio.play('night')
         }
         if (phase === 'night') {
-          this.ui.toast(`Nacht ${night}`, 2200)
+          this.ui.toast(tx.nachtNummer(night), 2200)
           this.haptics.play('coreLow')
         }
         if (phase === 'dawn') {
-          this.ui.toast('Morgen. Sie ziehen sich zurück.')
+          this.ui.toast(tx.morgenRueckzug)
           this.audio.play('dawn')
           this.waveAngle = null
         }
       }),
       ev.on('wave_incoming', ({ inSeconds, direction, count }) => {
         this.waveAngle = direction
-        this.ui.warning(
-          `${count} ${count === 1 ? 'Stiller' : 'Stille'} nähern sich · ${Math.round(inSeconds)} s`,
-          inSeconds * 1000,
-        )
+        this.ui.warning(tx.stilleNahen(count, Math.round(inSeconds)), inSeconds * 1000)
         this.audio.play('wave')
         this.haptics.play('coreLow')
       }),
       ev.on('wave_started', () => {
         this.waveAngle = null
       }),
-      ev.on('hint', ({ text }) => this.ui.hint(text)),
+      ev.on('hint', ({ text }) => this.ui.hint(hinweisText(tx, w.level, text))),
       ev.on('secret_found', ({ text }) => {
         this.audio.play('secret')
         this.haptics.play('hit')
-        this.ui.toast(text, 5000, true)
+        // Der Text kommt aus dem Level; ein unbekanntes Level zeigt ihn, wie er ist.
+        this.ui.toast(text === w.level.secret.text ? geheimnisText(tx, w.level) : text, 5000, true)
       }),
       ev.on('item_dropped', ({ item, amount }) =>
-        this.ui.toast(`${amount} ${ITEMS[item].name} abgeworfen`),
+        this.ui.toast(tx.abgeworfen(amount, gegenstandName(tx, item))),
       ),
-      ev.on('player_died', ({ cause }) => this.onDeath(cause)),
+      ev.on('player_died', ({ cause }) => this.onDeath(todesursache(tx, cause))),
       ev.on('level_completed', (r) =>
         this.onComplete(r.stars, r.timeSeconds, r.secondary, r.secret),
       ),
@@ -617,16 +625,14 @@ export class App {
         kept += half
       }
     }
-    const carriedNote = Object.keys(w.player.inventory).length
-      ? `${kept} Einheiten gerettet, Rest verloren`
-      : null
+    const carriedNote = Object.keys(w.player.inventory).length ? this.ui.tx.gerettet(kept) : null
 
     let resetNote: string | null = null
     if (profile.lives <= 0) {
       profile.lives = START_LIVES
       const first = LEVELS[0]!.id
       profile.unlockedLevelId = Math.min(profile.unlockedLevelId, first)
-      resetNote = 'Alle Leben verbraucht. Die Welt beginnt von vorn — dein Lager bleibt.'
+      resetNote = this.ui.tx.alleLebenVerbraucht
       this.currentLevelId = first
     }
 
@@ -706,11 +712,11 @@ export class App {
     setTimeout(() => {
       this.ui.hideHud()
       this.ui.showResults({
-        levelName: level.name,
+        levelName: levelName(this.ui.tx, level),
         stars,
         time,
         secondary,
-        secondaryText: level.objectives.secondary.text,
+        secondaryText: zusatzziel(this.ui.tx, level),
         secret,
         rewards: level.rewards.resources,
         lifeGained,
@@ -718,7 +724,7 @@ export class App {
       })
       void Promise.resolve(outcome)
         .then((r) => {
-          if (r) this.ui.appendResultNote(`${r.score} Punkte · +${r.xp} XP`)
+          if (r) this.ui.appendResultNote(this.ui.tx.punkteUndXp(r.score, r.xp))
         })
         .catch((err: unknown) => log.warn('Ergebnis konnte nicht gemeldet werden', err))
     }, 1200)
@@ -776,7 +782,7 @@ export class App {
   notifyUpdateAvailable(): void {
     if (this.state === 'title' || this.state === 'levels' || this.state === 'results')
       this.ui.showUpdate()
-    else this.ui.toast('Neue Version verfügbar — nach dem Level.', 4000)
+    else this.ui.toast(this.ui.tx.neueVersionNachDemLevel, 4000)
   }
 
   private callbacks(): UiCallbacks {
@@ -856,10 +862,16 @@ export class App {
         void file.text().then((json) => {
           try {
             this.save.importJson(json)
-            this.ui.toast('Spielstand importiert')
+            this.ui.toast(this.ui.tx.spielstandImportiert)
             this.quitToTitle()
           } catch (err) {
-            this.ui.toast((err as Error).message)
+            // Kaputtes JSON, falsche Prüfsumme oder ein Stand aus einer neueren Version.
+            log.warn('Import abgelehnt', err)
+            this.ui.toast(
+              (err as Error).message === 'future-version'
+                ? this.ui.tx.spielstandAusDerZukunft
+                : this.ui.tx.spielstandUngueltig,
+            )
           }
         })
       },
