@@ -13,11 +13,9 @@ import {
   accusedPlayer,
   teamMembers,
   teamCaught,
-  phaseLabel,
   CATEGORIES,
   MODES,
   modeOf,
-  chaosRuleLabel,
   defaultImposterCount,
   loadCustomCategories,
   customCategoryById,
@@ -26,18 +24,24 @@ import {
   type ImposterMatchState,
   type ImposterModeId,
 } from '@/games/finde-den-imposter'
+import { useSprache } from '@/i18n/sprache'
 import { FindeDenImposterOnline } from './FindeDenImposterOnline'
 import { ImposterCategoriesEditor } from './ImposterCategoriesEditor'
+import { chaosRegel, meldungText, modusName, modusText, phasenName } from './imposter/imposterText'
 import styles from './FindeDenImposterPage.module.css'
 
 const DEFAULT_NAMES = 'Thomas\nMarina\nPhillip\nSonja'
 
 export function FindeDenImposterPage() {
+  const { t } = useSprache()
+  const tx = t.imposter
   const [state, setState] = useState<ImposterMatchState | null>(null)
   const [namesText, setNamesText] = useState(DEFAULT_NAMES)
   const [categoryId, setCategoryId] = useState(CATEGORIES[0]?.id ?? 'tiere')
   const [mode, setMode] = useState<ImposterModeId>('classic')
   const [guessText, setGuessText] = useState('')
+  // Die Meldung bleibt so, wie sie kam (deutsch aus der Engine) -- übersetzt
+  // wird beim Rendern, damit ein Sprachwechsel sie mitnimmt.
   const [error, setError] = useState<string | null>(null)
   // Mit ?raum=CODE (von der Seite "Offene Spiele") geht es direkt in den Online-Teil.
   const [online, setOnline] = useState(() =>
@@ -65,16 +69,16 @@ export function FindeDenImposterPage() {
 
   useEffect(() => {
     if (ablauf === null) return
-    const t = window.setInterval(() => {
+    const uhr = window.setInterval(() => {
       const uebrig = Math.max(0, Math.ceil((ablauf - Date.now()) / 1000))
       setRestSekunden(uebrig)
       if (uebrig === 0) {
-        window.clearInterval(t)
+        window.clearInterval(uhr)
         setAblauf(null)
         setState((s) => (s && s.phase === 'discussion' ? endDiscussion(s) : s))
       }
     }, 250)
-    return () => window.clearInterval(t)
+    return () => window.clearInterval(uhr)
   }, [ablauf])
 
   /** Nach dem letzten Geheimnis läuft im Tempo-Modus die Uhr los. */
@@ -97,7 +101,7 @@ export function FindeDenImposterPage() {
         ? customCategoryById(categoryId)
         : undefined
       if (isCustomCategory(categoryId) && !eigeneKategorie) {
-        throw new Error('Diese eigene Kategorie gibt es nicht mehr')
+        throw new Error(tx.kategorieWeg)
       }
       const match = createMatch({
         names,
@@ -111,14 +115,14 @@ export function FindeDenImposterPage() {
       setState(match)
       setGuessText('')
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Start fehlgeschlagen')
+      setError(e instanceof Error ? e.message : tx.startFehlgeschlagen)
     }
-  }, [namesText, categoryId, mode])
+  }, [namesText, categoryId, mode, tx])
 
   if (online) {
     return (
       <main className={styles.page}>
-        <p className={styles.meta}>Finde den Imposter · online</p>
+        <p className={styles.meta}>{tx.onlineMeta}</p>
         <FindeDenImposterOnline onBack={() => setOnline(false)} />
       </main>
     )
@@ -127,7 +131,7 @@ export function FindeDenImposterPage() {
   if (zeigeEditor) {
     return (
       <main className={styles.page}>
-        <h1 className={styles.title}>Eigene Kategorien</h1>
+        <h1 className={styles.title}>{tx.eigeneKategorien}</h1>
         <ImposterCategoriesEditor
           categories={eigene}
           onChanged={(cats) => {
@@ -146,18 +150,15 @@ export function FindeDenImposterPage() {
     return (
       <main className={styles.page}>
         <Link to="/" className={styles.back}>
-          {'←'} Zurück
+          {'←'} {tx.zurueck}
         </Link>
-        <h1 className={styles.title}>😈 Finde den Imposter</h1>
-        <p className={styles.subtitle}>
-          Einer kennt das geheime Wort nicht. Miteinander reden, gemeinsam raten – und die letzte
-          Chance nutzen.
-        </p>
+        <h1 className={styles.title}>{tx.titel}</h1>
+        <p className={styles.subtitle}>{tx.untertitel}</p>
 
         <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Spieler (3–12)</h2>
+          <h2 className={styles.cardTitle}>{tx.spielerTitel}</h2>
           <label className={styles.label}>
-            Namen (eine Zeile pro Person)
+            {tx.namen}
             <textarea
               className={styles.textarea}
               value={namesText}
@@ -165,20 +166,20 @@ export function FindeDenImposterPage() {
               autoComplete="off"
             />
           </label>
-          <p className={styles.meta}>
-            {playerCount} Spieler · standardmäßig {autoImposters} Imposter
-          </p>
+          <p className={styles.meta}>{tx.spielerZahl(playerCount, autoImposters)}</p>
         </div>
 
         <div className={styles.card}>
           <label className={styles.label}>
-            Kategorie
+            {tx.kategorie}
             <select
               className={styles.select}
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
             >
-              <optgroup label="Eingebaut">
+              {/* Die Namen der Kategorien bleiben deutsch: Sie gehören zu den
+                  deutschen Wortlisten (siehe docs/design/zweisprachig). */}
+              <optgroup label={tx.eingebaut}>
                 {CATEGORIES.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.label}
@@ -186,7 +187,7 @@ export function FindeDenImposterPage() {
                 ))}
               </optgroup>
               {eigene.length > 0 && (
-                <optgroup label="Eigene">
+                <optgroup label={tx.eigene}>
                   {eigene.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.label} ({c.words.length})
@@ -201,13 +202,13 @@ export function FindeDenImposterPage() {
             className={styles.btnSecondary}
             onClick={() => setZeigeEditor(true)}
           >
-            Eigene Kategorien verwalten
+            {tx.eigeneVerwalten}
           </button>
         </div>
 
         <div className={styles.card}>
           <label className={styles.label}>
-            Modus
+            {tx.modus}
             <select
               className={styles.select}
               value={mode}
@@ -215,27 +216,27 @@ export function FindeDenImposterPage() {
             >
               {MODES.filter((m) => m.available).map((m) => (
                 <option key={m.id} value={m.id}>
-                  {m.label}
-                  {m.minPlayers > 3 ? ` (ab ${m.minPlayers})` : ''}
+                  {modusName(t, m.id)}
+                  {m.minPlayers > 3 ? tx.abSpielern(m.minPlayers) : ''}
                 </option>
               ))}
             </select>
           </label>
-          <p className={styles.subtitle}>{modusDef.description}</p>
+          <p className={styles.subtitle}>{modusText(t, mode)}</p>
         </div>
 
-        {error && <p className={styles.error}>{error}</p>}
+        {error && <p className={styles.error}>{meldungText(t, error)}</p>}
         {zuWenige && (
           <p className={styles.error}>
-            „{modusDef.label}" braucht mindestens {modusDef.minPlayers} Mitspielende.
+            {tx.brauchtMindestens(modusName(t, mode), modusDef.minPlayers)}
           </p>
         )}
 
         <button type="button" className={styles.btn} disabled={zuWenige} onClick={start}>
-          Am einen Gerät spielen
+          {tx.amEinenGeraet}
         </button>
         <button type="button" className={styles.btnSecondary} onClick={() => setOnline(true)}>
-          🌐 Online mit eigenen Handys
+          {tx.onlineMitHandys}
         </button>
       </main>
     )
@@ -243,11 +244,12 @@ export function FindeDenImposterPage() {
 
   const ap = activePlayer(state)
   const cfg = state.config
-  const roundLabel = `Runde ${cfg.roundIndex + 1}`
+  const roundLabel = tx.runde(cfg.roundIndex + 1)
   // Im Modus "Leer" bleibt die Kategorie für alle verborgen -- sonst wüsste
   // der Imposter genau das, was ihm der Modus vorenthalten soll.
   const kategorieZusatz = cfg.showCategory ? ` · ${cfg.categoryLabel}` : ''
-  const teamOf = (t: 1 | 2 | null) => (t ? ` · Team ${t}` : '')
+  const teamOf = (team: 1 | 2 | null) => (team ? ` · ${tx.team(team)}` : '')
+  const chaos = chaosRegel(t, cfg.specialRule)
 
   // Deckel gibt es nur noch bei den Geheimnissen -- alles danach passiert
   // offen in der Runde (02.09.2026, Thomas' Vorgabe).
@@ -257,15 +259,15 @@ export function FindeDenImposterPage() {
     return (
       <main key="uebergabe" className={styles.page}>
         <p className={styles.meta}>
-          {phaseLabel(state.phase)} · {roundLabel}
+          {phasenName(t, state.phase)} · {roundLabel}
           {kategorieZusatz}
         </p>
         <div className={`${styles.card} ${styles.cover}`}>
-          <p className={styles.subtitle}>Gerät weitergeben an</p>
+          <p className={styles.subtitle}>{tx.weitergebenAn}</p>
           <p className={styles.coverName}>{ap.name}</p>
-          <p className={styles.meta}>Andere wegschauen!</p>
+          <p className={styles.meta}>{tx.wegschauen}</p>
           <button type="button" className={styles.btn} onClick={open}>
-            Ich bin {ap.name} – Geheimnis ansehen
+            {tx.ichBin(ap.name)}
           </button>
         </div>
       </main>
@@ -279,39 +281,35 @@ export function FindeDenImposterPage() {
           {roundLabel}
           {kategorieZusatz}
         </p>
-        {cfg.specialRule && (
-          <p className={styles.badge}>Chaos: {chaosRuleLabel(cfg.specialRule)}</p>
-        )}
+        {chaos && <p className={styles.badge}>{tx.chaos(chaos)}</p>}
         <div className={`${styles.card} ${styles.secretBox}`}>
           <p className={styles.subtitle}>
-            Nur für {ap.name}
+            {tx.nurFuer(ap.name)}
             {teamOf(ap.team)}
           </p>
           {ap.isImposter ? (
             <>
-              <p className={styles.roleImposter}>IMPOSTER</p>
+              <p className={styles.roleImposter}>{tx.imposterRolle}</p>
               {cfg.imposterSees === 'helper' && (
                 <>
-                  <p className={styles.subtitle}>Hilfswort</p>
+                  <p className={styles.subtitle}>{tx.hilfswort}</p>
                   <p className={styles.secretWord}>{cfg.helperWord}</p>
                 </>
               )}
               {cfg.imposterSees === 'category' && (
                 <>
-                  <p className={styles.subtitle}>Kategorie</p>
+                  <p className={styles.subtitle}>{tx.kategorie}</p>
                   <p className={styles.secretWord}>{cfg.categoryLabel}</p>
                 </>
               )}
               {cfg.imposterSees === 'nothing' && (
-                <p className={styles.playHint}>
-                  Du siehst nichts – kein Wort, keine Kategorie. Hör gut zu und bluff dich durch.
-                </p>
+                <p className={styles.playHint}>{tx.siehstNichts}</p>
               )}
             </>
           ) : (
             <>
-              <p className={styles.roleCitizen}>Du bist unschuldig</p>
-              <p className={styles.subtitle}>Geheimes Wort</p>
+              <p className={styles.roleCitizen}>{tx.unschuldig}</p>
+              <p className={styles.subtitle}>{tx.geheimesWort}</p>
               <p className={styles.secretWord}>{ap.word}</p>
             </>
           )}
@@ -320,7 +318,7 @@ export function FindeDenImposterPage() {
             className={styles.btn}
             onClick={() => uebernehmen(confirmSecret(state))}
           >
-            Gesehen – weiter
+            {tx.gesehenWeiter}
           </button>
         </div>
       </main>
@@ -334,21 +332,17 @@ export function FindeDenImposterPage() {
     return (
       <main className={styles.page}>
         <p className={styles.meta}>
-          Diskussion · {roundLabel}
+          {phasenName(t, state.phase)} · {roundLabel}
           {kategorieZusatz}
         </p>
-        {cfg.specialRule && (
-          <p className={styles.badge}>Chaos: {chaosRuleLabel(cfg.specialRule)}</p>
-        )}
+        {chaos && <p className={styles.badge}>{tx.chaos(chaos)}</p>}
         <div className={`${styles.card} ${styles.cover}`}>
-          <p className={styles.subtitle}>Jetzt fängt an</p>
+          <p className={styles.subtitle}>{tx.jetztFaengtAn}</p>
           <p className={styles.coverName}>
             {starter.name}
             {teamOf(starter.team)}
           </p>
-          <p className={styles.playHint}>
-            Jetzt redet miteinander – klärt selbst, wie viele Runden ihr dreht.
-          </p>
+          <p className={styles.playHint}>{tx.redetMiteinander}</p>
           {rest !== null && (
             <p className={styles.secretWord}>
               {Math.floor(rest / 60)}:{String(rest % 60).padStart(2, '0')}
@@ -357,13 +351,13 @@ export function FindeDenImposterPage() {
         </div>
         {cfg.mode === 'duel' && (
           <div className={styles.card}>
-            <h2 className={styles.cardTitle}>Die Teams</h2>
+            <h2 className={styles.cardTitle}>{tx.dieTeams}</h2>
             <ul className={styles.hintList}>
-              {([1, 2] as const).map((t) => (
-                <li key={t}>
-                  <span>Team {t}</span>
+              {([1, 2] as const).map((team) => (
+                <li key={team}>
+                  <span>{tx.team(team)}</span>
                   <strong>
-                    {teamMembers(state, t)
+                    {teamMembers(state, team)
                       .map((p) => p.name)
                       .join(', ')}
                   </strong>
@@ -381,7 +375,7 @@ export function FindeDenImposterPage() {
             setState(endDiscussion(state))
           }}
         >
-          Imposter erraten
+          {tx.imposterErraten}
         </button>
       </main>
     )
@@ -392,27 +386,26 @@ export function FindeDenImposterPage() {
       return (
         <main className={styles.page}>
           <p className={styles.meta}>
-            Imposter raten · {roundLabel}
+            {phasenName(t, state.phase)} · {roundLabel}
             {kategorieZusatz}
           </p>
           <div className={styles.card}>
-            <h2 className={styles.cardTitle}>Jedes Team tippt auf einen aus den eigenen Reihen</h2>
-            <p className={styles.subtitle}>
-              In jedem Team sitzt genau ein Imposter. Erst Team 1, dann Team 2.
-            </p>
+            <h2 className={styles.cardTitle}>{tx.teamsTippen}</h2>
+            <p className={styles.subtitle}>{tx.teamsTippenText}</p>
           </div>
-          {([1, 2] as const).map((t) => {
-            const getippt = state.teamAccused[t - 1]
+          {([1, 2] as const).map((team) => {
+            const getippt = state.teamAccused[team - 1]
             return (
-              <div key={t} className={styles.card}>
-                <h2 className={styles.cardTitle}>Team {t}</h2>
+              <div key={team} className={styles.card}>
+                <h2 className={styles.cardTitle}>{tx.team(team)}</h2>
                 {getippt ? (
                   <p className={styles.meta}>
-                    getippt auf <strong>{state.players.find((p) => p.id === getippt)?.name}</strong>
+                    {tx.getipptAuf}{' '}
+                    <strong>{state.players.find((p) => p.id === getippt)?.name}</strong>
                   </p>
                 ) : (
                   <div className={styles.voteGrid}>
-                    {teamMembers(state, t).map((p) => (
+                    {teamMembers(state, team).map((p) => (
                       <button
                         key={p.id}
                         type="button"
@@ -434,14 +427,12 @@ export function FindeDenImposterPage() {
     return (
       <main className={styles.page}>
         <p className={styles.meta}>
-          Imposter raten · {roundLabel}
+          {phasenName(t, state.phase)} · {roundLabel}
           {kategorieZusatz}
         </p>
         <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Wer ist der Imposter?</h2>
-          <p className={styles.subtitle}>
-            Tippt gemeinsam auf den Namen, auf den ihr euch geeinigt habt.
-          </p>
+          <h2 className={styles.cardTitle}>{tx.werIstImposter}</h2>
+          <p className={styles.subtitle}>{tx.gemeinsamTippen}</p>
           <div className={styles.voteGrid}>
             {state.players.map((p) => (
               <button
@@ -463,22 +454,21 @@ export function FindeDenImposterPage() {
     const offen = state.lastChanceQueue.length
     return (
       <main className={styles.page}>
-        <p className={styles.meta}>Letzte Chance · {ap.name}</p>
+        <p className={styles.meta}>
+          {phasenName(t, state.phase)} · {ap.name}
+        </p>
         <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Erwischt, {ap.name}!</h2>
-          <p className={styles.subtitle}>
-            Letzte Chance: Rate das geheime Wort. Triffst du es, hast du die Runde doch noch
-            gedreht.
-          </p>
-          {offen > 1 && <p className={styles.meta}>Danach ist noch {offen - 1} Erwischter dran.</p>}
+          <h2 className={styles.cardTitle}>{tx.erwischtName(ap.name)}</h2>
+          <p className={styles.subtitle}>{tx.letzteChanceText}</p>
+          {offen > 1 && <p className={styles.meta}>{tx.nochErwischte(offen - 1)}</p>}
           <label className={styles.label}>
-            Dein Tipp
+            {tx.deinTipp}
             <input
               className={styles.input}
               value={guessText}
               onChange={(e) => setGuessText(e.target.value)}
               autoComplete="off"
-              placeholder="Geheimes Wort…"
+              placeholder={tx.wortPlatzhalter}
             />
           </label>
           <button
@@ -490,7 +480,7 @@ export function FindeDenImposterPage() {
               setGuessText('')
             }}
           >
-            Wort abschicken
+            {tx.wortAbschicken}
           </button>
         </div>
       </main>
@@ -501,44 +491,39 @@ export function FindeDenImposterPage() {
     const erwischt = accusedPlayer(state)
     const imposterNamen = state.players
       .filter((p) => p.isImposter)
-      .map((p) => `${p.name}${p.team ? ` (Team ${p.team})` : ''}`)
+      .map((p) => `${p.name}${p.team ? ` (${tx.team(p.team)})` : ''}`)
       .join(', ')
 
     // Wer die Runde für sich entschieden hat: Das Dorf gewinnt, wenn ein
     // Imposter enttarnt wurde UND die letzte Chance danebenging.
     const dorfGewinnt = state.correctAccusation && state.lastChanceSuccess === false
-    const ueberschrift = dorfGewinnt ? 'Enttarnt!' : 'Der Imposter gewinnt'
+    const ueberschrift = dorfGewinnt ? tx.enttarnt : tx.imposterGewinnt
 
     return (
       <main className={styles.page}>
-        <h1 className={styles.title}>{cfg.mode === 'duel' ? 'Duell entschieden' : ueberschrift}</h1>
-        {cfg.specialRule && (
-          <p className={styles.badge}>Chaos: {chaosRuleLabel(cfg.specialRule)}</p>
-        )}
+        <h1 className={styles.title}>{cfg.mode === 'duel' ? tx.duellEntschieden : ueberschrift}</h1>
+        {chaos && <p className={styles.badge}>{tx.chaos(chaos)}</p>}
 
         <div className={styles.card}>
-          <p className={styles.subtitle}>Das geheime Wort war</p>
+          <p className={styles.subtitle}>{tx.wortWar}</p>
           <p className={styles.secretWord}>{cfg.secretWord}</p>
           <p className={styles.subtitle}>
-            {cfg.imposterCount > 1 ? 'Imposter waren' : 'Imposter war'}{' '}
-            <strong>{imposterNamen}</strong>
+            {tx.imposterWaren(cfg.imposterCount)} <strong>{imposterNamen}</strong>
           </p>
-          {!cfg.showCategory && <p className={styles.meta}>Kategorie: {cfg.categoryLabel}</p>}
+          {!cfg.showCategory && <p className={styles.meta}>{tx.kategorieWar(cfg.categoryLabel)}</p>}
         </div>
 
         <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Was passiert ist</h2>
+          <h2 className={styles.cardTitle}>{tx.wasPassiert}</h2>
           {cfg.mode === 'duel' ? (
             <ul className={styles.hintList}>
-              {([1, 2] as const).map((t) => {
-                const id = state.teamAccused[t - 1]
+              {([1, 2] as const).map((team) => {
+                const id = state.teamAccused[team - 1]
                 const getippt = state.players.find((p) => p.id === id)
                 return (
-                  <li key={t}>
-                    <span>
-                      Team {t} tippte auf {getippt?.name ?? '–'}
-                    </span>
-                    <strong>{teamCaught(state, t) ? 'erwischt' : 'daneben'}</strong>
+                  <li key={team}>
+                    <span>{tx.teamTippteAuf(team, getippt?.name ?? '–')}</span>
+                    <strong>{teamCaught(state, team) ? tx.erwischt : tx.daneben}</strong>
                   </li>
                 )
               })}
@@ -546,9 +531,9 @@ export function FindeDenImposterPage() {
                 .filter((p) => p.lastChanceCorrect !== null)
                 .map((p) => (
                   <li key={p.id}>
-                    <span>Letzte Chance von {p.name}</span>
+                    <span>{tx.letzteChanceVon(p.name)}</span>
                     <strong>
-                      {p.lastChanceCorrect ? `getroffen („${p.lastChanceGuess}")` : 'daneben'}
+                      {p.lastChanceCorrect ? tx.getroffenMit(p.lastChanceGuess ?? '') : tx.daneben}
                     </strong>
                   </li>
                 ))}
@@ -556,20 +541,22 @@ export function FindeDenImposterPage() {
           ) : (
             <ul className={styles.hintList}>
               <li>
-                <span>Getippt auf</span>
+                <span>{tx.getipptAufTitel}</span>
                 <strong>{erwischt ? erwischt.name : '–'}</strong>
               </li>
               <li>
-                <span>Richtig geraten</span>
-                <strong>{state.correctAccusation ? 'ja' : 'nein'}</strong>
+                <span>{tx.richtigGeraten}</span>
+                <strong>{state.correctAccusation ? tx.ja : tx.nein}</strong>
               </li>
               {state.correctAccusation && (
                 <li>
-                  <span>Letzte Chance</span>
+                  <span>{phasenName(t, 'last_chance')}</span>
                   <strong>
                     {state.lastChanceSuccess
-                      ? `getroffen („${state.players.find((p) => p.lastChanceGuess)?.lastChanceGuess}")`
-                      : 'daneben'}
+                      ? tx.getroffenMit(
+                          state.players.find((p) => p.lastChanceGuess)?.lastChanceGuess ?? '',
+                        )
+                      : tx.daneben}
                   </strong>
                 </li>
               )}
@@ -586,14 +573,14 @@ export function FindeDenImposterPage() {
             setState(nextRound(state))
           }}
         >
-          Nächste Runde
+          {tx.naechsteRunde}
         </button>
         <div className={styles.row}>
           <button type="button" className={styles.btnSecondary} onClick={() => setState(null)}>
-            Neue Partie
+            {tx.neuePartie}
           </button>
           <Link to="/" className={styles.btnSecondary} style={{ textDecoration: 'none' }}>
-            Menü
+            {tx.menue}
           </Link>
         </div>
       </main>
@@ -602,9 +589,9 @@ export function FindeDenImposterPage() {
 
   return (
     <main className={styles.page}>
-      <p>Unbekannte Phase: {state.phase}</p>
+      <p>{tx.unbekanntePhase(state.phase)}</p>
       <button type="button" className={styles.btn} onClick={() => setState(null)}>
-        Zurück zum Setup
+        {tx.zurueckZumSetup}
       </button>
     </main>
   )
