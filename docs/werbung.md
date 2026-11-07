@@ -94,5 +94,41 @@ sind, klärst du am besten einmal mit einem Steuerberater.
 
 ## Wo die Spiele Videos anbieten
 
-Die vollständige Liste mit Platzierungsnamen (so heißen sie in den
-AdSense-Berichten) steht unten, sobald alle Spiele eingebaut sind.
+Der Name in der letzten Spalte ist die Platzierung, unter der die Stelle in
+den AdSense-Berichten erscheint.
+
+### Hilfen -- höchstens einmal je Versuch
+
+Gewertet wird eine Runde mit Hilfe immer gleich, zentral in
+`saveGameResult` (`src/games/hilfe.ts`): 0 Punkte, 0 XP, höchstens ein
+Stern, kein Rekord. Das nächste Level wird trotzdem frei.
+
+| Spiel                | Wann                                                                         | Was es gibt                                          | Platzierung               |
+| -------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------- | ------------------------- |
+| Squishy Dumplings    | „Zeit um!“                                                                   | +15 Sekunden, gleiches Brett                         | `squishy-zeit`            |
+| Bienen-Flow          | „Die Kolonie steht“                                                          | einen Platz freiräumen                               | `bienen-platz`            |
+| Sudoku               | Gitter voll, aber falsch (wenn Fehler nicht angezeigt werden)                | falsche Ziffern entfernen                            | `sudoku-hilfe`            |
+| Trapbound            | ab 10 Toden im selben Versuch                                                | Level überspringen (ohne Sterne, Bestzeit, Kristall) | `trapbound-ueberspringen` |
+| Emberwake            | Todesbildschirm, einmal je Lauf                                              | wiederbeleben im Lager                               | `emberwake-wiederbeleben` |
+| Die perfekte Sekunde | Fehlschuss, der schon gemachte Treffer kosten würde (Torlevel, ab Level 241) | noch ein Versuch, Treffer bleiben                    | `sekunde-versuch`         |
+| Reihenfolge          | nach einem falschen Tipp                                                     | Folge noch einmal ansehen, ab dem Fehler weiter      | `reihenfolge-chance`      |
+| Kopfrechnen          | Runde nicht geschafft                                                        | falsche Aufgaben durch neue ersetzen, Uhr läuft neu  | `kopfrechnen-chance`      |
+| Was fehlt?           | vor der Antwort                                                              | alle Dinge noch einmal sehen                         | `wasfehlt-chance`         |
+
+### Sonderitems -- dauerhaft, nur Aussehen
+
+| Wo                           | Was                                             | Platzierung             |
+| ---------------------------- | ----------------------------------------------- | ----------------------- |
+| Squishy Dumplings, Sammlung  | Sternschnuppen-Bao                              | `squishy-sonderknoedel` |
+| Trapbound, Sammlung          | Figur „Glut“ mit Leuchtspur                     | `trapbound-farbe`       |
+| Profil                       | sechs Gesichter (🐲 🦉 🐙 🤖 👽 🦖)             | `gesicht-freischalten`  |
+| Kniffel                      | Würfel Gold, Holz, Nacht, Kirsche               | `kniffel-wuerfel`       |
+| Mau-Mau, Letzte Karte, Texas | Rückseiten Wald, Bordeaux, Kupfer, Sternennacht | `karten-ruecken`        |
+
+Freigeschaltetes liegt auf dem Gerät und bleibt auch ohne Netz. Online sieht
+nur man selbst sein Design.
+
+### Ohne Werbung
+
+Partyspiele und alle Online-Partien. Die Liste offener Räume, die Rangliste
+und die Rechtsseiten auch.
