@@ -18,8 +18,9 @@ export async function saveGameResult(
   result: Omit<GameResult, 'timestamp'> & {
     timestamp?: number
     /**
-     * Die Runde darf keinen Rekord schreiben -- etwa weil ein Belohnungsvideo
-     * geholfen hat (siehe src/games/hilfe.ts). Sie steht dann nur im Verlauf.
+     * Eine Runde mit Hilfe aus einem Belohnungsvideo: Sie wird gespeichert,
+     * schreibt aber nie einen persönlichen Rekord (src/games/hilfe.ts,
+     * src/services/werbung.ts).
      */
     ohneRekord?: boolean
   },

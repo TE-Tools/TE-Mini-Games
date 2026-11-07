@@ -17,7 +17,16 @@ export interface SudokuErgebnis {
   sekunden: number
   fehler: number
   tipps: number
+  /**
+   * Wurde per Belohnungsvideo geholfen (falsche Ziffern entfernt)? Dann
+   * zählt die Hilfe wie ein Tipp, es gibt höchstens einen Stern und keinen
+   * Sauber-Bonus bei den XP. Siehe `hilfe.ts`.
+   */
+  mitHilfe?: boolean
 }
+
+/** Mehr Sterne gibt es für eine Runde mit Hilfe aus einem Video nie. */
+export const STERNE_MIT_HILFE = 1
 
 export interface SudokuWertung {
   punkte: number
@@ -97,6 +106,18 @@ export function xpFuer(nr: number, punkte: number): number {
 }
 
 export function werte(nr: number, e: SudokuErgebnis): SudokuWertung {
+  if (e.mitHilfe) {
+    // Die Hilfe kostet wie ein Tipp -- mehr als ohne Video gibt es also nie.
+    const punkte = berechnePunkte(nr, { ...e, tipps: Math.max(0, Math.floor(e.tipps)) + 1 })
+    const sterne = Math.min(STERNE_MIT_HILFE, sterneFuer(nr, punkte))
+    return {
+      punkte,
+      sterne,
+      xp: punkte > 0 ? XP_BASIS[schwierigkeitVon(nr)] + Math.floor(stufeVon(nr) / 5) : 0,
+      zeitBonus: e.geloest ? zeitBonusFuer(nr, e.sekunden) : 0,
+      maximal: maximalePunkte(nr),
+    }
+  }
   const punkte = berechnePunkte(nr, e)
   return {
     punkte,

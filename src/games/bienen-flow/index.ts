@@ -23,6 +23,13 @@ export {
   BONUS_AB,
 } from './fehlversuche'
 export {
+  platzAngebot,
+  welcherPlatz,
+  raeumePlatz,
+  wertungFuer,
+  type BienenWertung,
+} from './belohnung'
+export {
   createMatch,
   tapSpalte,
   tick,

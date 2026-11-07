@@ -665,6 +665,10 @@ export const de = {
     },
     zifferEintragen: (ziffer: number, uebrig: number) =>
       `${ziffer} eintragen, noch ${uebrig} übrig`,
+    hilfeBelohnung: 'falsche Ziffern entfernen',
+    hilfeErledigt: (n: number) =>
+      n === 1 ? '1 falsche Ziffer entfernt.' : `${n} falsche Ziffern entfernt.`,
+    mitHilfe: 'Mit Hilfe gelöst: höchstens ein Stern, keine Bestzeit und keine Bestpunkte.',
   },
 
   /*
@@ -2029,6 +2033,9 @@ export const de = {
     versuchBaldBonus: (nr: number, ab: number) =>
       `${nr}. Versuch – nach ${ab} gibt es einen sechsten Platz.`,
     versuch: (nr: number) => `${nr}. Versuch`,
+    platzFrei: 'einen Platz freiräumen',
+    mitHilfe:
+      'Mit Hilfe geschafft: Das nächste Level ist frei, Punkte, XP und Rekord gibt es dafür nicht.',
     nochmal: 'Nochmal',
     stufen: {
       Tor: 'Tor',
@@ -2710,7 +2717,13 @@ export const de = {
       'bao-honig': 'Honig-Bao',
       'bao-mond': 'Mondkuchen',
       'bao-gold': 'Goldener Bao',
+      'bao-sternschnuppe': 'Sternschnuppen-Bao',
     },
+    zusatzZeit: (sekunden: number) => `+${sekunden} Sekunden`,
+    mitHilfe:
+      'Mit Hilfe geschafft: Das nächste Level ist frei, Punkte, XP und Rekord gibt es dafür nicht.',
+    perVideo: 'per Video freischalten',
+    videoKnoedel: (name: string) => `${name} für deine Sammlung`,
   },
 
   /** Was die Partyspiele am Tisch gemeinsam haben (Wer würde eher, Wortbombe, Scharade). */

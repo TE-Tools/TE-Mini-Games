@@ -658,6 +658,10 @@ export const en: Texte = {
       pfeile: 'Arrows',
     },
     zifferEintragen: (ziffer: number, uebrig: number) => `enter ${ziffer}, ${uebrig} left`,
+    hilfeBelohnung: 'remove wrong digits',
+    hilfeErledigt: (n: number) =>
+      n === 1 ? 'Removed 1 wrong digit.' : `Removed ${n} wrong digits.`,
+    mitHilfe: 'Solved with help: one star at most, no best time or best score.',
   },
 
   /**
@@ -2000,6 +2004,9 @@ export const en: Texte = {
     versuchBaldBonus: (nr: number, ab: number) =>
       `Attempt ${nr} – after ${ab} you get a sixth slot.`,
     versuch: (nr: number) => `Attempt ${nr}`,
+    platzFrei: 'clear one slot',
+    mitHilfe:
+      'Done with help: the next level is unlocked, but there are no points, XP or record for it.',
     nochmal: 'Try again',
     stufen: {
       Tor: 'Gate',
@@ -2649,7 +2656,13 @@ export const en: Texte = {
       'bao-honig': 'Honey bao',
       'bao-mond': 'Mooncake',
       'bao-gold': 'Golden bao',
+      'bao-sternschnuppe': 'Shooting star bao',
     },
+    zusatzZeit: (sekunden: number) => `+${sekunden} seconds`,
+    mitHilfe:
+      'Done with help: the next level is unlocked, but there are no points, XP or record for it.',
+    perVideo: 'unlock with a video',
+    videoKnoedel: (name: string) => `${name} for your collection`,
   },
 
   partyGemeinsam: {
