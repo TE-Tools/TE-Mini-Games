@@ -542,6 +542,58 @@
   background: rgb(11 9 22 / 0.78);
 }
 
+/* Belohnungsvideos: das Angebot oben auf der Bühne, unter jedem Dialog. */
+.werbeAngebot {
+  position: absolute;
+  top: 2.4rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  width: min(22rem, calc(100% - 2rem));
+}
+
+.figurWahl {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.figurTitel {
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.figurReihe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.figurKnopf {
+  font: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid rgba(143, 124, 196, 0.35);
+  background: rgba(75, 63, 107, 0.25);
+  color: inherit;
+  cursor: pointer;
+}
+
+.figurKnopf[aria-pressed='true'] {
+  border-color: rgba(124, 231, 200, 0.8);
+  background: rgba(124, 231, 200, 0.12);
+}
+
+.figurFarbe {
+  width: 0.8rem;
+  height: 1.1rem;
+  border-radius: 3px;
+  margin-left: 0.4rem;
+}
+
 /* Der Sieg behält sein Leuchten (der allgemeine Dialogblock oben hatte es ersetzt). */
 .dialog.dialogSieg {
   box-shadow:

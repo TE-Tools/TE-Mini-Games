@@ -29,6 +29,7 @@ import {
   rezeptBeschreibung,
   rezeptName,
   weltName,
+  werbeTexte,
   zusatzziel,
   type EmberwakeTexte,
 } from '@/games/emberwake/ui/texte'
@@ -73,6 +74,8 @@ export class UiRoot {
    * Sprachwechsel greift beim nächsten Start von Emberwake.
    */
   readonly tx: EmberwakeTexte = emberwakeTexte()
+  /** Beschriftung der Werbevideos, wie in der App. */
+  private readonly wx = werbeTexte()
   readonly root: HTMLElement
   readonly canvas: HTMLCanvasElement
   private readonly hud: HTMLElement
@@ -489,6 +492,44 @@ export class UiRoot {
     s.querySelector('[data-act="quit"]')!.addEventListener('click', () => this.cb.onQuit())
   }
 
+  /**
+   * Belohnungsvideo im Todesbildschirm anbieten. Wird nur aufgerufen, wenn
+   * wirklich ein Video bereitsteht -- sonst sieht der Bildschirm aus wie
+   * immer. Beschriftet als Werbevideo, wie der `BelohnungsKnopf` der App.
+   * `ansehen` liefert, ob das Video zu Ende geschaut wurde.
+   */
+  offerRevive(ansehen: () => Promise<boolean>): void {
+    if (this.currentScreen !== 'death') return
+    const card = this.screens.querySelector('.card')
+    if (!card || card.querySelector('[data-act="revive"]')) return
+    const wx = this.wx
+    const rahmen = document.createElement('div')
+    const knopf = document.createElement('button')
+    knopf.type = 'button'
+    knopf.className = 'btn is-ad'
+    knopf.dataset.act = 'revive'
+    const text = document.createElement('span')
+    text.textContent = `▶ ${wx.videoAnsehen(this.tx.wiederbelebenBelohnung)}`
+    const hinweis = document.createElement('small')
+    hinweis.className = 'ad-note'
+    hinweis.textContent = wx.hinweis
+    knopf.append(text, hinweis)
+    knopf.addEventListener('click', () => {
+      knopf.disabled = true
+      text.textContent = wx.laeuft
+      void ansehen().then((geschaut) => {
+        if (geschaut) return
+        const status = document.createElement('p')
+        status.className = 'small center'
+        status.setAttribute('role', 'status')
+        status.textContent = wx.abgebrochen
+        rahmen.replaceChildren(status)
+      })
+    })
+    rahmen.append(knopf)
+    card.insertBefore(rahmen, card.querySelector('[data-act="retry"]'))
+  }
+
   showResults(r: {
     levelName: string
     stars: number
@@ -499,6 +540,8 @@ export class UiRoot {
     rewards: ResourceCost
     lifeGained: boolean
     hasNext: boolean
+    /** Mit Wiederbelebung per Video geschafft: Hinweis, warum es weniger gibt. */
+    revived?: boolean
   }): void {
     const tx = this.tx
     const stars = `${'★'.repeat(r.stars)}<span class="off">${'★'.repeat(3 - r.stars)}</span>`
@@ -521,6 +564,7 @@ export class UiRoot {
           <dt>${tx.belohnung}</dt><dd>${rewards}</dd>
           ${r.lifeGained ? `<dt>${tx.dreiSterne}</dt><dd class="ok">${tx.einLebenMehr}</dd>` : ''}
         </dl>
+        ${r.revived ? `<p class="small center">${tx.mitWiederbelebung}</p>` : ''}
         ${r.hasNext ? `<button class="btn is-primary" data-act="next">${tx.naechstesLevel}</button>` : `<p class="lede is-ember">${tx.mehrLevelFolgen}</p>`}
         <div class="btn-row">
           <button class="btn" data-act="retry">${tx.nochmal}</button>

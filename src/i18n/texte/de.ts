@@ -558,6 +558,10 @@ export const de = {
     alleTreffer: 'Alle Treffer:',
     meilenstein: (xp: number) => `🎉 Meilenstein-Bonus +${xp} XP!`,
     haargenau: '✨ Haargenau! Sonder-XP für perfekten Treffer',
+    versuchBelohnung: (treffer: number) =>
+      `Noch ein Versuch – ${treffer === 1 ? 'dein Treffer bleibt' : `deine ${treffer} Treffer bleiben`}`,
+    mitWerbehilfe:
+      'Mit Hilfe eines Werbevideos geschafft: keine Punkte, kein Rekord, höchstens ein Stern.',
   },
 
   levelkarte: {
@@ -2136,6 +2140,11 @@ export const de = {
     nochmal: 'Nochmal',
     gerettet: (einheiten: number) => `${einheiten} Einheiten gerettet, Rest verloren`,
     alleLebenVerbraucht: 'Alle Leben verbraucht. Die Welt beginnt von vorn — dein Lager bleibt.',
+    // Belohnungsvideo: einmal je Anlauf wiederbeleben
+    wiederbelebenBelohnung: 'Wiederbeleben – im Lager weiterspielen',
+    wiederbelebt: 'Wiederbelebt. Du stehst wieder im Lager.',
+    mitWiederbelebung:
+      'Mit Wiederbelebung geschafft: keine Punkte, keine Bestzeit, höchstens ein Stern.',
     kernErlosch: (zeit: string) => `Der Kern erlosch nach ${zeit}`,
     getoetetVon: {
       schleicher: 'Ein Schleicher traf dich im Dunkeln',
@@ -3054,6 +3063,14 @@ export const de = {
       `${zeit} Sekunden · ${tode} ${tode === 1 ? 'Tod' : 'Tode'}`,
     kristallGefunden: ' · Kristall gefunden ◆',
     nochmal: 'Nochmal',
+    // Belohnungsvideos
+    ueberspringenBelohnung: 'Level überspringen (ohne Sterne und Bestzeit)',
+    uebersprungen: (nr: number) => `Level ${nr} übersprungen – du kannst es jederzeit nachholen.`,
+    figurTitel: 'Figur',
+    figurHell: 'Hell',
+    figurGlut: 'Glut mit Leuchtspur',
+    figurGlutBelohnung: 'Figur „Glut“ mit Leuchtspur',
+    figurNurOptik: 'Nur Optik – am Spiel ändert sich nichts.',
   },
 
   /** Belohnungsvideos -- siehe src/services/werbung.ts. */
