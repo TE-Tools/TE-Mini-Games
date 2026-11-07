@@ -33,6 +33,7 @@ import { spielName, useSprache } from '@/i18n/sprache'
 import { RAUM_PARAM } from '@/services/raeume'
 import { spielerNameOderDu } from '@/services/spielername'
 import { spiele, setzeTon, tonAn, vibriere } from '@/services/sound'
+import { DesignWahl } from '@/components/designs/DesignWahl'
 import { Hausregelwahl, Spielartwahl } from './maumau/Hausregeln'
 import { MauTisch } from './maumau/MauTisch'
 import { MauMauOnline } from './MauMauOnline'
@@ -238,6 +239,12 @@ export function MauMauPage({ spiel }: Props) {
               <small>{t.maumau.onlineMitAnderenText}</small>
             </span>
           </button>
+          <DesignWahl
+            art="kartenruecken"
+            name="karten-ruecken"
+            titel={t.maumau.kartenruecken}
+            standardFlaeche="linear-gradient(145deg, #6d4ae8, #3b2a8f)"
+          />
           <Link to="/" className={shell.homeLink}>
             {t.allgemein.zumMenue}
           </Link>

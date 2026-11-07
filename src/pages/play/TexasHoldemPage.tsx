@@ -33,6 +33,7 @@ import { spielerNameOderDu } from '@/services/spielername'
 import { spiele, setzeTon, tonAn } from '@/services/sound'
 import { useSprache } from '@/i18n/sprache'
 
+import { DesignWahl } from '@/components/designs/DesignWahl'
 import { Einsatzleiste } from './texas/Einsatzleiste'
 import { PokerTisch } from './texas/PokerTisch'
 import { protokollZeile } from './texas/texasText'
@@ -183,6 +184,7 @@ export function TexasHoldemPage() {
               <small>{t.texas.onlineText}</small>
             </span>
           </button>
+          <DesignWahl art="kartenruecken" name="karten-ruecken" titel={t.texas.kartenruecken} />
           <p className={styles.spielgeld}>{t.texas.spielgeld}</p>
           <Link to="/" className={shell.homeLink}>
             {t.texas.zumMenue}

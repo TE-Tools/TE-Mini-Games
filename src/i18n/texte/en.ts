@@ -1352,6 +1352,7 @@ export const en: Texte = {
   },
 
   kniffel: {
+    wuerfelDesign: 'Dice design',
     du: 'You',
     rechner: (nr: number) => `Computer ${nr}`,
     einleitung: (zusatz: number) =>
@@ -1493,6 +1494,7 @@ export const en: Texte = {
   },
 
   maumau: {
+    kartenruecken: 'Card backs',
     ansageMau: 'Mau!',
     ansageLetzteKarte: 'Last card!',
     tonAus: 'Turn sound off',
@@ -2196,6 +2198,7 @@ export const en: Texte = {
     },
   },
   texas: {
+    kartenruecken: 'Card backs',
     zurueck: 'Back',
     tonAus: 'Turn sound off',
     tonAn: 'Turn sound on',
@@ -2929,6 +2932,28 @@ export const en: Texte = {
       `${zeit} seconds · ${tode} ${tode === 1 ? 'death' : 'deaths'}`,
     kristallGefunden: ' · crystal found ◆',
     nochmal: 'Again',
+  },
+
+  designs: {
+    hinweis: 'Looks only – no advantage. Only you see your choice.',
+    perVideo: 'unlock with a video',
+    gewaehlt: 'selected',
+    belohnung: (name: string) => `“${name}” design`,
+    gesperrt: (name: string) => `${name} – unlock with a video`,
+    wuerfel: {
+      standard: 'Classic',
+      gold: 'Gold',
+      holz: 'Wood',
+      nacht: 'Night',
+      kirsche: 'Cherry',
+    },
+    kartenruecken: {
+      standard: 'Classic',
+      wald: 'Forest',
+      bordeaux: 'Burgundy',
+      kupfer: 'Copper',
+      sternennacht: 'Starry night',
+    },
   },
 
   werbung: {

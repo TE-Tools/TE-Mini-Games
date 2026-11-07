@@ -19,6 +19,8 @@
 
 import { FARB_ROT, FARB_ZEICHEN, type Karte } from '@/games/texas-holdem'
 import { useSprache } from '@/i18n/sprache'
+import { rueckenStil } from '@/components/designs/designs'
+import { useDesign } from '@/components/designs/useDesign'
 import { karteVorlesen, wertKurzText } from './texasText'
 import styles from './Spielkarte.module.css'
 
@@ -43,6 +45,8 @@ interface Props {
 
 export function Spielkarte({ karte, zu = false, groesse = 'normal', zaehlt = false }: Props) {
   const { t } = useSprache()
+  // Jede verdeckte Karte trägt denselben Rücken -- nur Aussehen, nur auf diesem Gerät.
+  const ruecken = useDesign('kartenruecken')
   const klassen = [
     styles.karte,
     groesse === 'klein' ? styles.klein : groesse === 'tisch' ? styles.tisch : '',
@@ -53,6 +57,8 @@ export function Spielkarte({ karte, zu = false, groesse = 'normal', zaehlt = fal
     return (
       <span
         className={`${klassen} ${styles.rueckseite}`}
+        style={rueckenStil(ruecken)}
+        data-ruecken={ruecken}
         role="img"
         aria-label={t.texas.karte.verdeckt}
       >

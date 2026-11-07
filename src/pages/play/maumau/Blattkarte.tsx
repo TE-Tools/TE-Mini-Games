@@ -17,6 +17,8 @@
 
 import { FARB_ROT, FARB_ZEICHEN, type Karte } from '@/games/maumau'
 import { useSprache } from '@/i18n/sprache'
+import { rueckenStil } from '@/components/designs/designs'
+import { useDesign } from '@/components/designs/useDesign'
 import { eckText, farbName, karteVorlesen } from './kartenText'
 import styles from './Blattkarte.module.css'
 
@@ -70,6 +72,8 @@ function Gesicht({ karte }: { karte: Karte }) {
 
 export function Blattkarte({ karte, zu = false, klein = false, spielbar, blass, onClick }: Props) {
   const { t } = useSprache()
+  // Jede verdeckte Karte trägt denselben Rücken -- nur Aussehen, nur auf diesem Gerät.
+  const ruecken = useDesign('kartenruecken')
   const klassen = [
     styles.karte,
     klein ? styles.klein : '',
@@ -81,6 +85,8 @@ export function Blattkarte({ karte, zu = false, klein = false, spielbar, blass, 
     return (
       <span
         className={`${klassen.join(' ')} ${styles.rueckseite}`}
+        style={rueckenStil(ruecken)}
+        data-ruecken={ruecken}
         role="img"
         aria-label={t.maumau.verdeckteKarte}
       >
@@ -132,10 +138,14 @@ export function Ziehstapel({
   gesperrt?: boolean
 }) {
   const { t } = useSprache()
+  const ruecken = useDesign('kartenruecken')
+  const stil = rueckenStil(ruecken)
   return (
     <span className={styles.stapelRahmen}>
       <span
         className={`${styles.karte} ${styles.rueckseite} ${styles.unterste}`}
+        style={stil}
+        data-ruecken={ruecken}
         aria-hidden="true"
       >
         <span className={styles.muster} />
@@ -143,6 +153,8 @@ export function Ziehstapel({
       <button
         type="button"
         className={`${styles.karte} ${styles.rueckseite} ${styles.stapel}`}
+        style={stil}
+        data-ruecken={ruecken}
         onClick={onClick}
         disabled={gesperrt}
         aria-label={t.maumau.nachziehstapel(anzahl)}
