@@ -43,6 +43,8 @@ export const de = {
     offeneSpiele: 'Offene Spiele – wer gerade wartet',
     spendeText:
       'TE-Mini Games ist kostenlos und ohne Werbung. Wenn es dir Freude macht, kannst du einen Kaffee ausgeben.',
+    spendeTextMitWerbung:
+      'TE-Mini Games ist kostenlos. Werbung gibt es nur als freiwilliges Video gegen eine Hilfe im Spiel. Wenn es dir Freude macht, kannst du auch einen Kaffee ausgeben.',
     spendeKnopf: 'Spenden über PayPal',
     spendeHinweis: 'Öffnet PayPal in einem neuen Fenster.',
     spieleFiltern: 'Spiele filtern',
@@ -134,7 +136,7 @@ export const de = {
     datenschutz: 'Datenschutz',
     datenschutzerklaerung: 'Datenschutzerklärung',
     kontoLoeschen: 'Konto löschen',
-    stand: 'Stand: 6. September 2026',
+    stand: 'Stand: 7. November 2026',
   },
 
   /** Die 50 Abzeichen. Schlüssel ist die Kennung, nicht der Name. */
@@ -2992,6 +2994,14 @@ export const de = {
       `${zeit} Sekunden · ${tode} ${tode === 1 ? 'Tod' : 'Tode'}`,
     kristallGefunden: ' · Kristall gefunden ◆',
     nochmal: 'Nochmal',
+  },
+
+  /** Belohnungsvideos -- siehe src/services/werbung.ts. */
+  werbung: {
+    videoAnsehen: (belohnung: string) => `Video ansehen: ${belohnung}`,
+    hinweis: 'Werbevideo – freiwillig',
+    laeuft: 'Video läuft…',
+    abgebrochen: 'Video abgebrochen – keine Belohnung.',
   },
 
   allgemein: {

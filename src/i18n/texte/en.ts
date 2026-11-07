@@ -42,6 +42,8 @@ export const en: Texte = {
     spieleEntdeckenText: 'Choose a challenge.',
     offeneSpiele: 'Open games – who is waiting',
     spendeText: 'TE-Mini Games is free and ad-free. If you enjoy it, you can buy me a coffee.',
+    spendeTextMitWerbung:
+      'TE-Mini Games is free. Ads only come as an optional video in exchange for help in a game. If you enjoy it, you can also buy me a coffee.',
     spendeKnopf: 'Donate via PayPal',
     spendeHinweis: 'Opens PayPal in a new window.',
     spieleFiltern: 'Filter games',
@@ -133,7 +135,7 @@ export const en: Texte = {
     datenschutz: 'Privacy',
     datenschutzerklaerung: 'Privacy policy',
     kontoLoeschen: 'Delete account',
-    stand: 'Last updated: 6 September 2026',
+    stand: 'Last updated: 7 November 2026',
   },
 
   /** The 50 badges, keyed by id. */
@@ -2927,6 +2929,13 @@ export const en: Texte = {
       `${zeit} seconds · ${tode} ${tode === 1 ? 'death' : 'deaths'}`,
     kristallGefunden: ' · crystal found ◆',
     nochmal: 'Again',
+  },
+
+  werbung: {
+    videoAnsehen: (belohnung: string) => `Watch a video: ${belohnung}`,
+    hinweis: 'Ad video – optional',
+    laeuft: 'Video playing…',
+    abgebrochen: 'Video stopped – no reward.',
   },
 
   allgemein: {
