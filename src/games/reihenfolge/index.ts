@@ -10,3 +10,4 @@ export {
 export type { ReihenfolgeLevel } from './level'
 export { calculateReihenfolgeScore } from './score'
 export type { ReihenfolgeScoreInput, ReihenfolgeScoreResult } from './score'
+export { eingabeNachFehler, zweiteChanceMoeglich, wertungMitZweiterChance } from './zweiteChance'
