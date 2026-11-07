@@ -144,8 +144,10 @@ export function notizZeile(t: Texte, zeile: string): string {
 }
 
 /**
- * Was ein regelbasierter Mitspieler am Tag sagt. Nur für deren Sätze --
- * was Menschen in den Chat schreiben, bleibt, wie es ist.
+ * Was am Tag gesagt wird -- von Rechner-Spielern wie von Menschen, die seit
+ * dem 07.11.2026 nur noch feste Sätze wählen (`festeSaetze.ts`). Ein Satz,
+ * der keiner Vorlage entspricht (etwa freier Text aus älteren Runden),
+ * bleibt, wie er ist.
  */
 export function aussageText(t: Texte, text: string): string {
   const a = t.schuetzenrunde.aussagen
@@ -153,19 +155,27 @@ export function aussageText(t: Texte, text: string): string {
 
   const verteidigung = d.verteidigungen.indexOf(text)
   if (verteidigung >= 0) return a.verteidigungen[verteidigung] ?? text
+  const allgemein = d.allgemein.indexOf(text)
+  if (allgemein >= 0) return a.allgemein[allgemein] ?? text
 
-  for (let i = 0; i < d.vorwuerfe.length; i++) {
-    // Die deutsche Vorlage mit einer Lücke für den Namen.
-    const vorlage = d.vorwuerfe[i]!('\u0000')
-    const [vorne = '', hinten = ''] = vorlage.split('\u0000')
-    if (
-      text.length > vorne.length + hinten.length &&
-      text.startsWith(vorne) &&
-      text.endsWith(hinten)
-    ) {
-      const name = text.slice(vorne.length, text.length - hinten.length)
-      const satz = a.vorwuerfe[i]
-      return satz ? satz(name) : text
+  const mitNamen: [readonly ((wer: string) => string)[], readonly ((wer: string) => string)[]][] = [
+    [d.vorwuerfe, a.vorwuerfe],
+    [d.fuersprache, a.fuersprache],
+  ]
+  for (const [vorlagen, uebersetzt] of mitNamen) {
+    for (let i = 0; i < vorlagen.length; i++) {
+      // Die deutsche Vorlage mit einer Lücke für den Namen.
+      const vorlage = vorlagen[i]!('\u0000')
+      const [vorne = '', hinten = ''] = vorlage.split('\u0000')
+      if (
+        text.length > vorne.length + hinten.length &&
+        text.startsWith(vorne) &&
+        text.endsWith(hinten)
+      ) {
+        const name = text.slice(vorne.length, text.length - hinten.length)
+        const satz = uebersetzt[i]
+        return satz ? satz(name) : text
+      }
     }
   }
   return text
