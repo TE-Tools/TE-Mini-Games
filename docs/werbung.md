@@ -8,87 +8,106 @@ Regeln dazu stehen oben in [`src/services/werbung.ts`](../src/services/werbung.t
 – vor allem: **Werbung kauft Hilfe oder Aussehen, nie Punkte.** Eine Runde
 mit Hilfe schreibt keinen Rekord und gibt höchstens einen Stern.
 
-Im Code ist alles fertig. Eingeschaltet wird Werbung erst, wenn beim Bauen
-die Publisher-Kennung gesetzt ist – bis dahin sieht und lädt niemand
+**Zwei Wege, ein Baustein** (seit 07.11.2026):
+
+| Wo          | Wer liefert die Videos | Eingeschaltet über                                               |
+| ----------- | ---------------------- | ---------------------------------------------------------------- |
+| Android-App | **Google AdMob**       | `VITE_ADMOB_BELOHNUNG` (Cloudflare) + `ADMOB_APP_ID` (GitHub)    |
+| Browser/PWA | Google AdSense         | `VITE_ADSENSE_CLIENT` (Cloudflare) -- braucht eine eigene Domain |
+
+Entschieden ist AdMob: Dafür braucht es keine eigene Domain. Die Play-App
+ist deshalb eine Capacitor-App statt einer Trusted Web Activity
+([`capacitor.config.ts`](../capacitor.config.ts)) -- sie lädt weiter die
+Seite aus dem Netz, Änderungen sind sofort in der App. Im Browser bleibt
+Werbung aus, solange niemand AdSense einschaltet.
+
+Im Code ist alles fertig. Ohne die Angaben unten sieht und lädt niemand
 etwas von Google.
 
 ---
 
-## Was nur du machen kannst
+## Was nur du machen kannst (AdMob)
 
-### 1. Eine eigene Domain (vor dem Play-Start)
+### 1. App in AdMob anlegen
 
-AdSense prüft die Website, auf der die Werbung läuft, und verlangt dort eine
-`ads.txt` im Stammverzeichnis. Unter `te-mini-games.pages.dev` gehört dir
-nur die Unterseite, nicht `pages.dev` – nach allem, was bekannt ist, nimmt
-AdSense solche Unterdomains geteilter Plattformen in der Regel nicht an.
-Sicher sagt es erst der Antrag.
+<https://admob.google.com> → **Apps** → **App hinzufügen** → Android →
+„Ist die App in einem Store veröffentlicht?“ → solange nicht: **Nein**,
+Name `TE-Mini Games`. Danach steht dort die **App-ID**
+(`ca-app-pub-9622372327277679~…`, mit Tilde).
 
-Darum: eine Domain kaufen (z. B. `te-mini-games.de`, rund 10 € im Jahr) und
-in Cloudflare unter **Workers & Pages → te-mini-games → Benutzerdefinierte
-Domains** anbinden.
+### 2. Anzeigenblock „Prämie“ (Belohnung)
 
-**Vor dem Play-Start**, weil das Android-Paket fest auf die Adresse zeigt
-(`twa-manifest.json`, `public/.well-known/assetlinks.json`). Wechselt sie
-danach, braucht es ein neues Paket und ein Store-Update. Den Umzug im Code
-übernimmt Claude, sobald der Name feststeht.
+In der App → **Anzeigenblöcke** → **Anzeigenblock hinzufügen** →
+**Prämie** (Rewarded). Name z. B. `Belohnung`. Prämie: Menge `1`, Artikel
+`Hilfe` (die App wertet das selbst, die Zahl ist egal). Danach steht dort
+die **Anzeigenblock-ID** (`ca-app-pub-9622372327277679/…`, mit
+Schrägstrich).
 
-### 2. AdSense-Konto
+### 3. Einwilligungsfenster (EU)
 
-<https://adsense.google.com> → mit deinem Google-Konto anmelden → Website
-(die neue Domain) angeben, Adresse und Bankverbindung eintragen, die
-Steuerangaben ausfüllen. Google prüft die Seite; das dauert Tage bis
-Wochen.
+AdMob → **Datenschutz und Mitteilungen** → **DSGVO** → Mitteilung
+erstellen, für die App veröffentlichen. Die App zeigt es vor dem ersten
+Video von selbst; der Widerruf liegt in der App unter **Datenschutz →
+Einstellungen für Werbung öffnen**.
 
-Danach steht oben rechts unter **Konto → Kontoinformationen** die
-**Publisher-ID** (`pub-…`). Für die App wird daraus `ca-pub-…`.
+### 4. Die beiden IDs eintragen
 
-### 3. Spiele-Werbung beantragen (H5 Games Ads)
+- **App-ID** → GitHub → **Settings → Secrets and variables → Actions →
+  Variables** → `ADMOB_APP_ID`. Sie steckt im Android-Paket; danach das
+  Paket neu bauen (Actions → „Android-Paket bauen“).
+- **Anzeigenblock-ID** → Cloudflare → **Workers & Pages → te-mini-games →
+  Einstellungen → Variablen und Geheimnisse** → `VITE_ADMOB_BELOHNUNG`,
+  dann neu bauen lassen. Die App lädt die Seite, also gilt das ohne
+  Store-Update.
 
-Belohnungsvideos in Web-Spielen laufen über Googles **Ad Placement API**
-(„H5 Games Ads“). Dafür gibt es einen eigenen Antrag über die Hilfeseite von
-AdSense (Suchbegriff „H5 Games Ads“). Ohne Freigabe kommen keine Videos – die
-App zeigt dann einfach keine Angebote.
+Beide IDs sind nicht geheim.
 
-### 4. Einwilligungsfenster (EU)
+**Erst testen:** zusätzlich in Cloudflare `VITE_WERBUNG_TEST` = `on` --
+dann kommen Googles Testvideos, auch schon ohne eigene IDs. Vor dem
+echten Start wieder entfernen. **Nie auf echte eigene Videos tippen** --
+AdMob sperrt Konten für Klicks auf die eigene Werbung.
 
-In AdSense unter **Datenschutz und Mitteilungen → Europäische Vorschriften**
-eine Mitteilung erstellen und für die Domain veröffentlichen. Google
-verlangt für Werbung in der EU ein zertifiziertes Einwilligungsfenster; das
-von Google selbst ist kostenlos und wird von der App automatisch mitgeladen.
-Den Widerruf erreicht man in der App über **Datenschutz → Einstellungen für
-Werbung öffnen**.
+### 5. app-ads.txt
 
-### 5. Einschalten
+Die Seite liefert `https://te-mini-games.pages.dev/app-ads.txt` mit deiner
+Zeile aus. AdMob sucht sie auf der **Entwickler-Website aus dem
+Play-Eintrag** -- dort `https://te-mini-games.pages.dev` angeben. Ob AdMob
+eine Unteradresse auf `pages.dev` als bestätigt anerkennt, zeigt erst die
+Prüfung in AdMob („app-ads.txt“). Werbung kommt auch ohne Bestätigung,
+nur mit weniger Nachfrage.
 
-Cloudflare → **Workers & Pages → te-mini-games → Einstellungen → Variablen
-und Geheimnisse** → für **Production**:
+### 6. Google-Anmeldung in der App
 
-| Variable              | Wert                       |
-| --------------------- | -------------------------- |
-| `VITE_ADSENSE_CLIENT` | `ca-pub-…` (deine Kennung) |
+Google lässt seine Anmeldung in der App-Ansicht nicht zu; die App öffnet
+sie deshalb im Browser und springt danach zurück. Dafür einmal in
+Supabase → **Authentication → URL Configuration → Redirect URLs**
+eintragen:
 
-Dann einmal neu bauen lassen (oder etwas pushen). Ab dann:
+```
+de.tetools.minigames://auth
+```
 
-- gibt es `https://<deine-domain>/ads.txt` (wird beim Bauen erzeugt),
-- bieten die Spiele Videos an, sobald Google welche hat,
-- zeigen Datenschutzerklärung und Startseite die Texte mit Werbung.
+Ohne den Eintrag scheitert nur die Anmeldung mit Google in der App;
+E-Mail und Passwort gehen immer.
 
-**Vor der Freigabe testen:** zusätzlich `VITE_WERBUNG_TEST` = `on` setzen –
-dann liefert Google Testvideos, die nichts abrechnen. Vor dem echten Start
-wieder entfernen.
+### 7. Play Console
 
-### 6. Play Console
+In [`store/play-console-todo.md`](store/play-console-todo.md): **Anzeigen:
+Ja**, die Datensicherheit und neu die **Erklärung zur Werbe-ID**.
 
-In der Checkliste [`store/play-console-todo.md`](store/play-console-todo.md)
-stehen die Antworten mit Werbung: **Anzeigen: Ja** und die geänderte
-Datensicherheit.
-
-### 7. Steuer
+### 8. Steuer
 
 Werbeeinnahmen sind Umsatz von TE-Digital und zählen zur
 Kleinunternehmer-Grenze. Wie die Zahlungen von Google Ireland zu verbuchen
 sind, klärst du am besten einmal mit einem Steuerberater.
+
+---
+
+## Falls doch AdSense im Browser
+
+Bleibt vorbereitet: AdSense-Konto mit eigener Domain, „H5 Games Ads“
+beantragen, Einwilligungsfenster in AdSense, dann `VITE_ADSENSE_CLIENT`
+(`ca-pub-9622372327277679`) in Cloudflare. `ads.txt` liegt schon da.
 
 ---
 
