@@ -22,6 +22,8 @@ export interface SammelKnoedel {
   gesicht: 'froh' | 'zwinker' | 'selig' | 'frech' | 'schlaf' | 'stern'
   /** Ab diesem geschafften Level gehört er dir. */
   abLevel: number
+  /** Gibt es nicht über Level, sondern nur per Belohnungsvideo. */
+  nurPerVideo?: boolean
 }
 
 export const SAMMEL_KNOEDEL: readonly SammelKnoedel[] = [
@@ -165,5 +167,57 @@ export function naechsteBelohnung(hoechstesGeschafftesLevel: number): SammelKnoe
 }
 
 export function knoedelFuer(id: string | null | undefined): SammelKnoedel {
+  if (id === VIDEO_KNOEDEL.id) return VIDEO_KNOEDEL
   return SAMMEL_KNOEDEL.find((k) => k.id === id) ?? STANDARD_KNOEDEL
+}
+
+/* ------------------------------------------------------- per Video */
+
+/**
+ * Der eine Knödel, den es nur per Belohnungsvideo gibt.
+ *
+ * Werbung kauft Aussehen, nie Punkte: Er sieht anders aus als alle anderen
+ * (eigene Farben), kann als Figur getragen werden und sonst nichts. Er
+ * steht nicht in `SAMMEL_KNOEDEL`, weil er an keinem Level hängt.
+ *
+ * Anders als die übrigen ist er nicht aus dem Level ablesbar und wird
+ * deshalb auf dem Gerät gemerkt (localStorage, wie die gewählte Figur).
+ * Einmal freigeschaltet, bleibt er -- auch offline.
+ */
+export const VIDEO_KNOEDEL: SammelKnoedel = {
+  id: 'bao-sternschnuppe',
+  name: 'Sternschnuppen-Bao',
+  hex: '#5b6ee1',
+  akzent: '#2e3a9c',
+  gesicht: 'stern',
+  abLevel: 0,
+  nurPerVideo: true,
+}
+
+const SPEICHER_VIDEO = 'squishy-dumplings:video-knoedel'
+
+function speicher(): Storage | null {
+  try {
+    return typeof localStorage === 'undefined' ? null : localStorage
+  } catch {
+    return null
+  }
+}
+
+/** Gehört dir der Sternschnuppen-Bao schon? */
+export function videoKnoedelFrei(): boolean {
+  try {
+    return speicher()?.getItem(SPEICHER_VIDEO) === '1'
+  } catch {
+    return false
+  }
+}
+
+/** Nach dem zu Ende geschauten Video: für immer freischalten. */
+export function schalteVideoKnoedelFrei(): void {
+  try {
+    speicher()?.setItem(SPEICHER_VIDEO, '1')
+  } catch {
+    // Voller oder gesperrter Speicher darf das Spiel nicht anhalten.
+  }
 }

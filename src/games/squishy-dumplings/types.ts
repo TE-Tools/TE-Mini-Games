@@ -90,6 +90,12 @@ export interface DumplingState {
   phase: 'play' | 'won' | 'lost'
   /** Fortlaufender Zustand des Zufalls -- damit bleibt alles nachrechenbar. */
   zufall: number
+  /**
+   * Wurde in dieser Runde eine Hilfe per Video genommen (+15 Sekunden)?
+   * Dann gibt es weder Punkte noch Rekord, höchstens einen Stern. Siehe
+   * `belohnung.ts`.
+   */
+  mitHilfe?: boolean
 }
 
 /** 300 Level, wie bei den anderen Spielen; jedes zwanzigste ist ein Tor. */

@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  bienenFlowGame,
   createBienenLevel,
+  platzAngebot,
+  raeumePlatz,
+  wertungFuer,
   createMatch,
   tapSpalte,
   tick,
@@ -34,6 +36,7 @@ import {
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
 import { LevelMap } from '@/components/level-map/LevelMap'
+import { BelohnungsKnopf } from '@/components/werbung/BelohnungsKnopf'
 import { useSprache } from '@/i18n/sprache'
 import styles from './BienenFlowPage.module.css'
 
@@ -173,9 +176,9 @@ export function BienenFlowPage() {
     loescheFehlversuche(final.level)
     setPleiten(0)
     const raw = { won: true, tote: final.tote, slotCount: final.slotCount }
-    const sc = bienenFlowGame.calculateScore(final.level, raw)
-    const xp = bienenFlowGame.calculateXP(final.level, sc)
-    const st = bienenFlowGame.calculateStars?.(final.level, sc) ?? 0
+    // Mit Hilfe aus dem Video: Level frei, aber keine Punkte und kein Rekord.
+    const mitHilfe = final.mitHilfe === true
+    const { score: sc, xp, stars: st } = wertungFuer(final.level, raw, mitHilfe)
     setScore(sc)
     setXpGained(xp)
     setSterne(st)
@@ -187,7 +190,8 @@ export function BienenFlowPage() {
         score: sc,
         xp,
         stars: st,
-        resultData: raw,
+        resultData: { ...raw, mitHilfe },
+        ohneRekord: mitHilfe,
       })
       await addXp('guest', xp)
       const progress = await recordLevelComplete('bienen-flow', final.level, xp)
@@ -294,6 +298,13 @@ export function BienenFlowPage() {
     },
     [state],
   )
+
+  /** Nach dem Video: einen Platz freiräumen, einmal je Versuch. */
+  const platzFreiraeumen = useCallback(() => {
+    if (!platzAngebot(state)) return
+    setState(raeumePlatz(state!))
+    setPhase('play')
+  }, [state])
 
   if (loading) {
     return (
@@ -523,6 +534,7 @@ export function BienenFlowPage() {
             <p className={styles.muted}>
               {state.tote === 0 ? b.genauAufgegangen : b.liegenGeblieben(state.tote)}
             </p>
+            {state.mitHilfe && <p className={styles.muted}>{b.mitHilfe}</p>}
             <div className={styles.actions}>
               <button type="button" onClick={() => setPhase('map')}>
                 {b.karte}
@@ -553,6 +565,12 @@ export function BienenFlowPage() {
                   ? b.versuchBaldBonus(pleiten, BONUS_AB)
                   : b.versuch(pleiten)}
             </p>
+            <BelohnungsKnopf
+              name="bienen-platz"
+              aktiv={platzAngebot(state)}
+              belohnung={b.platzFrei}
+              onBelohnt={platzFreiraeumen}
+            />
             <div className={styles.actions}>
               <button type="button" onClick={() => setPhase('map')}>
                 {b.karte}
