@@ -99,11 +99,15 @@ https://te-mini-games.pages.dev/konto-loeschen
 
 ### 2.3 Anzeigen
 
-**Nein**, die App enthält keine Werbung.
+**Ja**, die App enthält Werbung -- seit 07.11.2026 entschieden: nur
+freiwillige Belohnungsvideos über Google AdSense (H5 Games Ads), siehe
+[`docs/werbung.md`](../werbung.md).
 
-Belegt: keine Werbe- oder Tracking-Bibliothek im Projekt. Die
-Abhängigkeiten sind Supabase, Dexie, React, React-Router, Three.js und
-Workbox – mehr nicht.
+Auch dann „Ja“ antworten, wenn die Werbung beim Einreichen noch nicht
+eingeschaltet ist (AdSense noch nicht freigegeben): Die Angabe gilt für die
+App, wie sie geplant ist, und Google zeigt sie im Store als „Enthält
+Werbung“. Nachträglich von „Nein“ auf „Ja“ zu wechseln, während die Werbung
+schon läuft, ist der Fall, den Google ahndet.
 
 - [ ] beantwortet
 
@@ -161,11 +165,11 @@ die Glücksspiel-Simulation passt ohnehin nicht dazu.
 
 Der am genauesten geprüfte Abschnitt. Die Angaben:
 
-| Frage                                           | Antwort                         |
-| ----------------------------------------------- | ------------------------------- |
-| Werden Daten erhoben oder geteilt?              | **Erhoben: ja. Geteilt: nein.** |
-| Werden Daten bei der Übertragung verschlüsselt? | **Ja** (HTTPS)                  |
-| Können Nutzer die Löschung verlangen?           | **Ja**                          |
+| Frage                                           | Antwort                       |
+| ----------------------------------------------- | ----------------------------- |
+| Werden Daten erhoben oder geteilt?              | **Erhoben: ja. Geteilt: ja.** |
+| Werden Daten bei der Übertragung verschlüsselt? | **Ja** (HTTPS)                |
+| Können Nutzer die Löschung verlangen?           | **Ja**                        |
 
 Datentypen – nur diese drei ankreuzen:
 
@@ -177,9 +181,24 @@ Datentypen – nur diese drei ankreuzen:
 
 Jeweils **optional**, weil ohne Konto nichts davon das Gerät verlässt.
 
-Nicht ankreuzen: Standort, Kontakte, Fotos, Dateien, Kalender,
-Finanzdaten, Gesundheitsdaten, Geräte-IDs für Werbung, Abstürze und
-Diagnosedaten.
+**Dazu wegen der Werbung (Google AdSense):** Googles Werbecode erhebt Daten
+selbst und nutzt sie auch für eigene Zwecke -- das zählt bei Google als
+„geteilt“. Google nennt für seine Werbedienste in der Regel diese Angaben;
+**vor dem Absenden mit Googles aktueller Hilfeseite zu den
+Datensicherheitsangaben für Werbung abgleichen**, die Liste ändert sich:
+
+| Datentyp                                  | Erhoben | Geteilt | Pflicht? | Zweck                               |
+| ----------------------------------------- | ------- | ------- | -------- | ----------------------------------- |
+| **Ungefährer Standort** (aus IP-Adresse)  | ja      | ja      | optional | Werbung, Betrugsvermeidung          |
+| **Geräte- oder andere IDs**               | ja      | ja      | optional | Werbung, Analyse, Betrugsvermeidung |
+| **App-Interaktionen** (Werbung angesehen) | ja      | ja      | optional | Werbung, Analyse                    |
+| **Diagnosedaten**                         | ja      | ja      | optional | Werbung, Analyse, Betrugsvermeidung |
+
+**Optional**, weil Werbung nur geladen wird, wenn ein Spiel ein Video anbietet,
+und niemand eines ansehen muss.
+
+Nicht ankreuzen: genauer Standort, Kontakte, Fotos, Dateien, Kalender,
+Finanzdaten, Gesundheitsdaten.
 
 - [ ] Formular abgeschickt
 

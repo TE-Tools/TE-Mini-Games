@@ -3,10 +3,37 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'node:path'
+import type { Plugin } from 'vite'
+
+/**
+ * ads.txt für AdSense -- Google zeigt Werbung nur aus, wenn unter der Domain
+ * eine ads.txt mit der eigenen Publisher-Kennung liegt. Erzeugt aus
+ * VITE_ADSENSE_CLIENT, damit die Kennung nur an einer Stelle steht; ohne sie
+ * gibt es keine Datei (Werbung aus). Siehe docs/werbung.md.
+ */
+function adsTxt(): Plugin {
+  let client = ''
+  return {
+    name: 'te-ads-txt',
+    configResolved(config) {
+      client = String(config.env.VITE_ADSENSE_CLIENT ?? '').trim()
+    },
+    generateBundle() {
+      const kennung = client.match(/^ca-(pub-\d{10,20})$/)?.[1]
+      if (!kennung) return
+      this.emitFile({
+        type: 'asset',
+        fileName: 'ads.txt',
+        source: `google.com, ${kennung}, DIRECT, f08c47fec0942fa0\n`,
+      })
+    },
+  }
+}
 
 export default defineConfig({
   plugins: [
     react(),
+    adsTxt(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icons/*.png', 'icons/*.svg'],

@@ -85,8 +85,10 @@ NO SIGNAL NEEDED
 Playing, points, XP, badges and group mode all work without internet.
 You only go online when you want to.
 
-WHAT'S NOT IN IT
-No ads. No in-game purchases. No tracking, no analytics. An account is
+ADS ONLY IF YOU WANT THEM
+Ads only come as an optional video: watch one if you like and get a little
+more time, a second try or a special item in return. Points can't be bought
+this way. No in-game purchases, no tracking, no analytics. An account is
 optional and only needed for online games and the leaderboard; without one,
 everything stays on your device. You can delete your account in the app
 itself.
