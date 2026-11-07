@@ -1,5 +1,8 @@
 # Play-Store-Eintrag – fertige Texte
 
+> Englische Fassung: [`eintrag-en.md`](eintrag-en.md), Bilder dazu in
+> [`en/`](en/).
+
 Alles, was Google beim Anlegen des Eintrags in ein Feld verlangt. Zum
 Kopieren gedacht. Die Zeichengrenzen stehen dabei, weil die Play Console
 stumm abschneidet.
@@ -45,8 +48,9 @@ Minuten, und man kann jederzeit aufhören.
 GESCHICK UND REAKTION
 • Die perfekte Sekunde – triff die Sekunde auf die Hundertstel genau. 500
   Level durch fünf Welten, vom Urwald bis zum Eispalast.
-• Bienen-Flow – führe die Biene durch den Schwarm.
-• Squishy Dumplings – stapeln, bis es nicht mehr geht.
+• Bienen-Flow – schick Farbblöcke los und lass die Bienen ein Bild
+  Pixel für Pixel abtragen. Fünf Plätze, dann steht die Kolonie.
+• Squishy Dumplings – drei gleiche Knödel in eine Reihe, gegen die Uhr.
 • Trapbound – ein Sprungspiel, bei dem der Boden lügt.
 • Emberwake – finde Licht in einer dunklen Welt, bevor der Kern ausgeht.
 
@@ -55,7 +59,6 @@ KOPF UND GEDÄCHTNIS
 • Was fehlt? – merken, was eben noch da war.
 • Reihenfolge – die Kette wird jedes Mal länger.
 • Kopfrechnen – schnelles Rechnen gegen die Uhr.
-• Wortbombe – ein Wort, bevor die Zeit abläuft.
 
 WÜRFEL, KARTEN UND BRETT
 • Kniffel – dreizehn Felder, drei Würfe, Bonus ab 63. Jeder weitere Kniffel
@@ -68,11 +71,17 @@ WÜRFEL, KARTEN UND BRETT
 
 IN DER GRUPPE, EIN GERÄT REICHT
 • Finde den Imposter, Wer bin ich?, Stadt Land Fluss, Scharade,
-  Wer würde eher, Schützenrunde – das Handy wandert einmal um den Tisch.
+  Wortbombe, Wer würde eher, Schützenrunde – das Handy wandert einmal
+  um den Tisch.
 
 ONLINE GEGENEINANDER
-Kniffel, Texas Hold'em, Mau-Mau, Letzte Karte und Schützenopoly lassen sich
-auch online spielen: Tisch aufmachen, Code weitergeben, losspielen.
+Kniffel, Texas Hold'em, Mau-Mau, Letzte Karte, Schützenopoly,
+Schützenrunde, Finde den Imposter, Wer bin ich? und Stadt Land Fluss lassen
+sich auch online spielen: Tisch aufmachen, Code weitergeben, losspielen.
+
+AUF DEUTSCH UND ENGLISCH
+Die App spricht beide Sprachen – mit eigenen englischen Wörtern und Fragen
+für die Ratespiele, nicht übersetzten deutschen.
 
 OHNE NETZ
 Spielen, Punkte, XP, Abzeichen und der Gruppenmodus laufen ohne Internet.
@@ -114,7 +123,8 @@ Zwei Fragen ehrlich beantworten, sonst fliegt der Eintrag später auf:
   Einstufung ab 12 oder 16 Jahren -- das ist normal und kein Fehler.
 - **Nutzer können miteinander kommunizieren: ja, eingeschränkt.** In den
   Online-Spielen sehen Mitspieler den selbst gewählten Benutzernamen. Einen
-  freien Chat gibt es nicht.
+  freien Chat gibt es nicht: In der Schützenrunde wählt man am Tag einen
+  von festen Sätzen, und der Server nimmt nur diese an (Migration 030).
 
 ### Datensicherheit (Data safety)
 
