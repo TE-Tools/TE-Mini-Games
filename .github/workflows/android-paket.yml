@@ -1,27 +1,39 @@
 # Baut das Android-Paket (AAB) für Google Play und signiert es mit dem
 # eigenen Upload-Schlüssel aus den Projektgeheimnissen.
 #
-# Die App ist eine Trusted Web Activity: Sie lädt die ausgelieferte Seite,
-# der Bau holt also nichts aus `src/`, sondern erzeugt nur die Hülle aus
-# `twa-manifest.json`. Deshalb ist hier kein `npm run build` nötig.
+# Seit 07.11.2026 ist die App eine Capacitor-Hülle (capacitor.config.ts)
+# statt einer Trusted Web Activity -- damit AdMob geht. Die Hülle lädt die
+# ausgelieferte Seite; gebaut wird hier nur die Hülle mit ihren Plugins.
+# Paketname und Schlüssel sind dieselben wie bei der TWA: Für Google Play
+# ist es dieselbe App.
 #
-# Nötige Geheimnisse:
-#   ANDROID_KEYSTORE_BASE64    -- aus dem Ablauf "Android-Schlüssel erzeugen"
-#   ANDROID_KEYSTORE_PASSWORD
-#   ANDROID_KEY_PASSWORD
+# Nötige Geheimnisse (aus dem Ablauf "Android-Schlüssel erzeugen"):
+#   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_PASSWORD
+# Optional als Variable (Settings → Secrets and variables → Variables):
+#   ADMOB_APP_ID   ca-app-pub-…~…  -- ohne sie baut die App mit Googles
+#                  Test-App-ID und zeigt nur Testvideos.
 name: Android-Paket bauen
 
 on:
   workflow_dispatch:
     inputs:
       versionName:
-        description: 'Versionsname, wie er im Store steht (z. B. 1.0.1)'
+        description: 'Versionsname, wie er im Store steht (z. B. 1.1.0)'
         required: false
         default: ''
       versionCode:
         description: 'Versionsnummer -- muss bei jedem Upload zu Play größer sein als zuvor'
         required: false
         default: ''
+  # Bei Änderungen an der Hülle von selbst bauen -- dann fällt ein kaputter
+  # Bau sofort auf und nicht erst, wenn ein Update ansteht.
+  push:
+    paths:
+      - 'android/**'
+      - 'capacitor.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/android-paket.yml'
 
 jobs:
   bauen:
@@ -32,11 +44,12 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
+          cache: npm
 
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
       - name: Geheimnisse prüfen
         env:
@@ -53,174 +66,97 @@ jobs:
             exit 1
           fi
 
-      - name: Gradle- und Bubblewrap-Zwischenspeicher
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ hashFiles('twa-manifest.json') }}
-          restore-keys: gradle-
-
-      - name: Android-SDK für Bubblewrap herrichten
-        run: |
-          # Bubblewrap erkennt ein SDK nur an, wenn darin ein Ordner `tools`
-          # oder `bin` liegt (AndroidSdkTools.validatePath). Der Läufer legt
-          # alles unter cmdline-tools/latest ab.
-          #
-          # Ein blosser Verweis genügt dafür nicht: Das Skript `sdkmanager`
-          # sucht seine JAR-Dateien relativ zum eigenen Pfad. Über
-          # $ANDROID_HOME/bin aufgerufen sucht es sie in $ANDROID_HOME/lib --
-          # dort liegen sie nicht, und es endet mit
-          #   Could not find or load main class ...SdkManagerCli
-          #
-          # Deshalb ein echtes Verzeichnis mit einem Weiterleiter, der das
-          # Original an seinem eigenen Ort aufruft. Das erfüllt die Prüfung
-          # und funktioniert auch, wenn Bubblewrap selbst danach greift.
-          ECHT="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          if [ ! -x "$ECHT" ]; then
-            echo "::error::sdkmanager liegt nicht unter $ECHT -- der Läufer hat das Android-SDK anders abgelegt als erwartet."
-            exit 1
-          fi
-          sudo mkdir -p "$ANDROID_HOME/bin"
-          printf '#!/bin/bash\nexec "%s" "$@"\n' "$ECHT" | sudo tee "$ANDROID_HOME/bin/sdkmanager" > /dev/null
-          sudo chmod +x "$ANDROID_HOME/bin/sdkmanager"
-          # Beweist, dass der Weiterleiter trägt -- und nicht erst der Bau.
-          "$ANDROID_HOME/bin/sdkmanager" --version
-          # Genau die Fassungen, die Bubblewrap und das erzeugte Projekt
-          # verlangen. Fehlen sie, lädt Bubblewrap sie mitten im Bau selbst
-          # nach -- langsamer und ohne klare Meldung, wenn es schiefgeht.
-          yes 2>/dev/null | "$ANDROID_HOME/bin/sdkmanager" --install "build-tools;36.1.0" "platforms;android-36" > /dev/null
-          echo "Build-Tools und Plattform bereit."
-
-      - name: Bubblewrap bereitstellen
-        run: |
-          npm i -g @bubblewrap/cli@1.27.0
-          # Bubblewrap lädt sonst ein eigenes JDK und SDK (rund 1,4 GB).
-          # Der Läufer bringt beides mit -- das spart jeden Lauf mehrere Minuten.
-          mkdir -p ~/.bubblewrap
-          printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "$JAVA_HOME" "$ANDROID_HOME" > ~/.bubblewrap/config.json
-          cat ~/.bubblewrap/config.json
-          # Beweist vor dem Bau, dass Bubblewrap beide Pfade annimmt.
-          bubblewrap doctor
-
-      - name: Maven Central über den Google-Spiegel
-        run: |
-          # Bubblewraps Vorlage nennt jcenter(). Das ist seit 2021
-          # abgeschaltet und leitet auf repo1.maven.org um, das hinter
-          # geteilten Adressen gern mit 429 antwortet. Der Spiegel bei
-          # Google hat denselben Inhalt.
-          mkdir -p ~/.gradle/init.d
-          cat > ~/.gradle/init.d/maven-spiegel.gradle <<'GRADLE'
-          def spiegel = 'https://maven-central.storage-download.googleapis.com/maven2/'
-          def ersetze = { handler ->
-            handler.removeAll { repo ->
-              repo instanceof org.gradle.api.artifacts.repositories.MavenArtifactRepository &&
-                ['jcenter', 'repo1.maven.org', 'repo.maven.apache.org'].any { repo.url.toString().contains(it) }
-            }
-            handler.maven { url spiegel }
-          }
-          settingsEvaluated { settings ->
-            ersetze(settings.pluginManagement.repositories)
-            ersetze(settings.dependencyResolutionManagement.repositories)
-          }
-          projectsLoaded {
-            gradle.rootProject.allprojects { projekt ->
-              ersetze(projekt.buildscript.repositories)
-              ersetze(projekt.repositories)
-            }
-          }
-          GRADLE
-          sed -i 's/^          //' ~/.gradle/init.d/maven-spiegel.gradle
-
-      - name: Projekt vorbereiten
+      - name: Eingaben prüfen
         env:
-          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          SPEICHER: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           VERSION_NAME: ${{ inputs.versionName }}
           VERSION_CODE: ${{ inputs.versionCode }}
         run: |
-          # Eingaben prüfen, bevor sie stillschweigend Unsinn ergeben.
-          # versionCode ist eine ganze Zahl; "1.0.1" wird dabei zu NaN und
-          # landet als null im Manifest. Das faellt erst beim Hochladen auf.
           if [ -n "$VERSION_CODE" ] && ! printf '%s' "$VERSION_CODE" | grep -qE '^[1-9][0-9]*$'; then
-            echo "::error::versionCode muss eine ganze Zahl sein (1, 2, 3 ...), nicht \"$VERSION_CODE\". Die Zahl zaehlt die Uploads und muss jedes Mal groesser werden. Der Text, den Nutzer sehen, gehoert in versionName."
+            echo "::error::versionCode muss eine ganze Zahl sein (1, 2, 3 ...), nicht \"$VERSION_CODE\". Der Text, den Nutzer sehen, gehört in versionName."
             exit 1
           fi
           if [ -n "$VERSION_NAME" ] && ! printf '%s' "$VERSION_NAME" | grep -qE '^[0-9]+\.[0-9]+(\.[0-9]+)?$'; then
             echo "::error::versionName sieht aus wie 1.0.0 oder 1.2 -- nicht \"$VERSION_NAME\"."
             exit 1
           fi
-          mkdir -p bau
-          cp twa-manifest.json bau/
-          cd bau
-          if [ -n "$VERSION_NAME" ]; then
-            node -e 'const f="twa-manifest.json",m=require("./"+f);m.appVersion=process.env.VERSION_NAME;require("fs").writeFileSync(f,JSON.stringify(m,null,2)+"\n")'
-          fi
-          if [ -n "$VERSION_CODE" ]; then
-            node -e 'const f="twa-manifest.json",m=require("./"+f);m.appVersionCode=Number(process.env.VERSION_CODE);require("fs").writeFileSync(f,JSON.stringify(m,null,2)+"\n")'
-          fi
+
+      - name: Gradle-Zwischenspeicher
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('android/**/*.gradle', 'android/gradle/wrapper/gradle-wrapper.properties', 'package-lock.json') }}
+          restore-keys: gradle-
+
+      - name: Hülle vorbereiten
+        run: |
+          npm ci
+          # Capacitor will einen Web-Ordner zum Einpacken, auch wenn die App
+          # die Seite aus dem Netz lädt -- er dient als Rückfall.
+          npm run build
+          npx cap sync android
+
+      - name: Schlüssel bereitlegen
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          SPEICHER: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
           # Leerzeichen und Zeilenumbrüche rauswerfen: Beim Einfügen in die
           # Oberfläche von GitHub rutschen leicht welche mit hinein.
-          printf '%s' "$KEYSTORE" | tr -d '[:space:]' | base64 -d > android.keystore 2>/dev/null || true
-          if [ ! -s android.keystore ]; then
-            echo "::error::ANDROID_KEYSTORE_BASE64 lässt sich nicht als Base64 lesen. In dieses Geheimnis gehört der *Textinhalt* von android.keystore.base64.txt -- nicht die Datei android.keystore selbst und nicht die ZIP-Datei."
+          printf '%s' "$KEYSTORE" | tr -d '[:space:]' | base64 -d > "$RUNNER_TEMP/android.keystore" 2>/dev/null || true
+          if [ ! -s "$RUNNER_TEMP/android.keystore" ]; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 lässt sich nicht als Base64 lesen."
             exit 1
           fi
-          if ! keytool -list -keystore android.keystore -storepass "$SPEICHER" -alias te-mini-games >/dev/null 2>&1; then
-            echo "::error::Die Datei wurde entschlüsselt, ist aber kein lesbarer Schlüsselspeicher mit dem Alias te-mini-games. Entweder steht im Geheimnis der falsche Inhalt, oder ANDROID_KEYSTORE_PASSWORD stimmt nicht mit dem überein, das beim Erzeugen verwendet wurde."
+          if ! keytool -list -keystore "$RUNNER_TEMP/android.keystore" -storepass "$SPEICHER" -alias te-mini-games >/dev/null 2>&1; then
+            echo "::error::Kein lesbarer Schlüsselspeicher mit dem Alias te-mini-games -- falscher Inhalt oder falsches ANDROID_KEYSTORE_PASSWORD."
             exit 1
           fi
           echo "Schlüsselspeicher gelesen."
-          bubblewrap update --skipVersionUpgrade
 
       - name: Bauen und signieren
         env:
-          BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          TE_KEYSTORE_PATH: ${{ runner.temp }}/android.keystore
+          TE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          TE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          VERSION_NAME: ${{ inputs.versionName }}
+          VERSION_CODE: ${{ inputs.versionCode }}
+          ADMOB_APP_ID: ${{ vars.ADMOB_APP_ID }}
         run: |
-          cd bau
-          bubblewrap build --skipPwaValidation
+          cd android
+          chmod +x gradlew
+          EXTRA=""
+          [ -n "$VERSION_CODE" ] && EXTRA="$EXTRA -PteVersionCode=$VERSION_CODE"
+          [ -n "$VERSION_NAME" ] && EXTRA="$EXTRA -PteVersionName=$VERSION_NAME"
+          [ -n "$ADMOB_APP_ID" ] && EXTRA="$EXTRA -PteAdmobAppId=$ADMOB_APP_ID"
+          ./gradlew --no-daemon bundleRelease assembleRelease $EXTRA
 
       - name: Nachsehen, was entstanden ist
         run: |
-          cd bau
-          # Der Läufer hat mehrere Build-Tools-Fassungen. Ein Platzhalter
-          # trifft sie alle: Die erste wird zum Befehl, die zweite zum
-          # Argument, und apksigner antwortet mit "Unsupported command".
-          # Deshalb beide Werkzeuge eindeutig auswählen.
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          AAB=android/app/build/outputs/bundle/release/app-release.aab
+          ls -l "$APK" "$AAB"
           WERKZEUGE=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)
-          AAPT="$WERKZEUGE/aapt2"
-          SIGNIERER="$WERKZEUGE/apksigner"
           {
             echo '### Gebautes Paket'
             echo '```'
-            "$AAPT" dump badging app-release-signed.apk | head -1
+            "$WERKZEUGE/aapt2" dump badging "$APK" | head -1
+            "$WERKZEUGE/aapt2" dump badging "$APK" | grep -o "com.google.android.gms.ads.APPLICATION_ID[^ ]*" || true
             echo '```'
-            echo 'Der SHA-256 des Signaturschlüssels -- muss in assetlinks.json stehen:'
+            echo 'SHA-256 des Upload-Schlüssels:'
             echo '```'
-            "$SIGNIERER" verify --print-certs app-release-signed.apk | grep 'SHA-256 digest'
+            "$WERKZEUGE/apksigner" verify --print-certs "$APK" | grep 'SHA-256 digest'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-          # Auch ins Protokoll: In der Zusammenfassung muss man danach
-          # suchen, und gebraucht wird er jedes Mal fuer assetlinks.json.
-          echo "Fingerabdruck des Upload-Schluessels:"
-          "$SIGNIERER" verify --print-certs app-release-signed.apk | grep 'SHA-256 digest'
-          # Eine leere Version nimmt Google nicht an -- lieber hier abbrechen.
-          if "$AAPT" dump badging app-release-signed.apk | head -1 | grep -q "versionName=''"; then
-            echo "::error::versionName ist leer. In twa-manifest.json heißt der Schlüssel appVersion, nicht appVersionName."
-            exit 1
-          fi
+          "$WERKZEUGE/apksigner" verify --print-certs "$APK" | grep 'SHA-256 digest'
 
       - name: Paket bereitstellen
-        # Auch dann, wenn die Prüfung davor anschlägt: Das Paket ist dann
-        # schon gebaut, und man will es ansehen können, statt den ganzen
-        # Lauf zu wiederholen.
         if: always()
         uses: actions/upload-artifact@v5
         with:
           name: te-mini-games-android
           path: |
-            bau/app-release-bundle.aab
-            bau/app-release-signed.apk
+            android/app/build/outputs/bundle/release/app-release.aab
+            android/app/build/outputs/apk/release/app-release.apk
           retention-days: 14

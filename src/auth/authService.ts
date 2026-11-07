@@ -2,6 +2,8 @@ import { onlineFehlerText } from '@/services/onlineFehler'
 import { supabase, isSupabaseConfigured } from '@/database/supabase'
 import { clearPlayMode, setPlayMode } from '@/auth/sessionMode'
 import type { User, Session } from '@supabase/supabase-js'
+import { inDerApp } from '@/services/werbungAdmob'
+import { googleInDerApp } from '@/auth/appAnmeldung'
 
 export type AuthState = {
   user: User | null
@@ -106,6 +108,8 @@ export async function signUpWithEmail(
 
 export async function signInWithGoogle(): Promise<{ error: string | null }> {
   if (!supabase) return { error: 'Supabase nicht konfiguriert' }
+  // In der Android-App über den externen Browser (src/auth/appAnmeldung.ts).
+  if (inDerApp()) return googleInDerApp(supabase)
   const redirectTo = `${window.location.origin}/auth`
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',

@@ -19,8 +19,11 @@ wird. Wer von oben nach unten arbeitet, läuft nicht in gesperrte Felder.
 Das muss nicht auf deinem Rechner passieren. Unter _Actions_ im Projekt
 liegen zwei Abläufe: **Android-Schlüssel erzeugen** (einmalig) und
 **Android-Paket bauen** (jedes Mal). Ergebnis ist eine Datei
-`app-release-bundle.aab`, signiert mit deinem eigenen Schlüssel. Die
-Einzelheiten stehen in [`docs/app-store.md`](../app-store.md).
+`app-release.aab`, signiert mit deinem eigenen Schlüssel. Seit 07.11.2026
+ist die App eine Capacitor-App (wegen AdMob, siehe
+[`docs/werbung.md`](../werbung.md)); Paketname und Schlüssel sind dieselben.
+Vor dem Bau die Variable `ADMOB_APP_ID` setzen, sonst enthält das Paket
+Googles Test-App-ID und zeigt nur Testvideos.
 
 - [ ] AAB gebaut
 - [ ] Ein **Testkonto in der App angelegt** (E-Mail + Passwort), das du
@@ -100,14 +103,26 @@ https://te-mini-games.pages.dev/konto-loeschen
 ### 2.3 Anzeigen
 
 **Ja**, die App enthält Werbung -- seit 07.11.2026 entschieden: nur
-freiwillige Belohnungsvideos über Google AdSense (H5 Games Ads), siehe
+freiwillige Belohnungsvideos über **Google AdMob**, siehe
 [`docs/werbung.md`](../werbung.md).
 
 Auch dann „Ja“ antworten, wenn die Werbung beim Einreichen noch nicht
-eingeschaltet ist (AdSense noch nicht freigegeben): Die Angabe gilt für die
+eingeschaltet ist (AdMob-IDs noch nicht eingetragen): Die Angabe gilt für die
 App, wie sie geplant ist, und Google zeigt sie im Store als „Enthält
 Werbung“. Nachträglich von „Nein“ auf „Ja“ zu wechseln, während die Werbung
 schon läuft, ist der Fall, den Google ahndet.
+
+- [ ] beantwortet
+
+### 2.3a Werbe-ID
+
+> **Richtlinie** → **App-Inhalte** → **Werbe-ID**
+
+**Ja**, die App verwendet die Werbe-ID. Das AdMob-SDK trägt die
+Berechtigung `com.google.android.gms.permission.AD_ID` selbst ein. Zweck:
+**Werbung oder Marketing** (dazu, falls angeboten, **Betrugsprävention**).
+Ohne diese Erklärung lehnt Google Uploads ab, sobald die Berechtigung im
+Paket steckt.
 
 - [ ] beantwortet
 
@@ -181,7 +196,7 @@ Datentypen – nur diese drei ankreuzen:
 
 Jeweils **optional**, weil ohne Konto nichts davon das Gerät verlässt.
 
-**Dazu wegen der Werbung (Google AdSense):** Googles Werbecode erhebt Daten
+**Dazu wegen der Werbung (Google AdMob):** Das AdMob-SDK erhebt Daten
 selbst und nutzt sie auch für eigene Zwecke -- das zählt bei Google als
 „geteilt“. Google nennt für seine Werbedienste in der Regel diese Angaben;
 **vor dem Absenden mit Googles aktueller Hilfeseite zu den
@@ -321,8 +336,11 @@ lässt sich währenddessen erledigen.
 
 ## 7. Nach dem ersten Upload: die Fingerabdrücke
 
-Das ist der Schritt, der am leichtesten vergessen wird – und ohne ihn
-zeigt die App im Vollbild trotzdem eine Adressleiste.
+> **Entfällt seit der Capacitor-App (07.11.2026).** Die Fingerabdrücke in
+> `assetlinks.json` brauchte nur die Trusted Web Activity, damit sie ohne
+> Adressleiste lief. Die Capacitor-App hat keine. Die Datei bleibt liegen
+> und stört nicht. Der Rest dieses Abschnitts gilt nur, falls die App je
+> wieder eine TWA wird.
 
 1. > **Testen und veröffentlichen** → **Einrichtung** → **App-Integrität**
    > → **App-Signaturschlüssel**

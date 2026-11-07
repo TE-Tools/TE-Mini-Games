@@ -6,26 +6,27 @@ import path from 'node:path'
 import type { Plugin } from 'vite'
 
 /**
- * ads.txt für AdSense -- Google zeigt Werbung nur aus, wenn unter der Domain
- * eine ads.txt mit der eigenen Publisher-Kennung liegt. Erzeugt aus
- * VITE_ADSENSE_CLIENT, damit die Kennung nur an einer Stelle steht; ohne sie
- * gibt es keine Datei (Werbung aus). Siehe docs/werbung.md.
+ * Die Publisher-ID von TE-Digital bei Google (AdMob und AdSense, ein Konto).
+ * Öffentlich -- sie steht ohnehin in jeder ads.txt. Von Thomas am 07.11.2026
+ * aus AdMob übernommen.
+ */
+const GOOGLE_PUBLISHER_ID = 'pub-9622372327277679'
+
+/**
+ * app-ads.txt (AdMob) und ads.txt (AdSense) mit derselben Zeile: Google
+ * liefert Werbung nur ungeschmälert aus, wenn auf der Entwickler-Website
+ * steht, wer verkaufen darf. AdMob sucht app-ads.txt auf der Website aus
+ * dem Play-Eintrag, AdSense ads.txt auf der Seite selbst. Siehe
+ * docs/werbung.md.
  */
 function adsTxt(): Plugin {
-  let client = ''
+  const zeile = `google.com, ${GOOGLE_PUBLISHER_ID}, DIRECT, f08c47fec0942fa0\n`
   return {
     name: 'te-ads-txt',
-    configResolved(config) {
-      client = String(config.env.VITE_ADSENSE_CLIENT ?? '').trim()
-    },
     generateBundle() {
-      const kennung = client.match(/^ca-(pub-\d{10,20})$/)?.[1]
-      if (!kennung) return
-      this.emitFile({
-        type: 'asset',
-        fileName: 'ads.txt',
-        source: `google.com, ${kennung}, DIRECT, f08c47fec0942fa0\n`,
-      })
+      for (const fileName of ['app-ads.txt', 'ads.txt']) {
+        this.emitFile({ type: 'asset', fileName, source: zeile })
+      }
     },
   }
 }

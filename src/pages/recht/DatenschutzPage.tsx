@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useSprache, type Sprache } from '@/i18n/sprache'
-import { einwilligungAendern, werbungAktiv } from '@/services/werbung'
+import { einwilligungAendern, werbeAnbieter, werbungAktiv } from '@/services/werbung'
 import styles from './RechtShell.module.css'
 
 /**
@@ -155,9 +155,10 @@ function TextDe() {
       {werbungAktiv() ? (
         <p>
           <strong>Cookies setzen wir nicht.</strong> Die App merkt sich Dinge im lokalen Speicher
-          des Browsers. Erst wenn ein Spiel ein Werbevideo anbietet, wird Google AdSense geladen;
-          Google kann dann – mit deiner Einwilligung – Cookies oder ähnliche Kennungen verwenden
-          (siehe Abschnitt 5).
+          des Browsers. Erst wenn ein Spiel ein Werbevideo anbietet, wird{' '}
+          {werbeAnbieter() === 'admob' ? 'Google AdMob' : 'Google AdSense'} geladen; Google kann
+          dann – mit deiner Einwilligung – Cookies oder ähnliche Kennungen verwenden (siehe
+          Abschnitt 5).
         </p>
       ) : (
         <p>
@@ -208,22 +209,29 @@ function TextDe() {
 
       {werbungAktiv() && (
         <>
-          <h3>Google AdSense (nur freiwillige Werbevideos)</h3>
+          <h3>
+            {werbeAnbieter() === 'admob'
+              ? 'Google AdMob (nur freiwillige Werbevideos, Android-App)'
+              : 'Google AdSense (nur freiwillige Werbevideos)'}
+          </h3>
           <p>
             Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland. Manche Spiele
             bieten an, ein kurzes Werbevideo anzusehen und dafür eine Hilfe zu bekommen – etwa einen
-            Tipp, mehr Zeit oder einen zweiten Versuch. Das Video kommt von Google AdSense. Google
-            wird <strong>erst geladen, wenn ein Spiel ein solches Video anbietet</strong>, nicht
-            beim Start der App; ansehen musst du es nie.
+            Tipp, mehr Zeit oder einen zweiten Versuch. Das Video kommt in der Android-App von
+            Google AdMob, im Browser von Google AdSense. Google wird{' '}
+            <strong>erst geladen, wenn ein Spiel ein solches Video anbietet</strong>, nicht beim
+            Start der App; ansehen musst du es nie.
           </p>
           <p>
             Dabei verarbeitet Google insbesondere deine IP-Adresse, Angaben zu Gerät und Browser und
             ob und wie lange ein Video angesehen wurde, und kann Cookies oder ähnliche Kennungen
-            verwenden. Beim ersten Mal fragt dich ein Fenster von Google, ob du personalisierter
-            Werbung zustimmst. Rechtsgrundlage ist deine Einwilligung (Art. 6 Abs. 1 lit. a DSGVO, §
-            25 Abs. 1 TDDDG). Ohne Einwilligung zeigt Google nur nicht personalisierte Werbung. Es
-            kann zu einer Übermittlung an Google LLC in den USA kommen; Google ist nach dem EU-U.S.
-            Data Privacy Framework zertifiziert. Details:{' '}
+            verwenden – in der Android-App auch die Werbe-ID deines Geräts, die du in den
+            Android-Einstellungen zurücksetzen oder löschen kannst. Beim ersten Mal fragt dich ein
+            Fenster von Google, ob du personalisierter Werbung zustimmst. Rechtsgrundlage ist deine
+            Einwilligung (Art. 6 Abs. 1 lit. a DSGVO, § 25 Abs. 1 TDDDG). Ohne Einwilligung zeigt
+            Google nur nicht personalisierte Werbung. Es kann zu einer Übermittlung an Google LLC in
+            den USA kommen; Google ist nach dem EU-U.S. Data Privacy Framework zertifiziert.
+            Details:{' '}
             <Extern href="https://policies.google.com/technologies/ads">
               policies.google.com/technologies/ads
             </Extern>
@@ -368,8 +376,9 @@ function TextEn() {
       {werbungAktiv() ? (
         <p>
           <strong>We do not set cookies.</strong> The app remembers things in the browser&apos;s
-          local storage. Only when a game offers an ad video is Google AdSense loaded; Google may
-          then – with your consent – use cookies or similar identifiers (see section 5).
+          local storage. Only when a game offers an ad video is{' '}
+          {werbeAnbieter() === 'admob' ? 'Google AdMob' : 'Google AdSense'} loaded; Google may then
+          – with your consent – use cookies or similar identifiers (see section 5).
         </p>
       ) : (
         <p>
@@ -417,21 +426,26 @@ function TextEn() {
 
       {werbungAktiv() && (
         <>
-          <h3>Google AdSense (optional ad videos only)</h3>
+          <h3>
+            {werbeAnbieter() === 'admob'
+              ? 'Google AdMob (optional ad videos only, Android app)'
+              : 'Google AdSense (optional ad videos only)'}
+          </h3>
           <p>
             Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Ireland. Some games offer
             to show a short ad video in exchange for help – such as a hint, more time or a second
-            try. The video comes from Google AdSense. Google is{' '}
-            <strong>only loaded when a game offers such a video</strong>, not when the app starts;
-            you never have to watch it.
+            try. In the Android app the video comes from Google AdMob, in the browser from Google
+            AdSense. Google is <strong>only loaded when a game offers such a video</strong>, not
+            when the app starts; you never have to watch it.
           </p>
           <p>
             Google processes in particular your IP address, device and browser details and whether
-            and how long a video was watched, and may use cookies or similar identifiers. The first
-            time, a Google window asks whether you agree to personalised ads. The legal basis is
-            your consent (Art. 6(1)(a) GDPR, § 25(1) TDDDG). Without consent, Google only shows
-            non-personalised ads. Data may be transferred to Google LLC in the USA; Google is
-            certified under the EU-U.S. Data Privacy Framework. Details:{' '}
+            and how long a video was watched, and may use cookies or similar identifiers – in the
+            Android app also your device's advertising ID, which you can reset or delete in your
+            Android settings. The first time, a Google window asks whether you agree to personalised
+            ads. The legal basis is your consent (Art. 6(1)(a) GDPR, § 25(1) TDDDG). Without
+            consent, Google only shows non-personalised ads. Data may be transferred to Google LLC
+            in the USA; Google is certified under the EU-U.S. Data Privacy Framework. Details:{' '}
             <Extern href="https://policies.google.com/technologies/ads">
               policies.google.com/technologies/ads
             </Extern>
