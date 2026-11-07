@@ -20,6 +20,14 @@ import {
   zugName,
 } from './schuetzenrunde/srText'
 import {
+  alleSaetze,
+  ausSchluessel,
+  brauchtNamen,
+  deutscherSatz,
+  satzIn,
+  schluessel,
+} from './schuetzenrunde/festeSaetze'
+import {
   createOnlineMatch,
   joinOnlineMatch,
   leaveOnlineMatch,
@@ -79,7 +87,9 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
   const [selected, setSelected] = useState<number | null>(null)
   const [useShot, setUseShot] = useState(false)
   const [rumour, setRumour] = useState(false)
-  const [chat, setChat] = useState('')
+  // Statt freiem Chat feste Sätze (07.11.2026) -- siehe schuetzenrunde/festeSaetze.ts.
+  const [satz, setSatz] = useState('')
+  const [ueber, setUeber] = useState<number | null>(null)
   const [now, setNow] = useState(() => Date.now())
 
   const savedMatches = useRef<Set<string>>(new Set())
@@ -599,35 +609,69 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
             <ul className={styles.talk}>
               {state.messages.map((msg, i) => (
                 <li key={`${msg.round}-${msg.seat}-${i}`} className={styles.talkLine}>
-                  <strong>{msg.name}:</strong> „{msg.is_bot ? aussageText(t, msg.text) : msg.text}“
+                  <strong>{msg.name}:</strong> „{aussageText(t, msg.text)}“
                 </li>
               ))}
             </ul>
           )}
 
-          {me.alive && (
-            <form
-              className={styles.chatRow}
-              onSubmit={(e) => {
-                e.preventDefault()
-                const text = chat.trim()
-                if (!text) return
-                setChat('')
-                void run(() => sendChat(m.id, text))
-              }}
-            >
-              <input
-                className={styles.input}
-                value={chat}
-                onChange={(e) => setChat(e.target.value)}
-                maxLength={200}
-                placeholder={o.sagWas}
-              />
-              <button type="submit" className={styles.size} disabled={busy}>
-                {o.senden}
-              </button>
-            </form>
-          )}
+          {me.alive &&
+            (() => {
+              const wahl = ausSchluessel(satz)
+              const andere = state.players.filter((p) => p.alive && p.seat !== me.seat)
+              const ziel = andere.find((p) => p.seat === ueber) ?? null
+              const fehltZiel = wahl !== null && brauchtNamen(wahl) && ziel === null
+              return (
+                <form
+                  className={styles.chatRow}
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    if (!wahl || fehltZiel) return
+                    const text = deutscherSatz(wahl, ziel?.name ?? '')
+                    setSatz('')
+                    setUeber(null)
+                    void run(() => sendChat(m.id, text))
+                  }}
+                >
+                  <select
+                    className={styles.input}
+                    value={satz}
+                    onChange={(e) => setSatz(e.target.value)}
+                    aria-label={o.satzWaehlen}
+                  >
+                    <option value="">{o.satzWaehlen}</option>
+                    {alleSaetze().map((w) => (
+                      <option key={schluessel(w)} value={schluessel(w)}>
+                        {satzIn(t.schuetzenrunde.aussagen, w, '…')}
+                      </option>
+                    ))}
+                  </select>
+                  {wahl && brauchtNamen(wahl) && (
+                    <select
+                      className={styles.input}
+                      value={ueber ?? ''}
+                      onChange={(e) => setUeber(e.target.value ? Number(e.target.value) : null)}
+                      aria-label={o.ueberWen}
+                    >
+                      <option value="">{o.ueberWen}</option>
+                      {andere.map((p) => (
+                        <option key={p.seat} value={p.seat}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  <button
+                    type="submit"
+                    className={styles.size}
+                    disabled={busy || !wahl || fehltZiel}
+                  >
+                    {o.senden}
+                  </button>
+                </form>
+              )
+            })()}
+          {me.alive && <p className={styles.hint}>{o.festeSaetze}</p>}
 
           {m.phase === 'day' ? (
             <button

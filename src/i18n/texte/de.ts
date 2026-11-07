@@ -1309,6 +1309,20 @@ export const de = {
         'Wenn ihr mich rauswerft, habt ihr morgen den Salat.',
         'Ich bin seit dreißig Jahren im Zug, das könnt ihr nachlesen.',
       ],
+      /** Nur für Menschen: jemanden in Schutz nehmen. */
+      fuersprache: [
+        (wer: string) => `Ich vertraue ${wer}.`,
+        (wer: string) => `${wer} ist sauber, da bin ich sicher.`,
+      ],
+      /** Nur für Menschen: ohne Namen. */
+      allgemein: [
+        'Ich bin unschuldig.',
+        'Ich weiß es noch nicht.',
+        'Da stimme ich zu.',
+        'Das glaube ich nicht.',
+        'Lasst uns abstimmen.',
+        'Nicht so schnell – wir sollten nichts überstürzen.',
+      ],
     },
     onlineTeil: {
       keinServer:
@@ -1343,8 +1357,11 @@ export const de = {
       duBistRaus: 'Du bist raus – die anderen spielen weiter.',
       aktionAbgegeben: 'Deine Aktion ist abgegeben. Warte auf die anderen…',
       aktionAbgeben: 'Aktion abgeben',
-      sagWas: 'Sag was…',
-      senden: 'Senden',
+      satzWaehlen: 'Was willst du sagen?',
+      ueberWen: 'Über wen?',
+      senden: 'Sagen',
+      festeSaetze:
+        'Online gibt es feste Sätze statt freiem Chat – so bleibt die Runde freundlich, und jeder liest sie in seiner Sprache.',
       warteAufAndere: 'Warte auf die anderen…',
       bereitZurAbstimmung: 'Bereit zur Abstimmung',
       stimmeAbgegeben: 'Stimme abgegeben',

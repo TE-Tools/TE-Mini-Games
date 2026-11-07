@@ -86,7 +86,8 @@ Gruppenspiele genügt der Knopf "Als Gast spielen" – dafür ist kein Konto
 nötig.
 
 Nur die Online-Partien (Kniffel, Texas Hold'em, Mau-Mau, Letzte Karte,
-Schützenopoly) brauchen ein Konto. Dafür bitte mit den oben genannten
+Schützenopoly, Schützenrunde, Finde den Imposter, Wer bin ich?,
+Stadt-Land-Fluss) brauchen ein Konto. Dafür bitte mit den oben genannten
 Zugangsdaten anmelden.
 
 Die Löschung des Kontos ist in der App unter Profil → Konto & Anmeldung →
@@ -133,7 +134,13 @@ Wer hier „Nein" ankreuzt und es fällt später auf, verliert den Eintrag.
 
 Bei „Nutzer können interagieren" im Freitext ergänzen: _„In den
 Online-Partien sehen Mitspieler den selbst gewählten Benutzernamen. Einen
-freien Chat gibt es nicht."_
+freien Chat gibt es nicht: In der Schützenrunde wählt man am Tag einen von
+festen Sätzen, und der Server nimmt nur diese an."_
+
+Das stimmt erst seit Migration `030_schuetzenrunde_feste_saetze.sql`
+(07.11.2026) -- vorher hatte die Schützenrunde online einen freien Chat.
+Ist 030 nicht eingespielt, nimmt der Server weiter jeden Text an, auch wenn
+die App nur noch feste Sätze anbietet.
 
 - [ ] Fragebogen abgeschickt
 

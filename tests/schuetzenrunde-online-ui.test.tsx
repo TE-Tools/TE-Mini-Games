@@ -178,9 +178,24 @@ describe('Schützenrunde online – Oberfläche', () => {
     await screen.findByText(/Diskussion/)
 
     expect(screen.getByText(/Ich traue Bert nicht/)).toBeDefined()
-    await userEvent.type(screen.getByPlaceholderText('Sag was…'), 'Karl war das')
-    await userEvent.click(screen.getByRole('button', { name: 'Senden' }))
-    expect(calls.chat).toHaveBeenCalledWith('m1', 'Karl war das')
+    // Kein freier Text mehr: einen festen Satz wählen, dazu den Namen.
+    expect(screen.queryByPlaceholderText('Sag was…')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Sagen' })).toBeDisabled()
+    await userEvent.selectOptions(
+      screen.getByRole('combobox', { name: 'Was willst du sagen?' }),
+      'Ich traue … nicht.',
+    )
+    expect(screen.getByRole('button', { name: 'Sagen' })).toBeDisabled()
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Über wen?' }), 'Karl')
+    await userEvent.click(screen.getByRole('button', { name: 'Sagen' }))
+    expect(calls.chat).toHaveBeenCalledWith('m1', 'Ich traue Karl nicht.')
+
+    await userEvent.selectOptions(
+      screen.getByRole('combobox', { name: 'Was willst du sagen?' }),
+      'Lasst uns abstimmen.',
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Sagen' }))
+    expect(calls.chat).toHaveBeenCalledWith('m1', 'Lasst uns abstimmen.')
 
     await userEvent.click(screen.getByRole('button', { name: 'Bereit zur Abstimmung' }))
     expect(calls.ready).toHaveBeenCalledWith('m1')
@@ -255,7 +270,7 @@ describe('Schützenrunde online – auf Englisch', () => {
     expect(screen.queryByText(/Nacht|Schießmeister|Bruderschaft/)).toBeNull()
   })
 
-  it('übersetzt die Sätze der Bots, nicht den Chat der Menschen', async () => {
+  it('übersetzt feste Sätze, freien Text aus älteren Runden nicht', async () => {
     const s = makeState({ phase: 'day' })
     s.messages.push({
       seat: 1,
@@ -264,12 +279,16 @@ describe('Schützenrunde online – auf Englisch', () => {
       text: 'Ich traue Karl nicht.',
       round: 1,
     })
+    s.messages.push({ seat: 1, name: 'Bert', is_bot: false, text: 'Karl war das', round: 1 })
     state.current = s
     showEnglish()
     await userEvent.click(await screen.findByRole('button', { name: 'Open a round' }))
     expect(await screen.findByText(/Day 1 · Discussion/)).toBeDefined()
     expect(screen.getByText(/I don't trust Bert\./)).toBeDefined()
-    expect(screen.getByText(/Ich traue Karl nicht\./)).toBeDefined()
+    expect(screen.getByText(/I don't trust Karl\./)).toBeDefined()
+    expect(screen.getByText(/Karl war das/)).toBeDefined()
+    expect(screen.getByRole('combobox', { name: 'What do you want to say?' })).toBeDefined()
+    expect(screen.getByRole('option', { name: "Let's vote." })).toBeDefined()
     expect(screen.getByRole('button', { name: 'Ready to vote' })).toBeDefined()
   })
 })

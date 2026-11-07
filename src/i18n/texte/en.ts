@@ -1290,6 +1290,18 @@ export const en: Texte = {
         "Throw me out and you'll be sorry tomorrow.",
         "I've been in the platoon for thirty years, you can look it up.",
       ],
+      fuersprache: [
+        (wer: string) => `I trust ${wer}.`,
+        (wer: string) => `${wer} is clean, I'm sure of it.`,
+      ],
+      allgemein: [
+        "I'm innocent.",
+        "I don't know yet.",
+        'I agree.',
+        "I don't believe that.",
+        "Let's vote.",
+        'Not so fast – we should not rush this.',
+      ],
     },
     onlineTeil: {
       keinServer:
@@ -1324,8 +1336,11 @@ export const en: Texte = {
       duBistRaus: 'You are out – the others play on.',
       aktionAbgegeben: 'Your action is in. Waiting for the others…',
       aktionAbgeben: 'Submit action',
-      sagWas: 'Say something…',
-      senden: 'Send',
+      satzWaehlen: 'What do you want to say?',
+      ueberWen: 'About whom?',
+      senden: 'Say it',
+      festeSaetze:
+        'Online there are set phrases instead of free chat – it keeps the round friendly, and everyone reads them in their own language.',
       warteAufAndere: 'Waiting for the others…',
       bereitZurAbstimmung: 'Ready to vote',
       stimmeAbgegeben: 'Vote cast',
