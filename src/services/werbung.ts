@@ -28,8 +28,13 @@
  *   VITE_ADSENSE_CLIENT=ca-pub-…   die Publisher-Kennung aus AdSense
  *   VITE_WERBUNG_TEST=on           Testvideos von Google (vor der Freigabe)
  * Ohne VITE_ADSENSE_CLIENT ist alles aus, wie bisher.
+ *
+ * **In der Android-App** gilt stattdessen AdMob (services/werbungAdmob.ts,
+ * seit 07.11.2026). Diese Datei ist die eine Tür für die Spiele und wählt
+ * den Weg: in der App AdMob, im Browser AdSense.
  */
 import { pausiereTon } from './sound'
+import { admobAktiv, admobAnfragen, admobEinwilligungAendern, inDerApp } from './werbungAdmob'
 
 const SKRIPT_URL = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js'
 
@@ -59,7 +64,13 @@ export function setzeWerbungFuerTests(neu: Partial<Konfiguration> | null): void 
 
 /** Ist Werbung für diese App eingeschaltet? Steuert auch die Rechtstexte. */
 export function werbungAktiv(): boolean {
-  return konfiguration.client !== null
+  return werbeAnbieter() !== null
+}
+
+/** Wer gerade die Videos liefert -- steuert die Rechtstexte. */
+export function werbeAnbieter(): 'admob' | 'adsense' | null {
+  if (inDerApp()) return admobAktiv() ? 'admob' : null
+  return konfiguration.client !== null ? 'adsense' : null
 }
 
 /* ------------------------------------------------------------- Google */
@@ -112,6 +123,10 @@ function ladeSkript(client: string, test: boolean): void {
  * Einwilligungsfenster (Funding Choices), lädt das Skript dafür nötigenfalls.
  */
 export function einwilligungAendern(): void {
+  if (inDerApp()) {
+    void admobEinwilligungAendern()
+    return
+  }
   const { client, test } = konfiguration
   if (!client || typeof window === 'undefined') return
   ladeSkript(client, test)
@@ -138,6 +153,7 @@ export interface Angebot {
  * `name` benennt die Stelle in AdSense-Berichten, z.B. 'sudoku-tipp'.
  */
 export function belohnungAnfragen(name: string): Promise<Angebot | null> {
+  if (inDerApp()) return admobAnfragen(pausiereTon)
   const { client, test } = konfiguration
   if (!client) return Promise.resolve(null)
   if (typeof navigator !== 'undefined' && navigator.onLine === false) return Promise.resolve(null)

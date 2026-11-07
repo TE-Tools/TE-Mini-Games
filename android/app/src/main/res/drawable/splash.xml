@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Startbild: App-Farbe, Symbol in der Mitte. Erzeugt von scripts/build-android-icons.mjs. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/ic_launcher_background" />
+    <item android:gravity="center" android:width="144dp" android:height="144dp">
+        <bitmap android:src="@drawable/splash_symbol" android:gravity="center" />
+    </item>
+</layer-list>
