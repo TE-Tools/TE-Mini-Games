@@ -43,6 +43,8 @@ export const de = {
     offeneSpiele: 'Offene Spiele – wer gerade wartet',
     spendeText:
       'TE-Mini Games ist kostenlos und ohne Werbung. Wenn es dir Freude macht, kannst du einen Kaffee ausgeben.',
+    spendeTextMitWerbung:
+      'TE-Mini Games ist kostenlos. Werbung gibt es nur als freiwilliges Video gegen eine Hilfe im Spiel. Wenn es dir Freude macht, kannst du auch einen Kaffee ausgeben.',
     spendeKnopf: 'Spenden über PayPal',
     spendeHinweis: 'Öffnet PayPal in einem neuen Fenster.',
     spieleFiltern: 'Spiele filtern',
@@ -134,7 +136,7 @@ export const de = {
     datenschutz: 'Datenschutz',
     datenschutzerklaerung: 'Datenschutzerklärung',
     kontoLoeschen: 'Konto löschen',
-    stand: 'Stand: 6. September 2026',
+    stand: 'Stand: 7. November 2026',
   },
 
   /** Die 50 Abzeichen. Schlüssel ist die Kennung, nicht der Name. */
@@ -420,6 +422,38 @@ export const de = {
     gespeichert: 'Gespeichert.',
     nameAusKonto: 'Namen aus dem Konto übernehmen',
     gesichtHinweis: 'Wähle dein Gesicht – es erscheint auf der Levelkarte.',
+    aktiv: 'Aktiv:',
+    perVideo: 'per Video',
+    videoGesichterTitel: 'Gesichter per Video',
+    videoGesichterHinweis:
+      'Diese Gesichter gibt es nur für ein Werbevideo, eines je Video. Einmal freigeschaltet, bleiben sie dir – auch offline.',
+    gesperrt: (name: string) => `${name} – per Video freischalten`,
+    gesichtFreischalten: (name: string) => `Gesicht „${name}“ freischalten`,
+    freigeschaltet: (name: string) => `„${name}“ ist jetzt deins.`,
+    /** Kennung aus `src/profile/avatars.ts` → Name. */
+    gesichter: {
+      'face-1': 'Lachen',
+      'face-2': 'Cool',
+      'face-3': 'Nerd',
+      'face-4': 'Fuchs',
+      'face-5': 'Panda',
+      'face-6': 'Löwe',
+      'face-7': 'Einhorn',
+      'face-8': 'Frosch',
+      'face-9': 'Tiger',
+      'face-10': 'Hase',
+      'face-11': 'Hund',
+      'face-12': 'Katze',
+      'face-13': 'Affe',
+      'face-14': 'Stern',
+      'face-15': 'Rakete',
+      'video-1': 'Drache',
+      'video-2': 'Eule',
+      'video-3': 'Krake',
+      'video-4': 'Roboter',
+      'video-5': 'Außerirdischer',
+      'video-6': 'Dino',
+    },
     kontoTitel: 'Konto & Anmeldung',
     kontoHinweis: 'Benutzername, Anmeldung, Synchronisierung',
     zurStartseite: 'Zur Startseite',
@@ -524,6 +558,10 @@ export const de = {
     alleTreffer: 'Alle Treffer:',
     meilenstein: (xp: number) => `🎉 Meilenstein-Bonus +${xp} XP!`,
     haargenau: '✨ Haargenau! Sonder-XP für perfekten Treffer',
+    versuchBelohnung: (treffer: number) =>
+      `Noch ein Versuch – ${treffer === 1 ? 'dein Treffer bleibt' : `deine ${treffer} Treffer bleiben`}`,
+    mitWerbehilfe:
+      'Mit Hilfe eines Werbevideos geschafft: keine Punkte, kein Rekord, höchstens ein Stern.',
   },
 
   levelkarte: {
@@ -550,6 +588,11 @@ export const de = {
   },
 
   sudoku: {
+    allesVollFehler: 'Alles voll – aber irgendwo steckt ein Fehler.',
+    gitterFalsch: 'Im Gitter steht etwas Falsches – die roten Felder stimmen nicht.',
+    tippsZahl: (n: number) => `Tipps: ${n}`,
+    bestzeit: (zeit: string) => `Best: ${zeit}`,
+    gitterName: 'Sudoku-Gitter',
     titel: 'Sudoku',
     einleitung: (proStufe: number) =>
       `Drei Stufen zu je ${proStufe} Rätseln. Jede Stufe ist eine eigene Strecke -- du musst nicht erst alle leichten lösen.`,
@@ -631,6 +674,10 @@ export const de = {
     },
     zifferEintragen: (ziffer: number, uebrig: number) =>
       `${ziffer} eintragen, noch ${uebrig} übrig`,
+    hilfeBelohnung: 'falsche Ziffern entfernen',
+    hilfeErledigt: (n: number) =>
+      n === 1 ? '1 falsche Ziffer entfernt.' : `${n} falsche Ziffern entfernt.`,
+    mitHilfe: 'Mit Hilfe gelöst: höchstens ein Stern, keine Bestzeit und keine Bestpunkte.',
   },
 
   /*
@@ -1371,6 +1418,7 @@ export const de = {
   },
 
   kniffel: {
+    wuerfelDesign: 'Würfel-Design',
     du: 'Du',
     rechner: (nr: number) => `Rechner ${nr}`,
     einleitung: (zusatz: number) =>
@@ -1514,6 +1562,7 @@ export const de = {
   },
 
   maumau: {
+    kartenruecken: 'Kartenrücken',
     ansageMau: 'Mau!',
     ansageLetzteKarte: 'Letzte Karte!',
     tonAus: 'Ton ausschalten',
@@ -1993,6 +2042,9 @@ export const de = {
     versuchBaldBonus: (nr: number, ab: number) =>
       `${nr}. Versuch – nach ${ab} gibt es einen sechsten Platz.`,
     versuch: (nr: number) => `${nr}. Versuch`,
+    platzFrei: 'einen Platz freiräumen',
+    mitHilfe:
+      'Mit Hilfe geschafft: Das nächste Level ist frei, Punkte, XP und Rekord gibt es dafür nicht.',
     nochmal: 'Nochmal',
     stufen: {
       Tor: 'Tor',
@@ -2088,6 +2140,11 @@ export const de = {
     nochmal: 'Nochmal',
     gerettet: (einheiten: number) => `${einheiten} Einheiten gerettet, Rest verloren`,
     alleLebenVerbraucht: 'Alle Leben verbraucht. Die Welt beginnt von vorn — dein Lager bleibt.',
+    // Belohnungsvideo: einmal je Anlauf wiederbeleben
+    wiederbelebenBelohnung: 'Wiederbeleben – im Lager weiterspielen',
+    wiederbelebt: 'Wiederbelebt. Du stehst wieder im Lager.',
+    mitWiederbelebung:
+      'Mit Wiederbelebung geschafft: keine Punkte, keine Bestzeit, höchstens ein Stern.',
     kernErlosch: (zeit: string) => `Der Kern erlosch nach ${zeit}`,
     getoetetVon: {
       schleicher: 'Ein Schleicher traf dich im Dunkeln',
@@ -2241,6 +2298,7 @@ export const de = {
     },
   },
   texas: {
+    kartenruecken: 'Kartenrücken',
     zurueck: 'Zurück',
     tonAus: 'Ton ausschalten',
     tonAn: 'Ton einschalten',
@@ -2673,7 +2731,13 @@ export const de = {
       'bao-honig': 'Honig-Bao',
       'bao-mond': 'Mondkuchen',
       'bao-gold': 'Goldener Bao',
+      'bao-sternschnuppe': 'Sternschnuppen-Bao',
     },
+    zusatzZeit: (sekunden: number) => `+${sekunden} Sekunden`,
+    mitHilfe:
+      'Mit Hilfe geschafft: Das nächste Level ist frei, Punkte, XP und Rekord gibt es dafür nicht.',
+    perVideo: 'per Video freischalten',
+    videoKnoedel: (name: string) => `${name} für deine Sammlung`,
   },
 
   /** Was die Partyspiele am Tisch gemeinsam haben (Wer würde eher, Wortbombe, Scharade). */
@@ -2776,9 +2840,12 @@ export const de = {
     punkte: 'Punkte',
     meilensteinXp: (xp: number) => `+${xp} Meilenstein-XP`,
     level: (nr: number) => `Level ${nr}`,
+    mitHilfe: 'Runde mit zweiter Chance: keine Punkte, keine XP, kein Rekord, höchstens ein Stern.',
+    mitHilfeGeschafft: 'Das Level zählt trotzdem – es geht weiter.',
   },
 
   wasFehlt: {
+    zweiterBlick: 'zweite Chance – alles noch einmal ansehen',
     info: (objekte: number, sekunden: number) => `${objekte} Objekte · ${sekunden} s Zeit`,
     anleitung: 'Merke dir alle Objekte. Danach fehlt eines – tippe auf das fehlende.',
     merken: 'Merken',
@@ -2888,6 +2955,9 @@ export const de = {
     ergebnis: (richtig: number, von: number) => `${richtig} von ${von} richtig`,
     davonZeit: (n: number) => ` (davon ${n} für die Zeit)`,
     abRichtigen: (n: number) => `Ab ${n} Richtigen gibt es XP und das nächste Level.`,
+    zweiteChance: 'zweite Chance – falsche Aufgaben nachholen',
+    nachholen: (neu: number) =>
+      `Nachholen: ${neu} neue ${neu === 1 ? 'Aufgabe' : 'Aufgaben'}, die richtigen bleiben stehen.`,
   },
 
   reihenfolge: {
@@ -2903,6 +2973,7 @@ export const de = {
     daneben: 'Daneben',
     schritteSassen: (n: number) => `${n} Schritte saßen. `,
     xpNurGanz: 'XP gibt es erst für die ganze Folge.',
+    zweiteChance: 'zweite Chance – Folge noch einmal sehen und weitermachen',
   },
 
   offeneSpiele: {
@@ -2992,6 +3063,44 @@ export const de = {
       `${zeit} Sekunden · ${tode} ${tode === 1 ? 'Tod' : 'Tode'}`,
     kristallGefunden: ' · Kristall gefunden ◆',
     nochmal: 'Nochmal',
+    // Belohnungsvideos
+    ueberspringenBelohnung: 'Level überspringen (ohne Sterne und Bestzeit)',
+    uebersprungen: (nr: number) => `Level ${nr} übersprungen – du kannst es jederzeit nachholen.`,
+    figurTitel: 'Figur',
+    figurHell: 'Hell',
+    figurGlut: 'Glut mit Leuchtspur',
+    figurGlutBelohnung: 'Figur „Glut“ mit Leuchtspur',
+    figurNurOptik: 'Nur Optik – am Spiel ändert sich nichts.',
+  },
+
+  /** Belohnungsvideos -- siehe src/services/werbung.ts. */
+  designs: {
+    hinweis: 'Nur das Aussehen – kein Vorteil. Deine Wahl siehst nur du.',
+    perVideo: 'per Video freischalten',
+    gewaehlt: 'gewählt',
+    belohnung: (name: string) => `Design „${name}“`,
+    gesperrt: (name: string) => `${name} – per Video freischalten`,
+    wuerfel: {
+      standard: 'Klassisch',
+      gold: 'Gold',
+      holz: 'Holz',
+      nacht: 'Nacht',
+      kirsche: 'Kirsche',
+    },
+    kartenruecken: {
+      standard: 'Klassisch',
+      wald: 'Wald',
+      bordeaux: 'Bordeaux',
+      kupfer: 'Kupfer',
+      sternennacht: 'Sternennacht',
+    },
+  },
+
+  werbung: {
+    videoAnsehen: (belohnung: string) => `Video ansehen: ${belohnung}`,
+    hinweis: 'Werbevideo – freiwillig',
+    laeuft: 'Video läuft…',
+    abgebrochen: 'Video abgebrochen – keine Belohnung.',
   },
 
   allgemein: {

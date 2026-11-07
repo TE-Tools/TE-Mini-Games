@@ -42,6 +42,8 @@ export const en: Texte = {
     spieleEntdeckenText: 'Choose a challenge.',
     offeneSpiele: 'Open games – who is waiting',
     spendeText: 'TE-Mini Games is free and ad-free. If you enjoy it, you can buy me a coffee.',
+    spendeTextMitWerbung:
+      'TE-Mini Games is free. Ads only come as an optional video in exchange for help in a game. If you enjoy it, you can also buy me a coffee.',
     spendeKnopf: 'Donate via PayPal',
     spendeHinweis: 'Opens PayPal in a new window.',
     spieleFiltern: 'Filter games',
@@ -133,7 +135,7 @@ export const en: Texte = {
     datenschutz: 'Privacy',
     datenschutzerklaerung: 'Privacy policy',
     kontoLoeschen: 'Delete account',
-    stand: 'Last updated: 6 September 2026',
+    stand: 'Last updated: 7 November 2026',
   },
 
   /** The 50 badges, keyed by id. */
@@ -416,6 +418,38 @@ export const en: Texte = {
     gespeichert: 'Saved.',
     nameAusKonto: 'Take the name from my account',
     gesichtHinweis: 'Pick your face – it shows up on the level map.',
+    aktiv: 'Current:',
+    perVideo: 'by video',
+    videoGesichterTitel: 'Faces by video',
+    videoGesichterHinweis:
+      'These faces are only available for watching an ad video, one per video. Once unlocked they stay yours – offline too.',
+    gesperrt: (name: string) => `${name} – unlock by video`,
+    gesichtFreischalten: (name: string) => `unlock the “${name}” face`,
+    freigeschaltet: (name: string) => `“${name}” is yours now.`,
+    /** ID from `src/profile/avatars.ts` → name. */
+    gesichter: {
+      'face-1': 'Laugh',
+      'face-2': 'Cool',
+      'face-3': 'Nerd',
+      'face-4': 'Fox',
+      'face-5': 'Panda',
+      'face-6': 'Lion',
+      'face-7': 'Unicorn',
+      'face-8': 'Frog',
+      'face-9': 'Tiger',
+      'face-10': 'Rabbit',
+      'face-11': 'Dog',
+      'face-12': 'Cat',
+      'face-13': 'Monkey',
+      'face-14': 'Star',
+      'face-15': 'Rocket',
+      'video-1': 'Dragon',
+      'video-2': 'Owl',
+      'video-3': 'Octopus',
+      'video-4': 'Robot',
+      'video-5': 'Alien',
+      'video-6': 'Dino',
+    },
     kontoTitel: 'Account & sign-in',
     kontoHinweis: 'Username, sign-in, syncing',
     zurStartseite: 'To the home screen',
@@ -518,6 +552,9 @@ export const en: Texte = {
     alleTreffer: 'All hits:',
     meilenstein: (xp: number) => `🎉 Milestone bonus +${xp} XP!`,
     haargenau: '✨ Spot on! Bonus XP for a perfect hit',
+    versuchBelohnung: (treffer: number) =>
+      `One more try – keep your ${treffer} ${treffer === 1 ? 'hit' : 'hits'}`,
+    mitWerbehilfe: 'Cleared with help from an ad video: no points, no record, one star at most.',
   },
 
   levelkarte: {
@@ -544,6 +581,11 @@ export const en: Texte = {
   },
 
   sudoku: {
+    allesVollFehler: 'All filled in – but there is a mistake somewhere.',
+    gitterFalsch: 'Something in the grid is wrong – the red cells are incorrect.',
+    tippsZahl: (n: number) => `Hints: ${n}`,
+    bestzeit: (zeit: string) => `Best: ${zeit}`,
+    gitterName: 'Sudoku grid',
     titel: 'Sudoku',
     einleitung: (proStufe: number) =>
       `Three levels of ${proStufe} puzzles each. Each one is its own track – you do not have to clear the easy ones first.`,
@@ -624,6 +666,10 @@ export const en: Texte = {
       pfeile: 'Arrows',
     },
     zifferEintragen: (ziffer: number, uebrig: number) => `enter ${ziffer}, ${uebrig} left`,
+    hilfeBelohnung: 'remove wrong digits',
+    hilfeErledigt: (n: number) =>
+      n === 1 ? 'Removed 1 wrong digit.' : `Removed ${n} wrong digits.`,
+    mitHilfe: 'Solved with help: one star at most, no best time or best score.',
   },
 
   /**
@@ -1350,6 +1396,7 @@ export const en: Texte = {
   },
 
   kniffel: {
+    wuerfelDesign: 'Dice design',
     du: 'You',
     rechner: (nr: number) => `Computer ${nr}`,
     einleitung: (zusatz: number) =>
@@ -1491,6 +1538,7 @@ export const en: Texte = {
   },
 
   maumau: {
+    kartenruecken: 'Card backs',
     ansageMau: 'Mau!',
     ansageLetzteKarte: 'Last card!',
     tonAus: 'Turn sound off',
@@ -1964,6 +2012,9 @@ export const en: Texte = {
     versuchBaldBonus: (nr: number, ab: number) =>
       `Attempt ${nr} – after ${ab} you get a sixth slot.`,
     versuch: (nr: number) => `Attempt ${nr}`,
+    platzFrei: 'clear one slot',
+    mitHilfe:
+      'Done with help: the next level is unlocked, but there are no points, XP or record for it.',
     nochmal: 'Try again',
     stufen: {
       Tor: 'Gate',
@@ -2049,6 +2100,9 @@ export const en: Texte = {
     nochmal: 'Try again',
     gerettet: (einheiten: number) => `${einheiten} units saved, the rest lost`,
     alleLebenVerbraucht: 'All lives used up. The world starts over — your camp remains.',
+    wiederbelebenBelohnung: 'Revive – carry on from camp',
+    wiederbelebt: 'Revived. You are back at camp.',
+    mitWiederbelebung: 'Cleared after a revive: no points, no best time, one star at most.',
     kernErlosch: (zeit: string) => `The core went out after ${zeit}`,
     getoetetVon: {
       schleicher: 'A Creeper caught you in the dark',
@@ -2194,6 +2248,7 @@ export const en: Texte = {
     },
   },
   texas: {
+    kartenruecken: 'Card backs',
     zurueck: 'Back',
     tonAus: 'Turn sound off',
     tonAn: 'Turn sound on',
@@ -2612,7 +2667,13 @@ export const en: Texte = {
       'bao-honig': 'Honey bao',
       'bao-mond': 'Mooncake',
       'bao-gold': 'Golden bao',
+      'bao-sternschnuppe': 'Shooting star bao',
     },
+    zusatzZeit: (sekunden: number) => `+${sekunden} seconds`,
+    mitHilfe:
+      'Done with help: the next level is unlocked, but there are no points, XP or record for it.',
+    perVideo: 'unlock with a video',
+    videoKnoedel: (name: string) => `${name} for your collection`,
   },
 
   partyGemeinsam: {
@@ -2712,9 +2773,12 @@ export const en: Texte = {
     punkte: 'points',
     meilensteinXp: (xp: number) => `+${xp} milestone XP`,
     level: (nr: number) => `Level ${nr}`,
+    mitHilfe: 'Round with a second chance: no points, no XP, no record, one star at most.',
+    mitHilfeGeschafft: 'The level still counts – on you go.',
   },
 
   wasFehlt: {
+    zweiterBlick: 'second chance – look at everything again',
     info: (objekte: number, sekunden: number) => `${objekte} objects · ${sekunden} s`,
     anleitung: 'Memorise all the objects. Then one disappears – tap the missing one.',
     merken: 'Memorise',
@@ -2823,6 +2887,9 @@ export const en: Texte = {
     ergebnis: (richtig: number, von: number) => `${richtig} of ${von} correct`,
     davonZeit: (n: number) => ` (${n} of them for time)`,
     abRichtigen: (n: number) => `Get ${n} right to earn XP and unlock the next level.`,
+    zweiteChance: 'second chance – make up the wrong sums',
+    nachholen: (neu: number) =>
+      `Making up: ${neu} new ${neu === 1 ? 'sum' : 'sums'}, your correct ones stay.`,
   },
 
   reihenfolge: {
@@ -2838,6 +2905,7 @@ export const en: Texte = {
     daneben: 'Missed',
     schritteSassen: (n: number) => `${n} ${n === 1 ? 'step' : 'steps'} right. `,
     xpNurGanz: 'XP only comes for the whole sequence.',
+    zweiteChance: 'second chance – watch the sequence again and carry on',
   },
 
   offeneSpiele: {
@@ -2927,6 +2995,43 @@ export const en: Texte = {
       `${zeit} seconds · ${tode} ${tode === 1 ? 'death' : 'deaths'}`,
     kristallGefunden: ' · crystal found ◆',
     nochmal: 'Again',
+    // Rewarded videos
+    ueberspringenBelohnung: 'Skip level (no stars or best time)',
+    uebersprungen: (nr: number) => `Level ${nr} skipped – you can come back to it any time.`,
+    figurTitel: 'Character',
+    figurHell: 'Pale',
+    figurGlut: 'Ember with glowing trail',
+    figurGlutBelohnung: 'the “Ember” character with a glowing trail',
+    figurNurOptik: 'Looks only – nothing about the game changes.',
+  },
+
+  designs: {
+    hinweis: 'Looks only – no advantage. Only you see your choice.',
+    perVideo: 'unlock with a video',
+    gewaehlt: 'selected',
+    belohnung: (name: string) => `“${name}” design`,
+    gesperrt: (name: string) => `${name} – unlock with a video`,
+    wuerfel: {
+      standard: 'Classic',
+      gold: 'Gold',
+      holz: 'Wood',
+      nacht: 'Night',
+      kirsche: 'Cherry',
+    },
+    kartenruecken: {
+      standard: 'Classic',
+      wald: 'Forest',
+      bordeaux: 'Burgundy',
+      kupfer: 'Copper',
+      sternennacht: 'Starry night',
+    },
+  },
+
+  werbung: {
+    videoAnsehen: (belohnung: string) => `Watch a video: ${belohnung}`,
+    hinweis: 'Ad video – optional',
+    laeuft: 'Video playing…',
+    abgebrochen: 'Video stopped – no reward.',
   },
 
   allgemein: {

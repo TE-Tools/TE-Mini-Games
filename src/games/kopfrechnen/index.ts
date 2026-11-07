@@ -9,3 +9,10 @@ export {
 export type { KopfrechnenLevel, RechenAufgabe, Stufe } from './level'
 export { calculateKopfrechnenScore, MAX_ZEIT_BONUS } from './score'
 export type { KopfrechnenScoreInput, KopfrechnenScoreResult } from './score'
+export {
+  nachholRunde,
+  zweiteChanceMoeglich,
+  wertungMitZweiterChance,
+  MIN_NACHHOL_SEKUNDEN,
+} from './zweiteChance'
+export type { NachholRunde } from './zweiteChance'

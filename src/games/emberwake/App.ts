@@ -34,6 +34,14 @@ import { emptyInput, type InputFrame } from '@/games/emberwake/systems/PlayerSys
 import { refuelCore, refuelWithCrystal } from '@/games/emberwake/systems/EmberSystem'
 import { build, craft } from '@/games/emberwake/systems/BaseSystem'
 import { eatFood } from '@/games/emberwake/systems/HealthSystem'
+import {
+  bookCompletion,
+  canRevive,
+  revivePlayer,
+  undoDeathPenalty,
+  type BeforeDeath,
+} from '@/games/emberwake/systems/ReviveSystem'
+import { belohnungAnfragen } from '@/services/werbung'
 import { InputManager, type InputSnapshot } from '@/games/emberwake/input/InputManager'
 import { Renderer } from '@/games/emberwake/render/Renderer'
 import { GameView } from '@/games/emberwake/render/GameView'
@@ -71,6 +79,8 @@ export interface LevelOutcome {
   secret: boolean
   damageTaken: number
   enemiesKilled: number
+  /** Per Werbevideo wiederbelebt: keine Punkte, kein Rekord, höchstens ein Stern. */
+  mitWerbehilfe: boolean
 }
 
 /** Wie das Spiel in eine umgebende App eingebettet wird. Alles optional. */
@@ -126,6 +136,10 @@ export class App {
   private readonly fwd = { x: 0, z: 0 }
   private readonly rgt = { x: 0, z: 0 }
   private lifecycleOff: (() => void) | null = null
+  /** Was der letzte Tod am Profil geändert hat -- fürs Wiederbeleben. */
+  private beforeDeath: (BeforeDeath & { levelId: number }) | null = null
+  /** Zählt jeden Tod; ein altes Videoangebot gilt nur für seinen Tod. */
+  private deathCount = 0
   private readonly onResize = (): void => this.resize()
 
   private constructor(private readonly options: AppOptions) {}
@@ -609,6 +623,20 @@ export class App {
     this.audio.play('death')
     this.haptics.play('death')
 
+    const tod = ++this.deathCount
+    this.beforeDeath = {
+      lives: profile.lives,
+      unlockedLevelId: profile.unlockedLevelId,
+      levelId: this.currentLevelId,
+    }
+    // Einmal je Anlauf: wiederbeleben gegen ein Video. Gefragt wird sofort,
+    // angeboten erst, wenn eines bereitsteht -- sonst bleibt der Bildschirm,
+    // wie er immer war. Der Bot spielt ohne Werbung.
+    const angebot =
+      canRevive(w) && !this.autoplay
+        ? belohnungAnfragen('emberwake-wiederbeleben')
+        : Promise.resolve(null)
+
     profile.lives = Math.max(0, profile.lives - 1)
     profile.stats.totalDeaths++
     const rec = (profile.levels[this.currentLevelId] ??= emptyLevelRecord())
@@ -641,13 +669,50 @@ export class App {
     void this.save.clearRun()
     void releaseScreenAwake()
 
+    const nochAktuell = (): boolean =>
+      tod === this.deathCount && this.world === w && this.state === 'dead'
     setTimeout(() => {
+      if (!nochAktuell()) return
       this.ui.hideHud()
       this.ui.showDeath(cause, profile.lives, resetNote, carriedNote)
+      void angebot.then((a) => {
+        if (!a || !nochAktuell()) return
+        this.ui.offerRevive(async () => {
+          const geschaut = await a.zeigen()
+          if (geschaut && nochAktuell()) this.revive()
+          return geschaut
+        })
+      })
     }, 1100)
   }
 
-  private onComplete(stars: number, time: number, secondary: boolean, secret: boolean): void {
+  /** Nach einem zu Ende geschauten Video: weiter im selben Anlauf. */
+  private revive(): void {
+    const w = this.world
+    const before = this.beforeDeath
+    if (!w || !before || !revivePlayer(w)) return
+    const profile = this.save.data
+    undoDeathPenalty(profile, before)
+    this.currentLevelId = before.levelId
+    this.beforeDeath = null
+    // revivePlayer legt die gerettete Hälfte ins Lager der Welt -- dieselbe,
+    // die der Tod schon ins Profil gebucht hat. Beide stimmen wieder überein.
+    profile.camp.stock = { ...w.camp.stock }
+    this.save.requestSave()
+    void this.save.saveRun(snapshotRun(w))
+    void this.save.flush()
+
+    this.input.resetToggles()
+    this.ui.closeScreen()
+    this.ui.showHud()
+    this.setState('playing')
+    this.loop.resume()
+    this.audio.resume()
+    void keepScreenAwake()
+    this.ui.toast(this.ui.tx.wiederbelebt)
+  }
+
+  private onComplete(earned: number, time: number, secondary: boolean, secret: boolean): void {
     const w = this.world!
     const profile = this.save.data
     const level = w.level
@@ -655,12 +720,12 @@ export class App {
     this.audio.play('complete')
     this.haptics.play('hit')
 
+    // Mit Wiederbelebung: höchstens ein Stern, keine Bestzeit, kein Extraleben.
+    const revived = w.revived
     const rec = (profile.levels[level.id] ??= emptyLevelRecord())
-    rec.completions++
-    const firstThree = stars === 3 && rec.stars < 3
-    rec.stars = Math.max(rec.stars, stars)
-    rec.bestTime = rec.bestTime === null ? time : Math.min(rec.bestTime, time)
-    rec.secret = rec.secret || secret
+    const booked = bookCompletion(rec, { stars: earned, time, secret, revived })
+    const firstThree = booked.firstThree
+    const stars = booked.stars
 
     // Belohnung ins Lager
     for (const key in level.rewards.resources) {
@@ -707,6 +772,7 @@ export class App {
       secret,
       damageTaken: w.stats.damageTaken,
       enemiesKilled: w.stats.enemiesKilled,
+      mitWerbehilfe: revived,
     })
 
     setTimeout(() => {
@@ -721,6 +787,7 @@ export class App {
         rewards: level.rewards.resources,
         lifeGained,
         hasNext: next !== undefined,
+        revived,
       })
       void Promise.resolve(outcome)
         .then((r) => {

@@ -39,6 +39,7 @@ import { LogoMark } from '@/components/brand/LogoMark'
 import { DATA_PULLED_EVENT } from '@/services/remotePull'
 import { getRemoteOverall, gameLabel, type OverallEntry } from '@/services/leaderboard'
 import { StartBuehne } from '@/components/drei/StartBuehne'
+import { werbungAktiv } from '@/services/werbung'
 import {
   SPIELE_KACHELN,
   SPIEL_GRUPPEN,
@@ -301,7 +302,9 @@ export function HomePage() {
           eingebundene Zahlungs-Widgets bringen fremdes Nachverfolgen mit, und
           fuer paypal.me braucht es nichts davon. */}
       <footer className={styles.spende}>
-        <p className={styles.spendeText}>{t.start.spendeText}</p>
+        <p className={styles.spendeText}>
+          {werbungAktiv() ? t.start.spendeTextMitWerbung : t.start.spendeText}
+        </p>
         <a
           className={styles.spendeKnopf}
           href="https://paypal.me/ThomasElsen"

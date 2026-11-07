@@ -6,9 +6,13 @@ import {
   kopfrechnenGame,
   AUFGABEN_JE_RUNDE,
   NOETIG_ZUM_BESTEHEN,
+  nachholRunde,
+  wertungMitZweiterChance,
+  zweiteChanceMoeglich,
   type KopfrechnenLevel,
   type KopfrechnenScoreResult,
 } from '@/games/kopfrechnen'
+import { BelohnungsKnopf } from '@/components/werbung/BelohnungsKnopf'
 import {
   getOrCreateGameProgress,
   recordLevelComplete,
@@ -51,6 +55,10 @@ export function KopfrechnenPage() {
   const [scoreResult, setScoreResult] = useState<KopfrechnenScoreResult | null>(null)
   const [completedLevel, setCompletedLevel] = useState<number | null>(null)
   const [milestoneXp, setMilestoneXp] = useState(0)
+  /** Zweite Chance per Video in diesem Versuch genutzt? Höchstens einmal je Versuch. */
+  const [hilfe, setHilfe] = useState(false)
+  /** Wie viele neue Aufgaben das Nachholen gebracht hat -- null, solange nicht nachgeholt wird. */
+  const [nachholNeu, setNachholNeu] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const eingabeRef = useRef<HTMLInputElement>(null)
 
@@ -122,18 +130,19 @@ export function KopfrechnenPage() {
       abgerechnet.current = true
       setAblauf(null)
       const correct = ergebnisse.filter(Boolean).length
-      const result = calculateKopfrechnenScore({
-        correct,
-        secondsLeft: sekundenUebrig,
-        level: cfg.level,
-      })
+      const eingabeWertung = { correct, secondsLeft: sekundenUebrig, level: cfg.level }
+      // Mit Nachholen: keine Punkte, keine XP, kein Rekord, höchstens ein
+      // Stern -- das Level zählt trotzdem (src/games/hilfe.ts).
+      const result = hilfe
+        ? wertungMitZweiterChance(eingabeWertung)
+        : calculateKopfrechnenScore(eingabeWertung)
       setScoreResult(result)
       setCompletedLevel(result.passed ? cfg.level : null)
 
       // Der Meilenstein-Bonus ist eine Belohnung fürs erste Mal – wer ein
       // Level wiederholt, soll ihn nicht noch einmal einsammeln können.
       const firstClear = cfg.level >= highest
-      const bonus = result.passed && firstClear ? milestoneBonusXp(cfg.level) : 0
+      const bonus = result.passed && firstClear && !hilfe ? milestoneBonusXp(cfg.level) : 0
       setMilestoneXp(bonus)
       const xpTotal = result.xp + bonus
 
@@ -149,13 +158,15 @@ export function KopfrechnenPage() {
           timeBonus: result.timeBonus,
           seed: cfg.seed,
           milestoneBonus: bonus,
+          zweiteChance: hilfe,
         },
         stars: result.stars,
-        isPersonalRecord: result.passed,
+        isPersonalRecord: result.passed && !hilfe,
+        ohneRekord: hilfe,
       })
 
-      if (xpTotal > 0) {
-        await addXp('guest', xpTotal)
+      if (xpTotal > 0) await addXp('guest', xpTotal)
+      if (result.passed) {
         const progress = await recordLevelComplete('kopfrechnen', cfg.level, xpTotal)
         setHighest(progress.highestLevel)
         setLevel(progress.currentLevel)
@@ -164,13 +175,13 @@ export function KopfrechnenPage() {
       await processAfterResult({
         gameId: 'kopfrechnen',
         level: cfg.level,
-        isPersonalRecord: result.passed,
+        isPersonalRecord: result.passed && !hilfe,
       })
       void trySyncNow()
 
       setPhase('result')
     },
-    [highest],
+    [highest, hilfe],
   )
 
   // Die Uhr. Sie läuft gegen einen Zeitpunkt, nicht gegen einen Zähler –
@@ -206,9 +217,35 @@ export function KopfrechnenPage() {
     setTreffer([])
     trefferRef.current = []
     abgerechnet.current = false
+    setHilfe(false)
+    setNachholNeu(null)
     setRueckmeldung(null)
     setRestSekunden(config.seconds)
     setAblauf(Date.now() + config.seconds * 1000)
+    setPhase('play')
+  }, [config])
+
+  /**
+   * Belohnung „zweite Chance“: Die richtigen Antworten bleiben stehen, für
+   * die anderen kommen neue Aufgaben, die Uhr läuft anteilig noch einmal.
+   */
+  const zweiteChance = useCallback(() => {
+    if (!config) return
+    const runde = nachholRunde(config, trefferRef.current)
+    setConfig({ ...config, tasks: runde.tasks, seconds: runde.seconds })
+    setHilfe(true)
+    setNachholNeu(runde.tasks.length - runde.treffer.length)
+    setTreffer(runde.treffer)
+    trefferRef.current = runde.treffer
+    setIndex(runde.treffer.length)
+    setAntwort('')
+    setRueckmeldung(null)
+    setScoreResult(null)
+    setCompletedLevel(null)
+    setMilestoneXp(0)
+    abgerechnet.current = false
+    setRestSekunden(runde.seconds)
+    setAblauf(Date.now() + runde.seconds * 1000)
     setPhase('play')
   }, [config])
 
@@ -329,6 +366,7 @@ export function KopfrechnenPage() {
             {restSekunden ?? config.seconds} s
           </p>
           <p className={styles.counter}>{k.aufgabe(index + 1, config.tasks.length)}</p>
+          {nachholNeu !== null && <p className={shell.hint}>{k.nachholen(nachholNeu)}</p>}
           <p key={index} className={styles.task}>
             {aufgabe.text} =
           </p>
@@ -403,6 +441,18 @@ export function KopfrechnenPage() {
           {!scoreResult.passed && (
             <p className={shell.hint}>{k.abRichtigen(NOETIG_ZUM_BESTEHEN)}</p>
           )}
+          {hilfe && (
+            <p className={shell.hint}>
+              {t.levelSpiele.mitHilfe}
+              {scoreResult.passed && <> {t.levelSpiele.mitHilfeGeschafft}</>}
+            </p>
+          )}
+          <BelohnungsKnopf
+            name="kopfrechnen-chance"
+            aktiv={zweiteChanceMoeglich({ gescheitert: !scoreResult.passed, genutzt: hilfe })}
+            belohnung={k.zweiteChance}
+            onBelohnt={zweiteChance}
+          />
           <div className={shell.resultActions}>
             {scoreResult.passed && completedLevel !== null && completedLevel < MAX_GAME_LEVEL && (
               <button type="button" className={shell.primaryBtn} onClick={goToNextLevel}>

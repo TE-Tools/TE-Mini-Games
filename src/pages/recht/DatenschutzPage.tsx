@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useSprache, type Sprache } from '@/i18n/sprache'
+import { einwilligungAendern, werbungAktiv } from '@/services/werbung'
 import styles from './RechtShell.module.css'
 
 /**
@@ -79,11 +80,21 @@ function TextDe() {
       <Anbieter inhaber="Inhaber" land="Deutschland" />
 
       <h2>2. Kurz gesagt</h2>
-      <p>
-        TE-Mini Games ist eine Sammlung kleiner Spiele. In der App gibt es{' '}
-        <strong>keine Werbung, kein Tracking und keine Analyse-Dienste</strong>. Wir verkaufen keine
-        Daten und werten sie nicht für andere Zwecke aus.
-      </p>
+      {werbungAktiv() ? (
+        <p>
+          TE-Mini Games ist eine Sammlung kleiner Spiele. In der App gibt es{' '}
+          <strong>kein Tracking und keine Analyse-Dienste</strong>. Werbung gibt es nur als{' '}
+          <strong>freiwilliges Video</strong>, das du ansehen kannst, um im Spiel eine Hilfe zu
+          bekommen (siehe Abschnitt 5). Wir verkaufen keine Daten und werten sie nicht für andere
+          Zwecke aus.
+        </p>
+      ) : (
+        <p>
+          TE-Mini Games ist eine Sammlung kleiner Spiele. In der App gibt es{' '}
+          <strong>keine Werbung, kein Tracking und keine Analyse-Dienste</strong>. Wir verkaufen
+          keine Daten und werten sie nicht für andere Zwecke aus.
+        </p>
+      )}
       <p>
         <strong>Ohne Konto bleibt alles auf deinem Gerät.</strong> Du kannst jedes Spiel als Gast
         spielen; Punkte, Level und Abzeichen liegen dann ausschließlich im Speicher deines Browsers
@@ -141,10 +152,20 @@ function TextDe() {
         IP-Adresse, Zeitpunkt, abgerufene Ressource). Sie dienen Bereitstellung, Stabilität und
         Sicherheit (Art. 6 Abs. 1 lit. f DSGVO).
       </p>
-      <p>
-        <strong>Cookies setzen wir nicht.</strong> Die App merkt sich Dinge im lokalen Speicher des
-        Browsers, nicht in Cookies, und es gibt nichts, was über die App hinaus verfolgt würde.
-      </p>
+      {werbungAktiv() ? (
+        <p>
+          <strong>Cookies setzen wir nicht.</strong> Die App merkt sich Dinge im lokalen Speicher
+          des Browsers. Erst wenn ein Spiel ein Werbevideo anbietet, wird Google AdSense geladen;
+          Google kann dann – mit deiner Einwilligung – Cookies oder ähnliche Kennungen verwenden
+          (siehe Abschnitt 5).
+        </p>
+      ) : (
+        <p>
+          <strong>Cookies setzen wir nicht.</strong> Die App merkt sich Dinge im lokalen Speicher
+          des Browsers, nicht in Cookies, und es gibt nichts, was über die App hinaus verfolgt
+          würde.
+        </p>
+      )}
 
       <h2>4. Kinder</h2>
       <p>
@@ -184,6 +205,37 @@ function TextDe() {
         Datenschutzerklärung von PayPal (PayPal (Europe) S.à r.l. et Cie, S.C.A., Luxemburg). Wir
         erfahren von einer Spende nur, was PayPal uns anzeigt; wir speichern dazu nichts in der App.
       </p>
+
+      {werbungAktiv() && (
+        <>
+          <h3>Google AdSense (nur freiwillige Werbevideos)</h3>
+          <p>
+            Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland. Manche Spiele
+            bieten an, ein kurzes Werbevideo anzusehen und dafür eine Hilfe zu bekommen – etwa einen
+            Tipp, mehr Zeit oder einen zweiten Versuch. Das Video kommt von Google AdSense. Google
+            wird <strong>erst geladen, wenn ein Spiel ein solches Video anbietet</strong>, nicht
+            beim Start der App; ansehen musst du es nie.
+          </p>
+          <p>
+            Dabei verarbeitet Google insbesondere deine IP-Adresse, Angaben zu Gerät und Browser und
+            ob und wie lange ein Video angesehen wurde, und kann Cookies oder ähnliche Kennungen
+            verwenden. Beim ersten Mal fragt dich ein Fenster von Google, ob du personalisierter
+            Werbung zustimmst. Rechtsgrundlage ist deine Einwilligung (Art. 6 Abs. 1 lit. a DSGVO, §
+            25 Abs. 1 TDDDG). Ohne Einwilligung zeigt Google nur nicht personalisierte Werbung. Es
+            kann zu einer Übermittlung an Google LLC in den USA kommen; Google ist nach dem EU-U.S.
+            Data Privacy Framework zertifiziert. Details:{' '}
+            <Extern href="https://policies.google.com/technologies/ads">
+              policies.google.com/technologies/ads
+            </Extern>
+          </p>
+          <p>
+            Deine Einwilligung kannst du jederzeit ändern oder widerrufen:{' '}
+            <button type="button" className={styles.linkKnopf} onClick={einwilligungAendern}>
+              Einstellungen für Werbung öffnen
+            </button>
+          </p>
+        </>
+      )}
 
       <h2>6. Speicherdauer und Löschung</h2>
       <p>
@@ -243,11 +295,20 @@ function TextEn() {
       <Anbieter inhaber="Owner" land="Germany" />
 
       <h2>2. In short</h2>
-      <p>
-        TE-Mini Games is a collection of small games. The app contains{' '}
-        <strong>no advertising, no tracking and no analytics services</strong>. We do not sell any
-        data and do not use it for any other purpose.
-      </p>
+      {werbungAktiv() ? (
+        <p>
+          TE-Mini Games is a collection of small games. The app contains{' '}
+          <strong>no tracking and no analytics services</strong>. Ads only come as an{' '}
+          <strong>optional video</strong> you can watch to get help in a game (see section 5). We do
+          not sell any data and do not use it for any other purpose.
+        </p>
+      ) : (
+        <p>
+          TE-Mini Games is a collection of small games. The app contains{' '}
+          <strong>no advertising, no tracking and no analytics services</strong>. We do not sell any
+          data and do not use it for any other purpose.
+        </p>
+      )}
       <p>
         <strong>Without an account, everything stays on your device.</strong> You can play every
         game as a guest; points, levels and badges are then stored only in your browser&apos;s
@@ -304,10 +365,18 @@ function TextEn() {
         address, time, resource requested). It is used for delivery, stability and security (Art.
         6(1)(f) GDPR).
       </p>
-      <p>
-        <strong>We do not set cookies.</strong> The app remembers things in the browser&apos;s local
-        storage, not in cookies, and nothing is tracked beyond the app.
-      </p>
+      {werbungAktiv() ? (
+        <p>
+          <strong>We do not set cookies.</strong> The app remembers things in the browser&apos;s
+          local storage. Only when a game offers an ad video is Google AdSense loaded; Google may
+          then – with your consent – use cookies or similar identifiers (see section 5).
+        </p>
+      ) : (
+        <p>
+          <strong>We do not set cookies.</strong> The app remembers things in the browser&apos;s
+          local storage, not in cookies, and nothing is tracked beyond the app.
+        </p>
+      )}
 
       <h2>4. Children</h2>
       <p>
@@ -345,6 +414,36 @@ function TextEn() {
         S.C.A., Luxembourg). We only learn about a donation what PayPal shows us; we store nothing
         about it in the app.
       </p>
+
+      {werbungAktiv() && (
+        <>
+          <h3>Google AdSense (optional ad videos only)</h3>
+          <p>
+            Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Ireland. Some games offer
+            to show a short ad video in exchange for help – such as a hint, more time or a second
+            try. The video comes from Google AdSense. Google is{' '}
+            <strong>only loaded when a game offers such a video</strong>, not when the app starts;
+            you never have to watch it.
+          </p>
+          <p>
+            Google processes in particular your IP address, device and browser details and whether
+            and how long a video was watched, and may use cookies or similar identifiers. The first
+            time, a Google window asks whether you agree to personalised ads. The legal basis is
+            your consent (Art. 6(1)(a) GDPR, § 25(1) TDDDG). Without consent, Google only shows
+            non-personalised ads. Data may be transferred to Google LLC in the USA; Google is
+            certified under the EU-U.S. Data Privacy Framework. Details:{' '}
+            <Extern href="https://policies.google.com/technologies/ads">
+              policies.google.com/technologies/ads
+            </Extern>
+          </p>
+          <p>
+            You can change or withdraw your consent at any time:{' '}
+            <button type="button" className={styles.linkKnopf} onClick={einwilligungAendern}>
+              Open ad settings
+            </button>
+          </p>
+        </>
+      )}
 
       <h2>6. Retention and deletion</h2>
       <p>

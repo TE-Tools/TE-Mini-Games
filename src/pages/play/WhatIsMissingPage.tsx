@@ -4,6 +4,9 @@ import {
   createWhatIsMissingLevel,
   calculateWhatIsMissingScore,
   whatIsMissingGame,
+  wertungMitZweiterChance,
+  zweiterBlickMoeglich,
+  zweiterBlickSekunden,
   type WhatIsMissingLevel,
   type WhatIsMissingScoreResult,
 } from '@/games/what-is-missing'
@@ -20,6 +23,7 @@ import { DATA_PULLED_EVENT } from '@/services/remotePull'
 import { getLevelStand, type LevelStandEintrag } from '@/services/leaderboard'
 import { milestoneBonusXp } from '@/games/milestones'
 import { LevelMap } from '@/components/level-map/LevelMap'
+import { BelohnungsKnopf } from '@/components/werbung/BelohnungsKnopf'
 import { spielName, useSprache } from '@/i18n/sprache'
 import styles from './WhatIsMissingPage.module.css'
 
@@ -48,6 +52,8 @@ export function WhatIsMissingPage() {
   const [pickedId, setPickedId] = useState<string | null>(null)
   const [completedLevel, setCompletedLevel] = useState<number | null>(null)
   const [milestoneXp, setMilestoneXp] = useState(0)
+  /** Zweiter Blick per Video in diesem Versuch genutzt? Höchstens einmal je Versuch. */
+  const [hilfe, setHilfe] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -122,11 +128,20 @@ export function WhatIsMissingPage() {
   const startRound = useCallback(() => {
     if (!config) return
     abgerechnet.current = false
+    setHilfe(false)
     setScoreResult(null)
     setPickedId(null)
     setCompletedLevel(null)
     setPhase('memorize')
     setCountdown(config.displayTimeSeconds)
+  }, [config])
+
+  /** Belohnung „zweite Chance“: alles noch einmal ansehen, dann weiter wählen. */
+  const zweiterBlick = useCallback(() => {
+    if (!config || abgerechnet.current) return
+    setHilfe(true)
+    setPhase('memorize')
+    setCountdown(zweiterBlickSekunden(config))
   }, [config])
 
   useEffect(() => {
@@ -145,14 +160,18 @@ export function WhatIsMissingPage() {
       abgerechnet.current = true
       setPickedId(objectId)
       const correct = objectId === config.missingObject.id
-      const result = calculateWhatIsMissingScore({ correct, level: config.level })
+      // Mit zweitem Blick: keine Punkte, keine XP, kein Rekord, höchstens ein
+      // Stern -- das Level zählt trotzdem (src/games/hilfe.ts).
+      const result = hilfe
+        ? wertungMitZweiterChance({ correct, level: config.level })
+        : calculateWhatIsMissingScore({ correct, level: config.level })
       setScoreResult(result)
       // Remember which level was just played – `level` moves on to the next one.
       setCompletedLevel(correct ? config.level : null)
 
       // Milestone bonus is a first-clear reward – replaying a level must not farm it.
       const firstClear = config.level >= highest
-      const bonus = correct && firstClear ? milestoneBonusXp(config.level) : 0
+      const bonus = correct && firstClear && !hilfe ? milestoneBonusXp(config.level) : 0
       setMilestoneXp(bonus)
       const xpTotal = result.xp + bonus
 
@@ -168,13 +187,15 @@ export function WhatIsMissingPage() {
           seed: config.seed,
           objectCount: config.objectCount,
           milestoneBonus: bonus,
+          zweiteChance: hilfe,
         },
         stars: result.stars,
-        isPersonalRecord: correct,
+        isPersonalRecord: correct && !hilfe,
+        ohneRekord: hilfe,
       })
 
-      if (xpTotal > 0) {
-        await addXp('guest', xpTotal)
+      if (xpTotal > 0) await addXp('guest', xpTotal)
+      if (correct) {
         const progress = await recordLevelComplete('what-is-missing', config.level, xpTotal)
         setHighest(progress.highestLevel)
         setLevel(progress.currentLevel)
@@ -183,14 +204,14 @@ export function WhatIsMissingPage() {
       await processAfterResult({
         gameId: 'what-is-missing',
         level: config.level,
-        isPersonalRecord: correct,
+        isPersonalRecord: correct && !hilfe,
       })
       // Upload right away – no manual sync on the account page needed.
       void trySyncNow()
 
       setPhase('result')
     },
-    [phase, config, highest],
+    [phase, config, highest, hilfe],
   )
 
   const playAgain = useCallback(() => {
@@ -332,6 +353,12 @@ export function WhatIsMissingPage() {
               </li>
             ))}
           </ul>
+          <BelohnungsKnopf
+            name="wasfehlt-chance"
+            aktiv={zweiterBlickMoeglich({ waehlt: phase === 'choose', genutzt: hilfe })}
+            belohnung={w.zweiterBlick}
+            onBelohnt={zweiterBlick}
+          />
         </section>
       )}
 
@@ -349,15 +376,23 @@ export function WhatIsMissingPage() {
           )}
           {scoreResult.correct && (
             <>
-              <p className={styles.stars} aria-label={t.levelSpiele.sterne(5)}>
-                ⭐⭐⭐⭐⭐
+              <p className={styles.stars} aria-label={t.levelSpiele.sterne(scoreResult.stars)}>
+                {'⭐'.repeat(scoreResult.stars)}
               </p>
-              <p className={styles.scoreLine}>
-                <strong>+{scoreResult.score}</strong> {t.levelSpiele.punkte} ·{' '}
-                <strong>+{scoreResult.xp + milestoneXp}</strong> XP
-              </p>
+              {!hilfe && (
+                <p className={styles.scoreLine}>
+                  <strong>+{scoreResult.score}</strong> {t.levelSpiele.punkte} ·{' '}
+                  <strong>+{scoreResult.xp + milestoneXp}</strong> XP
+                </p>
+              )}
               {milestoneXp > 0 && <p className={styles.correct}>{w.meilenstein(milestoneXp)}</p>}
             </>
+          )}
+          {hilfe && (
+            <p className={styles.hint}>
+              {t.levelSpiele.mitHilfe}
+              {scoreResult.correct && <> {t.levelSpiele.mitHilfeGeschafft}</>}
+            </p>
           )}
           <div className={styles.resultActions}>
             {completedLevel != null && (

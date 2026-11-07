@@ -16,6 +16,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useEffekte3d } from '@/components/drei/useEffekte3d'
+import { wuerfelStil } from '@/components/designs/designs'
+import { useDesign } from '@/components/designs/useDesign'
 import { Konfetti } from '@/components/konfetti/Konfetti'
 import { AUGEN_PLAETZE } from './augen'
 import type { WuerfelSzene } from './wuerfelSzene'
@@ -98,6 +100,8 @@ export function Wuerfelreihe({
   onHalten,
 }: WuerfelreiheProps) {
   const drei = useEffekte3d()
+  // Nur Aussehen, nur auf diesem Gerät (services/sammlung.ts).
+  const design = useDesign('wuerfel')
   const { t } = useSprache()
   const [kaputt, setKaputt] = useState(false)
   const [szeneDa, setSzeneDa] = useState(false)
@@ -132,7 +136,7 @@ export function Wuerfelreihe({
     void import('./wuerfelSzene')
       .then(({ starteWuerfelSzene }) => {
         if (abbruch) return
-        const s = starteWuerfelSzene(c)
+        const s = starteWuerfelSzene(c, design)
         szene.current = s
 
         // Die Würfel stehen genau dort, wo die Knöpfe stehen: Teilung aus
@@ -164,7 +168,7 @@ export function Wuerfelreihe({
       szene.current = null
       setSzeneDa(false)
     }
-  }, [mit3d])
+  }, [mit3d, design])
 
   /* ------------------------------------------------- Neuer Stand, Wurf */
 
@@ -193,7 +197,11 @@ export function Wuerfelreihe({
   }, [jubel])
 
   return (
-    <div className={`${styles.brett} ${mit3d ? styles.brett3d : ''}`}>
+    <div
+      className={`${styles.brett} ${mit3d ? styles.brett3d : ''}`}
+      style={wuerfelStil(design)}
+      data-wuerfel-design={design}
+    >
       <div ref={reihe} className={styles.reihe} role="group" aria-label="Würfel">
         {mit3d && (
           <canvas

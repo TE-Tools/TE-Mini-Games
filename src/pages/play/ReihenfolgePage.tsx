@@ -4,9 +4,13 @@ import {
   createReihenfolgeLevel,
   calculateReihenfolgeScore,
   reihenfolgeGame,
+  eingabeNachFehler,
+  wertungMitZweiterChance,
+  zweiteChanceMoeglich,
   type ReihenfolgeLevel,
   type ReihenfolgeScoreResult,
 } from '@/games/reihenfolge'
+import { BelohnungsKnopf } from '@/components/werbung/BelohnungsKnopf'
 import {
   getOrCreateGameProgress,
   recordLevelComplete,
@@ -55,6 +59,8 @@ export function ReihenfolgePage() {
   const [scoreResult, setScoreResult] = useState<ReihenfolgeScoreResult | null>(null)
   const [completedLevel, setCompletedLevel] = useState<number | null>(null)
   const [milestoneXp, setMilestoneXp] = useState(0)
+  /** Zweite Chance per Video in diesem Versuch genutzt? Höchstens einmal je Versuch. */
+  const [hilfe, setHilfe] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -166,9 +172,26 @@ export function ReihenfolgePage() {
   const startRound = useCallback(() => {
     if (!config) return
     abgerechnet.current = false
+    setHilfe(false)
     setScoreResult(null)
     setEingabe([])
     setCompletedLevel(null)
+    setLeuchtet(null)
+    setPhase('watch')
+  }, [config])
+
+  /**
+   * Belohnung „zweite Chance“: Die Folge läuft noch einmal ganz, die
+   * richtigen Schritte bleiben stehen, weiter geht es am Fehler.
+   */
+  const zweiteChance = useCallback(() => {
+    if (!config) return
+    setHilfe(true)
+    setEingabe((alt) => eingabeNachFehler(alt, config.sequence))
+    abgerechnet.current = false
+    setScoreResult(null)
+    setCompletedLevel(null)
+    setMilestoneXp(0)
     setLeuchtet(null)
     setPhase('watch')
   }, [config])
@@ -177,18 +200,23 @@ export function ReihenfolgePage() {
     async (correctSteps: number, cfg: ReihenfolgeLevel) => {
       if (abgerechnet.current) return
       abgerechnet.current = true
-      const result = calculateReihenfolgeScore({
+      const eingabeWertung = {
         correctSteps,
         sequenceLength: cfg.sequenceLength,
         level: cfg.level,
-      })
+      }
+      // Mit zweiter Chance: keine Punkte, keine XP, kein Rekord, höchstens
+      // ein Stern -- das Level zählt trotzdem (src/games/hilfe.ts).
+      const result = hilfe
+        ? wertungMitZweiterChance(eingabeWertung)
+        : calculateReihenfolgeScore(eingabeWertung)
       setScoreResult(result)
       setCompletedLevel(result.complete ? cfg.level : null)
 
       // Der Meilenstein-Bonus ist eine Belohnung fürs erste Mal – wer ein
       // Level wiederholt, soll ihn nicht noch einmal einsammeln können.
       const firstClear = cfg.level >= highest
-      const bonus = result.complete && firstClear ? milestoneBonusXp(cfg.level) : 0
+      const bonus = result.complete && firstClear && !hilfe ? milestoneBonusXp(cfg.level) : 0
       setMilestoneXp(bonus)
       const xpTotal = result.xp + bonus
 
@@ -204,13 +232,15 @@ export function ReihenfolgePage() {
           showMs: cfg.showMs,
           seed: cfg.seed,
           milestoneBonus: bonus,
+          zweiteChance: hilfe,
         },
         stars: result.stars,
-        isPersonalRecord: result.complete,
+        isPersonalRecord: result.complete && !hilfe,
+        ohneRekord: hilfe,
       })
 
-      if (xpTotal > 0) {
-        await addXp('guest', xpTotal)
+      if (xpTotal > 0) await addXp('guest', xpTotal)
+      if (result.complete) {
         const progress = await recordLevelComplete('reihenfolge', cfg.level, xpTotal)
         setHighest(progress.highestLevel)
         setLevel(progress.currentLevel)
@@ -219,13 +249,13 @@ export function ReihenfolgePage() {
       await processAfterResult({
         gameId: 'reihenfolge',
         level: cfg.level,
-        isPersonalRecord: result.complete,
+        isPersonalRecord: result.complete && !hilfe,
       })
       void trySyncNow()
 
       setPhase('result')
     },
-    [highest],
+    [highest, hilfe],
   )
 
   const tippen = useCallback(
@@ -384,6 +414,18 @@ export function ReihenfolgePage() {
               {r.xpNurGanz}
             </p>
           )}
+          {hilfe && (
+            <p className={shell.hint}>
+              {t.levelSpiele.mitHilfe}
+              {scoreResult.complete && <> {t.levelSpiele.mitHilfeGeschafft}</>}
+            </p>
+          )}
+          <BelohnungsKnopf
+            name="reihenfolge-chance"
+            aktiv={zweiteChanceMoeglich({ gescheitert: !scoreResult.complete, genutzt: hilfe })}
+            belohnung={r.zweiteChance}
+            onBelohnt={zweiteChance}
+          />
           <div className={shell.resultActions}>
             {scoreResult.complete && completedLevel !== null && completedLevel < MAX_GAME_LEVEL && (
               <button type="button" className={shell.primaryBtn} onClick={goToNextLevel}>

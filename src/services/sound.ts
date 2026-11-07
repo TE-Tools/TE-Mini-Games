@@ -163,9 +163,18 @@ function holeKontext(): AudioContext | null {
   }
 }
 
+/**
+ * Für die Dauer eines Werbevideos still sein, ohne die Einstellung des
+ * Spielers anzufassen. Siehe services/werbung.ts.
+ */
+let pausiert = false
+export function pausiereTon(wert: boolean): void {
+  pausiert = wert
+}
+
 /** Einen Klang abspielen. Fehler bleiben stumm -- Ton ist Beiwerk. */
 export function spiele(klang: Klang): void {
-  if (!an || laut <= 0) return
+  if (!an || pausiert || laut <= 0) return
   const ctx = holeKontext()
   if (!ctx) return
   try {

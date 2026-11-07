@@ -33,6 +33,7 @@ import { spiele, setzeTon, tonAn, vibriere } from '@/services/sound'
 import { setzeEffektWahl, webglMoeglich } from '@/services/effekte'
 import { useEffekte3d } from '@/components/drei/useEffekte3d'
 import { Konfetti } from '@/components/konfetti/Konfetti'
+import { DesignWahl } from '@/components/designs/DesignWahl'
 import { Wuerfelreihe } from './kniffel/Wuerfelreihe'
 import { Kniffelblock, type BlockSpalte } from './kniffel/Kniffelblock'
 import { Bestenliste } from './kniffel/Bestenliste'
@@ -203,6 +204,8 @@ export function KniffelPage() {
               </small>
             </span>
           </button>
+
+          <DesignWahl art="wuerfel" name="kniffel-wuerfel" titel={t.kniffel.wuerfelDesign} />
 
           {/*
             Die Rangliste gleich im Menü: Sie zeigt, worum gespielt wird,

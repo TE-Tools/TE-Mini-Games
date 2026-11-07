@@ -87,8 +87,11 @@ OHNE NETZ
 Spielen, Punkte, XP, Abzeichen und der Gruppenmodus laufen ohne Internet.
 Online gespielt wird nur, wenn du es willst.
 
-WAS NICHT DRIN IST
-Keine Werbung. Keine Käufe im Spiel. Kein Tracking, keine Analyse-Dienste.
+WERBUNG NUR, WENN DU WILLST
+Werbung gibt es nur als freiwilliges Video: Wer mag, schaut eines an und
+bekommt dafür etwas mehr Zeit, einen zweiten Versuch oder ein Sonderitem.
+Punkte lassen sich damit nicht kaufen. Keine Käufe im Spiel, kein Tracking,
+keine Analyse-Dienste.
 Ein Konto ist freiwillig und nur für die Online-Spiele und die Rangliste
 nötig; ohne Konto bleibt alles auf deinem Gerät. Das Konto lässt sich in
 der App selbst wieder löschen.
@@ -135,7 +138,8 @@ Zwei Fragen ehrlich beantworten, sonst fliegt der Eintrag später auf:
 - **Löschung möglich:** ja, in der App unter „Konto löschen", und über die
   oben genannte Adresse.
 - **Weitergabe an Dritte:** nein.
-- **Daten für Werbung oder Tracking:** nein.
+- **Daten für Werbung:** ja, durch Google AdSense, nur wenn ein
+  Werbevideo angeboten wird -- Einzelheiten in `play-console-todo.md` 2.6.
 
 ---
 
