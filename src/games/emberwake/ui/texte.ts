@@ -61,6 +61,14 @@ export function emberwakeTexte(sprache: Sprache = emberwakeSprache()): Emberwake
   return WOERTERBUECHER[sprache].emberwake
 }
 
+/**
+ * Die Beschriftung von Werbevideos -- dieselben Worte wie beim
+ * `BelohnungsKnopf` der App, damit ein Video überall gleich heißt.
+ */
+export function werbeTexte(sprache: Sprache = emberwakeSprache()): Texte['werbung'] {
+  return WOERTERBUECHER[sprache].werbung
+}
+
 // ---------------------------------------------------------------------------
 // Inhalte aus data/, über die Kennung nachgeschlagen
 // ---------------------------------------------------------------------------

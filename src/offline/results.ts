@@ -1,5 +1,6 @@
 import { db, GUEST_USER_ID, type LocalGameResult, type LocalPersonalRecord } from './db'
 import type { GameId, GameResult } from '@/games/types'
+import { wertungMitWerbehilfe } from '@/games/werbehilfe'
 import { enqueueOutbox } from './outbox'
 
 function nowIso(): string {
@@ -18,28 +19,33 @@ export async function saveGameResult(
   result: Omit<GameResult, 'timestamp'> & { timestamp?: number },
   userId: string = GUEST_USER_ID,
 ): Promise<LocalGameResult> {
-  const createdAt = result.timestamp
-    ? new Date(result.timestamp).toISOString()
-    : nowIso()
+  const createdAt = result.timestamp ? new Date(result.timestamp).toISOString() : nowIso()
+
+  // Mit Werbehilfe: keine Punkte, keine XP, höchstens ein Stern, kein Rekord.
+  // Hier und nicht im Spiel, damit es keines vergessen kann.
+  const hilfe = result.mitWerbehilfe === true
+  const wertung = hilfe
+    ? wertungMitWerbehilfe({ score: result.score, xp: result.xp, stars: result.stars ?? 0 })
+    : { score: result.score, xp: result.xp, stars: result.stars ?? 0 }
 
   const local: LocalGameResult = {
     id: generateId(),
     userId,
     gameId: result.gameId,
     level: result.level,
-    score: result.score,
-    xp: result.xp,
-    resultData: result.resultData,
-    isPersonalRecord: result.isPersonalRecord ?? false,
-    stars: result.stars ?? 0,
+    score: wertung.score,
+    xp: wertung.xp,
+    resultData: hilfe ? { ...result.resultData, mitWerbehilfe: true } : result.resultData,
+    isPersonalRecord: hilfe ? false : (result.isPersonalRecord ?? false),
+    stars: wertung.stars,
     createdAt,
     synced: 0,
   }
 
   await db.gameResults.put(local)
 
-  // Update personal record if better
-  const isRecord = await maybeUpdatePersonalRecord(local, userId)
+  // Update personal record if better -- never for a round an ad helped with.
+  const isRecord = hilfe ? false : await maybeUpdatePersonalRecord(local, userId)
   if (isRecord && !local.isPersonalRecord) {
     local.isPersonalRecord = true
     await db.gameResults.put(local)

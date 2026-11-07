@@ -22,9 +22,13 @@ import {
   BILD_BREITE,
   PHYSIK,
   BILD_HOEHE,
+  leseAussehen,
+  aktuelleFigur,
+  type Aussehen,
   type Spielstand,
   type Stand,
 } from '@/games/trapbound'
+import { UeberspringenAngebot, FigurWahl } from './TrapboundWerbung'
 import { spiele, setzeTon, setzeLautstaerke, lautstaerke, tonAn } from '@/services/sound'
 import { saveGameResult, addXp, recordLevelComplete, getOrCreateGameProgress } from '@/offline'
 import { processAfterResult } from '@/progression'
@@ -63,6 +67,10 @@ export function TrapboundPage() {
   const [ende, setEnde] = useState<Ende | null>(null)
   const [tipp, setTipp] = useState('')
   const [avatarId, setAvatarId] = useState<string | null>(null)
+  /** Aussehen der Figur -- reine Optik, eine Farbe nur per Video. */
+  const [aussehen, setAussehen] = useState<Aussehen>(() => leseAussehen())
+  /** In diesem Anlauf schon per Video geholfen? Höchstens einmal je Anlauf. */
+  const [hilfeGenutzt, setHilfeGenutzt] = useState(false)
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const buehneRef = useRef<HTMLDivElement>(null)
@@ -77,8 +85,11 @@ export function TrapboundPage() {
   const kameraRef = useRef<number | null>(null)
   /** Senkrecht dasselbe -- für die Stockwerk-Level, die höher sind als ein Bild. */
   const kameraYRef = useRef<number | null>(null)
+  /** Letzte Orte der Figur für die Leuchtspur. */
+  const spurRef = useRef<Array<{ x: number; y: number }>>([])
 
   const einst = stand.einstellungen
+  const figur = aktuelleFigur(aussehen)
 
   useEffect(() => {
     pauseRef.current = pause
@@ -151,6 +162,8 @@ export function TrapboundPage() {
       const daten = levelDaten(nr)
       spielRef.current = starte(daten)
       todeRef.current = 0
+      spurRef.current = []
+      setHilfeGenutzt(false)
       setLevelNr(nr)
       setHud({ tode: 0, zeit: 0, kristall: false })
       setEnde(null)
@@ -173,6 +186,7 @@ export function TrapboundPage() {
     kameraYRef.current = null
     const daten = levelDaten(levelNr)
     spielRef.current = starte(daten)
+    spurRef.current = []
     setEnde(null)
   }, [levelNr])
 
@@ -354,7 +368,19 @@ export function TrapboundPage() {
 
       ctx.setTransform(skala, 0, 0, skala, randX - kamera * skala, randY - kameraY * skala)
       ctx.imageSmoothingEnabled = false
-      zeichne(ctx, s, { welt: weltVon(s.level.nr), beben: einst.beben, uhr: u })
+      // Die Leuchtspur merkt sich nur, wo die Figur war -- reine Anzeige.
+      if (figur.spur && s.phase !== 'tot') {
+        const spur = spurRef.current
+        spur.push({ x: s.koerper.x + PHYSIK.breite / 2, y: s.koerper.y + PHYSIK.hoehe / 2 })
+        if (spur.length > 10) spur.shift()
+      }
+      zeichne(ctx, s, {
+        welt: weltVon(s.level.nr),
+        beben: einst.beben,
+        uhr: u,
+        figur,
+        spur: spurRef.current,
+      })
       ctx.restore()
     }
 
@@ -362,7 +388,7 @@ export function TrapboundPage() {
     return () => {
       laeuftNoch = false
     }
-  }, [ansicht, neustart, gewonnen, einst.beben])
+  }, [ansicht, neustart, gewonnen, einst.beben, figur])
 
   /** Tastatur. */
   useEffect(() => {
@@ -607,6 +633,7 @@ export function TrapboundPage() {
           <p className={styles.hinweis}>
             {tb.gefunden(kristalle(stand), levelMitKristall().length)}
           </p>
+          <FigurWahl aussehen={aussehen} onAendern={setAussehen} />
         </div>
       </main>
     )
@@ -692,6 +719,22 @@ export function TrapboundPage() {
         <div className={styles.leinwandBox}>
           <canvas ref={canvasRef} className={styles.leinwand} />
           {tipp && <div className={styles.tipp}>{tipp}</div>}
+          {!ende && (
+            <UeberspringenAngebot
+              nr={levelNr}
+              tode={hud.tode}
+              hilfeGenutzt={hilfeGenutzt}
+              geschafft={Boolean(stand.level[String(levelNr)]?.fertig)}
+              onVorDemVideo={() => setPause(true)}
+              onUebersprungen={(neu) => {
+                setHilfeGenutzt(true)
+                setStand(neu)
+                const naechstes = Math.min(LEVEL_ANZAHL, levelNr + 1)
+                starteLevel(naechstes)
+                setTipp(tb.uebersprungen(levelNr))
+              }}
+            />
+          )}
         </div>
 
         <div className={`${styles.pad} ${knoepfeGetauscht ? styles.padGetauscht : ''}`}>

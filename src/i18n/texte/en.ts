@@ -520,6 +520,9 @@ export const en: Texte = {
     alleTreffer: 'All hits:',
     meilenstein: (xp: number) => `🎉 Milestone bonus +${xp} XP!`,
     haargenau: '✨ Spot on! Bonus XP for a perfect hit',
+    versuchBelohnung: (treffer: number) =>
+      `One more try – keep your ${treffer} ${treffer === 1 ? 'hit' : 'hits'}`,
+    mitWerbehilfe: 'Cleared with help from an ad video: no points, no record, one star at most.',
   },
 
   levelkarte: {
@@ -2051,6 +2054,9 @@ export const en: Texte = {
     nochmal: 'Try again',
     gerettet: (einheiten: number) => `${einheiten} units saved, the rest lost`,
     alleLebenVerbraucht: 'All lives used up. The world starts over — your camp remains.',
+    wiederbelebenBelohnung: 'Revive – carry on from camp',
+    wiederbelebt: 'Revived. You are back at camp.',
+    mitWiederbelebung: 'Cleared after a revive: no points, no best time, one star at most.',
     kernErlosch: (zeit: string) => `The core went out after ${zeit}`,
     getoetetVon: {
       schleicher: 'A Creeper caught you in the dark',
@@ -2929,6 +2935,14 @@ export const en: Texte = {
       `${zeit} seconds · ${tode} ${tode === 1 ? 'death' : 'deaths'}`,
     kristallGefunden: ' · crystal found ◆',
     nochmal: 'Again',
+    // Rewarded videos
+    ueberspringenBelohnung: 'Skip level (no stars or best time)',
+    uebersprungen: (nr: number) => `Level ${nr} skipped – you can come back to it any time.`,
+    figurTitel: 'Character',
+    figurHell: 'Pale',
+    figurGlut: 'Ember with glowing trail',
+    figurGlutBelohnung: 'the “Ember” character with a glowing trail',
+    figurNurOptik: 'Looks only – nothing about the game changes.',
   },
 
   werbung: {
