@@ -221,7 +221,7 @@ die Zeichenzahlen sind nachgerechnet.
 | ------------------------------------- | --------------------------------------- |
 | App-Name (max. 30)                    | `TE-Mini Games`                         |
 | Kurzbeschreibung (max. 80)            | `eintrag.md`, 72 Zeichen                |
-| Vollständige Beschreibung (max. 4000) | `eintrag.md`, 2157 Zeichen              |
+| Vollständige Beschreibung (max. 4000) | `eintrag.md`, 2437 Zeichen              |
 | App-Symbol 512 × 512                  | `docs/store/app-symbol-512x512.png`     |
 | Funktionsbild 1024 × 500              | `docs/store/funktionsbild-1024x500.png` |
 | Telefon-Screenshots                   | `docs/store/telefon-*.png` (acht Stück) |
@@ -234,6 +234,23 @@ in `docs/store/` ist dasselbe Bild als RGBA.
 - [ ] Symbol hochgeladen
 - [ ] Funktionsbild hochgeladen
 - [ ] mindestens zwei Screenshots hochgeladen (es dürfen bis zu acht sein)
+
+### 3a. Englische Übersetzung
+
+> **Haupt-Store-Eintrag** → **Übersetzungen verwalten** → **Übersetzungen
+> hinzufügen** → **Englisch (Vereinigte Staaten) – en-US**
+
+Die App ist zweisprachig, also auch der Eintrag. Texte in
+[`eintrag-en.md`](eintrag-en.md) (Kurzbeschreibung 70 Zeichen, Beschreibung
+2373), Bilder in `docs/store/en/` -- dort ist die App auf Englisch zu sehen.
+Ohne englische Bilder zeigt Google die deutschen; das geht, wirkt aber
+halbfertig.
+
+Nicht „Übersetzen lassen“ anklicken: Google übersetzt dann maschinell und
+verlangt Geld dafür.
+
+- [ ] en-US angelegt, Texte eingefügt
+- [ ] englisches Funktionsbild und Screenshots hochgeladen
 
 ---
 

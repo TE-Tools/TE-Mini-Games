@@ -27,7 +27,46 @@ import {
 import { extname, join, normalize } from 'node:path'
 
 const DIST = 'dist'
-const ZIEL = 'docs/store'
+
+/**
+ * Die Sprache der Bilder: `node scripts/build-store-assets.mjs en` baut die
+ * englischen nach docs/store/en/ -- für den englischen Store-Eintrag
+ * (07.11.2026). Ohne Angabe Deutsch nach docs/store/, wie bisher.
+ */
+const SPRACHE = process.argv[2] === 'en' ? 'en' : 'de'
+const ZIEL = SPRACHE === 'en' ? 'docs/store/en' : 'docs/store'
+
+/** Was auf Bildern und Knöpfen steht, je Sprache. */
+const T = {
+  de: {
+    claim: 'Nur noch eine Runde. ✨',
+    zeile: (n) => `${n} Spiele · allein, zu zweit oder in der Gruppe · auch offline`,
+    gast: /gast/i,
+    gegenRechner: /Gegen den Rechner/,
+    losGehts: /Los geht/,
+    wuerfeln: /Würfeln/,
+    sudoku: /Spielen · Stufe 1/,
+    turnier: /Turnier gegen den Rechner/,
+    pokerKnopf: /Passen|Mitgehen|Erhöhen|Schieben|All[- ]?In/i,
+    neuePartie: /Neue Partie/,
+    partieStarten: /Partie starten/,
+    spielen: /^Spielen$/,
+  },
+  en: {
+    claim: 'Just one more round. ✨',
+    zeile: (n) => `${n} games · solo, for two or in a group · offline too`,
+    gast: /guest/i,
+    gegenRechner: /Against the computer/,
+    losGehts: /Let.s go/,
+    wuerfeln: /^🎲 Roll$/,
+    sudoku: /Play · puzzle 1/,
+    turnier: /Tournament against the computer/,
+    pokerKnopf: /Fold|Check|Call|Raise|Bet|All[- ]?in/i,
+    neuePartie: /New game/,
+    partieStarten: /Start game/,
+    spielen: /^Play$/,
+  },
+}[SPRACHE]
 
 if (!existsSync(join(DIST, 'index.html'))) {
   console.error(`Kein Build gefunden (${DIST}/index.html fehlt). Erst "npm run build".`)
@@ -116,8 +155,8 @@ function funktionsbild() {
     <div class="symbol">TE</div>
     <div class="text">
       <div class="name">TE-Mini Games</div>
-      <div class="claim">Nur noch eine Runde. ✨</div>
-      <div class="zeile">${SPIELE_ANZAHL} Spiele · allein, zu zweit oder in der Gruppe · auch offline</div>
+      <div class="claim">${T.claim}</div>
+      <div class="zeile">${T.zeile(SPIELE_ANZAHL)}</div>
     </div>
   </body></html>`
 }
@@ -180,25 +219,25 @@ const BILDER = [
     name: '2-kniffel',
     pfad: '/play/kniffel',
     async weg(page) {
-      await klick(page, /Gegen den Rechner/)
-      await klick(page, /Los geht/)
-      await klick(page, /Würfeln/)
+      await klick(page, T.gegenRechner)
+      await klick(page, T.losGehts)
+      await klick(page, T.wuerfeln)
       // Die Würfel rollen in 3D aus -- vorher steht auf dem Bild Bewegungsunschärfe.
       await page.waitForTimeout(3500)
     },
   },
-  { name: '3-sudoku', pfad: '/play/sudoku', weg: (page) => klick(page, /Spielen · Stufe 1/) },
+  { name: '3-sudoku', pfad: '/play/sudoku', weg: (page) => klick(page, T.sudoku) },
   { name: '4-levelkarte', pfad: '/play/perfect-second' },
   {
     name: '5-texas',
     pfad: '/play/texas-holdem',
     async weg(page) {
-      await klick(page, /Turnier gegen den Rechner/)
-      await klick(page, /Los geht/)
+      await klick(page, T.turnier)
+      await klick(page, T.losGehts)
       // Erst setzen die Rechner-Gegner, dann ist der Spieler dran. Vorher
       // wäre der Tisch ohne eigene Karten und ohne Knöpfe zu sehen.
       await page
-        .getByRole('button', { name: /Passen|Mitgehen|Erhöhen|Schieben|All[- ]?In/i })
+        .getByRole('button', { name: T.pokerKnopf })
         .first()
         .waitFor({ timeout: 20000 })
         .catch(() => {})
@@ -208,19 +247,19 @@ const BILDER = [
     name: '6-schuetzenopoly',
     pfad: '/play/schuetzenopoly',
     async weg(page) {
-      await klick(page, /Neue Partie/)
-      await klick(page, /Partie starten/)
+      await klick(page, T.neuePartie)
+      await klick(page, T.partieStarten)
     },
   },
   {
     name: '7-maumau',
     pfad: '/play/maumau',
     async weg(page) {
-      await klick(page, /Gegen den Rechner/)
-      await klick(page, /Los geht/)
+      await klick(page, T.gegenRechner)
+      await klick(page, T.losGehts)
     },
   },
-  { name: '8-emberwake', pfad: '/play/emberwake', weg: (page) => klick(page, /^Spielen$/) },
+  { name: '8-emberwake', pfad: '/play/emberwake', weg: (page) => klick(page, T.spielen) },
 ]
 
 /** Klickt einen Knopf, wenn es ihn gibt -- und sagt es, wenn nicht. */
@@ -238,7 +277,7 @@ async function klick(page, name) {
 const kontext = await browser.newContext({
   viewport: { width: 540, height: 960 },
   deviceScaleFactor: 2,
-  locale: 'de-DE',
+  locale: SPRACHE === 'en' ? 'en-US' : 'de-DE',
   // Der Service Worker würde die Seiten aus seinem Zwischenspeicher
   // ausliefern -- dann fotografiert man einen alten Build.
   serviceWorkers: 'block',
@@ -246,10 +285,19 @@ const kontext = await browser.newContext({
 })
 
 const page = await kontext.newPage()
+// Die App wählt die Sprache aus der gespeicherten Wahl, sonst aus dem Gerät.
+// Ausdrücklich setzen, damit kein früherer Lauf mitredet.
+await kontext.addInitScript((sprache) => {
+  try {
+    localStorage.setItem('te-sprache', sprache)
+  } catch {
+    /* privates Fenster -- dann eben die Gerätesprache */
+  }
+}, SPRACHE)
 
 // Einmal an der Anmeldung vorbei: ohne das steht vor jedem Spiel die Hürde.
 await page.goto(`${BASIS}/`, { waitUntil: 'domcontentloaded' })
-const gast = page.getByRole('button', { name: /gast/i })
+const gast = page.getByRole('button', { name: T.gast })
 if (await gast.count()) {
   await gast.first().click()
   await page.waitForTimeout(600)
