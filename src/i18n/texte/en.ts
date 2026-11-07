@@ -418,6 +418,38 @@ export const en: Texte = {
     gespeichert: 'Saved.',
     nameAusKonto: 'Take the name from my account',
     gesichtHinweis: 'Pick your face – it shows up on the level map.',
+    aktiv: 'Current:',
+    perVideo: 'by video',
+    videoGesichterTitel: 'Faces by video',
+    videoGesichterHinweis:
+      'These faces are only available for watching an ad video, one per video. Once unlocked they stay yours – offline too.',
+    gesperrt: (name: string) => `${name} – unlock by video`,
+    gesichtFreischalten: (name: string) => `unlock the “${name}” face`,
+    freigeschaltet: (name: string) => `“${name}” is yours now.`,
+    /** ID from `src/profile/avatars.ts` → name. */
+    gesichter: {
+      'face-1': 'Laugh',
+      'face-2': 'Cool',
+      'face-3': 'Nerd',
+      'face-4': 'Fox',
+      'face-5': 'Panda',
+      'face-6': 'Lion',
+      'face-7': 'Unicorn',
+      'face-8': 'Frog',
+      'face-9': 'Tiger',
+      'face-10': 'Rabbit',
+      'face-11': 'Dog',
+      'face-12': 'Cat',
+      'face-13': 'Monkey',
+      'face-14': 'Star',
+      'face-15': 'Rocket',
+      'video-1': 'Dragon',
+      'video-2': 'Owl',
+      'video-3': 'Octopus',
+      'video-4': 'Robot',
+      'video-5': 'Alien',
+      'video-6': 'Dino',
+    },
     kontoTitel: 'Account & sign-in',
     kontoHinweis: 'Username, sign-in, syncing',
     zurStartseite: 'To the home screen',
@@ -2714,9 +2746,12 @@ export const en: Texte = {
     punkte: 'points',
     meilensteinXp: (xp: number) => `+${xp} milestone XP`,
     level: (nr: number) => `Level ${nr}`,
+    mitHilfe: 'Round with a second chance: no points, no XP, no record, one star at most.',
+    mitHilfeGeschafft: 'The level still counts – on you go.',
   },
 
   wasFehlt: {
+    zweiterBlick: 'second chance – look at everything again',
     info: (objekte: number, sekunden: number) => `${objekte} objects · ${sekunden} s`,
     anleitung: 'Memorise all the objects. Then one disappears – tap the missing one.',
     merken: 'Memorise',
@@ -2825,6 +2860,9 @@ export const en: Texte = {
     ergebnis: (richtig: number, von: number) => `${richtig} of ${von} correct`,
     davonZeit: (n: number) => ` (${n} of them for time)`,
     abRichtigen: (n: number) => `Get ${n} right to earn XP and unlock the next level.`,
+    zweiteChance: 'second chance – make up the wrong sums',
+    nachholen: (neu: number) =>
+      `Making up: ${neu} new ${neu === 1 ? 'sum' : 'sums'}, your correct ones stay.`,
   },
 
   reihenfolge: {
@@ -2840,6 +2878,7 @@ export const en: Texte = {
     daneben: 'Missed',
     schritteSassen: (n: number) => `${n} ${n === 1 ? 'step' : 'steps'} right. `,
     xpNurGanz: 'XP only comes for the whole sequence.',
+    zweiteChance: 'second chance – watch the sequence again and carry on',
   },
 
   offeneSpiele: {

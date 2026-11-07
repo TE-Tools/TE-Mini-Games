@@ -422,6 +422,38 @@ export const de = {
     gespeichert: 'Gespeichert.',
     nameAusKonto: 'Namen aus dem Konto übernehmen',
     gesichtHinweis: 'Wähle dein Gesicht – es erscheint auf der Levelkarte.',
+    aktiv: 'Aktiv:',
+    perVideo: 'per Video',
+    videoGesichterTitel: 'Gesichter per Video',
+    videoGesichterHinweis:
+      'Diese Gesichter gibt es nur für ein Werbevideo, eines je Video. Einmal freigeschaltet, bleiben sie dir – auch offline.',
+    gesperrt: (name: string) => `${name} – per Video freischalten`,
+    gesichtFreischalten: (name: string) => `Gesicht „${name}“ freischalten`,
+    freigeschaltet: (name: string) => `„${name}“ ist jetzt deins.`,
+    /** Kennung aus `src/profile/avatars.ts` → Name. */
+    gesichter: {
+      'face-1': 'Lachen',
+      'face-2': 'Cool',
+      'face-3': 'Nerd',
+      'face-4': 'Fuchs',
+      'face-5': 'Panda',
+      'face-6': 'Löwe',
+      'face-7': 'Einhorn',
+      'face-8': 'Frosch',
+      'face-9': 'Tiger',
+      'face-10': 'Hase',
+      'face-11': 'Hund',
+      'face-12': 'Katze',
+      'face-13': 'Affe',
+      'face-14': 'Stern',
+      'face-15': 'Rakete',
+      'video-1': 'Drache',
+      'video-2': 'Eule',
+      'video-3': 'Krake',
+      'video-4': 'Roboter',
+      'video-5': 'Außerirdischer',
+      'video-6': 'Dino',
+    },
     kontoTitel: 'Konto & Anmeldung',
     kontoHinweis: 'Benutzername, Anmeldung, Synchronisierung',
     zurStartseite: 'Zur Startseite',
@@ -2778,9 +2810,12 @@ export const de = {
     punkte: 'Punkte',
     meilensteinXp: (xp: number) => `+${xp} Meilenstein-XP`,
     level: (nr: number) => `Level ${nr}`,
+    mitHilfe: 'Runde mit zweiter Chance: keine Punkte, keine XP, kein Rekord, höchstens ein Stern.',
+    mitHilfeGeschafft: 'Das Level zählt trotzdem – es geht weiter.',
   },
 
   wasFehlt: {
+    zweiterBlick: 'zweite Chance – alles noch einmal ansehen',
     info: (objekte: number, sekunden: number) => `${objekte} Objekte · ${sekunden} s Zeit`,
     anleitung: 'Merke dir alle Objekte. Danach fehlt eines – tippe auf das fehlende.',
     merken: 'Merken',
@@ -2890,6 +2925,9 @@ export const de = {
     ergebnis: (richtig: number, von: number) => `${richtig} von ${von} richtig`,
     davonZeit: (n: number) => ` (davon ${n} für die Zeit)`,
     abRichtigen: (n: number) => `Ab ${n} Richtigen gibt es XP und das nächste Level.`,
+    zweiteChance: 'zweite Chance – falsche Aufgaben nachholen',
+    nachholen: (neu: number) =>
+      `Nachholen: ${neu} neue ${neu === 1 ? 'Aufgabe' : 'Aufgaben'}, die richtigen bleiben stehen.`,
   },
 
   reihenfolge: {
@@ -2905,6 +2943,7 @@ export const de = {
     daneben: 'Daneben',
     schritteSassen: (n: number) => `${n} Schritte saßen. `,
     xpNurGanz: 'XP gibt es erst für die ganze Folge.',
+    zweiteChance: 'zweite Chance – Folge noch einmal sehen und weitermachen',
   },
 
   offeneSpiele: {

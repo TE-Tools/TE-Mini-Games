@@ -15,12 +15,17 @@ function generateId(): string {
 }
 
 export async function saveGameResult(
-  result: Omit<GameResult, 'timestamp'> & { timestamp?: number },
+  result: Omit<GameResult, 'timestamp'> & {
+    timestamp?: number
+    /**
+     * Die Runde darf keinen Rekord schreiben -- etwa weil ein Belohnungsvideo
+     * geholfen hat (siehe src/games/hilfe.ts). Sie steht dann nur im Verlauf.
+     */
+    ohneRekord?: boolean
+  },
   userId: string = GUEST_USER_ID,
 ): Promise<LocalGameResult> {
-  const createdAt = result.timestamp
-    ? new Date(result.timestamp).toISOString()
-    : nowIso()
+  const createdAt = result.timestamp ? new Date(result.timestamp).toISOString() : nowIso()
 
   const local: LocalGameResult = {
     id: generateId(),
@@ -30,7 +35,7 @@ export async function saveGameResult(
     score: result.score,
     xp: result.xp,
     resultData: result.resultData,
-    isPersonalRecord: result.isPersonalRecord ?? false,
+    isPersonalRecord: result.ohneRekord ? false : (result.isPersonalRecord ?? false),
     stars: result.stars ?? 0,
     createdAt,
     synced: 0,
@@ -39,7 +44,7 @@ export async function saveGameResult(
   await db.gameResults.put(local)
 
   // Update personal record if better
-  const isRecord = await maybeUpdatePersonalRecord(local, userId)
+  const isRecord = result.ohneRekord ? false : await maybeUpdatePersonalRecord(local, userId)
   if (isRecord && !local.isPersonalRecord) {
     local.isPersonalRecord = true
     await db.gameResults.put(local)

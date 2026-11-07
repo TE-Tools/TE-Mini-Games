@@ -17,10 +17,34 @@ export const AVATARS = [
   { id: 'face-15', emoji: '🚀', label: 'Rakete' },
 ] as const
 
+/**
+ * Gesichter, die es nur per Belohnungsvideo gibt -- eines je Video
+ * (siehe src/profile/videoGesichter.ts). Reine Optik, kein Vorteil im Spiel.
+ * Einmal freigeschaltet, sind sie ganz normale Gesichter.
+ */
+export const VIDEO_AVATARS = [
+  { id: 'video-1', emoji: '🐲', label: 'Drache' },
+  { id: 'video-2', emoji: '🦉', label: 'Eule' },
+  { id: 'video-3', emoji: '🐙', label: 'Krake' },
+  { id: 'video-4', emoji: '🤖', label: 'Roboter' },
+  { id: 'video-5', emoji: '👽', label: 'Außerirdischer' },
+  { id: 'video-6', emoji: '🦖', label: 'Dino' },
+] as const
+
 export type AvatarId = (typeof AVATARS)[number]['id']
+export type VideoAvatarId = (typeof VIDEO_AVATARS)[number]['id']
 
 export const DEFAULT_AVATAR_ID: AvatarId = 'face-1'
 
+export function istVideoAvatar(id: string | null | undefined): id is VideoAvatarId {
+  return VIDEO_AVATARS.some((a) => a.id === id)
+}
+
+/**
+ * Das Gesicht zur Kennung. Kennt auch die Video-Gesichter: Ein freigeschaltetes
+ * kann über das Profil auf ein anderes Gerät kommen und soll dort genauso
+ * erscheinen.
+ */
 export function getAvatar(id: string | null | undefined) {
-  return AVATARS.find((a) => a.id === id) ?? AVATARS[0]
+  return AVATARS.find((a) => a.id === id) ?? VIDEO_AVATARS.find((a) => a.id === id) ?? AVATARS[0]
 }
