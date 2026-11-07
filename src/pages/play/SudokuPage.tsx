@@ -369,7 +369,7 @@ export function SudokuPage() {
       if (voll && richtig) {
         void abschliessen(neu)
       } else if (voll) {
-        zeigeMeldung('Alles voll -- aber irgendwo steckt ein Fehler.')
+        zeigeMeldung(t.sudoku.allesVollFehler)
       } else {
         ton('knopf')
       }
@@ -388,6 +388,7 @@ export function SudokuPage() {
       abschliessen,
       zeigeMeldung,
       ton,
+      t.sudoku.allesVollFehler,
     ],
   )
 
@@ -434,18 +435,18 @@ export function SudokuPage() {
 
   const tippHolen = useCallback(() => {
     if (ende || pause) return
-    const t = tippFuer(Uint8Array.from(werte), loesung)
+    const hinweis = tippFuer(Uint8Array.from(werte), loesung)
     setTipps((n) => n + 1)
-    if (!t) {
+    if (!hinweis) {
       // Es steht etwas Falsches im Gitter. Kurz zeigen, wo.
       setZeigeFalsche(true)
       window.setTimeout(() => setZeigeFalsche(false), 4000)
-      zeigeMeldung('Im Gitter steht etwas Falsches -- die roten Felder stimmen nicht.', 4000)
+      zeigeMeldung(t.sudoku.gitterFalsch, 4000)
       return
     }
-    setTipp(t)
-    setAuswahl(t.zelle)
-  }, [ende, pause, werte, loesung, zeigeMeldung])
+    setTipp(hinweis)
+    setAuswahl(hinweis.zelle)
+  }, [ende, pause, werte, loesung, zeigeMeldung, t.sudoku.gitterFalsch])
 
   const tippEintragen = useCallback(() => {
     if (!tipp) return
@@ -553,7 +554,7 @@ export function SudokuPage() {
     return (
       <main className={shell.page}>
         <header className={shell.header}>
-          <Link to="/" className={shell.back} aria-label="Zurück">
+          <Link to="/" className={shell.back} aria-label={t.allgemein.zurueck}>
             ←
           </Link>
           <h1 className={shell.title}>{t.sudoku.titel}</h1>
@@ -772,7 +773,7 @@ export function SudokuPage() {
             type="button"
             className={styles.pauseKnopf}
             onClick={() => setPause((p) => !p)}
-            aria-label={pause ? 'Weiter' : 'Pause'}
+            aria-label={pause ? t.sudoku.weiter : t.sudoku.pause}
             disabled={Boolean(ende)}
           >
             {pause ? '▶' : '❚❚'}
@@ -784,14 +785,14 @@ export function SudokuPage() {
         <span className={fehler > 0 && fehlerSichtbar ? styles.fehlerRot : styles.leise}>
           Fehler: {fehlerSichtbar ? fehler : '?'}
         </span>
-        <span className={styles.leise}>Tipps: {tipps}</span>
+        <span className={styles.leise}>{t.sudoku.tippsZahl(tipps)}</span>
         {Number.isFinite(bestes.besteZeit) && (
-          <span className={styles.leise}>Best: {zeitText(bestes.besteZeit)}</span>
+          <span className={styles.leise}>{t.sudoku.bestzeit(zeitText(bestes.besteZeit))}</span>
         )}
       </div>
 
       <div className={`${styles.gitterRahmen} ${pause ? styles.verdeckt : ''}`}>
-        <div className={styles.gitter} role="grid" aria-label="Sudoku-Gitter">
+        <div className={styles.gitter} role="grid" aria-label={t.sudoku.gitterName}>
           {werte.map((w, i) => {
             const vorgabe = r.vorgabe[i] !== 0
             const rz = zeileVon(i)

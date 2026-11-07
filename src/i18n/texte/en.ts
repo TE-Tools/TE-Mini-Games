@@ -578,6 +578,11 @@ export const en: Texte = {
   },
 
   sudoku: {
+    allesVollFehler: 'All filled in – but there is a mistake somewhere.',
+    gitterFalsch: 'Something in the grid is wrong – the red cells are incorrect.',
+    tippsZahl: (n: number) => `Hints: ${n}`,
+    bestzeit: (zeit: string) => `Best: ${zeit}`,
+    gitterName: 'Sudoku grid',
     titel: 'Sudoku',
     einleitung: (proStufe: number) =>
       `Three levels of ${proStufe} puzzles each. Each one is its own track – you do not have to clear the easy ones first.`,

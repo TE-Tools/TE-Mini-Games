@@ -584,6 +584,11 @@ export const de = {
   },
 
   sudoku: {
+    allesVollFehler: 'Alles voll – aber irgendwo steckt ein Fehler.',
+    gitterFalsch: 'Im Gitter steht etwas Falsches – die roten Felder stimmen nicht.',
+    tippsZahl: (n: number) => `Tipps: ${n}`,
+    bestzeit: (zeit: string) => `Best: ${zeit}`,
+    gitterName: 'Sudoku-Gitter',
     titel: 'Sudoku',
     einleitung: (proStufe: number) =>
       `Drei Stufen zu je ${proStufe} Rätseln. Jede Stufe ist eine eigene Strecke -- du musst nicht erst alle leichten lösen.`,
