@@ -1373,6 +1373,7 @@ export const de = {
   },
 
   kniffel: {
+    wuerfelDesign: 'Würfel-Design',
     du: 'Du',
     rechner: (nr: number) => `Rechner ${nr}`,
     einleitung: (zusatz: number) =>
@@ -1516,6 +1517,7 @@ export const de = {
   },
 
   maumau: {
+    kartenruecken: 'Kartenrücken',
     ansageMau: 'Mau!',
     ansageLetzteKarte: 'Letzte Karte!',
     tonAus: 'Ton ausschalten',
@@ -2243,6 +2245,7 @@ export const de = {
     },
   },
   texas: {
+    kartenruecken: 'Kartenrücken',
     zurueck: 'Zurück',
     tonAus: 'Ton ausschalten',
     tonAn: 'Ton einschalten',
@@ -2997,6 +3000,28 @@ export const de = {
   },
 
   /** Belohnungsvideos -- siehe src/services/werbung.ts. */
+  designs: {
+    hinweis: 'Nur das Aussehen – kein Vorteil. Deine Wahl siehst nur du.',
+    perVideo: 'per Video freischalten',
+    gewaehlt: 'gewählt',
+    belohnung: (name: string) => `Design „${name}“`,
+    gesperrt: (name: string) => `${name} – per Video freischalten`,
+    wuerfel: {
+      standard: 'Klassisch',
+      gold: 'Gold',
+      holz: 'Holz',
+      nacht: 'Nacht',
+      kirsche: 'Kirsche',
+    },
+    kartenruecken: {
+      standard: 'Klassisch',
+      wald: 'Wald',
+      bordeaux: 'Bordeaux',
+      kupfer: 'Kupfer',
+      sternennacht: 'Sternennacht',
+    },
+  },
+
   werbung: {
     videoAnsehen: (belohnung: string) => `Video ansehen: ${belohnung}`,
     hinweis: 'Werbevideo – freiwillig',
