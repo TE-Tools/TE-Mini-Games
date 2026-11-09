@@ -107,7 +107,22 @@ describe('Emberwake: Wiederbeleben -- die Regel', () => {
     const b = gestorben()
     revivePlayer(a)
     revivePlayer(b)
-    expect(snapshotRun(a)).toEqual({ ...snapshotRun(b), savedAt: snapshotRun(a).savedAt })
+    // Die Uhr springt bei jedem Blick eine Millisekunde weiter. Damit
+    // läuft der Grenzfall immer durch, statt nur manchmal: snapshotRun
+    // setzt savedAt bei jedem Aufruf neu auf Date.now(), also darf jeder
+    // Schnappschuss nur einmal genommen werden. Die alte Fassung rief
+    // snapshotRun(a) zweimal auf -- für die linke Seite und für die
+    // Ausnahme -- und verglich so zwei verschiedene Zeitpunkte. In der CI
+    // ist sie daran gefallen (ein Unterschied von 1 ms).
+    let tick = 1_000_000
+    vi.spyOn(Date, 'now').mockImplementation(() => tick++)
+    try {
+      const schnappA = snapshotRun(a)
+      const schnappB = snapshotRun(b)
+      expect(schnappA).toEqual({ ...schnappB, savedAt: schnappA.savedAt })
+    } finally {
+      vi.restoreAllMocks()
+    }
   })
 
   it('läuft danach weiter -- die Simulation nimmt den Anlauf wieder auf', () => {
