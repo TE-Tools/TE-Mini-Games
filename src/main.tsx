@@ -4,9 +4,17 @@ import { App } from '@/app/App'
 import { StartFehler } from '@/app/StartFehler'
 import '@/styles/global.css'
 import { EFFEKTE_GEAENDERT, markiereLeistung } from '@/services/effekte'
+import { inDerApp } from '@/services/werbungAdmob'
+import { supabase } from '@/database/supabase'
 
 markiereLeistung()
 window.addEventListener(EFFEKTE_GEAENDERT, markiereLeistung)
+
+// In der Android-App: auf den Rücksprung nach der Google-Anmeldung horchen.
+if (inDerApp() && supabase) {
+  const client = supabase
+  void import('@/auth/appAnmeldung').then((m) => m.horcheAufRuecksprung(client))
+}
 
 /**
  * Den Startbildschirm aus index.html wegblenden.

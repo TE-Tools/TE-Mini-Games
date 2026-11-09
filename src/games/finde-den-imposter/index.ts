@@ -25,8 +25,9 @@ export type {
   CreateMatchOptions,
   CategoryDef,
   WordEntry,
+  WortSprache,
 } from './types'
-export { CATEGORIES, categoryById, categoryLabel } from './data/categories'
+export { CATEGORIES, categoriesFor, categoryById, categoryLabel } from './data/categories'
 export { WORDS, wordsForCategory } from './data/words'
 export { MODES, ONLINE_MODES, CHAOS_RULES, modeOf, rulesOf, chaosRuleLabel, defaultImposterCount } from './modes'
 export type { ModeDef, ModeRules, ChaosRule } from './modes'

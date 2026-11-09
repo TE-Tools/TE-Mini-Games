@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { SPALTEN, STANDARD_SPALTEN, spalteLabel } from '@/games/stadt-land-fluss'
 import { getCurrentUser } from '@/auth/authService'
+import { useSprache, type Texte } from '@/i18n/sprache'
 import {
   isSlfOnlineAvailable,
   createSlfMatchOnline,
@@ -25,7 +26,19 @@ import styles from './StadtLandFlussPage.module.css'
 
 const POLL_MS = 2000
 
+/** Spaltenname nach Kennung -- der Server kennt nur die Kennung. */
+function spalteName(s: Texte['stadtLandFluss'], id: string): string {
+  return (s.spaltenNamen as Record<string, string | undefined>)[id] ?? spalteLabel(id)
+}
+
 export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
+  const { t } = useSprache()
+  const s = t.stadtLandFluss
+  // Für die Rückrufe unten, die nur einmal angelegt werden.
+  const texte = useRef(s)
+  useEffect(() => {
+    texte.current = s
+  }, [s])
   const [ready, setReady] = useState(false)
   const [signedIn, setSignedIn] = useState(false)
 
@@ -82,7 +95,7 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
         setError(RAUM_GESCHLOSSEN_TEXT)
         return
       }
-      setError(e instanceof Error ? e.message : 'Der Spielstand kam nicht an.')
+      setError(e instanceof Error ? e.message : texte.current.standFehlt)
     }
   }, [])
 
@@ -111,8 +124,8 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
 
   useEffect(() => {
     if (!schreibt) return
-    const t = window.setInterval(() => setJetzt(Date.now()), 250)
-    return () => window.clearInterval(t)
+    const takt = window.setInterval(() => setJetzt(Date.now()), 250)
+    return () => window.clearInterval(takt)
   }, [schreibt])
 
   const run = useCallback(async (job: () => Promise<unknown>) => {
@@ -121,7 +134,7 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
     try {
       await job()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Das hat nicht geklappt.')
+      setError(e instanceof Error ? e.message : texte.current.hatNichtGeklappt)
     } finally {
       setBusy(false)
     }
@@ -135,12 +148,12 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
     if (!raumCode) return
     autoBeigetreten.current = true
     // Nicht direkt im Effekt: der Aufruf setzt sofort Zustand, das mag React nicht.
-    const t = window.setTimeout(() => {
+    const zeitgeber = window.setTimeout(() => {
       void run(async () => {
         setMatchId(await joinSlfMatch(raumCode))
       })
     }, 0)
-    return () => window.clearTimeout(t)
+    return () => window.clearTimeout(zeitgeber)
   }, [signedIn, run])
 
   // Ist die Frist um, gibt der Client automatisch ab und stösst die Wertung
@@ -169,31 +182,25 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
   if (!isSlfOnlineAvailable) {
     return (
       <div className={styles.card}>
-        <p className={styles.subtitle}>
-          Für Online-Runden fehlt die Verbindung zum Konto-Server. Am einen Gerät geht es trotzdem
-          jederzeit.
-        </p>
+        <p className={styles.subtitle}>{s.keinServer}</p>
         <button type="button" className={styles.btn} onClick={onBack}>
-          Zurück zum Spiel am einen Gerät
+          {s.zurueckEinGeraet}
         </button>
       </div>
     )
   }
 
-  if (!ready) return <p className={styles.meta}>Laden…</p>
+  if (!ready) return <p className={styles.meta}>{t.allgemein.laden}</p>
 
   if (!signedIn) {
     return (
       <div className={styles.card}>
-        <p className={styles.subtitle}>
-          Online spielst du mit deinem Konto – so kann der Server die Punkte zählen, ohne dass sich
-          jemand selbst zu viele gibt.
-        </p>
+        <p className={styles.subtitle}>{s.anmeldenGrund}</p>
         <Link to="/auth" className={styles.btn} style={{ textAlign: 'center' }}>
-          Anmelden
+          {s.anmelden}
         </Link>
         <button type="button" className={styles.btnSecondary} onClick={onBack}>
-          Lieber am einen Gerät
+          {s.lieberEinGeraet}
         </button>
       </div>
     )
@@ -205,39 +212,39 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
         {error && <p className={styles.error}>{error}</p>}
 
         <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Neue Runde eröffnen</h2>
+          <h2 className={styles.cardTitle}>{s.neueRundeEroeffnen}</h2>
           <label className={styles.label}>
-            Dein Name
+            {s.deinName}
             <input
               className={styles.input}
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={20}
-              placeholder="wie du am Tisch heißt"
+              placeholder={s.namePlatzhalter}
             />
           </label>
           <div className={styles.spaltenWahl}>
-            {SPALTEN.map((s) => {
-              const an = spalten.includes(s.id)
+            {SPALTEN.map((sp) => {
+              const an = spalten.includes(sp.id)
               return (
                 <button
-                  key={s.id}
+                  key={sp.id}
                   type="button"
                   className={an ? styles.chipAktiv : styles.chip}
                   aria-pressed={an}
                   onClick={() =>
                     setSpalten((alt) =>
-                      alt.includes(s.id) ? alt.filter((x) => x !== s.id) : [...alt, s.id],
+                      alt.includes(sp.id) ? alt.filter((x) => x !== sp.id) : [...alt, sp.id],
                     )
                   }
                 >
-                  {s.label}
+                  {spalteName(s, sp.id)}
                 </button>
               )
             })}
           </div>
           <label className={styles.label}>
-            Zeit je Runde: {sekunden} s
+            {s.zeitJeRunde(sekunden)}
             <input
               type="range"
               min={30}
@@ -254,8 +261,8 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
               onChange={(e) => setOeffentlich(e.target.checked)}
             />
             <span>
-              Öffentliche Runde
-              <small>Steht für alle in der Lobby, mit deinem Namen. Jeder kann beitreten.</small>
+              {s.oeffentlich}
+              <small>{s.oeffentlichText}</small>
             </span>
           </label>
           <button
@@ -274,18 +281,18 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
               })
             }
           >
-            Runde eröffnen
+            {s.eroeffnen}
           </button>
         </div>
 
         <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Mit Code beitreten</h2>
+          <h2 className={styles.cardTitle}>{s.mitCodeBeitreten}</h2>
           <input
             className={styles.input}
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
             maxLength={5}
-            placeholder="z. B. K4T9P"
+            placeholder={s.codePlatzhalter}
             autoCapitalize="characters"
           />
           <button
@@ -298,7 +305,7 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
               })
             }
           >
-            Beitreten
+            {s.beitreten}
           </button>
         </div>
 
@@ -314,19 +321,19 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
 
         {open.length > 0 && (
           <div className={styles.card}>
-            <h2 className={styles.cardTitle}>Deine laufenden Runden</h2>
+            <h2 className={styles.cardTitle}>{s.laufendeRunden}</h2>
             <ul className={styles.list}>
               {open.map((m) => (
                 <li key={m.match_id}>
                   <span>
-                    {m.code} · Runde {m.round}
+                    {m.code} · {s.runde(m.round)}
                   </span>
                   <button
                     type="button"
                     className={styles.pickBtn}
                     onClick={() => setMatchId(m.match_id)}
                   >
-                    weiter ({m.size})
+                    {s.fortsetzen(m.size)}
                   </button>
                 </li>
               ))}
@@ -335,7 +342,7 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
         )}
 
         <button type="button" className={styles.btnSecondary} onClick={onBack}>
-          Zurück zum Spiel am einen Gerät
+          {s.zurueckEinGeraet}
         </button>
       </>
     )
@@ -356,21 +363,20 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
       {error && <p className={styles.error}>{error}</p>}
 
       <p className={styles.meta}>
-        Code <strong>{m.code}</strong> · {m.size} dabei · Runde {m.round}
+        {s.code} <strong>{m.code}</strong> · {s.dabei(m.size)} · {s.runde(m.round)}
       </p>
 
       {m.phase === 'lobby' && (
         <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Vorraum</h2>
+          <h2 className={styles.cardTitle}>{s.vorraum}</h2>
           <p className={styles.subtitle}>
-            Gebt den Code weiter. Spalten: {m.columns.map(spalteLabel).join(', ')} · {m.seconds} s
-            je Runde.
+            {s.vorraumText(m.columns.map((id) => spalteName(s, id)).join(', '), m.seconds)}
           </p>
           <ul className={styles.list}>
             {state.players.map((p) => (
               <li key={p.seat}>
                 <span>{p.name}</span>
-                <strong>{p.is_you ? 'du' : 'dabei'}</strong>
+                <strong>{p.is_you ? s.du : s.dabeiMarke}</strong>
               </li>
             ))}
           </ul>
@@ -381,11 +387,11 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
               disabled={busy || m.size < 2}
               onClick={() => void run(() => startSlfRound(m.id))}
             >
-              {m.size < 2 ? 'Mindestens 2 Mitspielende' : 'Runde starten'}
+              {m.size < 2 ? s.mindestensMitspielende(2) : s.rundeStarten}
             </button>
           )}
           <button type="button" className={styles.btnSecondary} onClick={verlassen}>
-            Verlassen
+            {s.verlassen}
           </button>
         </div>
       )}
@@ -397,16 +403,14 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
             <p className={`${styles.timer} ${rest !== null && rest <= 10 ? styles.timerLow : ''}`}>
               {rest ?? m.seconds} s
             </p>
-            {m.stopped && <p className={styles.meta}>Jemand ist fertig – gleich ist Schluss!</p>}
+            {m.stopped && <p className={styles.meta}>{s.jemandFertig}</p>}
           </div>
 
           {state.me.submitted ? (
             <div className={styles.card}>
-              <h2 className={styles.cardTitle}>Abgegeben</h2>
+              <h2 className={styles.cardTitle}>{s.abgegeben}</h2>
               <p className={styles.subtitle}>
-                {m.open_writers > 0
-                  ? `Noch ${m.open_writers} am Schreiben.`
-                  : 'Gleich gibt es die Auswertung.'}
+                {m.open_writers > 0 ? s.nochAmSchreiben(m.open_writers) : s.gleichAuswertung}
               </p>
             </div>
           ) : (
@@ -414,7 +418,7 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
               <div className={styles.card}>
                 {m.columns.map((sp) => (
                   <label key={sp} className={styles.label}>
-                    {spalteLabel(sp)}
+                    {spalteName(s, sp)}
                     <input
                       className={styles.input}
                       value={meineFelder[sp] ?? ''}
@@ -428,7 +432,7 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
                         }))
                       }
                       autoComplete="off"
-                      placeholder={`${spalteLabel(sp)} mit ${m.letter}…`}
+                      placeholder={s.platzhalter(spalteName(s, sp), m.letter ?? '')}
                     />
                   </label>
                 ))}
@@ -439,7 +443,7 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
                 disabled={busy}
                 onClick={() => void run(() => submitSlfAnswers(m.id, meineFelder))}
               >
-                Fertig – Stopp für alle
+                {s.fertigStopp}
               </button>
             </>
           )}
@@ -449,12 +453,12 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
       {m.phase === 'result' && (
         <>
           <div className={styles.card}>
-            <h2 className={styles.cardTitle}>Auswertung · Buchstabe {m.letter}</h2>
+            <h2 className={styles.cardTitle}>{s.auswertungBuchstabe(m.letter ?? '')}</h2>
             <div className={styles.tableWrap}>
               <table className={styles.table}>
                 <thead>
                   <tr>
-                    <th>Spalte</th>
+                    <th>{s.spalte}</th>
                     {state.players.map((p) => (
                       <th key={p.seat}>{p.name}</th>
                     ))}
@@ -463,14 +467,14 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
                 <tbody>
                   {m.columns.map((sp) => (
                     <tr key={sp}>
-                      <th scope="row">{spalteLabel(sp)}</th>
+                      <th scope="row">{spalteName(s, sp)}</th>
                       {state.players.map((p) => (
                         <td key={p.seat}>{p.answers[sp]?.trim() || '–'}</td>
                       ))}
                     </tr>
                   ))}
                   <tr>
-                    <th scope="row">Runde</th>
+                    <th scope="row">{s.rundenpunkte}</th>
                     {state.players.map((p) => (
                       <td key={p.seat} className={styles.punkte}>
                         {p.round_score}
@@ -483,7 +487,7 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
           </div>
 
           <div className={styles.card}>
-            <h2 className={styles.cardTitle}>Gesamt</h2>
+            <h2 className={styles.cardTitle}>{s.gesamt}</h2>
             <ul className={styles.list}>
               {[...state.players]
                 .sort((a, b) => b.total_score - a.total_score || a.name.localeCompare(b.name))
@@ -491,7 +495,7 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
                   <li key={p.seat}>
                     <span>
                       {i + 1}. {p.name}
-                      {p.is_you ? ' (du)' : ''}
+                      {p.is_you ? ` ${s.duKlammer}` : ''}
                     </span>
                     <strong className={styles.punkte}>{p.total_score}</strong>
                   </li>
@@ -506,11 +510,11 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
               disabled={busy}
               onClick={() => void run(() => startSlfRound(m.id))}
             >
-              Nächste Runde
+              {s.naechsteRunde}
             </button>
           )}
           <button type="button" className={styles.btnSecondary} onClick={verlassen}>
-            Runde verlassen
+            {s.rundeVerlassen}
           </button>
         </>
       )}

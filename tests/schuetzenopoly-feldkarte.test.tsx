@@ -10,9 +10,10 @@
  * und dass die Entscheidung auf ihr getroffen wird.
  */
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { FeldKarte } from '@/pages/play/schuetzenopoly/FeldKarte'
+import { renderAufDeutsch as render } from './aufDeutsch'
 import {
   AUSBAU_NAMEN,
   BRETT,

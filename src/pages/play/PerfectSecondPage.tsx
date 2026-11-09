@@ -6,9 +6,14 @@ import {
   createTimer,
   formatTime,
   perfectSecondGame,
+  darfNochEinVersuch,
+  nochEinVersuch,
+  type Anlauf,
   type PerfectSecondLevel,
   type ScoreResult,
 } from '@/games/perfect-second'
+import { wertungMitWerbehilfe } from '@/games/werbehilfe'
+import { BelohnungsKnopf } from '@/components/werbung/BelohnungsKnopf'
 import {
   getOrCreateGameProgress,
   recordLevelComplete,
@@ -48,6 +53,13 @@ export function PerfectSecondPage() {
   const [completedLevel, setCompletedLevel] = useState<number | null>(null)
   const [hadPerfectHit, setHadPerfectHit] = useState(false)
   const [loading, setLoading] = useState(true)
+  /**
+   * Belohnungsvideo „Noch ein Versuch“: die Treffer, die der letzte
+   * Fehlversuch gekostet hat, und ob in diesem Anlauf schon geholfen wurde.
+   * Ein Anlauf mit Hilfe bringt keine Punkte, keinen Rekord, höchstens einen Stern.
+   */
+  const [verloren, setVerloren] = useState<Anlauf<ScoreResult> | null>(null)
+  const [mitHilfe, setMitHilfe] = useState(false)
   const timerRef = useRef<ReturnType<typeof createTimer> | null>(null)
 
   useEffect(() => {
@@ -117,6 +129,8 @@ export function PerfectSecondPage() {
     setMilestoneXp(0)
     setCompletedLevel(null)
     setHadPerfectHit(false)
+    setVerloren(null)
+    setMitHilfe(false)
   }, [])
 
   const startTimer = useCallback(() => {
@@ -141,6 +155,9 @@ export function PerfectSecondPage() {
     })
 
     if (!result.withinTolerance) {
+      // Was dieser Fehlversuch an Treffern gekostet hat -- nur das kann ein
+      // Video zurückgeben.
+      setVerloren(hitScores.length > 0 ? { treffer: hitScores, zeiten: hitTimes } : null)
       setScoreResult(result)
       setHitScores([])
       setHitTimes([actual])
@@ -192,36 +209,44 @@ export function PerfectSecondPage() {
     const finalScore = Math.min(1000, avgScore)
     const stars = Math.min(...nextHits.map((h) => h.stars))
 
+    // Mit Hilfe eines Werbevideos: keine Punkte, keine XP, höchstens ein
+    // Stern, kein Rekord -- der Fortschritt zählt trotzdem.
+    const wertung = mitHilfe
+      ? wertungMitWerbehilfe({ score: finalScore, xp: totalXp + bonus, stars })
+      : { score: finalScore, xp: totalXp + bonus, stars }
+
     const prev = await getPersonalRecord('perfect-second', config.level)
-    const record = finalScore > 0 && (!prev || finalScore > prev.bestScore)
+    const record = !mitHilfe && finalScore > 0 && (!prev || finalScore > prev.bestScore)
     setIsRecord(record)
-    setMilestoneXp(bonus)
-    setScoreResult({ ...result, score: finalScore, xp: totalXp + bonus, stars })
+    setMilestoneXp(mitHilfe ? 0 : bonus)
+    setScoreResult({ ...result, score: wertung.score, xp: wertung.xp, stars: wertung.stars })
 
     await saveGameResult({
       gameId: 'perfect-second',
       level: config.level,
-      score: finalScore,
-      xp: totalXp + bonus,
+      score: wertung.score,
+      xp: wertung.xp,
+      mitWerbehilfe: mitHilfe,
       resultData: {
         targetTime: config.targetTime,
         tolerance: config.tolerance,
         hitsRequired: config.hitsRequired,
         hits: nextHits.map((h) => h.absoluteDeviation),
-        milestoneBonus: bonus,
+        milestoneBonus: mitHilfe ? 0 : bonus,
         perfectHits: nextHits.filter((h) => h.perfectHit).length,
       },
-      stars,
+      stars: wertung.stars,
       isPersonalRecord: record,
     })
 
     const clearedLevel = config.level
     setCompletedLevel(clearedLevel)
-    setHadPerfectHit(nextHits.some((h) => h.perfectHit))
+    // „Sonder-XP für perfekten Treffer“ stimmt mit Hilfe nicht -- es gibt keine XP.
+    setHadPerfectHit(!mitHilfe && nextHits.some((h) => h.perfectHit))
 
-    if (totalXp + bonus > 0) {
-      await addXp('guest', totalXp + bonus)
-      const progress = await recordLevelComplete('perfect-second', clearedLevel, totalXp + bonus)
+    if (wertung.xp > 0 || mitHilfe) {
+      if (wertung.xp > 0) await addXp('guest', wertung.xp)
+      const progress = await recordLevelComplete('perfect-second', clearedLevel, wertung.xp)
       setHighest(progress.highestLevel)
     }
 
@@ -235,7 +260,24 @@ export function PerfectSecondPage() {
     void trySyncNow()
 
     setPhase('result')
-  }, [phase, config, hitScores, hitTimes, highest])
+  }, [phase, config, hitScores, hitTimes, highest, mitHilfe])
+
+  /** Nach dem zu Ende geschauten Video: Die Treffer vor dem Fehlversuch kommen zurück. */
+  const versuchGeschenkt = useCallback(() => {
+    if (!verloren) return
+    const anlauf = nochEinVersuch(verloren)
+    setMitHilfe(true)
+    setVerloren(null)
+    setHitScores([...anlauf.treffer])
+    setHitTimes([...anlauf.zeiten])
+    setHitsDone(anlauf.treffer.length)
+    setScoreResult(null)
+    setPhase('ready')
+  }, [verloren])
+
+  const versuchAngebot =
+    verloren !== null &&
+    darfNochEinVersuch({ trefferVorher: verloren.treffer.length, hilfeGenutzt: mitHilfe })
 
   if (loading) {
     return (
@@ -252,7 +294,7 @@ export function PerfectSecondPage() {
           type="button"
           className={styles.back}
           onClick={() => (phase === 'map' ? navigate('/') : setPhase('map'))}
-          aria-label="Zurück"
+          aria-label={t.allgemein.zurueck}
         >
           ←
         </button>
@@ -350,8 +392,19 @@ export function PerfectSecondPage() {
             <p className={styles.record}>{t.perfekteSekunde.meilenstein(milestoneXp)}</p>
           )}
           {hadPerfectHit && <p className={styles.record}>{t.perfekteSekunde.haargenau}</p>}
+          {completedLevel != null && mitHilfe && (
+            <p className={styles.tolerance}>{t.perfekteSekunde.mitWerbehilfe}</p>
+          )}
+          {!scoreResult.withinTolerance && verloren && (
+            <BelohnungsKnopf
+              name="sekunde-versuch"
+              aktiv={versuchAngebot}
+              belohnung={t.perfekteSekunde.versuchBelohnung(verloren.treffer.length)}
+              onBelohnt={versuchGeschenkt}
+            />
+          )}
           <div className={styles.resultActions}>
-            {completedLevel != null && scoreResult.score > 0 && (
+            {completedLevel != null && (scoreResult.score > 0 || mitHilfe) && (
               <button
                 type="button"
                 className={styles.primaryBtn}
@@ -366,6 +419,8 @@ export function PerfectSecondPage() {
                   setHadPerfectHit(false)
                   setMilestoneXp(0)
                   setScoreResult(null)
+                  setVerloren(null)
+                  setMitHilfe(false)
                   setPhase('ready')
                 }}
               >
@@ -386,6 +441,8 @@ export function PerfectSecondPage() {
                 setScoreResult(null)
                 setMilestoneXp(0)
                 setHadPerfectHit(false)
+                setVerloren(null)
+                setMitHilfe(false)
               }}
             >
               {t.spiel.nochEinmal}
@@ -401,6 +458,8 @@ export function PerfectSecondPage() {
                 setScoreResult(null)
                 setCompletedLevel(null)
                 setHadPerfectHit(false)
+                setVerloren(null)
+                setMitHilfe(false)
               }}
             >
               {t.spiel.zurUebersicht}

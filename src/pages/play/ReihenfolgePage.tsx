@@ -4,9 +4,13 @@ import {
   createReihenfolgeLevel,
   calculateReihenfolgeScore,
   reihenfolgeGame,
+  eingabeNachFehler,
+  wertungMitZweiterChance,
+  zweiteChanceMoeglich,
   type ReihenfolgeLevel,
   type ReihenfolgeScoreResult,
 } from '@/games/reihenfolge'
+import { BelohnungsKnopf } from '@/components/werbung/BelohnungsKnopf'
 import {
   getOrCreateGameProgress,
   recordLevelComplete,
@@ -20,6 +24,7 @@ import { DATA_PULLED_EVENT } from '@/services/remotePull'
 import { getLevelStand, type LevelStandEintrag } from '@/services/leaderboard'
 import { milestoneBonusXp } from '@/games/milestones'
 import { LevelMap } from '@/components/level-map/LevelMap'
+import { spielName, useSprache } from '@/i18n/sprache'
 import shell from './PlayShell.module.css'
 import styles from './ReihenfolgePage.module.css'
 
@@ -42,6 +47,8 @@ const MAX_GAME_LEVEL = reihenfolgeGame.maxLevel
 
 export function ReihenfolgePage() {
   const navigate = useNavigate()
+  const { t } = useSprache()
+  const r = t.reihenfolge
   const [level, setLevel] = useState(1)
   const [highest, setHighest] = useState(1)
   const [avatarId, setAvatarId] = useState<string | null>(null)
@@ -52,6 +59,8 @@ export function ReihenfolgePage() {
   const [scoreResult, setScoreResult] = useState<ReihenfolgeScoreResult | null>(null)
   const [completedLevel, setCompletedLevel] = useState<number | null>(null)
   const [milestoneXp, setMilestoneXp] = useState(0)
+  /** Zweite Chance per Video in diesem Versuch genutzt? Höchstens einmal je Versuch. */
+  const [hilfe, setHilfe] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -139,7 +148,7 @@ export function ReihenfolgePage() {
 
     return () => {
       abbruch = true
-      for (const t of timers) window.clearTimeout(t)
+      for (const uhr of timers) window.clearTimeout(uhr)
     }
   }, [phase, config])
 
@@ -163,9 +172,26 @@ export function ReihenfolgePage() {
   const startRound = useCallback(() => {
     if (!config) return
     abgerechnet.current = false
+    setHilfe(false)
     setScoreResult(null)
     setEingabe([])
     setCompletedLevel(null)
+    setLeuchtet(null)
+    setPhase('watch')
+  }, [config])
+
+  /**
+   * Belohnung „zweite Chance“: Die Folge läuft noch einmal ganz, die
+   * richtigen Schritte bleiben stehen, weiter geht es am Fehler.
+   */
+  const zweiteChance = useCallback(() => {
+    if (!config) return
+    setHilfe(true)
+    setEingabe((alt) => eingabeNachFehler(alt, config.sequence))
+    abgerechnet.current = false
+    setScoreResult(null)
+    setCompletedLevel(null)
+    setMilestoneXp(0)
     setLeuchtet(null)
     setPhase('watch')
   }, [config])
@@ -174,18 +200,23 @@ export function ReihenfolgePage() {
     async (correctSteps: number, cfg: ReihenfolgeLevel) => {
       if (abgerechnet.current) return
       abgerechnet.current = true
-      const result = calculateReihenfolgeScore({
+      const eingabeWertung = {
         correctSteps,
         sequenceLength: cfg.sequenceLength,
         level: cfg.level,
-      })
+      }
+      // Mit zweiter Chance: keine Punkte, keine XP, kein Rekord, höchstens
+      // ein Stern -- das Level zählt trotzdem (src/games/hilfe.ts).
+      const result = hilfe
+        ? wertungMitZweiterChance(eingabeWertung)
+        : calculateReihenfolgeScore(eingabeWertung)
       setScoreResult(result)
       setCompletedLevel(result.complete ? cfg.level : null)
 
       // Der Meilenstein-Bonus ist eine Belohnung fürs erste Mal – wer ein
       // Level wiederholt, soll ihn nicht noch einmal einsammeln können.
       const firstClear = cfg.level >= highest
-      const bonus = result.complete && firstClear ? milestoneBonusXp(cfg.level) : 0
+      const bonus = result.complete && firstClear && !hilfe ? milestoneBonusXp(cfg.level) : 0
       setMilestoneXp(bonus)
       const xpTotal = result.xp + bonus
 
@@ -201,13 +232,15 @@ export function ReihenfolgePage() {
           showMs: cfg.showMs,
           seed: cfg.seed,
           milestoneBonus: bonus,
+          zweiteChance: hilfe,
         },
         stars: result.stars,
-        isPersonalRecord: result.complete,
+        isPersonalRecord: result.complete && !hilfe,
+        ohneRekord: hilfe,
       })
 
-      if (xpTotal > 0) {
-        await addXp('guest', xpTotal)
+      if (xpTotal > 0) await addXp('guest', xpTotal)
+      if (result.complete) {
         const progress = await recordLevelComplete('reihenfolge', cfg.level, xpTotal)
         setHighest(progress.highestLevel)
         setLevel(progress.currentLevel)
@@ -216,13 +249,13 @@ export function ReihenfolgePage() {
       await processAfterResult({
         gameId: 'reihenfolge',
         level: cfg.level,
-        isPersonalRecord: result.complete,
+        isPersonalRecord: result.complete && !hilfe,
       })
       void trySyncNow()
 
       setPhase('result')
     },
-    [highest],
+    [highest, hilfe],
   )
 
   const tippen = useCallback(
@@ -269,23 +302,25 @@ export function ReihenfolgePage() {
   if (loading || !config) {
     return (
       <main className={shell.page}>
-        <p className={shell.muted}>Laden…</p>
+        <p className={shell.muted}>{t.allgemein.laden}</p>
       </main>
     )
   }
+
+  const titel = spielName(t, 'reihenfolge', 'Reihenfolge merken')
 
   const brett = (
     <div
       className={`${styles.board} ${config.padCount === 4 ? styles.cols2 : styles.cols3}`}
       role="group"
-      aria-label="Farbfelder"
+      aria-label={r.farbfelder}
     >
       {Array.from({ length: config.padCount }, (_, i) => (
         <button
           key={i}
           type="button"
           disabled={phase !== 'repeat'}
-          aria-label={`Feld ${i + 1}`}
+          aria-label={r.feld(i + 1)}
           className={`${styles.pad} ${leuchtet === i ? styles.padOn : ''} ${
             phase === 'repeat' ? styles.padTap : ''
           }`}
@@ -303,11 +338,11 @@ export function ReihenfolgePage() {
           type="button"
           className={shell.back}
           onClick={() => (phase === 'map' ? navigate('/') : setPhase('map'))}
-          aria-label="Zurück"
+          aria-label={t.allgemein.zurueck}
         >
           ←
         </button>
-        <h1 className={shell.title}>Reihenfolge merken</h1>
+        <h1 className={shell.title}>{titel}</h1>
         <span className={shell.levelBadge}>L{config.level}</span>
       </header>
 
@@ -319,87 +354,92 @@ export function ReihenfolgePage() {
             avatarId={avatarId}
             maxLevel={MAX_GAME_LEVEL}
             onSelectLevel={selectLevel}
-            gameLabel="Reihenfolge merken"
+            gameLabel={titel}
             mitspieler={mitspieler}
           />
           <button type="button" className={shell.primaryBtn} onClick={() => selectLevel(level)}>
-            Weiter spielen · Level {level}
+            {t.spiel.weiterSpielen(level)}
           </button>
-          <p className={shell.hint}>Oder tippe ein freies Level auf der Karte an.</p>
+          <p className={shell.hint}>{t.levelSpiele.freiesLevel}</p>
           <Link to="/profile" className={shell.homeLink}>
-            Avatar ändern
+            {t.spiel.avatarAendern}
           </Link>
         </section>
       )}
 
       {phase === 'ready' && (
         <section className={shell.section}>
-          <p className={shell.info}>
-            {config.sequenceLength} Schritte · {config.padCount} Felder
-          </p>
-          <p className={shell.hint}>
-            Schau zu, wie die Felder aufleuchten – danach tippst du dieselbe Reihenfolge nach. Ein
-            Fehler beendet die Runde.
-          </p>
+          <p className={shell.info}>{r.info(config.sequenceLength, config.padCount)}</p>
+          <p className={shell.hint}>{r.anleitung}</p>
           {brett}
           <button type="button" className={shell.primaryBtn} onClick={startRound}>
-            Start
+            {t.levelSpiele.start}
           </button>
           <button type="button" className={shell.secondaryBtn} onClick={() => setPhase('map')}>
-            Zur Karte
+            {t.levelSpiele.zurKarte}
           </button>
         </section>
       )}
 
       {(phase === 'watch' || phase === 'repeat') && (
         <section className={shell.section} aria-live="polite">
-          <p className={styles.watchLabel}>{phase === 'watch' ? 'Schau zu …' : 'Jetzt du!'}</p>
+          <p className={styles.watchLabel}>{phase === 'watch' ? r.schauZu : r.jetztDu}</p>
           {brett}
           <div className={styles.progress} aria-hidden="true">
             {Array.from({ length: config.sequenceLength }, (_, i) => (
               <span key={i} className={i < eingabe.length ? styles.dotDone : styles.dot} />
             ))}
           </div>
-          <p className={shell.muted}>
-            {eingabe.length} von {config.sequenceLength}
-          </p>
+          <p className={shell.muted}>{r.fortschritt(eingabe.length, config.sequenceLength)}</p>
         </section>
       )}
 
       {phase === 'result' && scoreResult && (
         <section className={shell.section}>
           <p className={scoreResult.complete ? shell.correct : shell.wrong}>
-            {scoreResult.complete ? 'Ganze Folge!' : 'Daneben'}
+            {scoreResult.complete ? r.ganzeFolge : r.daneben}
           </p>
-          <p className={shell.stars} aria-label={`${scoreResult.stars} von 5 Sternen`}>
+          <p className={shell.stars} aria-label={t.levelSpiele.sterne(scoreResult.stars)}>
             {'★'.repeat(scoreResult.stars)}
             {'☆'.repeat(5 - scoreResult.stars)}
           </p>
           <p className={shell.scoreLine}>
-            <strong>{scoreResult.score}</strong> Punkte
+            <strong>{scoreResult.score}</strong> {t.levelSpiele.punkte}
             {scoreResult.xp > 0 && <> · {scoreResult.xp} XP</>}
-            {milestoneXp > 0 && <> · +{milestoneXp} Meilenstein-XP</>}
+            {milestoneXp > 0 && <> · {t.levelSpiele.meilensteinXp(milestoneXp)}</>}
           </p>
           {!scoreResult.complete && (
             <p className={shell.hint}>
-              {eingabe.length - 1 >= 0 ? `${eingabe.length - 1} Schritte saßen. ` : ''}
-              XP gibt es erst für die ganze Folge.
+              {eingabe.length - 1 >= 0 ? r.schritteSassen(eingabe.length - 1) : ''}
+              {r.xpNurGanz}
             </p>
           )}
+          {hilfe && (
+            <p className={shell.hint}>
+              {t.levelSpiele.mitHilfe}
+              {scoreResult.complete && <> {t.levelSpiele.mitHilfeGeschafft}</>}
+            </p>
+          )}
+          <BelohnungsKnopf
+            name="reihenfolge-chance"
+            aktiv={zweiteChanceMoeglich({ gescheitert: !scoreResult.complete, genutzt: hilfe })}
+            belohnung={r.zweiteChance}
+            onBelohnt={zweiteChance}
+          />
           <div className={shell.resultActions}>
             {scoreResult.complete && completedLevel !== null && completedLevel < MAX_GAME_LEVEL && (
               <button type="button" className={shell.primaryBtn} onClick={goToNextLevel}>
-                Level {completedLevel + 1}
+                {t.levelSpiele.level(completedLevel + 1)}
               </button>
             )}
             <button type="button" className={shell.secondaryBtn} onClick={playAgain}>
-              Noch mal
+              {t.levelSpiele.nochMal}
             </button>
             <button type="button" className={shell.secondaryBtn} onClick={() => setPhase('map')}>
-              Zur Karte
+              {t.levelSpiele.zurKarte}
             </button>
             <Link to="/" className={shell.homeLink}>
-              Zum Menü
+              {t.allgemein.zumMenue}
             </Link>
           </div>
         </section>

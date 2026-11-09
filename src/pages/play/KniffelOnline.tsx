@@ -37,10 +37,10 @@ import { Bestenliste } from './kniffel/Bestenliste'
 import { OeffentlicheRaeume } from './OeffentlicheRaeume'
 import raum from './OeffentlicheRaeume.module.css'
 import shell from './PlayShell.module.css'
+import { useSprache } from '@/i18n/sprache'
 import styles from './KniffelPage.module.css'
 
 interface KniffelOnlineProps {
-  eigenerName: string
   onZurueck: () => void
 }
 
@@ -49,7 +49,9 @@ function zuBlock(teil: Partial<Block>): Block {
   return { ...leererBlock(), ...teil }
 }
 
-export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
+export function KniffelOnline({ onZurueck }: KniffelOnlineProps) {
+  const { t } = useSprache()
+  const o = t.kniffelOnline
   const [matchId, setMatchId] = useState<string | null>(null)
   const [state, setState] = useState<KniffelOnlineState | null>(null)
   const [offene, setOffene] = useState<KniffelOpenMatch[]>([])
@@ -71,25 +73,28 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
    */
   const meineAuswahl = useRef<EigeneAuswahl | null>(null)
 
-  const laden = useCallback(async (id: string) => {
-    try {
-      const neu = await fetchKniffelState(id)
-      const angewandt = mitEigenerAuswahl(neu, meineAuswahl.current)
-      if (auswahlErledigt(neu, meineAuswahl.current)) meineAuswahl.current = null
-      setState(angewandt)
-      setFehler(null)
-    } catch (err) {
-      // Der Server löscht Räume, in denen zwanzig Minuten niemand mehr war
-      // (Migration 018). Dann zurück in die Lobby, mit Erklärung.
-      if (istRaumWeg(err) && aktuellerRaum.current === id) {
-        setMatchId(null)
-        setState(null)
-        setFehler(RAUM_GESCHLOSSEN_TEXT)
-        return
+  const laden = useCallback(
+    async (id: string) => {
+      try {
+        const neu = await fetchKniffelState(id)
+        const angewandt = mitEigenerAuswahl(neu, meineAuswahl.current)
+        if (auswahlErledigt(neu, meineAuswahl.current)) meineAuswahl.current = null
+        setState(angewandt)
+        setFehler(null)
+      } catch (err) {
+        // Der Server löscht Räume, in denen zwanzig Minuten niemand mehr war
+        // (Migration 018). Dann zurück in die Lobby, mit Erklärung.
+        if (istRaumWeg(err) && aktuellerRaum.current === id) {
+          setMatchId(null)
+          setState(null)
+          setFehler(RAUM_GESCHLOSSEN_TEXT)
+          return
+        }
+        setFehler(err instanceof Error ? err.message : t.kniffelOnline.ladeFehler)
       }
-      setFehler(err instanceof Error ? err.message : 'Die Runde ließ sich nicht laden.')
-    }
-  }, [])
+    },
+    [t.kniffelOnline.ladeFehler],
+  )
 
   /*
    * Erst nachsehen, ob jemand angemeldet ist. Ohne Konto den Knopf
@@ -164,7 +169,7 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
     } catch (err) {
       // Hat der Server abgelehnt, ist meine vorgezogene Anzeige hinfällig.
       meineAuswahl.current = null
-      setFehler(err instanceof Error ? err.message : 'Das hat nicht geklappt.')
+      setFehler(err instanceof Error ? err.message : o.fehler)
     } finally {
       setLaeuft(false)
     }
@@ -178,7 +183,7 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
    */
   async function nameFuerDieRunde(): Promise<string> {
     const name = await ermittleSpielerName().catch(() => null)
-    return istEchterName(name) ? (name as string) : eigenerName
+    return istEchterName(name) ? (name as string) : t.allgemein.spielerOhneName
   }
 
   const eroeffnen = () =>
@@ -216,7 +221,7 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
     try {
       if (matchId) await leaveKniffelMatch(matchId)
     } catch (err) {
-      setFehler(err instanceof Error ? err.message : 'Das hat nicht geklappt.')
+      setFehler(err instanceof Error ? err.message : o.fehler)
     } finally {
       setMatchId(null)
       setState(null)
@@ -231,40 +236,39 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
     return (
       <main className={`${shell.page} ${styles.breiteSeite}`}>
         <header className={shell.header}>
-          <button type="button" className={shell.back} onClick={onZurueck} aria-label="Zurück">
+          <button
+            type="button"
+            className={shell.back}
+            onClick={onZurueck}
+            aria-label={t.allgemein.zurueck}
+          >
             ←
           </button>
-          <h1 className={shell.title}>Kniffel online</h1>
+          <h1 className={shell.title}>{o.titel}</h1>
           <span aria-hidden="true" />
         </header>
 
         {angemeldet === null && (
           <section className={styles.lobby}>
-            <p className={styles.einleitung}>Einen Moment…</p>
+            <p className={styles.einleitung}>{o.moment}</p>
           </section>
         )}
 
         {angemeldet === false && (
           <section className={styles.lobby}>
-            <p className={styles.einleitung}>
-              Online spielst du mit deinem Konto – nur so weiß der Server, wer gerade würfelt, und
-              niemand kann sich seine Augen selbst aussuchen.
-            </p>
+            <p className={styles.einleitung}>{o.ohneKonto}</p>
             <Link to="/auth" className={styles.start} style={{ textAlign: 'center' }}>
-              Anmelden
+              {o.anmelden}
             </Link>
             <button type="button" className={styles.wuerfelKnopf} onClick={onZurueck}>
-              Lieber gegen den Rechner
+              {o.lieberRechner}
             </button>
           </section>
         )}
 
         {angemeldet === true && (
           <section className={styles.lobby}>
-            <p className={styles.einleitung}>
-              Einer eröffnet den Raum und gibt den Code weiter. Gewürfelt wird auf dem Server –
-              niemand kann sich seine Augen selbst aussuchen.
-            </p>
+            <p className={styles.einleitung}>{o.einleitung}</p>
 
             <label className={raum.oeffentlich}>
               <input
@@ -273,21 +277,21 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
                 onChange={(e) => setOeffentlich(e.target.checked)}
               />
               <span>
-                Öffentlicher Raum
-                <small>Steht für alle in der Lobby, mit deinem Namen. Jeder kann beitreten.</small>
+                {o.oeffentlich}
+                <small>{o.oeffentlichText}</small>
               </span>
             </label>
 
             <button type="button" className={styles.start} onClick={eroeffnen} disabled={laeuft}>
-              ➕ Raum eröffnen
+              {o.eroeffnen}
             </button>
 
             <div className={styles.trenner}>
-              <span>oder</span>
+              <span>{o.oder}</span>
             </div>
 
             <label className={styles.feld}>
-              <span>Spielcode</span>
+              <span>{o.spielcode}</span>
               <input
                 className={styles.codeEingabe}
                 value={code}
@@ -305,7 +309,7 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
               onClick={() => beitreten()}
               disabled={laeuft || code.length < 4}
             >
-              Beitreten
+              {o.beitreten}
             </button>
 
             <OeffentlicheRaeume
@@ -316,15 +320,14 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
 
             {offene.length > 0 && (
               <div className={styles.offeneListe}>
-                <h3>Deine offenen Runden</h3>
+                <h3>{o.offeneRunden}</h3>
                 <ul>
                   {offene.map((m) => (
                     <li key={m.match_id}>
                       <button type="button" onClick={() => setMatchId(m.match_id)}>
                         <strong>{m.code}</strong>
                         <span>
-                          {m.phase === 'lobby' ? 'wartet' : `Runde ${m.runde}`} · {m.size}{' '}
-                          {m.size === 1 ? 'Spieler' : 'Spieler'}
+                          {m.phase === 'lobby' ? o.wartet : o.runde(m.runde)} · {o.spieler(m.size)}
                         </span>
                       </button>
                     </li>
@@ -340,7 +343,7 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
             )}
 
             <Link to="/" className={shell.homeLink}>
-              Zum Menü
+              {t.allgemein.zumMenue}
             </Link>
           </section>
         )}
@@ -364,7 +367,7 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
   const amZugSpieler = players.find((p) => p.seat === match.am_zug)
   // Wer dran ist, steht bei jedem Hinweis dabei -- "warte, bis du dran
   // bist" laesst offen, auf wen man wartet (06.09.2026, Thomas).
-  const amZugName = amZugSpieler?.name ?? 'Jemand'
+  const amZugName = amZugSpieler?.name ?? o.jemand
 
   const spalten: BlockSpalte[] = players.map((p) => ({
     id: String(p.seat),
@@ -401,19 +404,23 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
     return (
       <main className={`${shell.page} ${styles.breiteSeite}`}>
         <header className={shell.header}>
-          <button type="button" className={shell.back} onClick={verlassen} aria-label="Zurück">
+          <button
+            type="button"
+            className={shell.back}
+            onClick={verlassen}
+            aria-label={t.allgemein.zurueck}
+          >
             ←
           </button>
-          <h1 className={shell.title}>Warteraum</h1>
+          <h1 className={shell.title}>{o.warteraum}</h1>
           <span aria-hidden="true" />
         </header>
 
         <section className={styles.lobby}>
-          <p className={styles.codeLabel}>Spielcode</p>
+          <p className={styles.codeLabel}>{o.spielcode}</p>
           <p className={styles.code}>{match.code}</p>
           <p className={styles.einleitung}>
-            Gib den Code weiter. Sobald alle da sind, startet{' '}
-            {match.is_host ? 'du' : 'der Gastgeber'} die Runde.
+            {match.is_host ? o.codeWeitergebenHost : o.codeWeitergebenGast}
           </p>
 
           <ul className={styles.spielerListe}>
@@ -421,7 +428,7 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
               <li key={p.seat}>
                 <span className={styles.platz}>{p.seat}</span>
                 {p.name}
-                {p.is_you && <small> (du)</small>}
+                {p.is_you && <small> {o.du}</small>}
               </li>
             ))}
           </ul>
@@ -433,7 +440,7 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
               onClick={() => versuche(() => startKniffelMatch(matchId))}
               disabled={laeuft || players.length < 2}
             >
-              {players.length < 2 ? 'Es fehlt noch jemand' : '🎲 Runde starten'}
+              {players.length < 2 ? o.fehltNoch : o.starten}
             </button>
           )}
 
@@ -444,7 +451,7 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
           )}
 
           <button type="button" className={styles.textKnopf} onClick={verlassen}>
-            Raum verlassen
+            {o.verlassen}
           </button>
         </section>
       </main>
@@ -458,19 +465,24 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
     return (
       <main className={`${shell.page} ${styles.breiteSeite}`}>
         <header className={shell.header}>
-          <button type="button" className={shell.back} onClick={verlassen} aria-label="Zurück">
+          <button
+            type="button"
+            className={shell.back}
+            onClick={verlassen}
+            aria-label={t.allgemein.zurueck}
+          >
             ←
           </button>
-          <h1 className={shell.title}>Endstand</h1>
+          <h1 className={shell.title}>{o.endstand}</h1>
           <span aria-hidden="true" />
         </header>
         <section className={shell.section}>
           <p className={gewonnen ? shell.correct : shell.wrong}>
-            {gewonnen ? '🏆 Gewonnen!' : `${tabelle[0]?.name} gewinnt.`}
+            {gewonnen ? t.kniffel.gewonnen : t.kniffel.gewinnt(tabelle[0]?.name ?? '')}
           </p>
           {ich && (
             <p className={shell.scoreLine}>
-              Deine Punkte: <strong>{ich.punkte}</strong>
+              {o.deinePunkte} <strong>{ich.punkte}</strong>
             </p>
           )}
           <ol className={styles.endstand}>
@@ -478,7 +490,7 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
               <li key={p.seat} className={styles.endEintrag}>
                 <span className={styles.endPlatz}>{i + 1}.</span>
                 <span className={styles.endName}>{p.name}</span>
-                <span className={styles.endWert}>{p.punkte} Punkte</span>
+                <span className={styles.endWert}>{t.kniffel.punkte(p.punkte)}</span>
               </li>
             ))}
           </ol>
@@ -491,10 +503,10 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
           <Kniffelblock spalten={spalten} wuerfel={[]} eintragbar={false} onEintragen={() => {}} />
           <div className={shell.resultActions}>
             <button type="button" className={shell.primaryBtn} onClick={verlassen}>
-              Zurück zur Lobby
+              {o.zurLobby}
             </button>
             <Link to="/" className={shell.homeLink}>
-              Zum Menü
+              {t.allgemein.zumMenue}
             </Link>
           </div>
         </section>
@@ -505,10 +517,17 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
   return (
     <main className={`${shell.page} ${styles.breiteSeite}`}>
       <header className={shell.header}>
-        <button type="button" className={shell.back} onClick={verlassen} aria-label="Zurück">
+        <button
+          type="button"
+          className={shell.back}
+          onClick={verlassen}
+          aria-label={t.allgemein.zurueck}
+        >
           ←
         </button>
-        <h1 className={shell.title}>Kniffel · {match.code}</h1>
+        <h1 className={shell.title}>
+          {t.spiele.kniffel} · {match.code}
+        </h1>
         <span aria-hidden="true" />
       </header>
 
@@ -520,17 +539,11 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
             aria-live="polite"
           >
             <span className={styles.amZugPunkt} aria-hidden="true" />
-            {ichBinDran ? (
-              'Du bist dran'
-            ) : (
-              <>
-                <strong className={styles.amZugName}>{amZugName}</strong> ist dran
-              </>
-            )}
+            {ichBinDran ? t.kniffel.duBistDran : t.kniffel.istDran(amZugName)}
             <span className={styles.wurfZaehler}>
               {match.wurf_nummer === 0
-                ? 'noch nicht gewürfelt'
-                : `Wurf ${match.wurf_nummer} von ${WUERFE_JE_ZUG}`}
+                ? t.kniffel.nochNichtGewuerfelt
+                : t.kniffel.wurfVon(match.wurf_nummer, WUERFE_JE_ZUG)}
             </span>
           </p>
 
@@ -544,7 +557,7 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
           />
 
           {ichBinDran && match.wurf_nummer > 0 && match.wurf_nummer < WUERFE_JE_ZUG && (
-            <p className={styles.halteHinweis}>Tippe die Würfel an, die liegen bleiben sollen.</p>
+            <p className={styles.halteHinweis}>{t.kniffel.halteHinweis}</p>
           )}
 
           {ichBinDran && (
@@ -555,17 +568,16 @@ export function KniffelOnline({ eigenerName, onZurueck }: KniffelOnlineProps) {
               disabled={laeuft || match.wurf_nummer >= WUERFE_JE_ZUG}
             >
               {match.wurf_nummer === 0
-                ? '🎲 Würfeln'
+                ? t.kniffel.wuerfeln
                 : match.wurf_nummer < WUERFE_JE_ZUG
-                  ? `🎲 Nochmal (${WUERFE_JE_ZUG - match.wurf_nummer} übrig)`
-                  : 'Jetzt eintragen'}
+                  ? t.kniffel.nochmal(WUERFE_JE_ZUG - match.wurf_nummer)
+                  : t.kniffel.jetztEintragen}
             </button>
           )}
 
           {!ichBinDran && (
             <p className={styles.warten}>
-              <strong>{amZugName}</strong>{' '}
-              {match.wurf_nummer === 0 ? 'ist am Zug.' : 'würfelt gerade.'} Du kommst danach dran.
+              {match.wurf_nummer === 0 ? o.istAmZug(amZugName) : o.wuerfeltGerade(amZugName)}
             </p>
           )}
         </div>

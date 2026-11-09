@@ -27,6 +27,8 @@ verwirft Fast Refresh bei jeder Textänderung den Zustand der Seite.
 
 1. Eintrag in `de.ts` an der passenden Stelle (nach Seite gruppiert).
 2. `npm run typecheck` -- der Build zeigt genau die fehlende Stelle in `en.ts`.
+   **Nicht** `npx tsc --noEmit -p .`: Die oberste tsconfig hat `"files": []`
+   und nur Verweise, der Aufruf prüft also gar nichts und ist trotzdem grün.
 3. Dort übersetzen.
 4. In der Komponente `const { t } = useSprache()` und `{t.bereich.schluessel}`.
 
@@ -39,6 +41,16 @@ nochBisLevel: (fehlend: number, level: number) => `Noch ${fehlend} XP bis Level 
 
 So steht die Wortstellung in jeder Sprache für sich. Englisch dreht sie
 regelmäßig um; mit `'Noch ' + n + ' XP bis '` ginge das nicht.
+
+### Lange Texte: zwei Fassungen statt Schnipsel
+
+Die Rechtsseiten (Impressum, Datenschutz, Konto löschen) bestehen aus Absätzen
+mit Fettdruck und Links mitten im Satz. In Wörterbuch-Schnipsel zerlegt, liest
+sie niemand mehr gegen. Dort steht der Text deshalb zweimal in der Seite, als
+`TextDe` und `TextEn`, und eine `Record<Sprache, …>` wählt aus. TypeScript
+erzwingt damit auch hier beide Fassungen. Nur Titel, Stand und Zurück kommen
+aus dem Wörterbuch. Wer einen Absatz ändert, ändert beide. Die englische
+Datenschutzerklärung sagt oben, dass bei Abweichungen die deutsche gilt.
 
 ---
 
@@ -107,6 +119,14 @@ render(
 )
 ```
 
+Kürzer geht es mit `tests/aufDeutsch.tsx`: Es setzt die Sprache und den
+Provider in einem. Wer einen Baustein ohne Router rendert, ersetzt nur den
+Import:
+
+```ts
+import { renderAufDeutsch as render } from './aufDeutsch'
+```
+
 `tests/sprache.test.tsx` prüft, was TypeScript nicht sieht: ob eine Textfunktion
 in der Übersetzung zur festen Zeichenkette wurde, ob jemand die deutsche
 Fassung kopiert hat, ob ein Text leer blieb. Alle drei Fälle sind
@@ -116,10 +136,10 @@ gegengeprüft -- sie fallen.
 
 ## Was bewusst **nicht** übersetzt wird
 
-- **Die Wortlisten** von Stadt-Land-Fluss, Wer bin ich?, Scharade, Wortbombe
-  und Finde den Imposter. Ein englischer Spieler braucht englische Wörter,
-  keine übersetzten deutschen. Das ist Inhaltsarbeit und gehört in eigene
-  Datensätze je Sprache, nicht ins Wörterbuch.
+- **Die Wortlisten werden nicht übersetzt, sondern je Sprache geschrieben.**
+  Ein englischer Spieler braucht englische Wörter, keine übersetzten
+  deutschen. Darum gibt es eigene Listen (siehe „Wortlisten je Sprache“
+  unten), nicht Einträge im Wörterbuch.
 - **Die 22 Grundstücke von Schützenopoly.** Sie stehen für echte deutsche
   Schützenfeste und heißen in jeder Sprache gleich. Siehe
   `docs/design/schuetzenopoly/grundstuecke.md`.
@@ -130,62 +150,145 @@ gegengeprüft -- sie fallen.
 
 ## Stand
 
-**Fertig und zweisprachig:**
+**Die Oberfläche ist vollständig zweisprachig (Teil 8, 6.11.2026).** Jede
+Seite, jedes Spiel solo und online, die Rechtsseiten, Emberwake und der
+Startbildschirm in `index.html`. Was noch deutsch ist, ist Inhalt -- Liste
+unten.
 
-- Startseite vollständig (Kopf, Fortschritt, Reiter, Filter, alle 21 Kacheln,
-  Menü, Spenden-Fuß)
-- Abzeichen-Seite mit allen 50 Abzeichen samt Beschreibung
-- Anmeldung, Profil, Rangliste, Daily Challenge, Familienrunde
-- Levelkarte (von mehreren Spielen geteilt)
-- Die perfekte Sekunde
-- Sudoku vollständig, inklusive der siebzehn Lösungstechniken
+| Teil | Inhalt                                                                  |
+| ---- | ----------------------------------------------------------------------- |
+| 1–3  | Startseite, Abzeichen, Anmeldung, Profil, Rangliste, Daily, Familie,    |
+|      | Levelkarte, Die perfekte Sekunde                                        |
+| 4    | Sudoku samt der siebzehn Lösungstechniken                               |
+| 5    | Impressum, Datenschutzerklärung, Konto löschen                          |
+| 6    | Kniffel solo und online, Bienen-Flow, Squishy Dumplings, Trapbound      |
+| 7    | Schützenopoly mit Tischmodus und online, Mau-Mau, Letzte Karte, Texas   |
+|      | Hold'em, die Liste offener Räume                                        |
+| 8    | Schützenrunde, Finde den Imposter samt Kategorie-Editor, Wer bin ich?,  |
+|      | Stadt-Land-Fluss (alle solo und online), Scharade, Wortbombe, Wer würde |
+|      | eher, Was fehlt?, Kopfrechnen, Reihenfolge, Offene Spiele, 404,         |
+|      | Installieren-Knopf, Emberwake, Startbildschirm; dazu Reste aus Teil 1–3 |
+|      | (Startseiten-Tafeln, Ranglisten-Zeilen, Platzhalter, Zahlenformate)     |
 
-**Offen, gemessen am 6.11.2026** -- Zahl der noch deutschen Textstellen je
-Datei:
+**Namen aus dem Spielmodul: Kennung behalten, beim Rendern nachschlagen.** So
+sind die Motive von Bienen-Flow, die Sammelknödel von Squishy, die
+Kniffel-Felder, die Rollen von Schützenrunde und die Gegenstände von
+Emberwake gemacht. Das Modul liefert weiter den deutschen Namen als Kennung
+(er steckt in Caches und Tests), die Seite schlägt ihn im Wörterbuch nach und
+fällt sonst auf ihn zurück:
 
-| Datei                                   | Texte |
-| --------------------------------------- | ----- |
-| `pages/recht/DatenschutzPage.tsx`       | 68    |
-| `pages/play/SchuetzenrundeOnline.tsx`   | 52    |
-| `pages/play/FindeDenImposterOnline.tsx` | 52    |
-| `pages/play/FindeDenImposterPage.tsx`   | 51    |
-| `pages/play/TrapboundPage.tsx`          | 45    |
-| `pages/play/KniffelOnline.tsx`          | 42    |
-| `pages/play/SquishyDumplingsPage.tsx`   | 40    |
-| `pages/play/SchuetzenrundePage.tsx`     | 39    |
-| `pages/play/SchuetzenopolyOnline.tsx`   | 39    |
-| `pages/play/WerBinIchOnline.tsx`        | 37    |
-| `pages/play/TexasHoldemOnline.tsx`      | 37    |
-| `pages/play/MauMauOnline.tsx`           | 35    |
-| `pages/play/BienenFlowPage.tsx`         | 34    |
-| `pages/play/WerBinIchPage.tsx`          | 33    |
-| `pages/play/StadtLandFlussOnline.tsx`   | 33    |
-| `pages/play/SchuetzenopolyPage.tsx`     | 32    |
-| `pages/play/KniffelPage.tsx`            | 31    |
-| `pages/recht/KontoLoeschenPage.tsx`     | 27    |
-| `pages/play/StadtLandFlussPage.tsx`     | 26    |
-
-Dazu die Spielmodule unter `src/games/` -- dort steckt viel Inhalt, der nach
-der Regel oben gar nicht übersetzt wird, und wenig Oberfläche, die es soll.
-Vor dem Anfassen trennen.
-
-Die Zahl je Datei bekommt man so:
-
-```bash
-grep -oE ">[^<>{}]*[a-zäöüß]{4,}[^<>{}]*<|'[^']*[äöüßÄÖÜ][^']*'" DATEI | wc -l
+```ts
+const motiv = (b.motive as Record<string, string | undefined>)[cfg.motiv] ?? cfg.motiv
 ```
 
-Sie ist eine Hausnummer: Kommentare und Code rutschen mit hinein. Vor dem
-Übersetzen immer in die Datei schauen.
+**Protokolle aus der Engine** bleiben deutsch -- Tests, Logs und der Server
+lesen sie. Für die Anzeige gibt es zwei Wege:
 
-**Vorgeschlagene Reihenfolge:** erst die Rechtsseiten (Datenschutz und
-Kontolöschung -- Google ruft beide auf und erwartet sie in der Sprache des
-Eintrags), dann die Einzelspieler-Spiele nach Beliebtheit, zuletzt die
-Online-Varianten.
+- **Meldung als Daten** (Kniffel, Schützenopoly): Die Engine führt neben
+  dem deutschen Text eine strukturierte Meldung (`KniffelZustand.meldung`,
+  `LogEintrag.meldung` mit 36 Arten). Bei Schützenopoly verlangt `mitLog`
+  sie, eine neue Protokollzeile ohne Meldung ist also ein roter Build. Die
+  Übersetzung steht in `pages/play/schuetzenopoly/texte.ts`. Alte
+  Spielstände ohne Meldung zeigen den deutschen Text.
+- **Zeile erkennen**: Wo der Server (SQL) das Protokoll schreibt oder die
+  Engine deutsche Sätze wirft, liest ein Helfer jede deutsche Zeile beim
+  Rendern und baut sie aus dem Wörterbuch neu. Eine Zeile, die kein Muster
+  kennt, bleibt deutsch statt leer. **Wer in der Engine oder im SQL einen
+  solchen Satz ändert oder neu einführt, ergänzt das Muster im Helfer** --
+  die Tests spielen Partien durch und prüfen, dass auf Englisch kein
+  deutsches Wort übrig bleibt:
 
-**Noch offen, unabhängig davon:** 28 Stellen formatieren Zahlen und Daten fest
-mit `toLocaleString('de-DE')`. Sie gehören auf `toLocaleString(sprache)` aus
-`useSprache()`. In der Rangliste und auf der Startseite ist das schon gemacht.
+  | Helfer                                | liest                                 |
+  | ------------------------------------- | ------------------------------------- |
+  | `pages/play/maumau/kartenText.ts`     | Mau-Mau-Engine, Migration 023         |
+  | `pages/play/texas/texasText.ts`       | Texas-Engine, Migration 024           |
+  | `pages/play/schuetzenrunde/srText.ts` | Schützenrunde-Engine, Migration 007   |
+  | `pages/play/imposter/imposterText.ts` | Fehler aus Imposter-Engine und Editor |
+  | `pages/play/partyFehler.ts`           | Startfehler der Partyspiele           |
+  | `games/emberwake/ui/texte.ts`         | Gründe, Todesursachen, Hinweise       |
+
+An den Regeln ändert beides nichts.
+
+**Kein „Du“ an den Server.** Wer online keinen eigenen Namen hat, heißt für
+die anderen `t.allgemein.spielerOhneName` (Spieler/Player) -- „Du“ oder
+„You“ hieße bei allen anderen sie selbst.
+
+**Emberwake** ist kein React. Es liest seine Texte einmal beim Start aus
+`WOERTERBUECHER[sprache].emberwake` (`games/emberwake/ui/texte.ts`); ein
+Sprachwechsel greift beim nächsten Öffnen. Die deutschen Namen stehen dort
+zweimal, in `data/` und im Wörterbuch -- `tests/emberwake-texte.test.ts`
+fällt, wenn sie auseinanderlaufen.
+
+**Der Startbildschirm** in `index.html` steht vor React da. Ein kleines
+Inline-Skript wählt die Sprache nach derselben Regel wie `src/i18n/sprache.ts`
+und tauscht den Spruch. Ändert sich die Regel, ändert sie sich dort mit.
+
+### Wortlisten je Sprache
+
+Seit dem 6.11.2026 haben alle Partyspiele englische Inhalte -- geschrieben
+für englische Spieler, nicht übersetzt (Thanksgiving statt Schützenfest).
+
+| Spiel                            | Deutsch                            | Englisch                               |
+| -------------------------------- | ---------------------------------- | -------------------------------------- |
+| Imposter, Wer bin ich?, Scharade | `finde-den-imposter/data/words.ts` | `data/words.en.ts` (Kategorien `en-…`) |
+| Imposter-Hilfswörter             | `data/helperClusters.ts`           | `data/helperClusters.en.ts`            |
+| Wortbombe                        | `wortbombe/silben.ts`              | `wortbombe/silben.en.ts`               |
+| Wer würde eher                   | `wer-wuerde-eher/fragen.ts`        | `wer-wuerde-eher/fragen.en.ts`         |
+
+- **Englische Kategorien sind eigene Kategorien** mit der Kennung `en-…`
+  (`en-tiere` ist „Animals“). `categoriesFor(sprache)` liefert die der
+  Sprache; die Seiten zeigen nur diese. Darum braucht der Server kein neues
+  Feld: Migration `029_englische_woerter.sql` fügt nur Daten hinzu und wird
+  wie 011b und 027 aus den TS-Listen erzeugt
+  (`node scripts/build-imposter-words-sql.mjs`,
+  `node scripts/build-imposter-helfer-sql.mjs`).
+- **Online erst, wenn der Server sie kennt:** `src/services/imposterKategorien.ts`
+  fragt `fdi_categories` nach `en-`-Kennungen. Solange 029 nicht eingespielt
+  ist, bieten die Online-Seiten die deutschen Kategorien an wie zuvor.
+- Wer 027 allein noch einmal einspielt, leert `fdi_helper` ganz -- danach 029
+  erneut einspielen. `ALL_IN_ONE.sql` hat die richtige Reihenfolge.
+- Wortbombe und Wer würde eher tragen `sprache` im Zustand; alte Stände ohne
+  das Feld gelten als Deutsch.
+- Stadt-Land-Fluss braucht keine Liste: Die Buchstaben passen auch fürs
+  Englische, geprüft wird nur der Anfangsbuchstabe.
+
+### Noch deutsch -- alles Inhalt
+
+1. **Fehlermeldungen vom Server** in allen Online-Spielen (`raise exception`
+   in den Migrationen, angezeigt über `err.message`) und
+   `RAUM_GESCHLOSSEN_TEXT` aus `src/services/raeume.ts`. Dafür braucht es
+   Kennungen statt Sätzen im SQL oder eine Zuordnung im Dienst.
+2. **Trapbound:** die Namen der Level, Welten und Abschnitte (Hunderte, in
+   `src/games/trapbound/`). Der Text „Über das Spiel“ spricht noch von zehn
+   Leveln in Welt 1; das ist in beiden Sprachen veraltet -- eine Sache für
+   Thomas, keine Übersetzung.
+3. **Levelkarte:** Namen, Beschreibungen und Tore der fünf Zeitreise-Zonen
+   (`src/progression/zones.ts`) und der Trapbound-Welten
+   (`src/games/trapbound/welten.ts`).
+4. **Schützenopoly:** die 22 Grundstücke samt Fest und belegter Tatsache
+   (`fakt` in `grundstuecke.ts`) und der Deutsche Schützenbund. Die Namen
+   bleiben ohnehin; die Tatsachen sind belegt, eine Übersetzung müsste gegen
+   `docs/design/schuetzenopoly/grundstuecke.md` geprüft werden.
+5. **Außerhalb der App:** Manifest-Beschreibung (`vite.config.ts`), die
+   `description` in `index.html`, die iOS-Startbilder
+   (`scripts/build-splash-screens.mjs`) und der Store-Eintrag
+   (`docs/store/`). Ein englischer Store-Eintrag ist eine eigene Aufgabe in
+   der Play Console.
+6. **Inhaltlich veraltet** (in beiden Sprachen, nur übersetzt): der
+   Imposter-Editor sagt, eigene Listen gingen online nicht -- sie gehen
+   inzwischen.
+
+`OeffentlicheRaeume.tsx` liest die Sprache mit `useContext(SprachContext)`
+und fällt ohne Provider auf Deutsch zurück, weil mehrere Online-Tests sie
+ohne Provider rendern. Haben die einen, kann sie auf `useSprache()`.
+
+Deutsche Reste findet man so (eine Hausnummer -- Kommentare und Code
+rutschen mit hinein, Texte in Props wie `titel="…"` nicht):
+
+```bash
+grep -nE ">[^<>{}]*[a-zäöüß]{4,}[^<>{}]*<|'[^']*[äöüßÄÖÜ][^']*'" DATEI
+grep -rnE "(titel|hinweis|label|title|placeholder|aria-label)=\"[^\"{]*[a-zäöüß]{3,}" src
+```
 
 ---
 

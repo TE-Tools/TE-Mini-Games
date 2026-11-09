@@ -12,22 +12,25 @@ import {
   type WortbombeState,
 } from '@/games/wortbombe'
 import type { SilbenStufe } from '@/games/wortbombe'
+import { useSprache } from '@/i18n/sprache'
+import { fehlerSatz, partyFehler } from './partyFehler'
 import shell from './PartyShell.module.css'
 import styles from './WortbombePage.module.css'
 
 const DEFAULT_NAMES = 'Thomas\nMarina\nPhillip\nSonja'
 
-const STUFEN: { id: SilbenStufe; label: string }[] = [
-  { id: 'leicht', label: 'Leicht' },
-  { id: 'mittel', label: 'Mittel' },
-  { id: 'schwer', label: 'Schwer' },
-]
+/** Die Stufen -- die Namen stehen im Wörterbuch, die Silben kommen in der Sprache der App. */
+const STUFEN: SilbenStufe[] = ['leicht', 'mittel', 'schwer']
 
 export function WortbombePage() {
+  const { t, sprache } = useSprache()
+  const w = t.wortbombe
+  const g = t.partyGemeinsam
   const [state, setState] = useState<WortbombeState | null>(null)
   const [namesText, setNamesText] = useState(DEFAULT_NAMES)
   const [stufen, setStufen] = useState<SilbenStufe[]>(['leicht', 'mittel'])
   const [leben, setLeben] = useState(STANDARD_LEBEN)
+  /** Der Satz der Engine, deutsch -- übersetzt wird beim Rendern. */
   const [error, setError] = useState<string | null>(null)
 
   /**
@@ -38,14 +41,14 @@ export function WortbombePage() {
 
   useEffect(() => {
     if (zuender === null) return
-    const t = window.setInterval(() => {
+    const uhr = window.setInterval(() => {
       if (Date.now() >= zuender) {
-        window.clearInterval(t)
+        window.clearInterval(uhr)
         setZuender(null)
         setState((s) => (s && s.phase === 'handoff' ? explode(s) : s))
       }
     }, 120)
-    return () => window.clearInterval(t)
+    return () => window.clearInterval(uhr)
   }, [zuender])
 
   const start = useCallback(() => {
@@ -55,30 +58,27 @@ export function WortbombePage() {
         .split(/[\n,;]+/)
         .map((n) => n.trim())
         .filter(Boolean)
-      const match = createWortbombeMatch({ names, stufen, lives: leben })
+      const match = createWortbombeMatch({ names, stufen, lives: leben, sprache })
       setState(match)
       setZuender(Date.now() + zuendzeitMs(match))
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Start fehlgeschlagen')
+      setError(fehlerSatz(e))
     }
-  }, [namesText, stufen, leben])
+  }, [namesText, stufen, leben, sprache])
 
   if (!state) {
     return (
       <main className={`${shell.page} ${styles.farbe}`}>
         <Link to="/" className={shell.back}>
-          {'←'} Zurück
+          {'←'} {t.allgemein.zurueck}
         </Link>
-        <h1 className={shell.title}>💣 Wortbombe</h1>
-        <p className={shell.subtitle}>
-          Eine Silbe steht auf dem Bildschirm. Wer das Handy hat, sagt ein Wort damit und gibt
-          weiter. Irgendwann geht die Bombe hoch – und der Letzte verliert ein Leben.
-        </p>
+        <h1 className={shell.title}>💣 {t.spiele.wortbombe}</h1>
+        <p className={shell.subtitle}>{w.untertitel}</p>
 
         <div className={shell.card}>
-          <h2 className={shell.cardTitle}>Spieler (2–12)</h2>
+          <h2 className={shell.cardTitle}>{g.spielerAnzahl(2, 12)}</h2>
           <label className={shell.label}>
-            Namen (eine Zeile pro Person)
+            {g.namenLabel}
             <textarea
               className={shell.textarea}
               value={namesText}
@@ -89,29 +89,29 @@ export function WortbombePage() {
         </div>
 
         <div className={shell.card}>
-          <h2 className={shell.cardTitle}>Silben</h2>
+          <h2 className={shell.cardTitle}>{w.silben}</h2>
           <div className={shell.grid}>
-            {STUFEN.map((s) => {
-              const an = stufen.includes(s.id)
+            {STUFEN.map((id) => {
+              const an = stufen.includes(id)
               return (
                 <button
-                  key={s.id}
+                  key={id}
                   type="button"
                   aria-pressed={an}
                   className={an ? styles.chipAktiv : shell.pickBtn}
                   onClick={() =>
                     setStufen((alt) =>
-                      alt.includes(s.id) ? alt.filter((x) => x !== s.id) : [...alt, s.id],
+                      alt.includes(id) ? alt.filter((x) => x !== id) : [...alt, id],
                     )
                   }
                 >
-                  {s.label}
+                  {w.stufen[id]}
                 </button>
               )
             })}
           </div>
           <label className={shell.label}>
-            Leben je Person: {leben}
+            {w.lebenJePerson(leben)}
             <input
               type="range"
               min={1}
@@ -120,14 +120,14 @@ export function WortbombePage() {
               onChange={(e) => setLeben(Number(e.target.value))}
             />
           </label>
-          <p className={shell.meta}>Ob ein Wort zählt, entscheidet die Runde – wie am Tisch.</p>
+          <p className={shell.meta}>{w.rundeEntscheidet}</p>
         </div>
 
-        {error && <p className={shell.error}>{error}</p>}
-        {stufen.length === 0 && <p className={shell.error}>Wähle mindestens eine Stufe.</p>}
+        {error && <p className={shell.error}>{partyFehler(t, error)}</p>}
+        {stufen.length === 0 && <p className={shell.error}>{w.mindestensEineStufe}</p>}
 
         <button type="button" className={shell.btn} disabled={stufen.length === 0} onClick={start}>
-          Zünden
+          {w.zuenden}
         </button>
       </main>
     )
@@ -142,7 +142,7 @@ export function WortbombePage() {
         {state.players.map((p) => (
           <li key={p.id} className={p.out ? styles.raus : undefined}>
             <span>{p.name}</span>
-            <strong>{p.out ? 'raus' : '❤️'.repeat(p.lives)}</strong>
+            <strong>{p.out ? w.raus : '❤️'.repeat(p.lives)}</strong>
           </li>
         ))}
       </ul>
@@ -152,16 +152,16 @@ export function WortbombePage() {
   if (state.phase === 'handoff') {
     return (
       <main className={`${shell.page} ${styles.farbe}`}>
-        <p className={shell.meta}>Runde {state.roundIndex + 1}</p>
+        <p className={shell.meta}>{w.runde(state.roundIndex + 1)}</p>
         <div className={`${shell.card} ${styles.silbeBox}`}>
-          <p className={shell.subtitle}>Sag ein Wort mit</p>
+          <p className={shell.subtitle}>{w.sagEinWort}</p>
           <p key={state.silbe} className={styles.silbe}>
             {state.silbe}
           </p>
           <p className={shell.coverName}>{ap.name}</p>
         </div>
         <button type="button" className={shell.btn} onClick={() => setState(passBomb(state))}>
-          Gesagt – weitergeben
+          {w.gesagt}
         </button>
         {lebenAnzeige}
       </main>
@@ -173,12 +173,8 @@ export function WortbombePage() {
       <main className={`${shell.page} ${styles.farbe}`}>
         <div className={`${shell.card} ${styles.boomBox}`}>
           <p className={styles.boom}>💥</p>
-          <h1 className={shell.title}>{ap.name} hatte sie!</h1>
-          <p className={shell.subtitle}>
-            {ap.out
-              ? `${ap.name} ist raus.`
-              : `Noch ${ap.lives} ${ap.lives === 1 ? 'Leben' : 'Leben'}.`}
-          </p>
+          <h1 className={shell.title}>{w.hatteSie(ap.name)}</h1>
+          <p className={shell.subtitle}>{ap.out ? w.istRaus(ap.name) : w.nochLeben(ap.lives)}</p>
         </div>
         {lebenAnzeige}
         <button
@@ -190,7 +186,7 @@ export function WortbombePage() {
             if (next.phase === 'handoff') setZuender(Date.now() + zuendzeitMs(next))
           }}
         >
-          Weiter
+          {t.allgemein.weiter}
         </button>
       </main>
     )
@@ -198,16 +194,16 @@ export function WortbombePage() {
 
   return (
     <main className={`${shell.page} ${styles.farbe}`}>
-      <h1 className={shell.title}>🏆 {sieger ? sieger.name : 'Niemand'} gewinnt</h1>
+      <h1 className={shell.title}>🏆 {sieger ? w.gewinnt(sieger.name) : w.niemandGewinnt}</h1>
       {lebenAnzeige}
       <button type="button" className={shell.btn} onClick={start}>
-        Noch eine Partie
+        {w.nochEinePartie}
       </button>
       <button type="button" className={shell.btnSecondary} onClick={() => setState(null)}>
-        Einstellungen ändern
+        {g.einstellungenAendern}
       </button>
       <Link to="/" className={shell.back}>
-        Zum Menü
+        {t.allgemein.zumMenue}
       </Link>
     </main>
   )

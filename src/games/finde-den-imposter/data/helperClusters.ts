@@ -2,9 +2,13 @@
  * Themen-Cluster für Imposter-Hilfswörter.
  * Nur Wörter aus words.ts – jedes Wort einer Kategorie steckt in mind. einer Gruppe.
  * Stand: 2026-09-06 (vollständige Abdeckung gegen words.ts geprüft).
+ * Die englischen Gruppen (`en-…`) stehen in helperClusters.en.ts.
  */
 
+import { HELPER_CLUSTERS_EN, ZU_NAH_EN } from './helperClusters.en'
+
 export const HELPER_CLUSTERS: Record<string, string[][]> = {
+  ...HELPER_CLUSTERS_EN,
   tiere: [
     ['Hund', 'Katze', 'Maus', 'Ratte', 'Hase', 'Igel', 'Eichhörnchen', 'Fledermaus'],
     ['Pferd', 'Kuh', 'Schwein', 'Huhn', 'Ente', 'Gans', 'Schaf', 'Ziege', 'Wildschwein'],
@@ -617,6 +621,7 @@ const ZU_NAH: readonly string[][] = [
   ['Jacke', 'Regenjacke', 'Strickjacke', 'Anorak'],
   ['Brille', 'Sonnenbrille'],
   ['Martin Luther', 'Martin Luther King'],
+  ...ZU_NAH_EN,
 ]
 
 /** Klein, ohne Umlaute und ohne Satzzeichen -- für Vergleiche. */

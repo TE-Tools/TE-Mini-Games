@@ -46,6 +46,9 @@ import {
   setzeEinstellungen,
   geloeste,
   loescheStand,
+  hilfeAnbieten,
+  entferneFalsche,
+  falscheZiffern,
   type Schwierigkeit,
   type Stand,
   type SudokuWertung,
@@ -56,6 +59,7 @@ import { saveGameResult, addXp, recordLevelComplete, getOrCreateGuestProfile } f
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
 import { LevelMap } from '@/components/level-map/LevelMap'
+import { BelohnungsKnopf } from '@/components/werbung/BelohnungsKnopf'
 import shell from './PlayShell.module.css'
 import { useSprache } from '@/i18n/sprache'
 import styles from './SudokuPage.module.css'
@@ -73,6 +77,7 @@ interface Ende {
   fehler: number
   tipps: number
   neu: boolean
+  mitHilfe: boolean
 }
 
 /** So oft wird die laufende Partie weggeschrieben. */
@@ -113,6 +118,8 @@ export function SudokuPage() {
   const [tipp, setTipp] = useState<Tipp | null>(null)
   const [meldung, setMeldung] = useState<string | null>(null)
   const [zeigeFalsche, setZeigeFalsche] = useState(false)
+  /** Schon per Video geholfen? Höchstens einmal je Versuch. */
+  const [mitHilfe, setMitHilfe] = useState(false)
 
   const uhrRef = useRef<{ seit: number | null; summe: number }>({ seit: null, summe: 0 })
   const meldungTimer = useRef<number | null>(null)
@@ -210,15 +217,16 @@ export function SudokuPage() {
       sekunden: Math.floor(uhrLesen()),
       fehler,
       tipps,
+      mitHilfe,
     })
-  }, [ansicht, ende, nr, werte, notizen, fehler, tipps, uhrLesen])
+  }, [ansicht, ende, nr, werte, notizen, fehler, tipps, mitHilfe, uhrLesen])
 
   useEffect(() => {
     if (ansicht !== 'spiel' || ende) return
     sichern()
     // Nur bei echten Änderungen am Gitter -- die Uhr sichert unten getrennt.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [werte, notizen, fehler, tipps])
+  }, [werte, notizen, fehler, tipps, mitHilfe])
 
   useEffect(() => {
     if (ansicht !== 'spiel' || ende || sekunden === 0) return
@@ -253,6 +261,7 @@ export function SudokuPage() {
     setNotizModus(false)
     setFehler(partie?.fehler ?? 0)
     setTipps(partie?.tipps ?? 0)
+    setMitHilfe(partie?.mitHilfe === true)
     uhrRef.current = { seit: null, summe: partie?.sekunden ?? 0 }
     setSekunden(partie?.sekunden ?? 0)
     setPause(false)
@@ -269,16 +278,18 @@ export function SudokuPage() {
     async (fertigeWerte: number[]) => {
       uhrStopp()
       const sek = Math.floor(uhrLesen())
-      const wertung = werteAus(nr, { geloest: true, sekunden: sek, fehler, tipps })
+      // Mit Hilfe aus dem Video: höchstens ein Stern, kein Rekord (hilfe.ts).
+      const wertung = werteAus(nr, { geloest: true, sekunden: sek, fehler, tipps, mitHilfe })
       const vorher = levelStand(nr)
       const neuerStand = merkeAbschluss({
         nr,
         sekunden: sek,
         punkte: wertung.punkte,
         sterne: wertung.sterne,
+        mitHilfe,
       })
       setStand(neuerStand)
-      setEnde({ wertung, sekunden: sek, fehler, tipps, neu: !vorher.fertig })
+      setEnde({ wertung, sekunden: sek, fehler, tipps, neu: !vorher.fertig, mitHilfe })
       setAuswahl(null)
       setTipp(null)
       ton('geschafft')
@@ -297,18 +308,20 @@ export function SudokuPage() {
             schwierigkeit: schwierigkeitVon(nr),
             stufe: stufeVon(nr),
             gitter: gitterText(fertigeWerte),
+            mitHilfe,
           },
-          isPersonalRecord: true,
+          isPersonalRecord: !mitHilfe,
+          ohneRekord: mitHilfe,
         })
         await addXp('guest', wertung.xp)
         await recordLevelComplete('sudoku', nr, wertung.xp)
-        await processAfterResult({ gameId: 'sudoku', level: nr, isPersonalRecord: true })
+        await processAfterResult({ gameId: 'sudoku', level: nr, isPersonalRecord: !mitHilfe })
         void trySyncNow()
       } catch (e) {
         console.error(e)
       }
     },
-    [nr, fehler, tipps, uhrLesen, uhrStopp, ton],
+    [nr, fehler, tipps, mitHilfe, uhrLesen, uhrStopp, ton],
   )
 
   // ------------------------------------------------------------ Züge
@@ -356,7 +369,7 @@ export function SudokuPage() {
       if (voll && richtig) {
         void abschliessen(neu)
       } else if (voll) {
-        zeigeMeldung('Alles voll -- aber irgendwo steckt ein Fehler.')
+        zeigeMeldung(t.sudoku.allesVollFehler)
       } else {
         ton('knopf')
       }
@@ -375,6 +388,7 @@ export function SudokuPage() {
       abschliessen,
       zeigeMeldung,
       ton,
+      t.sudoku.allesVollFehler,
     ],
   )
 
@@ -421,18 +435,18 @@ export function SudokuPage() {
 
   const tippHolen = useCallback(() => {
     if (ende || pause) return
-    const t = tippFuer(Uint8Array.from(werte), loesung)
+    const hinweis = tippFuer(Uint8Array.from(werte), loesung)
     setTipps((n) => n + 1)
-    if (!t) {
+    if (!hinweis) {
       // Es steht etwas Falsches im Gitter. Kurz zeigen, wo.
       setZeigeFalsche(true)
       window.setTimeout(() => setZeigeFalsche(false), 4000)
-      zeigeMeldung('Im Gitter steht etwas Falsches -- die roten Felder stimmen nicht.', 4000)
+      zeigeMeldung(t.sudoku.gitterFalsch, 4000)
       return
     }
-    setTipp(t)
-    setAuswahl(t.zelle)
-  }, [ende, pause, werte, loesung, zeigeMeldung])
+    setTipp(hinweis)
+    setAuswahl(hinweis.zelle)
+  }, [ende, pause, werte, loesung, zeigeMeldung, t.sudoku.gitterFalsch])
 
   const tippEintragen = useCallback(() => {
     if (!tipp) return
@@ -455,6 +469,24 @@ export function SudokuPage() {
     for (let i = 0; i < ZELLEN; i++) if (neu[i] === 0) voll = false
     if (voll && neu.every((w, i) => w === loesung[i])) void abschliessen(neu)
   }, [tipp, werte, notizen, einst.notizenAufraeumen, loesung, merkeVerlauf, abschliessen])
+
+  /** Darf das Video „falsche Ziffern entfernen“ angeboten werden? (hilfe.ts) */
+  const hilfeAngebot =
+    ansicht === 'spiel' &&
+    !ende &&
+    !pause &&
+    hilfeAnbieten({ werte, vorgabe: r.vorgabe, loesung, fehlerSichtbar, mitHilfe })
+
+  /** Nach dem Video: falsche Ziffern raus, die Runde gilt als „mit Hilfe“. */
+  const falscheEntfernen = useCallback(() => {
+    if (mitHilfe || ende) return
+    const anzahl = falscheZiffern(werte, r.vorgabe, loesung).length
+    merkeVerlauf()
+    setWerte(entferneFalsche(werte, r.vorgabe, loesung))
+    setMitHilfe(true)
+    setTipp(null)
+    zeigeMeldung(t.sudoku.hilfeErledigt(anzahl))
+  }, [mitHilfe, ende, werte, r.vorgabe, loesung, merkeVerlauf, zeigeMeldung, t.sudoku])
 
   // -------------------------------------------------------- Tastatur
 
@@ -522,7 +554,7 @@ export function SudokuPage() {
     return (
       <main className={shell.page}>
         <header className={shell.header}>
-          <Link to="/" className={shell.back} aria-label="Zurück">
+          <Link to="/" className={shell.back} aria-label={t.allgemein.zurueck}>
             ←
           </Link>
           <h1 className={shell.title}>{t.sudoku.titel}</h1>
@@ -741,7 +773,7 @@ export function SudokuPage() {
             type="button"
             className={styles.pauseKnopf}
             onClick={() => setPause((p) => !p)}
-            aria-label={pause ? 'Weiter' : 'Pause'}
+            aria-label={pause ? t.sudoku.weiter : t.sudoku.pause}
             disabled={Boolean(ende)}
           >
             {pause ? '▶' : '❚❚'}
@@ -753,14 +785,14 @@ export function SudokuPage() {
         <span className={fehler > 0 && fehlerSichtbar ? styles.fehlerRot : styles.leise}>
           Fehler: {fehlerSichtbar ? fehler : '?'}
         </span>
-        <span className={styles.leise}>Tipps: {tipps}</span>
+        <span className={styles.leise}>{t.sudoku.tippsZahl(tipps)}</span>
         {Number.isFinite(bestes.besteZeit) && (
-          <span className={styles.leise}>Best: {zeitText(bestes.besteZeit)}</span>
+          <span className={styles.leise}>{t.sudoku.bestzeit(zeitText(bestes.besteZeit))}</span>
         )}
       </div>
 
       <div className={`${styles.gitterRahmen} ${pause ? styles.verdeckt : ''}`}>
-        <div className={styles.gitter} role="grid" aria-label="Sudoku-Gitter">
+        <div className={styles.gitter} role="grid" aria-label={t.sudoku.gitterName}>
           {werte.map((w, i) => {
             const vorgabe = r.vorgabe[i] !== 0
             const rz = zeileVon(i)
@@ -878,6 +910,7 @@ export function SudokuPage() {
                 {ende.tipps === 1 ? t.sudoku.tipp : t.sudoku.tipps}
                 {ende.wertung.zeitBonus > 0 && t.sudoku.zeitBonus(ende.wertung.zeitBonus)}
               </p>
+              {ende.mitHilfe && <p className={styles.leise}>{t.sudoku.mitHilfe}</p>}
               <p className={styles.leise}>
                 {t.sudoku.schwersterSchritt} <b>{t.sudoku.techniken[r.technik]}</b>
               </p>
@@ -987,6 +1020,13 @@ export function SudokuPage() {
           )}
         </div>
       )}
+
+      <BelohnungsKnopf
+        name="sudoku-hilfe"
+        aktiv={hilfeAngebot}
+        belohnung={t.sudoku.hilfeBelohnung}
+        onBelohnt={falscheEntfernen}
+      />
 
       <button
         type="button"

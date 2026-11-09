@@ -14,6 +14,7 @@
 
 import type { CSSProperties, ReactNode } from 'react'
 import type { Karte, SpielerStatus } from '@/games/texas-holdem'
+import { useSprache } from '@/i18n/sprache'
 import { Chipstapel } from './Chips'
 import { Kartenplatz, Spielkarte } from './Spielkarte'
 import styles from '../TexasHoldemPage.module.css'
@@ -147,6 +148,8 @@ export function PokerTisch({
   ergebnisText,
   aktionen,
 }: PokerTischProps) {
+  const { t } = useSprache()
+  const w = t.texas.tisch
   const ich = spieler.find((s) => s.ichSelbst)
   const gegner = spieler.filter((s) => !s.ichSelbst)
   const sitze = SITZE[gegner.length] ?? SITZE[5]!
@@ -176,8 +179,8 @@ export function PokerTisch({
       */}
       <div className={styles.bande}>
         <div className={styles.filz}>
-          <div className={styles.mitte} role="group" aria-label="Tischmitte">
-            <div className={styles.board} role="group" aria-label="Gemeinschaftskarten">
+          <div className={styles.mitte} role="group" aria-label={w.mitte}>
+            <div className={styles.board} role="group" aria-label={w.gemeinschaftskarten}>
               {[0, 1, 2, 3, 4].map((i) =>
                 board[i] ? (
                   <Spielkarte
@@ -198,11 +201,9 @@ export function PokerTisch({
                 <Chipstapel betrag={topf} zahl="keine" hoechstens={6} />
               </span>
               <span className={styles.topfZahl}>{topf}</span>
-              <span className={styles.topfWort}>im Topf</span>
+              <span className={styles.topfWort}>{w.imTopf}</span>
             </p>
-            <p className={styles.stufe}>
-              Hand {handNr} · Blinds {blinds.klein}/{blinds.gross}
-            </p>
+            <p className={styles.stufe}>{w.stand(handNr, blinds.klein, blinds.gross)}</p>
           </div>
 
           {gegner.map((s, i) => (
@@ -245,8 +246,8 @@ export function PokerTisch({
             <span
               className={styles.geberKnopf}
               style={{ left: `${geberPlatz.x}%`, top: `${geberPlatz.y}%` }}
-              title="Geber"
-              aria-label="Geber"
+              title={w.geber}
+              aria-label={w.geber}
             >
               D
             </span>
@@ -254,7 +255,7 @@ export function PokerTisch({
         </div>
       </div>
 
-      <ol className={styles.protokoll} aria-label="Was bisher geschah">
+      <ol className={styles.protokoll} aria-label={w.protokoll}>
         {/*
           Das Ergebnis steht gleich darunter gross im Kasten -- im
           Protokoll wäre es dieselbe Zeile zweimal untereinander.
@@ -276,7 +277,7 @@ export function PokerTisch({
 
       <div className={styles.unten}>
         <div className={styles.ichZeile}>
-          <div className={styles.meineKarten} role="group" aria-label="Deine Karten">
+          <div className={styles.meineKarten} role="group" aria-label={w.deineKarten}>
             {ich?.karten?.length ? (
               ich.karten.map((k, i) => <Spielkarte key={i} karte={k} zaehlt={zaehltMit(k)} />)
             ) : (
@@ -289,10 +290,14 @@ export function PokerTisch({
           <div className={styles.meinStand}>
             <strong className={styles.meineChips}>{ich?.chips ?? 0}</strong>
             <span className={styles.meinEinsatz}>
-              {ich && ich.einsatz > 0 ? `im Einsatz: ${ich.einsatz}` : 'Chips'}
+              {ich && ich.einsatz > 0 ? w.imEinsatz(ich.einsatz) : w.chips}
             </span>
-            {ich?.status === 'gefoldet' && <span className={styles.weggeworfen}>weggeworfen</span>}
-            {ich?.status === 'raus' && <span className={styles.weggeworfen}>ausgeschieden</span>}
+            {ich?.status === 'gefoldet' && (
+              <span className={styles.weggeworfen}>{w.weggeworfen}</span>
+            )}
+            {ich?.status === 'raus' && (
+              <span className={styles.weggeworfen}>{w.ausgeschieden}</span>
+            )}
           </div>
         </div>
 
@@ -313,6 +318,7 @@ function GegnerKarte({
   offen: boolean
   zaehltMit: (k?: Karte | null) => boolean
 }) {
+  const { t } = useSprache()
   const raus = spieler.status === 'raus'
   const weg = spieler.status === 'gefoldet'
   // Online kommen fremde Karten als null an; dann liegen eben zwei
@@ -326,7 +332,7 @@ function GegnerKarte({
     >
       <div className={styles.gegnerKarten}>
         {raus ? (
-          <span className={styles.rausText}>raus</span>
+          <span className={styles.rausText}>{t.texas.tisch.raus}</span>
         ) : (
           karten.map((k, i) => (
             <Spielkarte
@@ -342,7 +348,7 @@ function GegnerKarte({
       <span className={styles.gegnerName}>{spieler.name}</span>
       <span className={styles.gegnerChips}>
         {spieler.status === 'allin' ? (
-          <span className={styles.allin}>all-in</span>
+          <span className={styles.allin}>{t.texas.tisch.allin}</span>
         ) : (
           <>
             <Chipstapel betrag={spieler.chips} klein zahl="keine" hoechstens={3} />

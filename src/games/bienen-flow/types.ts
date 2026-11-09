@@ -73,6 +73,11 @@ export interface BienenState {
   moves: number
   /** Blöcke auf Plätzen, deren Farbe es im Bild nicht mehr gibt. */
   tote: number
+  /**
+   * Wurde in dieser Runde per Video ein Platz freigeräumt? Dann gibt es
+   * weder Punkte noch Rekord, höchstens einen Stern. Siehe `belohnung.ts`.
+   */
+  mitHilfe?: boolean
 }
 
 /**

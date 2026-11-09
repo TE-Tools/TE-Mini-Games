@@ -39,6 +39,7 @@ import { LogoMark } from '@/components/brand/LogoMark'
 import { DATA_PULLED_EVENT } from '@/services/remotePull'
 import { getRemoteOverall, gameLabel, type OverallEntry } from '@/services/leaderboard'
 import { StartBuehne } from '@/components/drei/StartBuehne'
+import { werbungAktiv } from '@/services/werbung'
 import {
   SPIELE_KACHELN,
   SPIEL_GRUPPEN,
@@ -57,7 +58,7 @@ const REITER: { id: Reiter }[] = [
 ]
 
 export function HomePage() {
-  const { t } = useSprache()
+  const { t, sprache } = useSprache()
   const [profile, setProfile] = useState<LocalProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [reiter, setReiter] = useState<Reiter>('spiele')
@@ -187,7 +188,7 @@ export function HomePage() {
             <span>
               <span className={styles.standLabel}>{t.start.xp}</span>
               <span className={styles.standWert}>
-                {loading ? '…' : xpAnzeige.toLocaleString('de-DE')}
+                {loading ? '…' : xpAnzeige.toLocaleString(sprache)}
               </span>
             </span>
           </div>
@@ -301,7 +302,9 @@ export function HomePage() {
           eingebundene Zahlungs-Widgets bringen fremdes Nachverfolgen mit, und
           fuer paypal.me braucht es nichts davon. */}
       <footer className={styles.spende}>
-        <p className={styles.spendeText}>{t.start.spendeText}</p>
+        <p className={styles.spendeText}>
+          {werbungAktiv() ? t.start.spendeTextMitWerbung : t.start.spendeText}
+        </p>
         <a
           className={styles.spendeKnopf}
           href="https://paypal.me/ThomasElsen"
@@ -475,7 +478,7 @@ function Menue({ onSchliessen: schliessenSofort }: { onSchliessen: () => void })
         className={styles.menueTafel}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
-        aria-label="Menü"
+        aria-label={t.start.menue}
       >
         <span className={styles.menueGriff} aria-hidden="true" />
         <ul className={styles.menueListe}>
@@ -576,6 +579,7 @@ function ZuletztGespielt() {
 const PLATZ_FARBEN = ['var(--color-gold)', 'var(--color-primary)', 'var(--color-accent)']
 
 function RanglisteKurz() {
+  const { t, sprache } = useSprache()
   const [oben, setOben] = useState<OverallEntry[] | null>(null)
 
   useEffect(() => {
@@ -592,17 +596,12 @@ function RanglisteKurz() {
 
   return (
     <Tafel
-      titel="Rangliste"
-      hinweis="Wer diese Woche vorne liegt."
-      mehr={{ pfad: '/leaderboard', text: 'Alle ansehen' }}
+      titel={t.reiter.rangliste}
+      hinweis={t.start.ranglisteHinweis}
+      mehr={{ pfad: '/leaderboard', text: t.erfolge.alleAnsehen }}
     >
-      {oben === null && <p className={styles.leiseZeile}>Laden…</p>}
-      {oben?.length === 0 && (
-        <p className={styles.leiseZeile}>
-          Dafür braucht es ein Konto und einen Benutzernamen – dann siehst du hier, wo die anderen
-          stehen.
-        </p>
-      )}
+      {oben === null && <p className={styles.leiseZeile}>{t.allgemein.laden}</p>}
+      {oben?.length === 0 && <p className={styles.leiseZeile}>{t.start.ranglisteOhneKonto}</p>}
       {oben && oben.length > 0 && (
         <ol className={styles.podest}>
           {oben.map((e, i) => (
@@ -611,7 +610,7 @@ function RanglisteKurz() {
                 {i + 1}
               </span>
               <span className={styles.podestName}>{e.username}</span>
-              <span className={styles.podestXp}>{e.totalXp.toLocaleString('de-DE')} XP</span>
+              <span className={styles.podestXp}>{e.totalXp.toLocaleString(sprache)} XP</span>
             </li>
           ))}
         </ol>
@@ -676,14 +675,14 @@ function TageszielKurz() {
   const spiel = kachelFuer(heute.gameId)
   return (
     <Tafel
-      titel="Tagesziel"
-      hinweis="Jeden Tag ein Spiel, für alle dasselbe."
-      mehr={{ pfad: '/daily', text: 'Loslegen' }}
+      titel={t.reiter.tagesziel}
+      hinweis={t.start.tageszielHinweis}
+      mehr={{ pfad: '/daily', text: t.start.loslegen }}
     >
       <p className={styles.tagesSpiel}>
         <span aria-hidden="true">{spiel?.icon ?? '📅'}</span>{' '}
         <strong>{spielName(t, heute.gameId, gameLabel(heute.gameId))}</strong>
-        <span className={styles.leiseZeile}> · Level {heute.level}</span>
+        <span className={styles.leiseZeile}>{t.start.levelZusatz(heute.level)}</span>
       </p>
     </Tafel>
   )

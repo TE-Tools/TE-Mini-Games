@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  squishyDumplingsGame,
   createDumplingLevel,
   createDumplingMatch,
   tausche,
@@ -13,8 +12,14 @@ import {
   naechsteBelohnung,
   knoedelFuer,
   SAMMEL_KNOEDEL,
+  VIDEO_KNOEDEL,
+  videoKnoedelFrei,
+  schalteVideoKnoedelFrei,
+  ZUSATZ_SEKUNDEN,
+  zeitAngebot,
+  weiterMitZeit,
+  wertungFuer,
   FARB_HEX,
-  FARB_NAME,
   DUMPLING_MAX_LEVEL,
   type DumplingLevel,
   type DumplingState,
@@ -32,6 +37,9 @@ import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
 import { LevelMap } from '@/components/level-map/LevelMap'
 import { Knoedel } from '@/components/knoedel/Knoedel'
+import { BelohnungsKnopf } from '@/components/werbung/BelohnungsKnopf'
+import { werbungAktiv } from '@/services/werbung'
+import { useSprache } from '@/i18n/sprache'
 import styles from './SquishyDumplingsPage.module.css'
 
 type Phase = 'map' | 'play' | 'won' | 'lost'
@@ -72,6 +80,10 @@ function akzentVon(hex: string): string {
 }
 
 export function SquishyDumplingsPage() {
+  const { t } = useSprache()
+  const d = t.squishy
+  const knoedelName = (k: SammelKnoedel) =>
+    (d.knoedel as Record<string, string | undefined>)[k.id] ?? k.name
   const [level, setLevel] = useState(1)
   const [highest, setHighest] = useState(1)
   const [avatarId, setAvatarId] = useState<string | null>(null)
@@ -92,6 +104,8 @@ export function SquishyDumplingsPage() {
   const [neuerKnoedel, setNeuerKnoedel] = useState<SammelKnoedel | null>(null)
   const [meinKnoedel, setMeinKnoedel] = useState<string | null>(null)
   const [sammlungOffen, setSammlungOffen] = useState(false)
+  /** Der Sternschnuppen-Bao -- nur per Video, einmal frei, für immer frei. */
+  const [videoFrei, setVideoFrei] = useState(() => videoKnoedelFrei())
   const [loading, setLoading] = useState(true)
 
   /** Zählt bei jedem neuen Level hoch; ältere Animationen brechen daran ab. */
@@ -135,8 +149,9 @@ export function SquishyDumplingsPage() {
   /** Wie weit man gekommen ist: das höchste geschaffte Level. */
   const geschafft = Math.max(0, highest - 1)
   const meine = freigeschaltet(geschafft)
+  const tragbar = videoFrei ? [...meine, VIDEO_KNOEDEL] : meine
   const gewaehlterKnoedel = knoedelFuer(
-    meine.some((k) => k.id === meinKnoedel) ? meinKnoedel : meine[meine.length - 1]?.id,
+    tragbar.some((k) => k.id === meinKnoedel) ? meinKnoedel : meine[meine.length - 1]?.id,
   )
 
   const startLevel = useCallback((L: number) => {
@@ -176,9 +191,9 @@ export function SquishyDumplingsPage() {
       restzeit: uebrig,
       besteKette: fertig.besteKette,
     }
-    const sc = squishyDumplingsGame.calculateScore(fertig.level, raw)
-    const xp = squishyDumplingsGame.calculateXP(fertig.level, sc)
-    const st = squishyDumplingsGame.calculateStars?.(fertig.level, sc) ?? 0
+    // Mit Hilfe aus dem Video: Level frei, aber keine Punkte und kein Rekord.
+    const mitHilfe = fertig.mitHilfe === true
+    const { score: sc, xp, stars: st } = wertungFuer(fertig.level, raw, mitHilfe)
     setScore(sc)
     setXpGained(xp)
     setSterne(st)
@@ -191,7 +206,8 @@ export function SquishyDumplingsPage() {
         score: sc,
         xp,
         stars: st,
-        resultData: raw,
+        resultData: { ...raw, mitHilfe },
+        ohneRekord: mitHilfe,
       })
       await addXp('guest', xp)
       const progress = await recordLevelComplete('squishy-dumplings', fertig.level, xp)
@@ -230,6 +246,15 @@ export function SquishyDumplingsPage() {
     }, TAKT_MS)
     return () => window.clearInterval(uhr)
   }, [phase, state])
+
+  /** Nach dem Video: +15 Sekunden, dasselbe Feld, einmal je Versuch. */
+  const weiterspielen = useCallback(() => {
+    if (!zeitAngebot(state)) return
+    setState(weiterMitZeit(state!))
+    endeRef.current = Date.now() + ZUSATZ_SEKUNDEN * 1000
+    setRestzeit(ZUSATZ_SEKUNDEN)
+    setPhase('play')
+  }, [state])
 
   /** Einen Tausch abspielen: erst der Tausch, dann Kette für Kette. */
   const spieleZug = useCallback(
@@ -406,7 +431,7 @@ export function SquishyDumplingsPage() {
   if (loading) {
     return (
       <main className={styles.page}>
-        <p className={styles.muted}>Laden…</p>
+        <p className={styles.muted}>{d.laden}</p>
       </main>
     )
   }
@@ -417,22 +442,13 @@ export function SquishyDumplingsPage() {
       <main className={styles.page}>
         <header className={styles.top}>
           <Link to="/" className={styles.back}>
-            {'←'} Zurück
+            {'←'} {d.zurueck}
           </Link>
           <h1 className={styles.title}>
-            <span aria-hidden="true">🥟</span> Squishy Dumplings
+            <span aria-hidden="true">🥟</span> {t.spiele['squishy-dumplings']}
           </h1>
         </header>
-        <p className={styles.hint}>
-          Zieh einen Knödel auf seinen Nachbarn – oder tipp beide an. Stehen dadurch drei gleiche in
-          einer Reihe, verschwinden sie und von oben fallen neue nach. Sammle das Ziel, bevor die
-          Zeit um ist. Wer vier in eine Reihe bringt, bekommt einen diagonalen Knödel, wer fünf
-          schafft, einen goldenen in dieser Farbe. Beide bleiben liegen und zählen ganz normal mit:
-          Bringst du sie noch einmal in eine Reihe, fegt der Diagonale beide Schrägen leer und der
-          Goldene lässt alle Knödel seiner Farbe platzen. Später kommen Käfige dazu: Ein Knödel im
-          Käfig lässt sich nicht schieben und zerreißt jede Reihe – er springt auf, wenn direkt
-          daneben etwas verschwindet.
-        </p>
+        <p className={styles.hint}>{d.regeln}</p>
 
         <section className={styles.sammlung}>
           <button
@@ -449,11 +465,11 @@ export function SquishyDumplingsPage() {
               />
             </span>
             <span>
-              <strong>Deine Sammlung</strong>
+              <strong>{d.sammlung}</strong>
               <br />
               <span className={styles.muted}>
-                {meine.length} von {SAMMEL_KNOEDEL.length} Knödeln
-                {naechste ? ` · nächster ab Level ${naechste.abLevel}` : ' · alle gesammelt!'}
+                {d.sammlungStand(meine.length, SAMMEL_KNOEDEL.length)}
+                {naechste ? d.naechsterAb(naechste.abLevel) : d.alleGesammelt}
               </span>
             </span>
             <span aria-hidden="true">{sammlungOffen ? '▲' : '▼'}</span>
@@ -476,23 +492,77 @@ export function SquishyDumplingsPage() {
                       setMeinKnoedel(k.id)
                       schreibAvatar(k.id)
                     }}
-                    title={hab ? k.name : `${k.name} – ab Level ${k.abLevel}`}
+                    title={hab ? knoedelName(k) : d.abLevel(knoedelName(k), k.abLevel)}
                   >
                     <span className={styles.regalBild}>
                       {hab ? (
-                        <Knoedel hex={k.hex} akzent={k.akzent} gesicht={k.gesicht} title={k.name} />
+                        <Knoedel
+                          hex={k.hex}
+                          akzent={k.akzent}
+                          gesicht={k.gesicht}
+                          title={knoedelName(k)}
+                        />
                       ) : (
                         <span className={styles.schloss} aria-hidden="true">
                           🔒
                         </span>
                       )}
                     </span>
-                    <span className={styles.regalName}>{hab ? k.name : `Level ${k.abLevel}`}</span>
+                    <span className={styles.regalName}>
+                      {hab ? knoedelName(k) : d.level(k.abLevel)}
+                    </span>
                   </button>
                 )
               })}
+              {(videoFrei || werbungAktiv()) && (
+                <button
+                  type="button"
+                  className={`${styles.regalPlatz} ${
+                    VIDEO_KNOEDEL.id === gewaehlterKnoedel.id ? styles.regalAktiv : ''
+                  } ${videoFrei ? '' : styles.regalZu}`}
+                  disabled={!videoFrei}
+                  onClick={() => {
+                    setMeinKnoedel(VIDEO_KNOEDEL.id)
+                    schreibAvatar(VIDEO_KNOEDEL.id)
+                  }}
+                  title={
+                    videoFrei
+                      ? knoedelName(VIDEO_KNOEDEL)
+                      : `${knoedelName(VIDEO_KNOEDEL)} – ${d.perVideo}`
+                  }
+                >
+                  <span className={styles.regalBild}>
+                    {videoFrei ? (
+                      <Knoedel
+                        hex={VIDEO_KNOEDEL.hex}
+                        akzent={VIDEO_KNOEDEL.akzent}
+                        gesicht={VIDEO_KNOEDEL.gesicht}
+                        title={knoedelName(VIDEO_KNOEDEL)}
+                      />
+                    ) : (
+                      <span className={styles.schloss} aria-hidden="true">
+                        🔒
+                      </span>
+                    )}
+                  </span>
+                  <span className={styles.regalName}>
+                    {videoFrei ? knoedelName(VIDEO_KNOEDEL) : d.perVideo}
+                  </span>
+                </button>
+              )}
             </div>
           )}
+          <BelohnungsKnopf
+            name="squishy-sonderknoedel"
+            aktiv={sammlungOffen && !videoFrei}
+            belohnung={d.videoKnoedel(knoedelName(VIDEO_KNOEDEL))}
+            onBelohnt={() => {
+              schalteVideoKnoedelFrei()
+              setVideoFrei(true)
+              setMeinKnoedel(VIDEO_KNOEDEL.id)
+              schreibAvatar(VIDEO_KNOEDEL.id)
+            }}
+          />
         </section>
 
         <LevelMap
@@ -510,7 +580,7 @@ export function SquishyDumplingsPage() {
           }
           maxLevel={DUMPLING_MAX_LEVEL}
           onSelectLevel={onSelectLevel}
-          gameLabel="Squishy Dumplings"
+          gameLabel={t.spiele['squishy-dumplings']}
         />
       </main>
     )
@@ -525,11 +595,11 @@ export function SquishyDumplingsPage() {
     <main className={styles.page}>
       <header className={styles.top}>
         <button type="button" className={styles.back} onClick={() => setPhase('map')}>
-          {'←'} Karte
+          {'←'} {d.karte}
         </button>
-        <h1 className={styles.title}>Level {state.level}</h1>
+        <h1 className={styles.title}>{d.level(state.level)}</h1>
         <button type="button" className={styles.retry} onClick={() => startLevel(state.level)}>
-          Neu
+          {d.neu}
         </button>
       </header>
 
@@ -537,7 +607,7 @@ export function SquishyDumplingsPage() {
         <div className={styles.zielLeiste}>
           <div className={styles.zielBalken} style={{ width: `${anteil * 100}%` }} />
           <span className={styles.zielText}>
-            {Math.min(state.gesammelt, state.ziel)} / {state.ziel} Knödel
+            {d.zielStand(Math.min(state.gesammelt, state.ziel), state.ziel)}
           </span>
         </div>
         <div className={`${styles.uhr} ${knapp ? styles.uhrKnapp : ''}`}>
@@ -546,11 +616,11 @@ export function SquishyDumplingsPage() {
       </div>
 
       <div className={styles.meta}>
-        <span>{cfg.label}</span>
-        <span>{cfg.farben} Farben</span>
+        <span>{(d.stufen as Record<string, string | undefined>)[cfg.label] ?? cfg.label}</span>
+        <span>{d.farben(cfg.farben)}</span>
         {cfg.kaefige > 0 && (
           <span className={state.kaefigeZu > 0 ? styles.metaOffen : undefined}>
-            Käfige {cfg.kaefige - state.kaefigeZu}/{cfg.kaefige}
+            {d.kaefige(cfg.kaefige - state.kaefigeZu, cfg.kaefige)}
           </span>
         )}
       </div>
@@ -558,7 +628,7 @@ export function SquishyDumplingsPage() {
       <div
         className={styles.brett}
         style={{ gridTemplateColumns: `repeat(${state.cols}, 1fr)` }}
-        aria-label="Spielfeld"
+        aria-label={d.spielfeld}
       >
         {feld.map((z, i) => {
           const hex = FARB_HEX[z.farbe] ?? '#888888'
@@ -597,8 +667,8 @@ export function SquishyDumplingsPage() {
               onPointerUp={onZeigerHoch}
               onPointerCancel={onZeigerHoch}
               disabled={laeuft || state.phase !== 'play'}
-              aria-label={`${FARB_NAME[z.farbe] ?? ''}${z.kaefig ? ' im Käfig' : ''}${
-                z.spezial === 'gold' ? ', golden' : z.spezial === 'diagonal' ? ', diagonal' : ''
+              aria-label={`${d.farbName(z.farbe)}${z.kaefig ? d.imKaefig : ''}${
+                z.spezial === 'gold' ? d.golden : z.spezial === 'diagonal' ? d.diagonal : ''
               }`}
             >
               {z.farbe > 0 && (
@@ -616,9 +686,7 @@ export function SquishyDumplingsPage() {
       </div>
 
       <p className={styles.regelHinweis}>
-        {state.besteKette > 1
-          ? `Beste Kette: ${state.besteKette} Auflösungen hintereinander`
-          : 'Tipp: Knödel ziehen oder zwei antippen. Vier in einer Reihe geben einen diagonalen, fünf einen goldenen.'}
+        {state.besteKette > 1 ? d.besteKette(state.besteKette) : d.tipp}
       </p>
 
       {phase === 'won' && (
@@ -627,10 +695,9 @@ export function SquishyDumplingsPage() {
             <div className={styles.confetti} aria-hidden="true">
               {'⭐'.repeat(Math.max(1, sterne))}
             </div>
-            <h2>Geschafft!</h2>
-            <p>
-              Level {state.level} · {score} Punkte · +{xpGained} XP
-            </p>
+            <h2>{d.geschafft}</h2>
+            <p>{d.ergebnis(state.level, score, xpGained)}</p>
+            {state.mitHilfe && <p className={styles.muted}>{d.mitHilfe}</p>}
             {neuerKnoedel && (
               <div className={styles.belohnung}>
                 <span className={styles.belohnungBild}>
@@ -638,19 +705,19 @@ export function SquishyDumplingsPage() {
                     hex={neuerKnoedel.hex}
                     akzent={neuerKnoedel.akzent}
                     gesicht={neuerKnoedel.gesicht}
-                    title={neuerKnoedel.name}
+                    title={knoedelName(neuerKnoedel)}
                   />
                 </span>
                 <span>
-                  <strong>Neuer Knödel!</strong>
+                  <strong>{d.neuerKnoedel}</strong>
                   <br />
-                  {neuerKnoedel.name} gehört jetzt dir – du kannst ihn als Figur tragen.
+                  {d.gehoertDir(knoedelName(neuerKnoedel))}
                 </span>
               </div>
             )}
             <div className={styles.actions}>
               <button type="button" onClick={() => setPhase('map')}>
-                Karte
+                {d.karte}
               </button>
               {state.level < DUMPLING_MAX_LEVEL && (
                 <button
@@ -658,7 +725,7 @@ export function SquishyDumplingsPage() {
                   className={styles.primary}
                   onClick={() => startLevel(state.level + 1)}
                 >
-                  Weiter
+                  {d.weiter}
                 </button>
               )}
             </div>
@@ -669,26 +736,25 @@ export function SquishyDumplingsPage() {
       {phase === 'lost' && (
         <div className={styles.overlay}>
           <div className={styles.card}>
-            <h2>Zeit um!</h2>
-            <p>
-              {state.gesammelt} von {state.ziel} Knödeln
-              {state.kaefigeZu > 0
-                ? ` – und ${state.kaefigeZu} ${state.kaefigeZu === 1 ? 'Käfig war' : 'Käfige waren'} noch zu.`
-                : '.'}
-            </p>
-            <p className={styles.muted}>
-              Ketten bringen am meisten: ein Zug, nach dem von allein weiter etwas zusammenfällt.
-            </p>
+            <h2>{d.zeitUm}</h2>
+            <p>{d.verloren(state.gesammelt, state.ziel, state.kaefigeZu)}</p>
+            <p className={styles.muted}>{d.kettenTipp}</p>
+            <BelohnungsKnopf
+              name="squishy-zeit"
+              aktiv={zeitAngebot(state)}
+              belohnung={d.zusatzZeit(ZUSATZ_SEKUNDEN)}
+              onBelohnt={weiterspielen}
+            />
             <div className={styles.actions}>
               <button type="button" onClick={() => setPhase('map')}>
-                Karte
+                {d.karte}
               </button>
               <button
                 type="button"
                 className={styles.primary}
                 onClick={() => startLevel(state.level)}
               >
-                Nochmal
+                {d.nochmal}
               </button>
             </div>
           </div>

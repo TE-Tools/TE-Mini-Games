@@ -104,9 +104,14 @@ export interface ImposterMatchState {
   finished: boolean
 }
 
+/** Sprache einer eingebauten Wortliste. */
+export type WortSprache = 'de' | 'en'
+
 export interface CategoryDef {
   id: string
   label: string
+  /** Sprache der Wörter -- die Seiten bieten nur die zur Oberfläche passenden an. */
+  sprache: WortSprache
   /** Optional short description for UI. */
   description?: string
 }

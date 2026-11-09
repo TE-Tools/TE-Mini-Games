@@ -10,7 +10,8 @@
  * hier beides festgehalten, die Reihenfolge und das, was in der Zeile steht.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
+import { renderAufDeutsch as render } from './aufDeutsch'
 import userEvent from '@testing-library/user-event'
 import { sichtbar, sortiere, werte } from '@/pages/play/kniffel/bestenlisteSortierung'
 import type { KniffelBestenEintrag } from '@/services/kniffelOnline'

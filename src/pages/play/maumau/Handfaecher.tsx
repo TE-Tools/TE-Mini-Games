@@ -17,6 +17,7 @@
  */
 
 import type { Karte } from '@/games/maumau'
+import { useSprache } from '@/i18n/sprache'
 import { Blattkarte } from './Blattkarte'
 import styles from './Handfaecher.module.css'
 
@@ -44,13 +45,14 @@ function winkelschritt(anzahl: number): number {
 }
 
 export function Handfaecher({ karten, istSpielbar, onLegen, amZug }: Props) {
+  const { t } = useSprache()
   const anzahl = karten.length
   const mitte = (anzahl - 1) / 2
   const schritt = schrittweite(anzahl)
   const grad = winkelschritt(anzahl)
 
   return (
-    <div className={styles.faecher} role="group" aria-label="Deine Karten">
+    <div className={styles.faecher} role="group" aria-label={t.maumau.deineKarten}>
       {karten.map((k, i) => {
         const abstand = i - mitte
         const spielbar = amZug && istSpielbar(k)

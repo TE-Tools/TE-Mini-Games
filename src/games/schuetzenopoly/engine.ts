@@ -99,6 +99,7 @@ export function wuerfeln(state: SpielZustand): SpielZustand {
     spielerId: spieler.id,
     art: 'info',
     text: `${spieler.name} würfelt ${wurf.augen[0]} und ${wurf.augen[1]}.`,
+    meldung: { art: 'wurf', name: spieler.name, a: wurf.augen[0], b: wurf.augen[1] },
   })
 
   if (spieler.aufStrafbank) return strafbankWurf(s, spieler, wurf)
@@ -115,6 +116,7 @@ export function wuerfeln(state: SpielZustand): SpielZustand {
         spielerId: spieler.id,
         art: 'strafe',
         text: `Dritter Pasch in Folge – ${spieler.name} muss auf die Strafbank.`,
+        meldung: { art: 'dritterPasch', name: spieler.name },
       })
       return { ...s, paschSerie: 0, zielPosition: ECKE_STRAFBANK, phase: 'zug_ende' }
     }
@@ -135,6 +137,7 @@ function strafbankWurf(state: SpielZustand, spieler: Spieler, wurf: Wurf): Spiel
       spielerId: spieler.id,
       art: 'info',
       text: `Pasch! ${spieler.name} ist frei und zieht ${wurf.summe} Felder.`,
+      meldung: { art: 'paschFrei', name: spieler.name, felder: wurf.summe },
     })
     const ziel = (spieler.position + wurf.summe) % FELDER
     return { ...s, paschSerie: 0, zielPosition: ziel, phase: 'bewegen' }
@@ -150,6 +153,7 @@ function strafbankWurf(state: SpielZustand, spieler: Spieler, wurf: Wurf): Spiel
       spielerId: spieler.id,
       art: 'strafe',
       text: `${spieler.name} zahlt ${STRAFBANK_GEBUEHR} 🪙 und darf weiter.`,
+      meldung: { art: 'strafbankBezahlt', name: spieler.name, betrag: STRAFBANK_GEBUEHR },
     })
     const ziel = (spieler.position + wurf.summe) % FELDER
     return { ...s, zielPosition: ziel, phase: 'bewegen' }
@@ -160,6 +164,12 @@ function strafbankWurf(state: SpielZustand, spieler: Spieler, wurf: Wurf): Spiel
     spielerId: spieler.id,
     art: 'strafe',
     text: `Kein Pasch – ${spieler.name} bleibt auf der Strafbank (Versuch ${versuche} von ${STRAFBANK_MAX_VERSUCHE}).`,
+    meldung: {
+      art: 'keinPasch',
+      name: spieler.name,
+      versuch: versuche,
+      von: STRAFBANK_MAX_VERSUCHE,
+    },
   })
   return zugEnde(s)
 }
@@ -175,6 +185,7 @@ export function strafbankFreikaufen(state: SpielZustand): SpielZustand {
     spielerId: spieler.id,
     art: 'geld',
     text: `${spieler.name} kauft sich für ${STRAFBANK_GEBUEHR} 🪙 frei.`,
+    meldung: { art: 'freigekauft', name: spieler.name, betrag: STRAFBANK_GEBUEHR },
   })
 }
 
@@ -193,6 +204,7 @@ export function freikarteEinsetzen(state: SpielZustand): SpielZustand {
     spielerId: spieler.id,
     art: 'karte',
     text: `${spieler.name} legt die Fürsprache vor und verlässt die Strafbank.`,
+    meldung: { art: 'fuersprache', name: spieler.name },
   })
   return s
 }
@@ -212,6 +224,7 @@ export function ankommen(state: SpielZustand): SpielZustand {
       spielerId: spieler.id,
       art: 'geld',
       text: `${spieler.name} kommt an START vorbei: +${START_BONUS} 🪙.`,
+      meldung: { art: 'startBonus', name: spieler.name, betrag: START_BONUS },
     })
   }
   s = mitSpieler(s, spieler.id, { position: ziel })
@@ -233,6 +246,7 @@ function feldAktion(state: SpielZustand): SpielZustand {
         spielerId: spieler.id,
         art: 'info',
         text: `${spieler.name} schaut bei der Strafbank vorbei – nur zu Besuch.`,
+        meldung: { art: 'besuch', name: spieler.name },
       })
       return zugEnde(s)
 
@@ -242,6 +256,7 @@ function feldAktion(state: SpielZustand): SpielZustand {
         spielerId: spieler.id,
         art: 'geld',
         text: `Freies Fest: ${spieler.name} kassiert ${FREIES_FEST_BONUS} 🪙 Standgeld.`,
+        meldung: { art: 'freiesFest', name: spieler.name, betrag: FREIES_FEST_BONUS },
       })
       return zugEnde(s)
     }
@@ -256,6 +271,7 @@ function feldAktion(state: SpielZustand): SpielZustand {
         spielerId: spieler.id,
         art: 'strafe',
         text: `${spieler.name} muss sofort auf die Strafbank.`,
+        meldung: { art: 'zurStrafbank', name: spieler.name },
       })
       return zugEnde({ ...s, paschSerie: 0 })
     }
@@ -310,6 +326,7 @@ function gebuehrZahlen(state: SpielZustand, spieler: Spieler): SpielZustand {
       spielerId: spieler.id,
       art: 'info',
       text: `${feldName(faellig.feldId)} ist geschützt – keine Gebühr fällig.`,
+      meldung: { art: 'geschuetzt', feldId: faellig.feldId },
     })
     return zugEnde(s)
   }
@@ -320,6 +337,7 @@ function gebuehrZahlen(state: SpielZustand, spieler: Spieler): SpielZustand {
       spielerId: spieler.id,
       art: 'karte',
       text: `Vereinsfreundschaft: ${spieler.name} zahlt diesmal nichts.`,
+      meldung: { art: 'gebuehrErlassen', name: spieler.name },
     })
     return zugEnde(s)
   }
@@ -333,6 +351,7 @@ function gebuehrZahlen(state: SpielZustand, spieler: Spieler): SpielZustand {
       spielerId: spieler.id,
       art: 'info',
       text: `${spieler.name} handelt die Gebühr herunter.`,
+      meldung: { art: 'rabatt', name: spieler.name },
     })
   }
 
@@ -365,6 +384,13 @@ function gebuehrZahlen(state: SpielZustand, spieler: Spieler): SpielZustand {
     spielerId: spieler.id,
     art: 'geld',
     text: `${spieler.name} zahlt ${ergebnis.gezahlt} 🪙 an ${besitzer?.name ?? 'die Bank'} für ${feldName(faellig.feldId)}.`,
+    meldung: {
+      art: 'gebuehr',
+      name: spieler.name,
+      betrag: ergebnis.gezahlt,
+      an: besitzer?.name ?? null,
+      feldId: faellig.feldId,
+    },
   })
   return zugEnde(s)
 }
@@ -383,6 +409,7 @@ export function kaufen(state: SpielZustand): SpielZustand {
     spielerId: spieler.id,
     art: 'kauf',
     text: `${spieler.name} kauft ${feldName(angebot.feldId)} für ${angebot.preis} 🪙.`,
+    meldung: { art: 'kauf', name: spieler.name, feldId: angebot.feldId, preis: angebot.preis },
   })
   return zugEnde({ ...s, kaufAngebot: null })
 }
@@ -424,6 +451,7 @@ export function karteNeuZiehen(state: SpielZustand): SpielZustand {
     spielerId: spieler.id,
     art: 'karte',
     text: `${spieler.name} legt die Karte zurück und zieht neu.`,
+    meldung: { art: 'karteNeu', name: spieler.name },
   })
   return ziehKarte(s, karte.stapel).state
 }
@@ -439,6 +467,7 @@ export function wahlBaustopp(state: SpielZustand, gegnerId: string): SpielZustan
     spielerId: aktiverSpieler(state).id,
     art: 'karte',
     text: `Baustopp für ${gegner.name} bis zu seinem nächsten Zug.`,
+    meldung: { art: 'baustopp', name: gegner.name },
   })
   return zugEnde({ ...s, offeneWahl: null })
 }
@@ -452,6 +481,7 @@ export function wahlSchutz(state: SpielZustand, feldId: string): SpielZustand {
     spielerId: spieler.id,
     art: 'karte',
     text: `${feldName(feldId)} steht eine Runde lang unter Hausrecht.`,
+    meldung: { art: 'hausrecht', feldId },
   })
   return zugEnde({ ...s, offeneWahl: null })
 }
@@ -468,7 +498,9 @@ export interface TauschPaar {
  * (± 40 %), Differenz wird in Talern ausgeglichen.
  */
 export function tauschKandidaten(state: SpielZustand, spielerId: string): TauschPaar[] {
-  const eigene = besitzVon(state, spielerId).filter((b) => istGrundstueck(b.feldId) && b.stufe === 0)
+  const eigene = besitzVon(state, spielerId).filter(
+    (b) => istGrundstueck(b.feldId) && b.stufe === 0,
+  )
   const fremde = Object.values(state.besitz).filter(
     (b) =>
       b.besitzerId &&
@@ -521,6 +553,7 @@ export function wahlTausch(
     spielerId: spieler.id,
     art: 'kauf',
     text: `Tausch: ${feldName(meinFeldId)} gegen ${feldName(fremdFeldId)}.`,
+    meldung: { art: 'tausch', meinFeldId, fremdFeldId },
   })
   return zugEnde({ ...s, offeneWahl: null })
 }
@@ -533,10 +566,7 @@ export function wahlUeberspringen(state: SpielZustand): SpielZustand {
 
 /* ----------------------------------------------------------------- Minispiel */
 
-export function minispielAbschliessen(
-  state: SpielZustand,
-  medaille: Medaille,
-): SpielZustand {
+export function minispielAbschliessen(state: SpielZustand, medaille: Medaille): SpielZustand {
   const auftrag = state.offenesMinispiel
   if (!auftrag) return state
   const spieler = spielerMit(state, auftrag.spielerId)
@@ -555,6 +585,10 @@ export function minispielAbschliessen(
       medaille === 'keine'
         ? `${spieler.name} geht am Schießstand leer aus.`
         : `${spieler.name} holt ${medaille.toUpperCase()} und kassiert ${belohnung} 🪙.`,
+    meldung:
+      medaille === 'keine'
+        ? { art: 'schiessstandLeer', name: spieler.name }
+        : { art: 'medaille', name: spieler.name, medaille, betrag: belohnung },
   })
   return zugEnde({ ...s, offenesMinispiel: null })
 }
@@ -570,6 +604,7 @@ export function duellAusloesen(state: SpielZustand): SpielZustand {
     spielerId: spieler.id,
     art: 'minispiel',
     text: `${spieler.name} fordert zum Duell am Schießstand.`,
+    meldung: { art: 'duell', name: spieler.name },
   })
   return {
     ...s,
@@ -590,40 +625,54 @@ export function koenigsaktion(state: SpielZustand): SpielZustand {
     spielerId: spieler.id,
     art: 'geld',
     text: `Königsaktion: ${spieler.name} erhält ${betrag} 🪙 aus der Vereinskasse.`,
+    meldung: { art: 'koenigsaktion', name: spieler.name, betrag },
   })
 }
 
 /* -------------------------------------------------------------------- Bauen */
 
+/** Warum nicht gebaut werden darf -- als Kennung, die Oberfläche sagt es in ihrer Sprache. */
+export type BauGrund =
+  | 'unbekannt'
+  | 'keinGrundstueck'
+  | 'nichtDeins'
+  | 'voll'
+  | 'baustopp'
+  | 'gruppeUnvollstaendig'
+  | 'gleichmaessig'
+  | 'zuWenigTaler'
+
 export interface BauPruefung {
   erlaubt: boolean
+  /** Deutsch, wie bisher -- Tests lesen ihn. */
   grund?: string
+  code?: BauGrund
   kosten: number
 }
 
-export function kannBauen(
-  state: SpielZustand,
-  spielerId: string,
-  feldId: string,
-): BauPruefung {
+export function kannBauen(state: SpielZustand, spielerId: string, feldId: string): BauPruefung {
   const kosten = istGrundstueck(feldId) ? baukosten(feldId) : 0
   const b = state.besitz[feldId]
   const spieler = spielerMit(state, spielerId)
-  if (!b || !spieler) return { erlaubt: false, grund: 'Unbekanntes Feld', kosten }
-  if (!istGrundstueck(feldId))
-    return { erlaubt: false, grund: 'Hier lässt sich nicht bauen', kosten }
-  if (b.besitzerId !== spielerId)
-    return { erlaubt: false, grund: 'Gehört dir nicht', kosten }
-  if (b.stufe >= MAX_AUSBAU) return { erlaubt: false, grund: 'Voll ausgebaut', kosten }
+  const nein = (code: BauGrund, grund: string, betrag = kosten): BauPruefung => ({
+    erlaubt: false,
+    grund,
+    code,
+    kosten: betrag,
+  })
+  if (!b || !spieler) return nein('unbekannt', 'Unbekanntes Feld')
+  if (!istGrundstueck(feldId)) return nein('keinGrundstueck', 'Hier lässt sich nicht bauen')
+  if (b.besitzerId !== spielerId) return nein('nichtDeins', 'Gehört dir nicht')
+  if (b.stufe >= MAX_AUSBAU) return nein('voll', 'Voll ausgebaut')
   if (spieler.bauverbotBis !== null && spieler.bauverbotBis >= state.runde)
-    return { erlaubt: false, grund: 'Baustopp', kosten }
+    return nein('baustopp', 'Baustopp')
   if (BAUEN_NUR_MIT_KOMPLETTER_GRUPPE && !gruppeKomplett(state, feldId))
-    return { erlaubt: false, grund: 'Gruppe noch nicht komplett', kosten }
+    return nein('gruppeUnvollstaendig', 'Gruppe noch nicht komplett')
   if (GLEICHMAESSIG_BAUEN && b.stufe > niedrigsteStufeDerGruppe(state, feldId))
-    return { erlaubt: false, grund: 'Erst die anderen der Gruppe nachziehen', kosten }
+    return nein('gleichmaessig', 'Erst die anderen der Gruppe nachziehen')
   const rabatt = rollenBonus(spieler.rolle).baukostenRabatt ?? 0
   const preis = Math.round(kosten * (1 - rabatt))
-  if (spieler.taler < preis) return { erlaubt: false, grund: 'Zu wenig Taler', kosten: preis }
+  if (spieler.taler < preis) return nein('zuWenigTaler', 'Zu wenig Taler', preis)
   return { erlaubt: true, kosten: preis }
 }
 
@@ -639,6 +688,7 @@ export function bauen(state: SpielZustand, feldId: string): SpielZustand {
     spielerId: spieler.id,
     art: 'bau',
     text: `${spieler.name} baut auf ${feldName(feldId)} (Stufe ${neueStufe}).`,
+    meldung: { art: 'bau', name: spieler.name, feldId, stufe: neueStufe },
   })
   return s
 }
@@ -655,6 +705,7 @@ export function abreissen(state: SpielZustand, feldId: string): SpielZustand {
     spielerId: spieler.id,
     art: 'bau',
     text: `${spieler.name} baut auf ${feldName(feldId)} zurück (+${erloes} 🪙).`,
+    meldung: { art: 'rueckbau', name: spieler.name, feldId, betrag: erloes },
   })
 }
 
@@ -670,6 +721,7 @@ export function anBankVerkaufen(state: SpielZustand, feldId: string): SpielZusta
     spielerId: spieler.id,
     art: 'kauf',
     text: `${spieler.name} gibt ${feldName(feldId)} zurück (+${erloes} 🪙).`,
+    meldung: { art: 'rueckgabe', name: spieler.name, feldId, betrag: erloes },
   })
 }
 
@@ -677,7 +729,9 @@ export function anBankVerkaufen(state: SpielZustand, feldId: string): SpielZusta
 
 /** Offene Entscheidungen? Dann darf der Zug noch nicht enden. */
 export function zugOffen(state: SpielZustand): boolean {
-  return Boolean(state.kaufAngebot || state.offeneKarte || state.offenesMinispiel || state.offeneWahl)
+  return Boolean(
+    state.kaufAngebot || state.offeneKarte || state.offenesMinispiel || state.offeneWahl,
+  )
 }
 
 export function zugBeenden(state: SpielZustand): SpielZustand {
@@ -746,6 +800,7 @@ export function beenden(state: SpielZustand): SpielZustand {
       spielerId: sieger.spielerId,
       art: 'ende',
       text: `${sieger.name} gewinnt mit einem Vermögen von ${sieger.vermoegen.toLocaleString('de-DE')} 🪙.`,
+      meldung: { art: 'sieg', name: sieger.name, vermoegen: sieger.vermoegen },
     })
   }
   return s
@@ -760,10 +815,22 @@ export function aufgeben(state: SpielZustand, spielerId: string): SpielZustand {
     s = mitBesitz(s, b.feldId, { besitzerId: null, stufe: 0, geschuetztBis: null })
   }
   s = mitSpieler(s, spielerId, { insolvent: true, taler: 0, handkarten: [] })
-  s = mitLog(s, { spielerId, art: 'ende', text: `${spieler.name} gibt auf.` })
+  s = mitLog(s, {
+    spielerId,
+    art: 'ende',
+    text: `${spieler.name} gibt auf.`,
+    meldung: { art: 'aufgabe', name: spieler.name },
+  })
   if (aktiveSpieler(s).length <= 1) return beenden(s)
   if (s.amZug === s.spieler.findIndex((p) => p.id === spielerId)) {
-    return zugBeenden({ ...s, paschSerie: 0, kaufAngebot: null, offeneKarte: null, offenesMinispiel: null, offeneWahl: null })
+    return zugBeenden({
+      ...s,
+      paschSerie: 0,
+      kaufAngebot: null,
+      offeneKarte: null,
+      offenesMinispiel: null,
+      offeneWahl: null,
+    })
   }
   return s
 }
@@ -772,5 +839,7 @@ export function aufgeben(state: SpielZustand, spielerId: string): SpielZustand {
 export function handkarten(state: SpielZustand, spielerId: string) {
   const spieler = spielerMit(state, spielerId)
   if (!spieler) return []
-  return spieler.handkarten.map((id) => karteMit(id)).filter((k): k is NonNullable<typeof k> => Boolean(k) && istHandkarte(k!))
+  return spieler.handkarten
+    .map((id) => karteMit(id))
+    .filter((k): k is NonNullable<typeof k> => Boolean(k) && istHandkarte(k!))
 }

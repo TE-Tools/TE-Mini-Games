@@ -33,10 +33,13 @@ import { spiele, setzeTon, tonAn, vibriere } from '@/services/sound'
 import { setzeEffektWahl, webglMoeglich } from '@/services/effekte'
 import { useEffekte3d } from '@/components/drei/useEffekte3d'
 import { Konfetti } from '@/components/konfetti/Konfetti'
+import { DesignWahl } from '@/components/designs/DesignWahl'
 import { Wuerfelreihe } from './kniffel/Wuerfelreihe'
 import { Kniffelblock, type BlockSpalte } from './kniffel/Kniffelblock'
 import { Bestenliste } from './kniffel/Bestenliste'
 import { buchePartie } from './kniffel/partieBuchen'
+import { meldungstext } from './kniffel/meldungstext'
+import { useSprache } from '@/i18n/sprache'
 import { KniffelOnline } from './KniffelOnline'
 import shell from './PlayShell.module.css'
 import styles from './KniffelPage.module.css'
@@ -47,22 +50,11 @@ const WURF_ANIMATION_MS = 340
 
 type Ansicht = 'menue' | 'aufbau' | 'solo' | 'online'
 
-const STUFEN: { id: KiStufe; label: string; erklaerung: string }[] = [
-  {
-    id: 'leicht',
-    label: 'Leicht',
-    erklaerung: 'Behält die häufigste Zahl, trägt den höchsten Wurf ein.',
-  },
-  { id: 'normal', label: 'Normal', erklaerung: 'Achtet auf Straßen und auf den oberen Bonus.' },
-  {
-    id: 'schwer',
-    label: 'Schwer',
-    erklaerung: 'Probiert jede Haltemöglichkeit durch und rechnet.',
-  },
-]
+const STUFEN: KiStufe[] = ['leicht', 'normal', 'schwer']
 
 export function KniffelPage() {
   const navigate = useNavigate()
+  const { t } = useSprache()
   // Mit ?raum=CODE (von der Seite "Offene Spiele") geht es direkt in den Online-Teil.
   const [ansicht, setAnsicht] = useState<Ansicht>(() =>
     new URLSearchParams(window.location.search).has('raum') ? 'online' : 'menue',
@@ -74,6 +66,8 @@ export function KniffelPage() {
   const [rollt, setRollt] = useState(false)
   const [ton, setTonAn] = useState(tonAn())
   const ergebnisGesichert = useRef(false)
+  // Ohne eigenen Namen heißt man „Du“ -- auf Englisch „You“.
+  const name = spielerName === 'Du' ? t.kniffel.du : spielerName
   /*
    * Die Kennung dieser Partie für die Bestenliste. Einmal je Partie
    * gezogen, damit eine Meldung, die erst später durchkommt, nicht als
@@ -132,15 +126,15 @@ export function KniffelPage() {
   /* ------------------------------------------------------------ Zug */
 
   const starten = useCallback(() => {
-    const spieler: SpielerEinrichtung[] = [{ name: spielerName || 'Du', typ: 'mensch' }]
+    const spieler: SpielerEinrichtung[] = [{ name: name.trim() || t.kniffel.du, typ: 'mensch' }]
     for (let i = 0; i < gegner; i++) {
-      spieler.push({ name: `Rechner ${i + 1}`, typ: 'ki', kiStufe: stufe })
+      spieler.push({ name: t.kniffel.rechner(i + 1), typ: 'ki', kiStufe: stufe })
     }
     ergebnisGesichert.current = false
     partieId.current = crypto.randomUUID()
     setZustand(erstellePartie({ spieler }))
     setAnsicht('solo')
-  }, [spielerName, gegner, stufe])
+  }, [name, gegner, stufe, t])
 
   const wuerfelKlick = useCallback(() => {
     spiele('wuerfel')
@@ -170,7 +164,7 @@ export function KniffelPage() {
   /* -------------------------------------------------------- Anzeige */
 
   if (ansicht === 'online') {
-    return <KniffelOnline eigenerName={spielerName} onZurueck={() => setAnsicht('menue')} />
+    return <KniffelOnline onZurueck={() => setAnsicht('menue')} />
   }
 
   if (ansicht === 'menue') {
@@ -178,11 +172,7 @@ export function KniffelPage() {
       <main className={`${shell.page} ${styles.breiteSeite}`}>
         <Kopf onZurueck={() => navigate('/')} ton={ton} onTon={tonUmschalten} />
         <section className={styles.menue}>
-          <p className={styles.einleitung}>
-            Dreizehn Felder, drei Würfe je Zug. Wer oben 63 zusammenbekommt, kriegt 35 Punkte dazu –
-            und wer fünf gleiche wirft, den Kniffel. Jeder weitere Kniffel danach bringt{' '}
-            {ZUSATZ_KNIFFEL_PUNKTE} Punkte zusätzlich.
-          </p>
+          <p className={styles.einleitung}>{t.kniffel.einleitung(ZUSATZ_KNIFFEL_PUNKTE)}</p>
 
           <button
             type="button"
@@ -193,8 +183,8 @@ export function KniffelPage() {
               🤖
             </span>
             <span>
-              <strong>Gegen den Rechner</strong>
-              <small>Allein, sofort losspielen</small>
+              <strong>{t.kniffel.gegenRechner}</strong>
+              <small>{t.kniffel.gegenRechnerText}</small>
             </span>
           </button>
 
@@ -208,14 +198,14 @@ export function KniffelPage() {
               👥
             </span>
             <span>
-              <strong>Online gegeneinander</strong>
+              <strong>{t.kniffel.online}</strong>
               <small>
-                {isKniffelOnlineAvailable
-                  ? 'Raum eröffnen und Code weitergeben'
-                  : 'Dafür wird ein Konto gebraucht'}
+                {isKniffelOnlineAvailable ? t.kniffel.onlineText : t.kniffel.onlineOhneKonto}
               </small>
             </span>
           </button>
+
+          <DesignWahl art="wuerfel" name="kniffel-wuerfel" titel={t.kniffel.wuerfelDesign} />
 
           {/*
             Die Rangliste gleich im Menü: Sie zeigt, worum gespielt wird,
@@ -225,7 +215,7 @@ export function KniffelPage() {
           <Bestenliste />
 
           <Link to="/" className={shell.homeLink}>
-            Zum Menü
+            {t.allgemein.zumMenue}
           </Link>
         </section>
       </main>
@@ -237,20 +227,20 @@ export function KniffelPage() {
       <main className={`${shell.page} ${styles.breiteSeite}`}>
         <Kopf onZurueck={() => setAnsicht('menue')} ton={ton} onTon={tonUmschalten} />
         <section className={styles.aufbau}>
-          <h2 className={styles.ueberschrift}>Gegen den Rechner</h2>
+          <h2 className={styles.ueberschrift}>{t.kniffel.gegenRechner}</h2>
 
           <label className={styles.feld}>
-            <span>Dein Name</span>
+            <span>{t.kniffel.deinName}</span>
             <input
               className={styles.eingabe}
-              value={spielerName}
+              value={name}
               onChange={(e) => setSpielerName(e.target.value)}
               maxLength={16}
             />
           </label>
 
           <fieldset className={styles.gruppe}>
-            <legend>Wie viele Gegner?</legend>
+            <legend>{t.kniffel.wieVieleGegner}</legend>
             <div className={styles.knopfreihe}>
               {[1, 2, 3].map((n) => (
                 <button
@@ -267,24 +257,24 @@ export function KniffelPage() {
           </fieldset>
 
           <fieldset className={styles.gruppe}>
-            <legend>Wie stark?</legend>
+            <legend>{t.kniffel.wieStark}</legend>
             <div className={styles.knopfreihe}>
               {STUFEN.map((s) => (
                 <button
-                  key={s.id}
+                  key={s}
                   type="button"
-                  className={stufe === s.id ? styles.wahlAn : styles.wahlAus}
-                  onClick={() => setStufe(s.id)}
+                  className={stufe === s ? styles.wahlAn : styles.wahlAus}
+                  onClick={() => setStufe(s)}
                 >
-                  {s.label}
+                  {t.kniffel.stufen[s]}
                 </button>
               ))}
             </div>
-            <p className={styles.erklaerung}>{STUFEN.find((s) => s.id === stufe)?.erklaerung}</p>
+            <p className={styles.erklaerung}>{t.kniffel.stufenText[stufe]}</p>
           </fieldset>
 
           <button type="button" className={styles.start} onClick={starten}>
-            🎲 Los geht's
+            {t.kniffel.losGehts}
           </button>
         </section>
       </main>
@@ -313,14 +303,14 @@ export function KniffelPage() {
         <section className={`${shell.section} ${styles.ende}`}>
           {gewonnen && <Konfetti anzahl={70} />}
           <p className={gewonnen ? shell.correct : shell.wrong}>
-            {gewonnen ? '🏆 Gewonnen!' : `${tabelle[0]?.name} gewinnt.`}
+            {gewonnen ? t.kniffel.gewonnen : t.kniffel.gewinnt(tabelle[0]?.name ?? '')}
           </p>
           <ol className={styles.endstand}>
             {tabelle.map((e, i) => (
               <li key={e.spielerId} className={styles.endEintrag}>
                 <span className={styles.endPlatz}>{i + 1}.</span>
                 <span className={styles.endName}>{e.name}</span>
-                <span className={styles.endWert}>{e.punkte} Punkte</span>
+                <span className={styles.endWert}>{t.kniffel.punkte(e.punkte)}</span>
               </li>
             ))}
           </ol>
@@ -333,17 +323,17 @@ export function KniffelPage() {
           <Kniffelblock spalten={spalten} wuerfel={[]} eintragbar={false} onEintragen={() => {}} />
           <div className={shell.resultActions}>
             <button type="button" className={shell.primaryBtn} onClick={starten}>
-              Noch eine Partie
+              {t.kniffel.nochEine}
             </button>
             <button
               type="button"
               className={shell.secondaryBtn}
               onClick={() => setAnsicht('menue')}
             >
-              Anderer Modus
+              {t.kniffel.andererModus}
             </button>
             <Link to="/" className={shell.homeLink}>
-              Zum Menü
+              {t.allgemein.zumMenue}
             </Link>
           </div>
         </section>
@@ -365,17 +355,11 @@ export function KniffelPage() {
             aria-live="polite"
           >
             <span className={styles.amZugPunkt} aria-hidden="true" />
-            {mensch ? (
-              'Du bist dran'
-            ) : (
-              <>
-                <strong className={styles.amZugName}>{aktiv.name}</strong> ist dran
-              </>
-            )}
+            {mensch ? t.kniffel.duBistDran : t.kniffel.istDran(aktiv.name)}
             <span className={styles.wurfZaehler}>
               {zustand.wurfNummer === 0
-                ? 'noch nicht gewürfelt'
-                : `Wurf ${zustand.wurfNummer} von ${WUERFE_JE_ZUG}`}
+                ? t.kniffel.nochNichtGewuerfelt
+                : t.kniffel.wurfVon(zustand.wurfNummer, WUERFE_JE_ZUG)}
             </span>
           </p>
 
@@ -390,14 +374,14 @@ export function KniffelPage() {
 
           {mensch && zustand.wurfNummer > 0 && zustand.wurfNummer < WUERFE_JE_ZUG && (
             <p className={styles.halteHinweis}>
-              Tippe die Würfel an, die liegen bleiben sollen.
+              {t.kniffel.halteHinweis}
               {zustand.gehalten.some(Boolean) && (
                 <button
                   type="button"
                   className={styles.textKnopf}
                   onClick={() => setZustand((alt) => (alt ? alleFreigeben(alt) : alt))}
                 >
-                  Alle freigeben
+                  {t.kniffel.alleFreigeben}
                 </button>
               )}
             </p>
@@ -411,18 +395,16 @@ export function KniffelPage() {
               disabled={!darfWuerfeln(zustand)}
             >
               {zustand.wurfNummer === 0
-                ? '🎲 Würfeln'
+                ? t.kniffel.wuerfeln
                 : darfWuerfeln(zustand)
-                  ? `🎲 Nochmal (${WUERFE_JE_ZUG - zustand.wurfNummer} übrig)`
-                  : 'Jetzt eintragen'}
+                  ? t.kniffel.nochmal(WUERFE_JE_ZUG - zustand.wurfNummer)
+                  : t.kniffel.jetztEintragen}
             </button>
           )}
         </div>
 
         {mensch && zustand.wurfNummer > 0 && (
-          <p className={styles.eintragHinweis}>
-            Tippe im Block auf eine Zahl, um sie einzutragen. Eine 0 streicht das Feld.
-          </p>
+          <p className={styles.eintragHinweis}>{t.kniffel.eintragHinweis}</p>
         )}
 
         <Kniffelblock
@@ -433,7 +415,7 @@ export function KniffelPage() {
         />
 
         <p className={styles.protokoll} aria-live="polite">
-          {zustand.protokoll[zustand.protokoll.length - 1]}
+          {meldungstext(t, zustand)}
         </p>
       </section>
     </main>
@@ -449,19 +431,25 @@ function Kopf({
   ton: boolean
   onTon: () => void
 }) {
+  const { t } = useSprache()
   return (
     <header className={shell.header}>
-      <button type="button" className={shell.back} onClick={onZurueck} aria-label="Zurück">
+      <button
+        type="button"
+        className={shell.back}
+        onClick={onZurueck}
+        aria-label={t.allgemein.zurueck}
+      >
         ←
       </button>
-      <h1 className={shell.title}>Kniffel</h1>
+      <h1 className={shell.title}>{t.spiele.kniffel}</h1>
       <div className={styles.kopfKnoepfe}>
         <DreiDKnopf />
         <button
           type="button"
           className={styles.tonKnopf}
           onClick={onTon}
-          aria-label={ton ? 'Ton ausschalten' : 'Ton einschalten'}
+          aria-label={ton ? t.kniffel.tonAus : t.kniffel.tonAn}
         >
           {ton ? '🔊' : '🔈'}
         </button>
@@ -477,6 +465,7 @@ function Kopf({
  */
 function DreiDKnopf() {
   const an = useEffekte3d()
+  const { t } = useSprache()
   if (!webglMoeglich()) return null
   return (
     <button
@@ -484,8 +473,8 @@ function DreiDKnopf() {
       className={`${styles.tonKnopf} ${styles.dreiDKnopf}`}
       onClick={() => setzeEffektWahl(an ? 'aus' : 'an')}
       aria-pressed={an}
-      aria-label={an ? '3D-Würfel ausschalten' : '3D-Würfel einschalten'}
-      title={an ? '3D-Würfel aus' : '3D-Würfel an'}
+      aria-label={an ? t.kniffel.dreiDAus : t.kniffel.dreiDAn}
+      title={an ? t.kniffel.dreiDTitelAus : t.kniffel.dreiDTitelAn}
     >
       {an ? '3D' : '2D'}
     </button>

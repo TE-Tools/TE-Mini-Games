@@ -19,8 +19,11 @@ wird. Wer von oben nach unten arbeitet, läuft nicht in gesperrte Felder.
 Das muss nicht auf deinem Rechner passieren. Unter _Actions_ im Projekt
 liegen zwei Abläufe: **Android-Schlüssel erzeugen** (einmalig) und
 **Android-Paket bauen** (jedes Mal). Ergebnis ist eine Datei
-`app-release-bundle.aab`, signiert mit deinem eigenen Schlüssel. Die
-Einzelheiten stehen in [`docs/app-store.md`](../app-store.md).
+`app-release.aab`, signiert mit deinem eigenen Schlüssel. Seit 07.11.2026
+ist die App eine Capacitor-App (wegen AdMob, siehe
+[`docs/werbung.md`](../werbung.md)); Paketname und Schlüssel sind dieselben.
+Vor dem Bau die Variable `ADMOB_APP_ID` setzen, sonst enthält das Paket
+Googles Test-App-ID und zeigt nur Testvideos.
 
 - [ ] AAB gebaut
 - [ ] Ein **Testkonto in der App angelegt** (E-Mail + Passwort), das du
@@ -86,7 +89,8 @@ Gruppenspiele genügt der Knopf "Als Gast spielen" – dafür ist kein Konto
 nötig.
 
 Nur die Online-Partien (Kniffel, Texas Hold'em, Mau-Mau, Letzte Karte,
-Schützenopoly) brauchen ein Konto. Dafür bitte mit den oben genannten
+Schützenopoly, Schützenrunde, Finde den Imposter, Wer bin ich?,
+Stadt-Land-Fluss) brauchen ein Konto. Dafür bitte mit den oben genannten
 Zugangsdaten anmelden.
 
 Die Löschung des Kontos ist in der App unter Profil → Konto & Anmeldung →
@@ -98,11 +102,27 @@ https://te-mini-games.pages.dev/konto-loeschen
 
 ### 2.3 Anzeigen
 
-**Nein**, die App enthält keine Werbung.
+**Ja**, die App enthält Werbung -- seit 07.11.2026 entschieden: nur
+freiwillige Belohnungsvideos über **Google AdMob**, siehe
+[`docs/werbung.md`](../werbung.md).
 
-Belegt: keine Werbe- oder Tracking-Bibliothek im Projekt. Die
-Abhängigkeiten sind Supabase, Dexie, React, React-Router, Three.js und
-Workbox – mehr nicht.
+Auch dann „Ja“ antworten, wenn die Werbung beim Einreichen noch nicht
+eingeschaltet ist (AdMob-IDs noch nicht eingetragen): Die Angabe gilt für die
+App, wie sie geplant ist, und Google zeigt sie im Store als „Enthält
+Werbung“. Nachträglich von „Nein“ auf „Ja“ zu wechseln, während die Werbung
+schon läuft, ist der Fall, den Google ahndet.
+
+- [ ] beantwortet
+
+### 2.3a Werbe-ID
+
+> **Richtlinie** → **App-Inhalte** → **Werbe-ID**
+
+**Ja**, die App verwendet die Werbe-ID. Das AdMob-SDK trägt die
+Berechtigung `com.google.android.gms.permission.AD_ID` selbst ein. Zweck:
+**Werbung oder Marketing** (dazu, falls angeboten, **Betrugsprävention**).
+Ohne diese Erklärung lehnt Google Uploads ab, sobald die Berechtigung im
+Paket steckt.
 
 - [ ] beantwortet
 
@@ -133,7 +153,13 @@ Wer hier „Nein" ankreuzt und es fällt später auf, verliert den Eintrag.
 
 Bei „Nutzer können interagieren" im Freitext ergänzen: _„In den
 Online-Partien sehen Mitspieler den selbst gewählten Benutzernamen. Einen
-freien Chat gibt es nicht."_
+freien Chat gibt es nicht: In der Schützenrunde wählt man am Tag einen von
+festen Sätzen, und der Server nimmt nur diese an."_
+
+Das stimmt erst seit Migration `030_schuetzenrunde_feste_saetze.sql`
+(07.11.2026) -- vorher hatte die Schützenrunde online einen freien Chat.
+Ist 030 nicht eingespielt, nimmt der Server weiter jeden Text an, auch wenn
+die App nur noch feste Sätze anbietet.
 
 - [ ] Fragebogen abgeschickt
 
@@ -154,11 +180,11 @@ die Glücksspiel-Simulation passt ohnehin nicht dazu.
 
 Der am genauesten geprüfte Abschnitt. Die Angaben:
 
-| Frage                                           | Antwort                         |
-| ----------------------------------------------- | ------------------------------- |
-| Werden Daten erhoben oder geteilt?              | **Erhoben: ja. Geteilt: nein.** |
-| Werden Daten bei der Übertragung verschlüsselt? | **Ja** (HTTPS)                  |
-| Können Nutzer die Löschung verlangen?           | **Ja**                          |
+| Frage                                           | Antwort                       |
+| ----------------------------------------------- | ----------------------------- |
+| Werden Daten erhoben oder geteilt?              | **Erhoben: ja. Geteilt: ja.** |
+| Werden Daten bei der Übertragung verschlüsselt? | **Ja** (HTTPS)                |
+| Können Nutzer die Löschung verlangen?           | **Ja**                        |
 
 Datentypen – nur diese drei ankreuzen:
 
@@ -170,9 +196,24 @@ Datentypen – nur diese drei ankreuzen:
 
 Jeweils **optional**, weil ohne Konto nichts davon das Gerät verlässt.
 
-Nicht ankreuzen: Standort, Kontakte, Fotos, Dateien, Kalender,
-Finanzdaten, Gesundheitsdaten, Geräte-IDs für Werbung, Abstürze und
-Diagnosedaten.
+**Dazu wegen der Werbung (Google AdMob):** Das AdMob-SDK erhebt Daten
+selbst und nutzt sie auch für eigene Zwecke -- das zählt bei Google als
+„geteilt“. Google nennt für seine Werbedienste in der Regel diese Angaben;
+**vor dem Absenden mit Googles aktueller Hilfeseite zu den
+Datensicherheitsangaben für Werbung abgleichen**, die Liste ändert sich:
+
+| Datentyp                                  | Erhoben | Geteilt | Pflicht? | Zweck                               |
+| ----------------------------------------- | ------- | ------- | -------- | ----------------------------------- |
+| **Ungefährer Standort** (aus IP-Adresse)  | ja      | ja      | optional | Werbung, Betrugsvermeidung          |
+| **Geräte- oder andere IDs**               | ja      | ja      | optional | Werbung, Analyse, Betrugsvermeidung |
+| **App-Interaktionen** (Werbung angesehen) | ja      | ja      | optional | Werbung, Analyse                    |
+| **Diagnosedaten**                         | ja      | ja      | optional | Werbung, Analyse, Betrugsvermeidung |
+
+**Optional**, weil Werbung nur geladen wird, wenn ein Spiel ein Video anbietet,
+und niemand eines ansehen muss.
+
+Nicht ankreuzen: genauer Standort, Kontakte, Fotos, Dateien, Kalender,
+Finanzdaten, Gesundheitsdaten.
 
 - [ ] Formular abgeschickt
 
@@ -214,7 +255,7 @@ die Zeichenzahlen sind nachgerechnet.
 | ------------------------------------- | --------------------------------------- |
 | App-Name (max. 30)                    | `TE-Mini Games`                         |
 | Kurzbeschreibung (max. 80)            | `eintrag.md`, 72 Zeichen                |
-| Vollständige Beschreibung (max. 4000) | `eintrag.md`, 2157 Zeichen              |
+| Vollständige Beschreibung (max. 4000) | `eintrag.md`, 2437 Zeichen              |
 | App-Symbol 512 × 512                  | `docs/store/app-symbol-512x512.png`     |
 | Funktionsbild 1024 × 500              | `docs/store/funktionsbild-1024x500.png` |
 | Telefon-Screenshots                   | `docs/store/telefon-*.png` (acht Stück) |
@@ -227,6 +268,23 @@ in `docs/store/` ist dasselbe Bild als RGBA.
 - [ ] Symbol hochgeladen
 - [ ] Funktionsbild hochgeladen
 - [ ] mindestens zwei Screenshots hochgeladen (es dürfen bis zu acht sein)
+
+### 3a. Englische Übersetzung
+
+> **Haupt-Store-Eintrag** → **Übersetzungen verwalten** → **Übersetzungen
+> hinzufügen** → **Englisch (Vereinigte Staaten) – en-US**
+
+Die App ist zweisprachig, also auch der Eintrag. Texte in
+[`eintrag-en.md`](eintrag-en.md) (Kurzbeschreibung 70 Zeichen, Beschreibung
+2373), Bilder in `docs/store/en/` -- dort ist die App auf Englisch zu sehen.
+Ohne englische Bilder zeigt Google die deutschen; das geht, wirkt aber
+halbfertig.
+
+Nicht „Übersetzen lassen“ anklicken: Google übersetzt dann maschinell und
+verlangt Geld dafür.
+
+- [ ] en-US angelegt, Texte eingefügt
+- [ ] englisches Funktionsbild und Screenshots hochgeladen
 
 ---
 
@@ -278,8 +336,11 @@ lässt sich währenddessen erledigen.
 
 ## 7. Nach dem ersten Upload: die Fingerabdrücke
 
-Das ist der Schritt, der am leichtesten vergessen wird – und ohne ihn
-zeigt die App im Vollbild trotzdem eine Adressleiste.
+> **Entfällt seit der Capacitor-App (07.11.2026).** Die Fingerabdrücke in
+> `assetlinks.json` brauchte nur die Trusted Web Activity, damit sie ohne
+> Adressleiste lief. Die Capacitor-App hat keine. Die Datei bleibt liegen
+> und stört nicht. Der Rest dieses Abschnitts gilt nur, falls die App je
+> wieder eine TWA wird.
 
 1. > **Testen und veröffentlichen** → **Einrichtung** → **App-Integrität**
    > → **App-Signaturschlüssel**

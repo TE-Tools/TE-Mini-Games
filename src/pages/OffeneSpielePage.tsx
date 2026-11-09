@@ -27,6 +27,7 @@ import {
 import { fetchOeffentlicheTexasRaeume } from '@/services/texasOnline'
 import { OEFFENTLICH_ERNEUERN_MS, RAUM_PARAM, type OeffentlicherRaum } from '@/services/raeume'
 import { kachelFuer } from './spiele-katalog'
+import { spielName, useSprache } from '@/i18n/sprache'
 import type { GameId } from '@/games/types'
 import shell from './play/PlayShell.module.css'
 import styles from './OffeneSpielePage.module.css'
@@ -47,11 +48,18 @@ const ONLINE_SPIELE: { id: GameId; laden: () => Promise<OeffentlicherRaum[]> }[]
 interface Gruppe {
   id: GameId
   raeume: OeffentlicherRaum[]
-  fehler: string | null
+  /**
+   * Was schiefging. Die Meldung des Servers bleibt, wie sie kommt (deutsch,
+   * siehe docs/design/zweisprachig); ohne Meldung steht der Text beim Rendern
+   * in der aktuellen Sprache da.
+   */
+  fehler: { meldung: string | null } | null
 }
 
 export function OffeneSpielePage() {
   const navigate = useNavigate()
+  const { t } = useSprache()
+  const o = t.offeneSpiele
   const [angemeldet, setAngemeldet] = useState<boolean | null>(null)
   const [gruppen, setGruppen] = useState<Gruppe[] | null>(null)
 
@@ -83,7 +91,7 @@ export function OffeneSpielePage() {
             : {
                 id: s.id,
                 raeume: [],
-                fehler: e.reason instanceof Error ? e.reason.message : 'Nicht erreichbar.',
+                fehler: { meldung: e.reason instanceof Error ? e.reason.message : null },
               }
         }),
       )
@@ -97,48 +105,37 @@ export function OffeneSpielePage() {
   }, [angemeldet])
 
   const gesamt = gruppen?.reduce((n, g) => n + g.raeume.length, 0) ?? 0
-  const ersterFehler = gruppen?.find((g) => g.fehler)?.fehler ?? null
+  const fehlerObjekt = gruppen?.find((g) => g.fehler)?.fehler ?? null
+  const ersterFehler = fehlerObjekt ? (fehlerObjekt.meldung ?? o.nichtErreichbar) : null
 
   return (
     <main className={shell.page}>
       <header className={shell.header}>
-        <Link to="/" className={shell.back} aria-label="Zurück">
+        <Link to="/" className={shell.back} aria-label={t.allgemein.zurueck}>
           ←
         </Link>
-        <h1 className={shell.title}>Offene Spiele</h1>
+        <h1 className={shell.title}>{o.titel}</h1>
         <span className={shell.levelBadge}>{gruppen ? gesamt : '…'}</span>
       </header>
 
-      <p className={shell.hint}>
-        Alle öffentlichen Räume, in denen gerade jemand wartet – mit dem, der sie aufgemacht hat,
-        und allen, die schon drin sind. Die Liste erneuert sich von selbst.
-      </p>
+      <p className={shell.hint}>{o.erklaerung}</p>
 
-      {!isSupabaseConfigured && (
-        <p className={styles.leise}>Für Online-Räume fehlt die Verbindung zum Konto-Server.</p>
-      )}
+      {!isSupabaseConfigured && <p className={styles.leise}>{o.keinServer}</p>}
 
       {isSupabaseConfigured && angemeldet === false && (
         <section className={styles.kasten}>
-          <p className={styles.leise}>
-            Online-Räume gibt es nur mit Konto – so wissen die anderen, wer am Tisch sitzt.
-          </p>
+          <p className={styles.leise}>{o.nurMitKonto}</p>
           <Link to="/auth" className={shell.primaryBtn} style={{ textAlign: 'center' }}>
-            Anmelden
+            {o.anmelden}
           </Link>
         </section>
       )}
 
-      {angemeldet === true && gruppen === null && (
-        <p className={styles.leise}>Suche nach offenen Räumen…</p>
-      )}
+      {angemeldet === true && gruppen === null && <p className={styles.leise}>{o.suche}</p>}
 
       {gruppen && gesamt === 0 && (
         <section className={styles.kasten}>
-          <p className={styles.leise}>
-            Gerade wartet niemand. Öffne in einem Spiel selbst einen öffentlichen Raum – dann steht
-            er hier für alle.
-          </p>
+          <p className={styles.leise}>{o.niemandWartet}</p>
           {ersterFehler && <p className={styles.leise}>{ersterFehler}</p>}
         </section>
       )}
@@ -148,10 +145,11 @@ export function OffeneSpielePage() {
           .filter((g) => g.raeume.length > 0)
           .map((g) => {
             const kachel = kachelFuer(g.id)
+            const name = spielName(t, g.id, kachel?.name ?? g.id)
             return (
-              <section key={g.id} className={styles.kasten} aria-label={kachel?.name}>
+              <section key={g.id} className={styles.kasten} aria-label={name}>
                 <h2 className={styles.spielTitel}>
-                  <span aria-hidden="true">{kachel?.icon}</span> {kachel?.name ?? g.id}
+                  <span aria-hidden="true">{kachel?.icon}</span> {name}
                 </h2>
                 <ul className={styles.liste}>
                   {g.raeume.map((r) => {
@@ -159,10 +157,11 @@ export function OffeneSpielePage() {
                     return (
                       <li key={r.match_id} className={styles.zeile}>
                         <div className={styles.text}>
-                          <strong className={styles.name}>Raum von {r.host_name}</strong>
+                          <strong className={styles.name}>{o.raumVon(r.host_name)}</strong>
                           <span className={styles.klein}>
-                            {r.size} {r.size === 1 ? 'Person' : 'Personen'}
-                            {r.plaetze ? ` von ${r.plaetze}` : ''} · Code {r.code}
+                            {o.personen(r.size)}
+                            {r.plaetze ? o.vonPlaetzen(r.plaetze) : ''}
+                            {o.code(r.code)}
                           </span>
                           {r.spieler?.length > 0 && (
                             <span className={styles.klein}>{r.spieler.join(', ')}</span>
@@ -178,7 +177,7 @@ export function OffeneSpielePage() {
                             )
                           }
                         >
-                          {voll ? 'Voll' : 'Beitreten'}
+                          {voll ? o.voll : o.beitreten}
                         </button>
                       </li>
                     )

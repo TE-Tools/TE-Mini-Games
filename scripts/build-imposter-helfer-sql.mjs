@@ -15,6 +15,7 @@
  */
 import { writeFileSync } from 'node:fs'
 import { createServer } from 'vite'
+import { schreibeEnglischeWoerter } from './imposter-englisch-sql.mjs'
 
 const server = await createServer({ server: { middlewareMode: true }, logLevel: 'error' })
 const { helperCandidates } = await server.ssrLoadModule(
@@ -30,7 +31,8 @@ await server.close()
 
 const q = (s) => `'${s.replace(/'/g, "''")}'`
 const zeilen = []
-for (const cat of CATEGORIES) {
+// Nur Deutsch -- die englischen Hilfswörter stehen in 029 (siehe unten).
+for (const cat of CATEGORIES.filter((c) => c.sprache === 'de')) {
   const pool = wordsForCategory(cat.id).map((w) => w.word)
   for (const wort of pool) {
     for (const helfer of helperCandidates(wort, cat.id, pool)) {
@@ -67,3 +69,6 @@ ${zeilen.join(',\n')};
 `
 writeFileSync('supabase/migrations/027_imposter_hilfswoerter.sql', sql)
 console.log(`${zeilen.length} Zeilen geschrieben`)
+
+// Die englischen Hilfswörter gehen zusammen mit ihren Wörtern in 029.
+await schreibeEnglischeWoerter()

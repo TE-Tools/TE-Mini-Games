@@ -33,6 +33,7 @@ import {
   type BestenlisteArt,
   type Quelle,
 } from './bestenlisteSortierung'
+import { useSprache } from '@/i18n/sprache'
 import styles from './Bestenliste.module.css'
 
 interface Props {
@@ -46,6 +47,8 @@ interface Props {
 }
 
 export function Bestenliste({ eigenerName, start = 'siege' }: Props) {
+  const { t } = useSprache()
+  const b = t.kniffel.bestenliste
   const [art, setArt] = useState<BestenlisteArt>(start)
   const [quelle, setQuelle] = useState<Quelle>('alle')
   const [eintraege, setEintraege] = useState<KniffelBestenEintrag[] | null>(null)
@@ -81,9 +84,9 @@ export function Bestenliste({ eigenerName, start = 'siege' }: Props) {
   if (!isKniffelOnlineAvailable) return null
 
   return (
-    <section className={styles.kasten} aria-label="Bestenliste">
+    <section className={styles.kasten} aria-label={b.titel}>
       <div className={styles.kopf}>
-        <h3 className={styles.titel}>Bestenliste</h3>
+        <h3 className={styles.titel}>{b.titel}</h3>
         <div className={styles.schalter} role="tablist">
           <button
             type="button"
@@ -92,7 +95,7 @@ export function Bestenliste({ eigenerName, start = 'siege' }: Props) {
             className={art === 'siege' ? styles.anAktiv : styles.an}
             onClick={() => setArt('siege')}
           >
-            Meiste Siege
+            {b.meisteSiege}
           </button>
           <button
             type="button"
@@ -101,19 +104,15 @@ export function Bestenliste({ eigenerName, start = 'siege' }: Props) {
             className={art === 'punkte' ? styles.anAktiv : styles.an}
             onClick={() => setArt('punkte')}
           >
-            Höchster Sieg
+            {b.hoechsterSieg}
           </button>
         </div>
       </div>
 
-      {eintraege === null && <p className={styles.leise}>Lade…</p>}
+      {eintraege === null && <p className={styles.leise}>{b.lade}</p>}
 
       {eintraege !== null && gezeigt.length === 0 && (
-        <p className={styles.leise}>
-          {quelle === 'online'
-            ? 'Noch keine beendete Online-Partie. Wer die erste zu Ende spielt, steht hier zuerst.'
-            : 'Noch keine beendete Partie. Wer die erste zu Ende spielt, steht hier zuerst.'}
-        </p>
+        <p className={styles.leise}>{quelle === 'online' ? b.leerOnline : b.leer}</p>
       )}
 
       {gezeigt.length > 0 && (
@@ -131,14 +130,12 @@ export function Bestenliste({ eigenerName, start = 'siege' }: Props) {
                   {art === 'siege' ? (
                     <>
                       <strong>{w.siege}</strong>
-                      <small>
-                        {w.siege === 1 ? 'Sieg' : 'Siege'} aus {w.partien}
-                      </small>
+                      <small>{b.siegeAus(w.siege, w.partien)}</small>
                     </>
                   ) : (
                     <>
                       <strong>{w.bester_sieg}</strong>
-                      <small>Punkte im Sieg</small>
+                      <small>{b.punkteImSieg}</small>
                     </>
                   )}
                 </span>
@@ -149,16 +146,14 @@ export function Bestenliste({ eigenerName, start = 'siege' }: Props) {
       )}
 
       <p className={styles.fussnote}>
-        {quelle === 'online'
-          ? 'Gezählt werden nur beendete Online-Partien.'
-          : 'Gezählt werden beendete Partien, online und gegen den Rechner.'}{' '}
+        {quelle === 'online' ? b.nurOnlineGezaehlt : b.alleGezaehlt}{' '}
         <button
           type="button"
           className={styles.quelle}
           aria-pressed={quelle === 'online'}
           onClick={() => setQuelle(quelle === 'online' ? 'alle' : 'online')}
         >
-          {quelle === 'online' ? 'Rechner mitzählen' : 'Nur Online'}
+          {quelle === 'online' ? b.rechnerMitzaehlen : b.nurOnline}
         </button>
       </p>
     </section>

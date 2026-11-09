@@ -1,10 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { App, emberwakeGame, type EmberwakeRoh, type LevelOutcome } from '@/games/emberwake'
+import { App } from '@/games/emberwake'
 import { tonAn } from '@/services/sound'
-import { saveGameResult, addXp, recordLevelComplete } from '@/offline'
-import { processAfterResult } from '@/progression'
-import { trySyncNow } from '@/services/remoteSync'
+import { bucheEmberwake } from './emberwakeBuchung'
 import '@/games/emberwake/ui/styles/emberwake.css'
 import styles from './EmberwakePage.module.css'
 
@@ -28,41 +26,10 @@ export function EmberwakePage() {
     const overflowVorher = document.body.style.overflow
     document.body.style.overflow = 'hidden'
 
-    const gemeldet = async (o: LevelOutcome): Promise<{ score: number; xp: number }> => {
-      const roh: EmberwakeRoh = {
-        won: true,
-        stars: o.stars,
-        time: o.timeSeconds,
-        secondary: o.secondary,
-        secret: o.secret,
-        damageTaken: o.damageTaken,
-      }
-      const punkte = emberwakeGame.calculateScore(o.levelId, roh)
-      const xp = emberwakeGame.calculateXP(o.levelId, punkte)
-      const sterne = emberwakeGame.calculateStars?.(o.levelId, punkte) ?? 0
-      try {
-        await saveGameResult({
-          gameId: 'emberwake',
-          level: o.levelId,
-          score: punkte,
-          xp,
-          stars: sterne,
-          resultData: { ...roh },
-        })
-        await addXp('guest', xp)
-        await recordLevelComplete('emberwake', o.levelId, xp)
-        await processAfterResult({ gameId: 'emberwake', level: o.levelId })
-        void trySyncNow()
-      } catch (e) {
-        console.error(e)
-      }
-      return { score: punkte, xp }
-    }
-
     App.boot(el, {
       soundEnabled: tonAn(),
       onExit: () => navigate('/'),
-      onLevelCompleted: gemeldet,
+      onLevelCompleted: bucheEmberwake,
     })
       .then((a) => {
         if (verlassen) {

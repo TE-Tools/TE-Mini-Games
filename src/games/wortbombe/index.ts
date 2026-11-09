@@ -19,4 +19,5 @@ export type {
   CreateWortbombeOptions,
 } from './engine'
 export { SILBEN, silbenFuer } from './silben'
-export type { Silbe, SilbenStufe } from './silben'
+export { SILBEN_EN } from './silben.en'
+export type { Silbe, SilbenStufe, SilbenSprache } from './silben'

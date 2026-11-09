@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
+import { useText } from '@/i18n/sprache'
 
 export function NotFoundPage() {
+  const t = useText().nichtGefunden
   return (
     <main
       style={{
@@ -14,10 +16,8 @@ export function NotFoundPage() {
         textAlign: 'center',
       }}
     >
-      <h1 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Seite nicht gefunden</h1>
-      <p style={{ color: 'var(--color-text-muted)' }}>
-        Diese Seite gibt es noch nicht.
-      </p>
+      <h1 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{t.titel}</h1>
+      <p style={{ color: 'var(--color-text-muted)' }}>{t.text}</p>
       <Link
         to="/"
         style={{
@@ -31,7 +31,7 @@ export function NotFoundPage() {
           fontWeight: 600,
         }}
       >
-        Zur Startseite
+        {t.zurStartseite}
       </Link>
     </main>
   )
