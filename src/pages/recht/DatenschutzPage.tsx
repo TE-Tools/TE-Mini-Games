@@ -116,6 +116,14 @@ function TextDe() {
         dein Gerät nur, wenn du ein Konto anlegst (siehe b). Du löschst sie, indem du die
         Websitedaten im Browser löschst.
       </p>
+      <p>
+        <strong>Mikrofon – nur im Spiel „Rückwärts".</strong> Dort sprichst du ein Wort ein, und das
+        Spiel spielt es rückwärts ab. Aufgenommen wird erst, wenn du „Aufnahme starten" antippst,
+        und nur bis zum Stopp; vorher fragt dein Browser oder Gerät um Erlaubnis. Die Aufnahme
+        bleibt im Arbeitsspeicher deines Geräts: Sie wird nicht gespeichert, nicht übertragen und
+        nach jeder Runde überschrieben – spätestens, wenn du das Spiel verlässt. Ohne die Erlaubnis
+        fehlt nur dieses eine Spiel.
+      </p>
 
       <h3>b) Mit Konto (freiwillig)</h3>
       <p>
@@ -336,6 +344,14 @@ function TextEn() {
         unfinished puzzles including notes and timer, settings). It also stores your chosen language
         and whether you play as a guest or with an account. This data only leaves your device if you
         create an account (see b). You delete it by clearing the site data in your browser.
+      </p>
+      <p>
+        <strong>Microphone – only in the game “Backwards”.</strong> There you record a word and the
+        game plays it backwards. Recording starts only when you tap “Start recording” and lasts only
+        until you stop; your browser or device asks for permission first. The recording stays in
+        your device&apos;s working memory: it is not stored, not transmitted, and it is overwritten
+        after every round – at the latest when you leave the game. Without the permission, only this
+        one game is unavailable.
       </p>
 
       <h3>b) With an account (optional)</h3>

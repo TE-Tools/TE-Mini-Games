@@ -277,5 +277,6 @@ export function gameLabel(gameId: string): string {
   if (gameId === 'scharade') return 'Scharade'
   if (gameId === 'wortbombe') return 'Wortbombe'
   if (gameId === 'wer-wuerde-eher') return 'Wer würde eher?'
+  if (gameId === 'rueckwaerts') return 'Rückwärts'
   return gameId
 }

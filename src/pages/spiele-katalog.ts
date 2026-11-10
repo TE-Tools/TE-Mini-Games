@@ -115,6 +115,7 @@ export const SPIELE_KACHELN: readonly KachelEintrag[] = [
     icon: '🗳️',
     art: 'Partyspiel',
   },
+  { id: 'rueckwaerts', name: 'Rückwärts', pfad: '/play/rueckwaerts', icon: '⏪', art: 'Hören' },
 ]
 
 const NACH_ID = new Map(SPIELE_KACHELN.map((k) => [k.id, k]))
@@ -159,6 +160,7 @@ const GRUPPE: Partial<Record<GameId, SpielGruppe>> = {
   scharade: 'party',
   wortbombe: 'party',
   'wer-wuerde-eher': 'party',
+  rueckwaerts: 'party',
 }
 
 /** Ein Spiel ohne Eintrag landet bei "Knobeln" -- dort fällt es nicht aus dem Raster. */

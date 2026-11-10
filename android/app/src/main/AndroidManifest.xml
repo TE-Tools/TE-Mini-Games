@@ -53,4 +53,16 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Mikrofon: nur für das Spiel „Rückwärts" (src/games/rueckwaerts).
+         Die Webansicht fragt erst, wenn dort jemand auf „Aufnahme starten"
+         tippt; Capacitor reicht die Frage an Android weiter und verlangt
+         dafür genau diese beiden Einträge. Ohne sie lehnt die App das
+         Mikrofon stumm ab und das Spiel meldet „verweigert".
+         Die Aufnahme bleibt im Arbeitsspeicher und wird nach jeder Runde
+         überschrieben -- so steht es auch in der Datenschutzerklärung. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- Kein Muss: Auf Geräten ohne Mikrofon fehlt ein Spiel, nicht die App. -->
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
 </manifest>

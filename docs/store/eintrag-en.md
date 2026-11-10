@@ -29,7 +29,7 @@ TE-Mini Games
 ## Kurzbeschreibung (max. 80 Zeichen)
 
 ```
-21 quick games for any moment – solo, for two or with the whole group.
+22 quick games for any moment – solo, for two or with the whole group.
 ```
 
 (70 Zeichen.)
@@ -71,6 +71,8 @@ DICE, CARDS AND BOARD
 FOR GROUPS – ONE PHONE IS ENOUGH
 • Find the Imposter, Who am I?, Categories, Charades, Word Bomb, Who would
   rather?, Marksmen Round – the phone goes once round the table.
+• Backwards – record a word, hear it backwards, copy what you hear. The
+  others have to guess what comes out.
 
 ONLINE AGAINST EACH OTHER
 The dice game, Texas Hold'em, Mau-Mau, Last Card, Schützenopoly, Marksmen

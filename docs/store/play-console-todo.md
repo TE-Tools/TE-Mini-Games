@@ -215,6 +215,18 @@ und niemand eines ansehen muss.
 Nicht ankreuzen: genauer Standort, Kontakte, Fotos, Dateien, Kalender,
 Finanzdaten, Gesundheitsdaten.
 
+**Auch nicht ankreuzen: Audio / Sprachaufnahmen** -- obwohl die App seit dem
+Spiel „Rückwärts" (10.11.2026) die Berechtigung `RECORD_AUDIO` hat. Google
+fragt nach Daten, die das Gerät **verlassen**. Die Aufnahmen dort tun das
+nicht: Sie liegen im Arbeitsspeicher, werden weder gespeichert noch
+übertragen und nach jeder Runde überschrieben
+(`docs/design/rueckwaerts/README.md`). Das ist in Googles Sinn „nicht
+erhoben". Fragt die Play Console beim Upload, wozu die App das Mikrofon
+braucht: _Für ein Partyspiel, in dem ein eingesprochenes Wort rückwärts
+abgespielt wird; die Aufnahme bleibt auf dem Gerät._ Wer daran je etwas
+ändert -- Aufnahmen speichern, teilen, hochladen --, muss hier „Audio"
+ankreuzen und die Datenschutzerklärung umschreiben.
+
 - [ ] Formular abgeschickt
 
 ### 2.7 Löschung von Kontodaten

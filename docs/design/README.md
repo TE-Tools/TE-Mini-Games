@@ -11,6 +11,7 @@ Verbindliche Gestaltungs- und Umsetzungsvorgaben.
 | **Texas Hold'em**                  | umgesetzt                  | [texas-holdem/](./texas-holdem/)               |
 | **Mau-Mau / Letzte Karte**         | umgesetzt                  | [maumau/](./maumau/)                           |
 | **Kartenspiele online**            | umgesetzt                  | [kartenspiele-online/](./kartenspiele-online/) |
+| **Rückwärts**                      | umgesetzt                  | [rueckwaerts/](./rueckwaerts/)                 |
 
 ## Levelkarte 1–500 (Kurz)
 
