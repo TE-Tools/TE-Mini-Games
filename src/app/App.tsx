@@ -110,7 +110,13 @@ function AuthGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (gate.status === 'loading') return
+    // Abbruchmarke wie im Effekt darueber. Ohne sie schreibt das
+    // Versprechen noch in den Zustand, wenn die Komponente laengst weg
+    // ist: In React eine Warnung, in Vitest ein harter Abbruch
+    // ("window is not defined"), weil jsdom dann schon abgeraeumt ist.
+    let abgebrochen = false
     void getSession().then((session) => {
+      if (abgebrochen) return
       if (session?.user) {
         setPlayMode('account')
         setGate({ status: 'ready', mode: 'account' })
@@ -123,6 +129,9 @@ function AuthGate({ children }: { children: ReactNode }) {
       }
       setGate({ status: 'gate' })
     })
+    return () => {
+      abgebrochen = true
+    }
   }, [location.pathname, gate.status])
 
   // Vor jeder Prüfung: Diese Seiten warten auf nichts. Selbst das
