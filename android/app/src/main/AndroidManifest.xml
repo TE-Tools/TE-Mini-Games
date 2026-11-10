@@ -60,7 +60,9 @@
          dafür genau diese beiden Einträge. Ohne sie lehnt die App das
          Mikrofon stumm ab und das Spiel meldet „verweigert".
          Die Aufnahme bleibt im Arbeitsspeicher und wird nach jeder Runde
-         überschrieben -- so steht es auch in der Datenschutzerklärung. -->
+         überschrieben, so steht es auch in der Datenschutzerklärung.
+         (In XML-Kommentaren sind zwei Bindestriche hintereinander verboten;
+         tests/android-manifest.test.ts achtet darauf.) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <!-- Kein Muss: Auf Geräten ohne Mikrofon fehlt ein Spiel, nicht die App. -->
