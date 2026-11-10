@@ -3128,6 +3128,8 @@ export const de = {
     aufnahmeLaeuft: 'Aufnahme läuft …',
     mikrofonWartet: 'Mikrofon wird geöffnet …',
     hoechstens: (sekunden: number) => `Höchstens ${sekunden} Sekunden.`,
+    pegel: 'Mikrofonpegel',
+    pegelHinweis: 'Der Balken schlägt aus, wenn das Mikrofon dich hört.',
     nachsprechenTitel: (name: string) => `${name} hört zu und spricht nach`,
     nachsprechenText:
       'So klingt das Wort rückwärts. Hör es dir an, so oft du willst – dann sprich genau das nach, was du hörst.',
@@ -3154,9 +3156,14 @@ export const de = {
     stand: (erraten: number, gespielt: number) => `${erraten} von ${gespielt} erraten`,
     keineRunde: 'Keine Runde zu Ende gespielt.',
     allesGeloescht: 'Alle Aufnahmen sind gelöscht.',
+    /** Für die Fehlersuche: Was an einer abgewiesenen Aufnahme gemessen wurde. */
+    messwerte: (sekunden: string, stimme: string, rauschen: string) =>
+      `Messwerte: ${sekunden} s aufgenommen · Stimme ${stimme} · Rauschen ${rauschen}`,
     fehler: {
+      'kein-ton':
+        'Vom Mikrofon kommt kein Ton. Ist es stummgeschaltet oder gerade von einer anderen App belegt?',
       'zu-leise':
-        'Da war nichts zu hören. Halte das Gerät näher an den Mund und versuch es noch einmal.',
+        'Da war nur Rauschen zu hören. Halte das Gerät näher an den Mund und versuch es noch einmal.',
       'zu-kurz': 'Das war zu kurz. Versuch es noch einmal.',
       verweigert:
         'Ohne Mikrofon geht dieses Spiel nicht. Erlaube den Zugriff in den Einstellungen deines Browsers oder Geräts.',

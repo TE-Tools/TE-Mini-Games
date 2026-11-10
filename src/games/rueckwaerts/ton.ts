@@ -57,8 +57,15 @@ export interface Tonanlage {
    * Der Tonkontext darf nur in einer Geste entstehen, sonst bleibt er auf
    * iOS stumm. `beiVoll` meldet, dass die Höchstlänge erreicht ist --
    * aufgenommen wird dann nichts mehr, beendet wird mit `stopp()`.
+   * `beiPegel` bekommt etwa fünfzehnmal in der Sekunde, wie laut es gerade
+   * ist (quadratischer Mittelwert) -- für die Anzeige, an der man sieht,
+   * ob das Mikrofon einen hört.
    */
-  nimmAuf(optionen: { maxSekunden: number; beiVoll: () => void }): Promise<LaufendeAufnahme>
+  nimmAuf(optionen: {
+    maxSekunden: number
+    beiVoll: () => void
+    beiPegel?: (rms: number) => void
+  }): Promise<LaufendeAufnahme>
   /** Spielt einen Klang ab. Eine laufende Wiedergabe wird dafür angehalten. */
   spiele(klang: Klang): Wiedergabe
   /** Hält alles an und gibt den Tonkontext frei. */
@@ -124,7 +131,8 @@ export function erstelleTonanlage(): Tonanlage {
       if (!Klasse) throw new TonFehler('nicht-unterstuetzt')
       kontext = new Klasse()
     }
-    if (kontext.state === 'suspended') void kontext.resume()
+    // Nicht nur 'suspended': Safari kennt dazu 'interrupted'.
+    if (kontext.state !== 'running') void kontext.resume()
     return kontext
   }
 
@@ -151,6 +159,7 @@ export function erstelleTonanlage(): Tonanlage {
   async function nimmAuf(optionen: {
     maxSekunden: number
     beiVoll: () => void
+    beiPegel?: (rms: number) => void
   }): Promise<LaufendeAufnahme> {
     // Zuerst und ohne zu warten: Der Tonkontext muss noch in der Geste
     // entstehen. Nach dem ersten await ist sie vorbei.
@@ -175,12 +184,27 @@ export function erstelleTonanlage(): Tonanlage {
     const gibFrei = () => {
       for (const spur of strom.getTracks()) spur.stop()
     }
+    // Öffnet sich das Mikrofon, stellt das iPhone seinen Ton um und hält
+    // einen laufenden Tonkontext dabei an. Dann käme kein einziger Wert
+    // an. Die Geste ist hier vorbei, aber ein Kontext, der in ihr schon
+    // einmal lief, lässt sich auch danach wieder anstoßen.
+    if (ctx.state !== 'running') {
+      try {
+        await ctx.resume()
+      } catch {
+        /* dann zeigt die Pegelanzeige, dass nichts ankommt */
+      }
+    }
 
     const stuecke: Float32Array[] = []
     const grenze = Math.round(ctx.sampleRate * optionen.maxSekunden)
     let laenge = 0
     let zu = false
     let vollGemeldet = false
+    // Für die Pegelanzeige: Quadrate sammeln, alle 60 ms den Mittelwert melden.
+    const pegelBlock = Math.round(ctx.sampleRate * 0.06)
+    let quadrate = 0
+    let gezaehlt = 0
 
     const nimm = (stueck: Float32Array) => {
       if (zu || laenge >= grenze) {
@@ -190,6 +214,15 @@ export function erstelleTonanlage(): Tonanlage {
       }
       stuecke.push(stueck)
       laenge += stueck.length
+      if (optionen.beiPegel) {
+        for (let i = 0; i < stueck.length; i++) quadrate += stueck[i]! * stueck[i]!
+        gezaehlt += stueck.length
+        if (gezaehlt >= pegelBlock) {
+          optionen.beiPegel(Math.sqrt(quadrate / gezaehlt))
+          quadrate = 0
+          gezaehlt = 0
+        }
+      }
       if (laenge >= grenze && !vollGemeldet) {
         vollGemeldet = true
         optionen.beiVoll()

@@ -19,6 +19,7 @@ import {
   neuEinsprechen,
   nimmNachahmung,
   nimmOriginal,
+  pegelAnzeige,
   rollen,
   stutze,
   verwerfeAufnahmen,
@@ -45,6 +46,26 @@ function wort(sekunden = 0.8, ausschlag = 0.5): Float32Array {
 function stille(sekunden: number): Float32Array {
   return new Float32Array(Math.round(RATE * sekunden))
 }
+
+/** Gleichmäßiges Rauschen, bei jedem Lauf dasselbe. */
+function rauschen(sekunden: number, ausschlag: number): Float32Array {
+  const out = new Float32Array(Math.round(RATE * sekunden))
+  let saat = 4711
+  for (let i = 0; i < out.length; i++) {
+    saat = (saat * 1103515245 + 12345) & 0x7fffffff
+    out[i] = ausschlag * ((saat / 0x7fffffff) * 2 - 1)
+  }
+  return out
+}
+
+/** Zwei Reihen übereinander -- etwa ein Wort im Rauschen. */
+function gemischt(a: Float32Array, b: Float32Array): Float32Array {
+  const out = new Float32Array(Math.max(a.length, b.length))
+  for (let i = 0; i < out.length; i++) out[i] = (a[i] ?? 0) + (b[i] ?? 0)
+  return out
+}
+
+const gipfel = (k: Klang) => k.samples.reduce((m, v) => Math.max(m, Math.abs(v)), 0)
 
 function klang(...teile: Float32Array[]): Klang {
   const n = teile.reduce((a, t) => a + t.length, 0)
@@ -136,25 +157,130 @@ describe('Stutzen', () => {
     expect(istStill(e.klang)).toBe(false)
   })
 
-  it('weist eine stille Aufnahme zurück', () => {
-    expect(stutze(klang(stille(1.5)))).toEqual({ ok: false, grund: 'zu-leise' })
+  it('meldet „kein Ton", wenn vom Mikrofon nichts kommt', () => {
+    expect(stutze(klang(stille(1.5)))).toMatchObject({ ok: false, grund: 'kein-ton' })
+    // Auch das letzte Flackern eines stummen Eingangs ist kein Ton.
+    expect(stutze(klang(rauschen(1.5, 0.0002)))).toMatchObject({ ok: false, grund: 'kein-ton' })
   })
 
   it('weist Zimmerrauschen zurück', () => {
-    const rauschen = new Float32Array(RATE)
-    for (let i = 0; i < rauschen.length; i++) rauschen[i] = 0.004 * Math.sin(i * 12.9898)
-    expect(stutze(klang(rauschen))).toEqual({ ok: false, grund: 'zu-leise' })
+    expect(stutze(klang(rauschen(1.5, 0.004)))).toMatchObject({ ok: false, grund: 'zu-leise' })
+  })
+
+  it('weist auch lautes Rauschen zurück -- es hebt sich von sich selbst nicht ab', () => {
+    // Lauter als die leise Stimme im nächsten Test, und trotzdem kein Wort.
+    expect(stutze(klang(rauschen(1.5, 0.015)))).toMatchObject({ ok: false, grund: 'zu-leise' })
+  })
+
+  it('nimmt die Stimme eines Handys an, das nicht hochregelt', () => {
+    // So kam es am ersten Abend an: ein Hundertstel des vollen Ausschlags,
+    // darunter Rauschen. Die feste Schwelle von damals (0,02) hat jede
+    // dieser Aufnahmen als leer zurückgewiesen.
+    const roh = klang(
+      gemischt(klang(stille(0.5), wort(0.8, 0.012), stille(0.6)).samples, rauschen(1.9, 0.0008)),
+    )
+    const e = stutze(roh)
+    expect(e.ok).toBe(true)
+    if (!e.ok) return
+    const erwartet = 0.8 + 2 * RUECKWAERTS.randSekunden
+    expect(dauer(e.klang)).toBeGreaterThan(erwartet - 0.08)
+    expect(dauer(e.klang)).toBeLessThan(erwartet + 0.08)
+  })
+
+  it('nimmt sie auch an, wenn der Tipp auf Stopp lauter ist als das Wort', () => {
+    // Der Finger trifft das Glas neben dem Mikrofon: 25 ms, zwanzigmal so
+    // laut wie die Stimme. Als Maßstab genommen, wäre das Wort Stille.
+    const tipp = stille(0.5)
+    for (let i = 0; i < RATE * 0.025; i++) tipp[RATE * 0.3 + i] = 0.25 * Math.sin(i * 0.07)
+    const roh = klang(
+      gemischt(klang(stille(0.5), wort(0.8, 0.012), tipp).samples, rauschen(1.8, 0.0008)),
+    )
+    const e = stutze(roh)
+    expect(e.ok).toBe(true)
+    if (!e.ok) return
+    // Gestutzt ist auf das Wort, nicht auf Wort plus Tipp.
+    expect(dauer(e.klang)).toBeLessThan(0.8 + 2 * RUECKWAERTS.randSekunden + 0.08)
+  })
+
+  it('stutzt auch in lautem Rauschen auf das Wort', () => {
+    // Das Rauschen erreicht hier ein Fünftel der Stimme -- mehr als die
+    // übliche Schwelle (12 %). Ohne den Blick aufs Rauschen gälte jedes
+    // Fenster als laut, und gestutzt würde gar nichts.
+    const roh = klang(
+      gemischt(klang(stille(0.5), wort(0.8, 0.012), stille(0.6)).samples, rauschen(1.9, 0.003)),
+    )
+    const e = stutze(roh)
+    expect(e.ok).toBe(true)
+    if (!e.ok) return
+    expect(dauer(e.klang)).toBeLessThan(0.8 + 2 * RUECKWAERTS.randSekunden + 0.1)
+  })
+
+  it('nimmt ein kurzes Wort an', () => {
+    // „Ei" oder „Ja": keine Viertelsekunde. Die erste Fassung wies das als zu kurz ab.
+    expect(stutze(klang(stille(0.4), wort(0.16), stille(0.4))).ok).toBe(true)
+  })
+
+  it('nimmt im Zweifel an: eine Stimme, die das Rauschen nur knapp überragt', () => {
+    // Stimme rund doppelt so laut wie das Rauschen. Lieber eine verrauschte
+    // Aufnahme, die man anhören und neu einsprechen kann, als eine Abweisung.
+    const roh = klang(
+      gemischt(klang(stille(0.5), wort(0.8, 0.006), stille(0.6)).samples, rauschen(1.9, 0.0035)),
+    )
+    expect(stutze(roh).ok).toBe(true)
+  })
+
+  it('sagt bei einer Abweisung, was gemessen wurde', () => {
+    const e = stutze(klang(rauschen(1.5, 0.004)))
+    if (e.ok) throw new Error('hätte nicht zählen dürfen')
+    expect(e.messung.sekunden).toBeCloseTo(1.5, 1)
+    // Gleichmäßiges Rauschen von ±0,004 hat einen Mittelwert um 0,0023 --
+    // und „Stimme" und Rauschen liegen gleichauf, deshalb die Abweisung.
+    expect(e.messung.stimme).toBeGreaterThan(0.002)
+    expect(e.messung.stimme).toBeLessThan(0.003)
+    expect(e.messung.stimme / e.messung.rauschen).toBeLessThan(1.3)
+
+    const leer = stutze({ samples: new Float32Array(0), rate: RATE })
+    if (leer.ok) throw new Error('hätte nicht zählen dürfen')
+    expect(leer.messung).toEqual({ sekunden: 0, stimme: 0, rauschen: 0 })
+  })
+
+  it('nimmt an, wer vom ersten bis zum letzten Augenblick spricht', () => {
+    // Kein Stück Stille zum Vergleichen -- dann entscheidet die Lautstärke.
+    expect(stutze(klang(wort(1.0, 0.3))).ok).toBe(true)
+  })
+
+  it('hebt leise Aufnahmen an, bis man sie hört', () => {
+    const e = stutze(klang(stille(0.4), wort(0.8, 0.05), stille(0.4)))
+    if (!e.ok) throw new Error('zählt nicht')
+    expect(gipfel(e.klang)).toBeCloseTo(RUECKWAERTS.zielGipfel, 2)
+  })
+
+  it('... aber nicht ins Uferlose: mehr als sechzigfach wird nicht verstärkt', () => {
+    const roh = klang(
+      gemischt(klang(stille(0.4), wort(0.8, 0.004), stille(0.4)).samples, rauschen(1.6, 0.0003)),
+    )
+    const e = stutze(roh)
+    if (!e.ok) throw new Error('zählt nicht')
+    expect(gipfel(e.klang)).toBeLessThan(0.004 * 1.1 * RUECKWAERTS.maxVerstaerkung)
+    expect(gipfel(e.klang)).toBeGreaterThan(0.004 * 0.8 * RUECKWAERTS.maxVerstaerkung)
+  })
+
+  it('macht laute Aufnahmen nicht leiser und übersteuert nichts', () => {
+    const e = stutze(klang(stille(0.4), wort(0.8, 0.95), stille(0.4)))
+    if (!e.ok) throw new Error('zählt nicht')
+    expect(gipfel(e.klang)).toBeGreaterThan(0.94)
+    expect(gipfel(e.klang)).toBeLessThanOrEqual(1)
   })
 
   it('weist einen kurzen Knacks zurück', () => {
-    expect(stutze(klang(stille(0.4), wort(0.08), stille(0.4)))).toEqual({
+    expect(stutze(klang(stille(0.4), wort(0.08), stille(0.4)))).toMatchObject({
       ok: false,
       grund: 'zu-kurz',
     })
   })
 
   it('weist eine leere Aufnahme zurück', () => {
-    expect(stutze({ samples: new Float32Array(0), rate: RATE })).toEqual({
+    expect(stutze({ samples: new Float32Array(0), rate: RATE })).toMatchObject({
       ok: false,
       grund: 'zu-kurz',
     })
@@ -187,6 +313,27 @@ describe('Stutzen', () => {
     const e = stutze(klang(stille(0.3), wort(0.4), stille(0.2), wort(0.4), stille(0.3)))
     if (!e.ok) throw new Error('zählt nicht')
     expect(dauer(e.klang)).toBeGreaterThan(1.0)
+  })
+})
+
+describe('Pegelanzeige', () => {
+  it('bleibt bei Stille liegen', () => {
+    expect(pegelAnzeige(0)).toBe(0)
+    expect(pegelAnzeige(0.0003)).toBe(0)
+    expect(pegelAnzeige(Number.NaN)).toBe(0)
+  })
+
+  it('schlägt schon bei einer leisen Stimme sichtbar aus', () => {
+    // Ein Hundertstel des vollen Ausschlags -- geradlinig wäre das ein Strich.
+    expect(pegelAnzeige(0.01)).toBeGreaterThan(0.3)
+    expect(pegelAnzeige(0.01)).toBeLessThan(0.6)
+  })
+
+  it('wächst mit der Lautstärke und endet am Anschlag', () => {
+    const werte = [0.001, 0.003, 0.01, 0.03, 0.1, 0.3].map(pegelAnzeige)
+    for (let i = 1; i < werte.length; i++) expect(werte[i]!).toBeGreaterThan(werte[i - 1]!)
+    expect(pegelAnzeige(0.5)).toBeGreaterThan(0.99)
+    expect(pegelAnzeige(1)).toBe(1)
   })
 })
 
@@ -279,12 +426,15 @@ describe('Ablauf', () => {
 
   it('lässt alles, wie es war, wenn eine Aufnahme nicht zählt', () => {
     const z = createRueckwaertsMatch({ names: NAMEN })
-    expect(nimmOriginal(z, klang(stille(1)))).toEqual({ ok: false, grund: 'zu-leise' })
+    expect(nimmOriginal(z, klang(stille(1)))).toMatchObject({ ok: false, grund: 'kein-ton' })
     expect(z.phase).toBe('einsprechen')
     expect(z.original).toBeNull()
 
     const a = mitOriginal()
-    expect(nimmNachahmung(a, klang(stille(1)))).toEqual({ ok: false, grund: 'zu-leise' })
+    expect(nimmNachahmung(a, klang(rauschen(1, 0.004)))).toMatchObject({
+      ok: false,
+      grund: 'zu-leise',
+    })
     expect(a.phase).toBe('nachsprechen')
     expect(a.nachahmung).toBeNull()
     expect(istStill(a.original!)).toBe(false)

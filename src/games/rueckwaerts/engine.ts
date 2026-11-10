@@ -50,10 +50,24 @@ export interface RueckZustand {
 }
 
 /** Warum eine Aufnahme nicht zählt. Als Kennung, der Satz dazu steht im Wörterbuch. */
-export type AufnahmeMangel = 'zu-leise' | 'zu-kurz'
+export type AufnahmeMangel = 'kein-ton' | 'zu-leise' | 'zu-kurz'
+
+/**
+ * Was an einer abgewiesenen Aufnahme gemessen wurde -- für die Zeile unter
+ * der Fehlermeldung. Ohne sie lässt sich aus der Ferne nicht sagen, ob ein
+ * Gerät nichts liefert, zu leise ist oder nur kurz aufgenommen hat.
+ */
+export interface Messung {
+  /** Wie viel überhaupt aufgenommen wurde. */
+  sekunden: number
+  /** Das lauteste anhaltende Stück (quadratischer Mittelwert). */
+  stimme: number
+  /** Das Grundrauschen. */
+  rauschen: number
+}
 
 export type AufnahmeErgebnis =
-  { ok: true; zustand: RueckZustand } | { ok: false; grund: AufnahmeMangel }
+  { ok: true; zustand: RueckZustand } | { ok: false; grund: AufnahmeMangel; messung: Messung }
 
 /** Was es zu hören gibt. Die Namen sagen, was es ist und wie herum. */
 export type HoerArt = 'original' | 'original-rueckwaerts' | 'nachahmung' | 'nachahmung-rueckwaerts'
@@ -84,27 +98,39 @@ export function dauer(klang: Klang): number {
 }
 
 /**
- * Schneidet die Stille vor und hinter der Stimme weg und prüft, ob
- * überhaupt etwas zu hören war.
+ * Schneidet die Stille vor und hinter der Stimme weg, hebt leise Aufnahmen
+ * an und prüft, ob überhaupt etwas zu hören war.
  *
  * Gemessen wird in Fenstern von zwanzig Millisekunden (quadratischer
- * Mittelwert). Ein Fenster ist laut, wenn es einen festen Anteil des
- * lautesten Fensters erreicht -- so stellt sich die Schwelle auf laute wie
- * auf leise Sprecher ein. Stimme beginnt und endet dort, wo mehrere laute
- * Fenster aufeinander folgen; ein einzelnes ist ein Knacks. Das Ergebnis
- * ist eine eigene Kopie; die Vorlage kann der Aufrufer danach
+ * Mittelwert). Nichts hier hängt an einer festen Lautstärke -- Handys
+ * liefern die Stimme teils hundertmal leiser als ein Rechner:
+ *
+ * - **Maßstab ist das lauteste anhaltende Stück**, nicht das lauteste
+ *   Fenster. Der Fingertipp auf „Stopp" ist oft lauter als das Wort, aber
+ *   nach einem Fenster vorbei; als Maßstab würde er das Wort zur Stille
+ *   erklären.
+ * - **Stimme ist, was sich vom Grundrauschen abhebt.** Gleichmäßiges
+ *   Rauschen hebt sich von sich selbst nicht ab und wird zurückgewiesen,
+ *   egal wie laut es ist.
+ * - Stimme beginnt und endet, wo mehrere laute Fenster aufeinander folgen;
+ *   ein einzelnes ist ein Knacks.
+ *
+ * Das Ergebnis ist eine eigene Kopie; die Vorlage kann der Aufrufer danach
  * überschreiben.
  */
 export function stutze(
   roh: Klang,
-): { ok: true; klang: Klang } | { ok: false; grund: AufnahmeMangel } {
+): { ok: true; klang: Klang } | { ok: false; grund: AufnahmeMangel; messung: Messung } {
   const { samples, rate } = roh
+  const sekunden = rate > 0 ? samples.length / rate : 0
+  const nein = (grund: AufnahmeMangel, stimme = 0, rauschen = 0) =>
+    ({ ok: false, grund, messung: { sekunden, stimme, rauschen } }) as const
   const fenster = Math.max(1, Math.round(rate * RUECKWAERTS.fensterSekunden))
   const anzahl = Math.floor(samples.length / fenster)
-  if (anzahl === 0) return { ok: false, grund: 'zu-kurz' }
+  const folge = RUECKWAERTS.fensterInFolge
+  if (anzahl < folge) return nein('zu-kurz')
 
   const laut = new Float32Array(anzahl)
-  let spitze = 0
   for (let f = 0; f < anzahl; f++) {
     let summe = 0
     const ab = f * fenster
@@ -112,15 +138,27 @@ export function stutze(
       const v = samples[i]!
       summe += v * v
     }
-    const wert = Math.sqrt(summe / fenster)
-    laut[f] = wert
-    if (wert > spitze) spitze = wert
+    laut[f] = Math.sqrt(summe / fenster)
   }
-  if (spitze < RUECKWAERTS.minAusschlag) return { ok: false, grund: 'zu-leise' }
 
-  const schwelle = spitze * RUECKWAERTS.stilleAnteil
-  const folge = RUECKWAERTS.fensterInFolge
-  // Für jedes Fenster: wie viele laute Fenster enden hier ohne Lücke?
+  // Das lauteste Stück, das `folge` Fenster lang anhält.
+  let spitze = 0
+  for (let f = 0; f + folge <= anzahl; f++) {
+    let leisestes = laut[f]!
+    for (let k = 1; k < folge; k++) leisestes = Math.min(leisestes, laut[f + k]!)
+    if (leisestes > spitze) spitze = leisestes
+  }
+  const sortiert = Float32Array.from(laut).sort()
+  const grund = sortiert[Math.floor((anzahl - 1) * RUECKWAERTS.grundAnteil)]!
+  if (spitze < RUECKWAERTS.keinTon) return nein('kein-ton', spitze, grund)
+  if (spitze < RUECKWAERTS.sicherLaut && spitze < grund * RUECKWAERTS.abstandZumGrund) {
+    return nein('zu-leise', spitze, grund)
+  }
+
+  const schwelle = Math.min(
+    Math.max(spitze * RUECKWAERTS.stilleAnteil, grund * RUECKWAERTS.grundFaktor),
+    spitze * RUECKWAERTS.hoechsterSchwellenAnteil,
+  )
   let erstes = -1
   let letztes = -1
   let lauf = 0
@@ -131,17 +169,35 @@ export function stutze(
       letztes = f
     }
   }
-  if (erstes < 0) return { ok: false, grund: 'zu-kurz' }
+  if (erstes < 0) return nein('zu-kurz', spitze, grund)
 
   const rand = Math.round(rate * RUECKWAERTS.randSekunden)
   const von = Math.max(0, erstes * fenster - rand)
   const bis = Math.min(samples.length, (letztes + 1) * fenster + rand)
   const stimme = (letztes - erstes + 1) * fenster
-  if (stimme / rate < RUECKWAERTS.minSekunden) return { ok: false, grund: 'zu-kurz' }
+  if (stimme / rate < RUECKWAERTS.minSekunden) return nein('zu-kurz', spitze, grund)
 
   // slice() kopiert -- subarray() wäre nur ein Fenster auf die Vorlage und
   // würde mit ihr zusammen überschrieben.
-  return { ok: true, klang: { samples: samples.slice(von, bis), rate } }
+  const stueck = samples.slice(von, bis)
+  let gipfel = 0
+  for (let i = 0; i < stueck.length; i++) gipfel = Math.max(gipfel, Math.abs(stueck[i]!))
+  const faktor = Math.min(RUECKWAERTS.zielGipfel / gipfel, RUECKWAERTS.maxVerstaerkung)
+  if (faktor > 1) for (let i = 0; i < stueck.length; i++) stueck[i] = stueck[i]! * faktor
+  return { ok: true, klang: { samples: stueck, rate } }
+}
+
+/**
+ * Wie weit die Pegelanzeige ausschlägt (0 bis 1), wenn das Mikrofon gerade
+ * `rms` liefert. Nach Dezibel und nicht geradlinig: Eine leise Stimme
+ * liegt bei einem Hundertstel des vollen Ausschlags und soll trotzdem
+ * sichtbar etwas bewegen -- die Anzeige ist dazu da, dass man sieht, ob das
+ * Mikrofon einen hört. -66 dB ist der Anschlag unten, -6 dB der oben.
+ */
+export function pegelAnzeige(rms: number): number {
+  if (!(rms > 0)) return 0
+  const dezibel = 20 * Math.log10(rms)
+  return Math.min(1, Math.max(0, (dezibel + 66) / 60))
 }
 
 /* ------------------------------------------------------------------ */

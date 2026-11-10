@@ -69,6 +69,28 @@
 }
 
 /*
+ * Die Pegelanzeige: schlägt aus, wenn das Mikrofon etwas hört. Bleibt sie
+ * beim Sprechen liegen, kommt nichts an -- das sieht man so, bevor die
+ * Aufnahme zurückgewiesen wird.
+ */
+.pegel {
+  width: 100%;
+  height: 0.9rem;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, #0e7490 14%, #ffffff);
+  overflow: hidden;
+}
+
+.pegel span {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, #22d3ee, #0e7490);
+  transform-origin: left;
+  transition: transform 70ms linear;
+}
+
+/*
  * Der Balken zeigt nur an, wie viel Zeit bleibt. Gemessen wird die Länge
  * nicht hier, sondern an den aufgenommenen Werten (ton.ts).
  */

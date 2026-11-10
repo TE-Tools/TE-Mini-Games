@@ -9,7 +9,7 @@
  * echten Chromium nachgemessen; siehe docs/design/rueckwaerts/.)
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { SprachProvider } from '@/i18n/SprachProvider'
@@ -54,6 +54,7 @@ const anlage = vi.hoisted(() => ({
   geschlossen: 0,
   wiedergabeGestoppt: 0,
   beiVoll: null as null | (() => void),
+  beiPegel: null as null | ((rms: number) => void),
   /** Was die nächste Aufnahme liefert; ein Fehler heißt: Mikrofon nicht zu haben. */
   naechste: null as null | (() => Klang),
   fehler: null as null | string,
@@ -70,9 +71,10 @@ vi.mock('@/games/rueckwaerts/ton', () => {
   return {
     TonFehler,
     erstelleTonanlage: () => ({
-      nimmAuf: async (o: { beiVoll: () => void }) => {
+      nimmAuf: async (o: { beiVoll: () => void; beiPegel?: (rms: number) => void }) => {
         if (anlage.fehler) throw new TonFehler(anlage.fehler)
         anlage.beiVoll = o.beiVoll
+        anlage.beiPegel = o.beiPegel ?? null
         return {
           stopp: () => {
             const k = anlage.naechste!()
@@ -139,6 +141,7 @@ beforeEach(() => {
   anlage.geschlossen = 0
   anlage.wiedergabeGestoppt = 0
   anlage.beiVoll = null
+  anlage.beiPegel = null
   anlage.naechste = aufnahme
   anlage.fehler = null
 })
@@ -248,15 +251,74 @@ describe('Rückwärts: eine Runde', () => {
 })
 
 describe('Rückwärts: wenn die Aufnahme nicht klappt', () => {
-  it('sagt, dass nichts zu hören war, und bleibt beim Einsprechen', async () => {
+  it('sagt, wenn vom Mikrofon gar nichts kommt, und bleibt beim Einsprechen', async () => {
     const user = userEvent.setup()
     anlage.naechste = () => ({ samples: new Float32Array(RATE), rate: RATE })
     zeige()
     await user.click(knopf('Losspielen'))
     await nimmAuf(/Aufnahme starten/)
-    expect(screen.getByRole('alert')).toHaveTextContent('Da war nichts zu hören')
+    expect(screen.getByRole('alert')).toHaveTextContent('Vom Mikrofon kommt kein Ton')
     expect(screen.getByText('Thomas spricht ein Wort ein')).toBeInTheDocument()
     expect(knopf(/Aufnahme starten/)).toBeEnabled()
+  })
+
+  it('sagt, wenn nur Rauschen zu hören war', async () => {
+    const user = userEvent.setup()
+    anlage.naechste = () => {
+      const samples = new Float32Array(RATE)
+      let saat = 99
+      for (let i = 0; i < samples.length; i++) {
+        saat = (saat * 1103515245 + 12345) & 0x7fffffff
+        samples[i] = 0.004 * ((saat / 0x7fffffff) * 2 - 1)
+      }
+      return { samples, rate: RATE }
+    }
+    zeige()
+    await user.click(knopf('Losspielen'))
+    await nimmAuf(/Aufnahme starten/)
+    expect(screen.getByRole('alert')).toHaveTextContent('Da war nur Rauschen zu hören')
+    // Darunter steht, was gemessen wurde -- für die Fehlersuche aus der Ferne.
+    expect(
+      screen.getByText(
+        /^Messwerte: 1[.,]0 s aufgenommen · Stimme 0[.,]002\d · Rauschen 0[.,]002\d$/,
+      ),
+    ).toBeInTheDocument()
+
+    // Mit dem nächsten Versuch ist die Zeile wieder weg.
+    anlage.naechste = aufnahme
+    await nimmAuf(/Aufnahme starten/)
+    expect(screen.queryByText(/Messwerte/)).toBeNull()
+  })
+
+  it('nimmt eine leise Stimme an und macht sie hörbar', async () => {
+    const user = userEvent.setup()
+    // Ein Handy, das nicht hochregelt: ein Hundertstel des vollen Ausschlags.
+    anlage.naechste = () => {
+      const k = aufnahme()
+      for (let i = 0; i < k.samples.length; i++) k.samples[i] = k.samples[i]! * 0.02
+      return k
+    }
+    zeige()
+    await user.click(knopf('Losspielen'))
+    await nimmAuf(/Aufnahme starten/)
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.getByText('Marina hört zu und spricht nach')).toBeInTheDocument()
+    await user.click(knopf(/Rückwärts anhören/))
+    const lautestes = anlage.gehoert[0]!.reduce((m, v) => Math.max(m, Math.abs(v)), 0)
+    expect(lautestes).toBeGreaterThan(0.5)
+  })
+
+  it('zeigt während der Aufnahme, ob das Mikrofon etwas hört', async () => {
+    const user = userEvent.setup()
+    zeige()
+    await user.click(knopf('Losspielen'))
+    await user.click(knopf(/Aufnahme starten/))
+    const anzeige = await screen.findByRole('meter', { name: 'Mikrofonpegel' })
+    expect(anzeige).toHaveAttribute('aria-valuenow', '0')
+    act(() => anlage.beiPegel!(0.01))
+    expect(Number(anzeige.getAttribute('aria-valuenow'))).toBeGreaterThan(30)
+    act(() => anlage.beiPegel!(0))
+    expect(anzeige).toHaveAttribute('aria-valuenow', '0')
   })
 
   it('sagt, was zu tun ist, wenn das Mikrofon verweigert wird', async () => {

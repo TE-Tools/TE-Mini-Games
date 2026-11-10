@@ -16,6 +16,7 @@ export {
   stutze,
   ueberschreibe,
   dauer,
+  pegelAnzeige,
   MIN_SPIELER,
   MAX_SPIELER,
 } from './engine'
@@ -27,6 +28,7 @@ export type {
   HoerArt,
   AufnahmeMangel,
   AufnahmeErgebnis,
+  Messung,
 } from './engine'
 export { erstelleTonanlage, TonFehler } from './ton'
 export type { Tonanlage, LaufendeAufnahme, Wiedergabe, TonMangel } from './ton'
