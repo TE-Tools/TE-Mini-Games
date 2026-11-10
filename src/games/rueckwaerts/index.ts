@@ -16,6 +16,7 @@ export {
   stutze,
   ueberschreibe,
   dauer,
+  pegelAnzeige,
   MIN_SPIELER,
   MAX_SPIELER,
 } from './engine'

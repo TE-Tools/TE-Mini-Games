@@ -13,6 +13,7 @@ import {
   neuEinsprechen,
   nimmNachahmung,
   nimmOriginal,
+  pegelAnzeige,
   rollen,
   ueberschreibe,
   verwerfeAufnahmen,
@@ -58,6 +59,8 @@ export function RueckwaertsPage() {
   const [mangel, setMangel] = useState<AufnahmeMangel | TonMangel | null>(null)
   const [aufnahme, setAufnahme] = useState<AufnahmeLage>('aus')
   const [spielt, setSpielt] = useState<HoerArt | null>(null)
+  /** Ausschlag der Pegelanzeige, 0 bis 1 -- nur während einer Aufnahme. */
+  const [pegel, setPegel] = useState(0)
 
   const anlage = useRef<Tonanlage | null>(null)
   const laufend = useRef<LaufendeAufnahme | null>(null)
@@ -119,6 +122,7 @@ export function RueckwaertsPage() {
     if (!a) return
     laufend.current = null
     setAufnahme('aus')
+    setPegel(0)
     const roh = a.stopp()
     const z = zustandRef.current
     if (z && (z.phase === 'einsprechen' || z.phase === 'nachsprechen')) {
@@ -140,6 +144,9 @@ export function RueckwaertsPage() {
       const a = await ton().nimmAuf({
         maxSekunden: RUECKWAERTS.maxSekunden,
         beiVoll: stoppeAufnahme,
+        beiPegel: (rms) => {
+          if (lebt.current) setPegel(pegelAnzeige(rms))
+        },
       })
       // Während der Browser nach dem Mikrofon fragte, kann die Seite
       // verlassen worden sein. Dann gleich wieder zu.
@@ -247,6 +254,17 @@ export function RueckwaertsPage() {
           <span className={styles.punkt} aria-hidden="true" />
           {r.aufnahmeLaeuft}
         </p>
+        <div
+          className={styles.pegel}
+          role="meter"
+          aria-label={r.pegel}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(pegel * 100)}
+        >
+          <span style={{ transform: `scaleX(${pegel})` }} />
+        </div>
+        <p className={shell.meta}>{r.pegelHinweis}</p>
         <div className={styles.balken} aria-hidden="true">
           <span style={{ animationDuration: `${RUECKWAERTS.maxSekunden}s` }} />
         </div>

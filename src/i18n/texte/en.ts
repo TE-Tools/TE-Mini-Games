@@ -3054,6 +3054,8 @@ export const en: Texte = {
     aufnahmeLaeuft: 'Recording …',
     mikrofonWartet: 'Opening the microphone …',
     hoechstens: (sekunden: number) => `${sekunden} seconds at most.`,
+    pegel: 'Microphone level',
+    pegelHinweis: 'The bar moves when the microphone hears you.',
     nachsprechenTitel: (name: string) => `${name} listens and copies`,
     nachsprechenText:
       'This is the word backwards. Listen as often as you like – then say exactly what you hear.',
@@ -3081,7 +3083,9 @@ export const en: Texte = {
     keineRunde: 'No round was finished.',
     allesGeloescht: 'All recordings have been deleted.',
     fehler: {
-      'zu-leise': 'There was nothing to hear. Hold the device closer to your mouth and try again.',
+      'kein-ton': 'No sound is coming from the microphone. Is it muted, or in use by another app?',
+      'zu-leise':
+        'There was only noise to hear. Hold the device closer to your mouth and try again.',
       'zu-kurz': 'That was too short. Try again.',
       verweigert:
         'This game does not work without the microphone. Allow access in the settings of your browser or device.',

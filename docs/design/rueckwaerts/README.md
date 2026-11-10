@@ -68,26 +68,59 @@ Was ein Browser intern noch puffert, liegt außerhalb dessen, was eine
 Webseite sehen oder löschen kann. Zugesagt ist deshalb „nicht gespeichert,
 nicht übertragen, überschrieben" – nicht „forensisch unauffindbar".
 
-## Stutzen
+## Stutzen, Prüfen, Anheben
 
 Wer „Aufnahme starten" tippt, spricht nicht im selben Augenblick, und wer
 fertig ist, tippt nicht sofort auf Stopp. Ohne Stutzen begänne die
 Rückwärtsfassung mit der Stille, die am Ende der Aufnahme hing.
 
-Gemessen wird in Fenstern von 20 ms. Laut ist ein Fenster ab 12 % des
-lautesten – so passt sich die Schwelle an laute und leise Sprecher an.
-Stimme beginnt und endet, wo **drei laute Fenster aufeinander folgen**. Ein
-einzelnes reicht nicht: Der Fingertipp auf den Knopf ist lauter als manches
-Wort, aber nach einem Fenster vorbei. (Die erste Fassung nahm ein Fenster;
-ein Test mit einem Tipp vor dem Wort hat gezeigt, dass dann die ganze
-Stille seit dem Tipp hängen bleibt.) Davor und dahinter bleiben 120 ms
-Rand, weil ein „t" am Wortende nach einer Pause kommt und selbst kürzer ist
-als drei Fenster.
+**Was am ersten Abend schiefging (10.11.2026).** Die erste Fassung wies
+jede Aufnahme zurück, deren lautestes Fenster unter 0,02 lag. Der Wert war
+nie an einem echten Mikrofon gemessen – nur an einer Tondatei, die Chromium
+auf volle Lautstärke hochgeregelt hat. Auf dem ersten echten Handy hieß es
+bei jeder Aufnahme „nichts zu hören". Handys regeln die Stimme oft nicht
+hoch; sie kommt dann mit einem Hundertstel des vollen Ausschlags an.
+Nachgestellt mit einer leisen Tondatei und abgeschaltetem Hochregeln:
+genau diese Meldung. Und mit dem Tipp auf „Stopp" als lautem Schlag am
+Ende: „zu kurz", weil der Schlag als Maßstab das Wort zur Stille erklärte.
 
-Zurückgewiesen wird eine Aufnahme, wenn nichts zu hören war (`zu-leise`)
-oder weniger als eine Viertelsekunde Stimme darin steckt (`zu-kurz`). Die
-Engine gibt den Grund als Kennung zurück; der Satz dazu steht im
-Wörterbuch.
+Seitdem hängt nichts mehr an einer festen Lautstärke. Gemessen wird in
+Fenstern von 20 ms:
+
+- **Maßstab ist das lauteste anhaltende Stück** – das lauteste Stück, das
+  drei Fenster lang durchhält –, nicht das lauteste einzelne Fenster. Der
+  Fingertipp ist oft lauter als das Wort, aber nach einem Fenster vorbei.
+- **Stimme ist, was sich vom Grundrauschen abhebt.** Das Grundrauschen ist
+  der Wert, den die leisesten zehn Prozent der Fenster erreichen. Das
+  lauteste anhaltende Stück muss dreimal so laut sein. Gleichmäßiges
+  Rauschen hebt sich von sich selbst nicht ab und wird zurückgewiesen, egal
+  wie laut es ist. Ab 0,02 gilt eine Aufnahme ohne Vergleich als Stimme –
+  für den, der vom ersten bis zum letzten Augenblick durchspricht.
+- **Laut ist ein Fenster** ab 12 % des Maßstabs und mindestens dem
+  Doppelten des Grundrauschens. Stimme beginnt und endet, wo drei laute
+  Fenster aufeinander folgen. Davor und dahinter bleiben 120 ms Rand, weil
+  ein „t" am Wortende nach einer Pause kommt und kürzer ist als drei
+  Fenster.
+- **Leise Aufnahmen werden angehoben**, bis ihr höchster Ausschlag bei 0,9
+  liegt, höchstens sechzigfach. Sonst wäre das Wort vom Handy aus kaum zu
+  hören.
+
+Zurückgewiesen wird mit einer von drei Kennungen; der Satz dazu steht im
+Wörterbuch:
+
+| Kennung    | Wann                                                        |
+| ---------- | ----------------------------------------------------------- |
+| `kein-ton` | vom Mikrofon kommt praktisch nichts (stumm, belegt, Nullen) |
+| `zu-leise` | nur Rauschen, nichts hebt sich ab                           |
+| `zu-kurz`  | weniger als eine Viertelsekunde Stimme                      |
+
+**Die Pegelanzeige** während der Aufnahme zeigt, ob das Mikrofon etwas
+hört – nach Dezibel, damit auch eine leise Stimme sichtbar ausschlägt.
+Bleibt sie beim Sprechen liegen, liegt es am Mikrofon und nicht an der
+Schwelle; das sieht man so, bevor die Aufnahme zurückgewiesen wird.
+
+**An echten Geräten gemessen sind die Werte weiterhin nicht.** Wer sie
+ändert, weil ein Gerät sich anders verhält, schreibt das Gerät dazu.
 
 ## Wie es geprüft ist
 
@@ -95,9 +128,9 @@ Wörterbuch.
 `tests/rueckwaerts-page.test.tsx` – die Seite mit einer nachgestellten
 Tonanlage, die sich merkt, welche Zahlenreihen sie bekommen hat. So lässt
 sich prüfen, dass nach einer Runde, nach dem Beenden und nach dem Verlassen
-der Seite alle leer sind. Zwölf eingebaute Fehler (das Original zu früh
-hörbar, eine Kopie nicht überschrieben, ein Fenster statt einer Kopie …)
-sind dagegen gelaufen; jeder fällt auf.
+der Seite alle leer sind. Einundzwanzig eingebaute Fehler (das Original zu früh hörbar, eine Kopie
+nicht überschrieben, die feste Schwelle des ersten Abends, der Tipp als
+Maßstab …) sind dagegen gelaufen; jeder fällt auf.
 
 **Mikrofon und Lautsprecher** lassen sich in jsdom nicht prüfen. Sie sind
 im echten Chromium nachgemessen (10.11.2026), mit einer Tondatei als
@@ -113,15 +146,18 @@ nach hoch steigt, und wieder Stille. Ein Skript, das vor dem Laden der
 Seite `AudioBufferSourceNode.prototype.start` und `getUserMedia` einhüllt,
 hält fest, was wirklich abgespielt wird und was mit dem Mikrofon geschieht:
 
-| Geprüft                                                                | Ergebnis                   |
-| ---------------------------------------------------------------------- | -------------------------- |
-| Aufnahme von 2,3 s wird auf das Wort gestutzt                          | 1,22 s                     |
-| was der Nachsprecher hört, fällt (vorn 656, hinten 431 Nulldurchgänge) | ja                         |
-| es ist Wert für Wert das Original von hinten nach vorn                 | ja                         |
-| Mikrofonspur nach jedem Stopp                                          | `ended`                    |
-| Lautsprecherpuffer nach der Runde                                      | nur Nullen                 |
-| dasselbe ohne AudioWorklet (Ersatzweg)                                 | ja                         |
-| Mikrofon verweigert                                                    | Meldung, Knopf wieder frei |
+| Geprüft                                                                   | Ergebnis                                |
+| ------------------------------------------------------------------------- | --------------------------------------- |
+| Aufnahme von 2,3 s wird auf das Wort gestutzt                             | 1,22 s                                  |
+| was der Nachsprecher hört, fällt (vorn 656, hinten 431 Nulldurchgänge)    | ja                                      |
+| es ist Wert für Wert das Original von hinten nach vorn                    | ja                                      |
+| Mikrofonspur nach jedem Stopp                                             | `ended`                                 |
+| Lautsprecherpuffer nach der Runde                                         | nur Nullen                              |
+| dasselbe ohne AudioWorklet (Ersatzweg)                                    | ja                                      |
+| Mikrofon verweigert                                                       | Meldung, Knopf wieder frei              |
+| leise Stimme (Ausschlag 0,012), Hochregeln aus – vorher „nichts zu hören" | angenommen, 1,22 s, Wiedergabe mit 0,61 |
+| dasselbe mit lautem Tipp auf „Stopp" – vorher „zu kurz"                   | angenommen, auf das Wort gestutzt       |
+| Pegelanzeige bei dieser leisen Stimme                                     | schlägt auf 30 von 100 aus              |
 
 **Nicht geprüft**, weil hier nicht verfügbar: Safari auf dem iPhone und die
 Android-App auf einem echten Gerät. Für Safari ist vorgesorgt (der
