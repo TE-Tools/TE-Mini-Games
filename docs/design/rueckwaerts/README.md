@@ -92,7 +92,7 @@ Fenstern von 20 ms:
   Fingertipp ist oft lauter als das Wort, aber nach einem Fenster vorbei.
 - **Stimme ist, was sich vom Grundrauschen abhebt.** Das Grundrauschen ist
   der Wert, den die leisesten zehn Prozent der Fenster erreichen. Das
-  lauteste anhaltende Stück muss dreimal so laut sein. Gleichmäßiges
+  lauteste anhaltende Stück muss 1,6-mal so laut sein. Gleichmäßiges
   Rauschen hebt sich von sich selbst nicht ab und wird zurückgewiesen, egal
   wie laut es ist. Ab 0,02 gilt eine Aufnahme ohne Vergleich als Stimme –
   für den, der vom ersten bis zum letzten Augenblick durchspricht.
@@ -112,12 +112,26 @@ Wörterbuch:
 | ---------- | ----------------------------------------------------------- |
 | `kein-ton` | vom Mikrofon kommt praktisch nichts (stumm, belegt, Nullen) |
 | `zu-leise` | nur Rauschen, nichts hebt sich ab                           |
-| `zu-kurz`  | weniger als eine Viertelsekunde Stimme                      |
+| `zu-kurz`  | weniger als 0,12 s Stimme                                   |
 
 **Die Pegelanzeige** während der Aufnahme zeigt, ob das Mikrofon etwas
 hört – nach Dezibel, damit auch eine leise Stimme sichtbar ausschlägt.
 Bleibt sie beim Sprechen liegen, liegt es am Mikrofon und nicht an der
 Schwelle; das sieht man so, bevor die Aufnahme zurückgewiesen wird.
+
+**Im Zweifel wird angenommen.** Nach der ersten Korrektur kam vom selben
+Gerät weiter „nichts zu hören" und „zu kurz" (ob schon mit der neuen
+Fassung, war nicht zu klären). Seitdem sind die beiden Grenzen, die ein
+Wort zu Unrecht abweisen können, bewusst knapp: Die Stimme muss das
+Rauschen nur noch 1,6-fach überragen statt dreifach, und ein Wort darf
+0,12 s kurz sein statt 0,25 s. Eine verrauschte Aufnahme kann man anhören
+und neu einsprechen, eine abgewiesene nicht.
+
+**Messwerte unter der Meldung.** Wird eine Aufnahme abgewiesen, steht
+darunter, was gemessen wurde: wie viele Sekunden ankamen, wie laut das
+lauteste anhaltende Stück war und wie laut das Rauschen. Ohne diese Zeile
+lässt sich aus der Ferne nicht sagen, ob ein Gerät nichts liefert, zu leise
+ist oder nur kurz aufgenommen hat.
 
 **An echten Geräten gemessen sind die Werte weiterhin nicht.** Wer sie
 ändert, weil ein Gerät sich anders verhält, schreibt das Gerät dazu.

@@ -3156,6 +3156,9 @@ export const de = {
     stand: (erraten: number, gespielt: number) => `${erraten} von ${gespielt} erraten`,
     keineRunde: 'Keine Runde zu Ende gespielt.',
     allesGeloescht: 'Alle Aufnahmen sind gelöscht.',
+    /** Für die Fehlersuche: Was an einer abgewiesenen Aufnahme gemessen wurde. */
+    messwerte: (sekunden: string, stimme: string, rauschen: string) =>
+      `Messwerte: ${sekunden} s aufgenommen · Stimme ${stimme} · Rauschen ${rauschen}`,
     fehler: {
       'kein-ton':
         'Vom Mikrofon kommt kein Ton. Ist es stummgeschaltet oder gerade von einer anderen App belegt?',

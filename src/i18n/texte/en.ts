@@ -3082,6 +3082,8 @@ export const en: Texte = {
     stand: (erraten: number, gespielt: number) => `${erraten} of ${gespielt} guessed`,
     keineRunde: 'No round was finished.',
     allesGeloescht: 'All recordings have been deleted.',
+    messwerte: (sekunden: string, stimme: string, rauschen: string) =>
+      `Readings: ${sekunden} s recorded · voice ${stimme} · noise ${rauschen}`,
     fehler: {
       'kein-ton': 'No sound is coming from the microphone. Is it muted, or in use by another app?',
       'zu-leise':

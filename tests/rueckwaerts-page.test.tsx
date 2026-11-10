@@ -277,6 +277,17 @@ describe('Rückwärts: wenn die Aufnahme nicht klappt', () => {
     await user.click(knopf('Losspielen'))
     await nimmAuf(/Aufnahme starten/)
     expect(screen.getByRole('alert')).toHaveTextContent('Da war nur Rauschen zu hören')
+    // Darunter steht, was gemessen wurde -- für die Fehlersuche aus der Ferne.
+    expect(
+      screen.getByText(
+        /^Messwerte: 1[.,]0 s aufgenommen · Stimme 0[.,]002\d · Rauschen 0[.,]002\d$/,
+      ),
+    ).toBeInTheDocument()
+
+    // Mit dem nächsten Versuch ist die Zeile wieder weg.
+    anlage.naechste = aufnahme
+    await nimmAuf(/Aufnahme starten/)
+    expect(screen.queryByText(/Messwerte/)).toBeNull()
   })
 
   it('nimmt eine leise Stimme an und macht sie hörbar', async () => {

@@ -19,8 +19,13 @@
 export const RUECKWAERTS = {
   /** Länger nimmt das Spiel nicht auf. Ein Wort braucht zwei Sekunden, ein Satz fünf. */
   maxSekunden: 10,
-  /** Kürzer ist kein Wort, sondern ein Versehen (Doppeltipp auf den Knopf). */
-  minSekunden: 0.25,
+  /**
+   * Kürzer ist kein Wort, sondern ein Knacks. Bewusst knapp: „Ei" oder
+   * „Ja" dauern keine Viertelsekunde, und ein zu Unrecht abgewiesenes Wort
+   * ist schlimmer als ein durchgelassener Knacks -- den hört man und
+   * spricht neu ein.
+   */
+  minSekunden: 0.12,
   /**
    * Unter diesem Wert kommt vom Mikrofon praktisch nichts an: stumm
    * geschaltet, von einer anderen App belegt, oder der Browser liefert
@@ -37,9 +42,12 @@ export const RUECKWAERTS = {
   /**
    * Darunter muss sich die Stimme vom Grundrauschen abheben: Das lauteste
    * anhaltende Stück muss so viele Male lauter sein als das Rauschen.
-   * Gleichmäßiges Rauschen liegt bei 1 bis 1,5, Sprache weit darüber.
+   * Gleichmäßiges Rauschen liegt knapp über 1, Sprache weit darüber.
+   * Bewusst niedrig angesetzt: Abgewiesen werden soll nur, wer gar nichts
+   * gesagt hat. Im Zweifel wird angenommen -- eine verrauschte Aufnahme
+   * kann man anhören und neu einsprechen, eine abgewiesene nicht.
    */
-  abstandZumGrund: 3,
+  abstandZumGrund: 1.6,
   /**
    * Das Grundrauschen ist der Wert, den die leisesten zehn Prozent der
    * Fenster gerade noch erreichen. Auch wer durchspricht, macht Pausen

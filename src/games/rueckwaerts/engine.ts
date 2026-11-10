@@ -52,8 +52,22 @@ export interface RueckZustand {
 /** Warum eine Aufnahme nicht zählt. Als Kennung, der Satz dazu steht im Wörterbuch. */
 export type AufnahmeMangel = 'kein-ton' | 'zu-leise' | 'zu-kurz'
 
+/**
+ * Was an einer abgewiesenen Aufnahme gemessen wurde -- für die Zeile unter
+ * der Fehlermeldung. Ohne sie lässt sich aus der Ferne nicht sagen, ob ein
+ * Gerät nichts liefert, zu leise ist oder nur kurz aufgenommen hat.
+ */
+export interface Messung {
+  /** Wie viel überhaupt aufgenommen wurde. */
+  sekunden: number
+  /** Das lauteste anhaltende Stück (quadratischer Mittelwert). */
+  stimme: number
+  /** Das Grundrauschen. */
+  rauschen: number
+}
+
 export type AufnahmeErgebnis =
-  { ok: true; zustand: RueckZustand } | { ok: false; grund: AufnahmeMangel }
+  { ok: true; zustand: RueckZustand } | { ok: false; grund: AufnahmeMangel; messung: Messung }
 
 /** Was es zu hören gibt. Die Namen sagen, was es ist und wie herum. */
 export type HoerArt = 'original' | 'original-rueckwaerts' | 'nachahmung' | 'nachahmung-rueckwaerts'
@@ -106,12 +120,15 @@ export function dauer(klang: Klang): number {
  */
 export function stutze(
   roh: Klang,
-): { ok: true; klang: Klang } | { ok: false; grund: AufnahmeMangel } {
+): { ok: true; klang: Klang } | { ok: false; grund: AufnahmeMangel; messung: Messung } {
   const { samples, rate } = roh
+  const sekunden = rate > 0 ? samples.length / rate : 0
+  const nein = (grund: AufnahmeMangel, stimme = 0, rauschen = 0) =>
+    ({ ok: false, grund, messung: { sekunden, stimme, rauschen } }) as const
   const fenster = Math.max(1, Math.round(rate * RUECKWAERTS.fensterSekunden))
   const anzahl = Math.floor(samples.length / fenster)
   const folge = RUECKWAERTS.fensterInFolge
-  if (anzahl < folge) return { ok: false, grund: 'zu-kurz' }
+  if (anzahl < folge) return nein('zu-kurz')
 
   const laut = new Float32Array(anzahl)
   for (let f = 0; f < anzahl; f++) {
@@ -131,12 +148,11 @@ export function stutze(
     for (let k = 1; k < folge; k++) leisestes = Math.min(leisestes, laut[f + k]!)
     if (leisestes > spitze) spitze = leisestes
   }
-  if (spitze < RUECKWAERTS.keinTon) return { ok: false, grund: 'kein-ton' }
-
   const sortiert = Float32Array.from(laut).sort()
   const grund = sortiert[Math.floor((anzahl - 1) * RUECKWAERTS.grundAnteil)]!
+  if (spitze < RUECKWAERTS.keinTon) return nein('kein-ton', spitze, grund)
   if (spitze < RUECKWAERTS.sicherLaut && spitze < grund * RUECKWAERTS.abstandZumGrund) {
-    return { ok: false, grund: 'zu-leise' }
+    return nein('zu-leise', spitze, grund)
   }
 
   const schwelle = Math.min(
@@ -153,13 +169,13 @@ export function stutze(
       letztes = f
     }
   }
-  if (erstes < 0) return { ok: false, grund: 'zu-kurz' }
+  if (erstes < 0) return nein('zu-kurz', spitze, grund)
 
   const rand = Math.round(rate * RUECKWAERTS.randSekunden)
   const von = Math.max(0, erstes * fenster - rand)
   const bis = Math.min(samples.length, (letztes + 1) * fenster + rand)
   const stimme = (letztes - erstes + 1) * fenster
-  if (stimme / rate < RUECKWAERTS.minSekunden) return { ok: false, grund: 'zu-kurz' }
+  if (stimme / rate < RUECKWAERTS.minSekunden) return nein('zu-kurz', spitze, grund)
 
   // slice() kopiert -- subarray() wäre nur ein Fenster auf die Vorlage und
   // würde mit ihr zusammen überschrieben.

@@ -20,6 +20,7 @@ import {
   type AufnahmeMangel,
   type HoerArt,
   type LaufendeAufnahme,
+  type Messung,
   type RueckZustand,
   type TonMangel,
   type Tonanlage,
@@ -57,6 +58,8 @@ export function RueckwaertsPage() {
   /** Startfehler: der Satz der Engine, deutsch -- übersetzt wird beim Rendern. */
   const [error, setError] = useState<string | null>(null)
   const [mangel, setMangel] = useState<AufnahmeMangel | TonMangel | null>(null)
+  /** Was an der zuletzt abgewiesenen Aufnahme gemessen wurde -- steht unter der Meldung. */
+  const [messung, setMessung] = useState<Messung | null>(null)
   const [aufnahme, setAufnahme] = useState<AufnahmeLage>('aus')
   const [spielt, setSpielt] = useState<HoerArt | null>(null)
   /** Ausschlag der Pegelanzeige, 0 bis 1 -- nur während einer Aufnahme. */
@@ -99,6 +102,7 @@ export function RueckwaertsPage() {
     (naechster: RueckZustand | null) => {
       haltAn()
       setMangel(null)
+      setMessung(null)
       setZustand(naechster)
     },
     [haltAn],
@@ -128,7 +132,10 @@ export function RueckwaertsPage() {
     if (z && (z.phase === 'einsprechen' || z.phase === 'nachsprechen')) {
       const ergebnis = z.phase === 'einsprechen' ? nimmOriginal(z, roh) : nimmNachahmung(z, roh)
       if (ergebnis.ok) setZustand(ergebnis.zustand)
-      else setMangel(ergebnis.grund)
+      else {
+        setMangel(ergebnis.grund)
+        setMessung(ergebnis.messung)
+      }
     }
     // Der Zustand hat seine eigene, gestutzte Kopie. Die Rohfassung ist
     // damit eine zweite Aufnahme derselben Stimme -- weg damit.
@@ -139,6 +146,7 @@ export function RueckwaertsPage() {
     if (laufend.current) return
     haltAn()
     setMangel(null)
+    setMessung(null)
     setAufnahme('wartet')
     try {
       const a = await ton().nimmAuf({
@@ -285,9 +293,20 @@ export function RueckwaertsPage() {
     )
 
   const meldung = mangel && (
-    <p className={shell.error} role="alert">
-      {r.fehler[mangel]}
-    </p>
+    <>
+      <p className={shell.error} role="alert">
+        {r.fehler[mangel]}
+      </p>
+      {messung && (
+        <p className={shell.meta}>
+          {r.messwerte(
+            messung.sekunden.toFixed(1),
+            messung.stimme.toFixed(4),
+            messung.rauschen.toFixed(4),
+          )}
+        </p>
+      )}
+    </>
   )
 
   const beendenKnopf = (

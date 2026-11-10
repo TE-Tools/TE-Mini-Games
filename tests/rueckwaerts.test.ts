@@ -158,18 +158,18 @@ describe('Stutzen', () => {
   })
 
   it('meldet „kein Ton", wenn vom Mikrofon nichts kommt', () => {
-    expect(stutze(klang(stille(1.5)))).toEqual({ ok: false, grund: 'kein-ton' })
+    expect(stutze(klang(stille(1.5)))).toMatchObject({ ok: false, grund: 'kein-ton' })
     // Auch das letzte Flackern eines stummen Eingangs ist kein Ton.
-    expect(stutze(klang(rauschen(1.5, 0.0002)))).toEqual({ ok: false, grund: 'kein-ton' })
+    expect(stutze(klang(rauschen(1.5, 0.0002)))).toMatchObject({ ok: false, grund: 'kein-ton' })
   })
 
   it('weist Zimmerrauschen zurück', () => {
-    expect(stutze(klang(rauschen(1.5, 0.004)))).toEqual({ ok: false, grund: 'zu-leise' })
+    expect(stutze(klang(rauschen(1.5, 0.004)))).toMatchObject({ ok: false, grund: 'zu-leise' })
   })
 
   it('weist auch lautes Rauschen zurück -- es hebt sich von sich selbst nicht ab', () => {
     // Lauter als die leise Stimme im nächsten Test, und trotzdem kein Wort.
-    expect(stutze(klang(rauschen(1.5, 0.015)))).toEqual({ ok: false, grund: 'zu-leise' })
+    expect(stutze(klang(rauschen(1.5, 0.015)))).toMatchObject({ ok: false, grund: 'zu-leise' })
   })
 
   it('nimmt die Stimme eines Handys an, das nicht hochregelt', () => {
@@ -215,6 +215,35 @@ describe('Stutzen', () => {
     expect(dauer(e.klang)).toBeLessThan(0.8 + 2 * RUECKWAERTS.randSekunden + 0.1)
   })
 
+  it('nimmt ein kurzes Wort an', () => {
+    // „Ei" oder „Ja": keine Viertelsekunde. Die erste Fassung wies das als zu kurz ab.
+    expect(stutze(klang(stille(0.4), wort(0.16), stille(0.4))).ok).toBe(true)
+  })
+
+  it('nimmt im Zweifel an: eine Stimme, die das Rauschen nur knapp überragt', () => {
+    // Stimme rund doppelt so laut wie das Rauschen. Lieber eine verrauschte
+    // Aufnahme, die man anhören und neu einsprechen kann, als eine Abweisung.
+    const roh = klang(
+      gemischt(klang(stille(0.5), wort(0.8, 0.006), stille(0.6)).samples, rauschen(1.9, 0.0035)),
+    )
+    expect(stutze(roh).ok).toBe(true)
+  })
+
+  it('sagt bei einer Abweisung, was gemessen wurde', () => {
+    const e = stutze(klang(rauschen(1.5, 0.004)))
+    if (e.ok) throw new Error('hätte nicht zählen dürfen')
+    expect(e.messung.sekunden).toBeCloseTo(1.5, 1)
+    // Gleichmäßiges Rauschen von ±0,004 hat einen Mittelwert um 0,0023 --
+    // und „Stimme" und Rauschen liegen gleichauf, deshalb die Abweisung.
+    expect(e.messung.stimme).toBeGreaterThan(0.002)
+    expect(e.messung.stimme).toBeLessThan(0.003)
+    expect(e.messung.stimme / e.messung.rauschen).toBeLessThan(1.3)
+
+    const leer = stutze({ samples: new Float32Array(0), rate: RATE })
+    if (leer.ok) throw new Error('hätte nicht zählen dürfen')
+    expect(leer.messung).toEqual({ sekunden: 0, stimme: 0, rauschen: 0 })
+  })
+
   it('nimmt an, wer vom ersten bis zum letzten Augenblick spricht', () => {
     // Kein Stück Stille zum Vergleichen -- dann entscheidet die Lautstärke.
     expect(stutze(klang(wort(1.0, 0.3))).ok).toBe(true)
@@ -244,14 +273,14 @@ describe('Stutzen', () => {
   })
 
   it('weist einen kurzen Knacks zurück', () => {
-    expect(stutze(klang(stille(0.4), wort(0.08), stille(0.4)))).toEqual({
+    expect(stutze(klang(stille(0.4), wort(0.08), stille(0.4)))).toMatchObject({
       ok: false,
       grund: 'zu-kurz',
     })
   })
 
   it('weist eine leere Aufnahme zurück', () => {
-    expect(stutze({ samples: new Float32Array(0), rate: RATE })).toEqual({
+    expect(stutze({ samples: new Float32Array(0), rate: RATE })).toMatchObject({
       ok: false,
       grund: 'zu-kurz',
     })
@@ -397,12 +426,15 @@ describe('Ablauf', () => {
 
   it('lässt alles, wie es war, wenn eine Aufnahme nicht zählt', () => {
     const z = createRueckwaertsMatch({ names: NAMEN })
-    expect(nimmOriginal(z, klang(stille(1)))).toEqual({ ok: false, grund: 'kein-ton' })
+    expect(nimmOriginal(z, klang(stille(1)))).toMatchObject({ ok: false, grund: 'kein-ton' })
     expect(z.phase).toBe('einsprechen')
     expect(z.original).toBeNull()
 
     const a = mitOriginal()
-    expect(nimmNachahmung(a, klang(rauschen(1, 0.004)))).toEqual({ ok: false, grund: 'zu-leise' })
+    expect(nimmNachahmung(a, klang(rauschen(1, 0.004)))).toMatchObject({
+      ok: false,
+      grund: 'zu-leise',
+    })
     expect(a.phase).toBe('nachsprechen')
     expect(a.nachahmung).toBeNull()
     expect(istStill(a.original!)).toBe(false)
