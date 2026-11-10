@@ -16,6 +16,7 @@ import { StadtLandFlussPage } from '@/pages/play/StadtLandFlussPage'
 import { ScharadePage } from '@/pages/play/ScharadePage'
 import { WortbombePage } from '@/pages/play/WortbombePage'
 import { WerWuerdeEherPage } from '@/pages/play/WerWuerdeEherPage'
+import { RueckwaertsPage } from '@/pages/play/RueckwaertsPage'
 import { SchuetzenopolyPage } from '@/pages/play/SchuetzenopolyPage'
 import { KniffelPage } from '@/pages/play/KniffelPage'
 import { BienenFlowPage } from '@/pages/play/BienenFlowPage'
@@ -185,6 +186,7 @@ export function App() {
             <Route path="/play/scharade" element={<ScharadePage />} />
             <Route path="/play/wortbombe" element={<WortbombePage />} />
             <Route path="/play/wer-wuerde-eher" element={<WerWuerdeEherPage />} />
+            <Route path="/play/rueckwaerts" element={<RueckwaertsPage />} />
             <Route path="/play/schuetzenopoly" element={<SchuetzenopolyPage />} />
             <Route path="/play/kniffel" element={<KniffelPage />} />
             <Route path="/play/texas-holdem" element={<TexasHoldemPage />} />

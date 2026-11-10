@@ -1,0 +1,128 @@
+/* Rückwärts – Farbe des Spiels, die laufende Aufnahme und die Hörknöpfe. */
+
+.farbe {
+  --party-farbe: linear-gradient(180deg, #06b6d4, #0e7490);
+  --party-rand: #22d3ee;
+}
+
+.schritte {
+  margin: 0;
+  padding-left: 1.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  text-align: left;
+}
+
+.zeichen {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.hoerReihe {
+  width: 100%;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.hoerAktiv {
+  min-height: var(--touch-min);
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--party-rand);
+  background: var(--party-farbe);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: var(--text-sm);
+  box-shadow: 0 6px 14px rgb(6 182 212 / 0.3);
+}
+
+/* Die laufende Aufnahme: rot, damit niemand übersieht, dass das Mikrofon offen ist. */
+.aufnahmeBox {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 7%, #ffffff);
+}
+
+.laeuft {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 800;
+  color: var(--color-danger);
+}
+
+.punkt {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  background: var(--color-danger);
+  animation: puls 900ms ease-in-out infinite alternate;
+}
+
+/*
+ * Der Balken zeigt nur an, wie viel Zeit bleibt. Gemessen wird die Länge
+ * nicht hier, sondern an den aufgenommenen Werten (ton.ts).
+ */
+.balken {
+  width: 100%;
+  height: 0.35rem;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-danger) 18%, #ffffff);
+  overflow: hidden;
+}
+
+.balken span {
+  display: block;
+  height: 100%;
+  background: var(--color-danger);
+  transform-origin: left;
+  animation: fuellen linear forwards;
+}
+
+.stopp {
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-danger);
+  background: var(--color-danger);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: var(--text-base);
+  box-shadow: var(--btn-shadow);
+}
+
+@keyframes puls {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+}
+
+@keyframes fuellen {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .punkt {
+    animation: none;
+  }
+}

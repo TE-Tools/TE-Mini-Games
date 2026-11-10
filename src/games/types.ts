@@ -26,6 +26,7 @@ export type GameId =
   | 'texas-holdem'
   | 'maumau'
   | 'letzte-karte'
+  | 'rueckwaerts'
 
 export interface GameLevelConfig {
   level: number

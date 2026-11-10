@@ -83,6 +83,15 @@ corresponding feature; do not invent a competing design.
   führt der Server nur ein Zugbuch: Startwert, Sitzordnung, Aktionen. Es steht
   dort **keine** Regel, und es kommt auch keine hinein – die Mitspieler spielen
   das Buch durch dieselbe Engine nach.
+- **Rückwärts:** `docs/design/rueckwaerts/` – das einzige Spiel mit Mikrofon.
+  Regeln (wer wann was hören darf, Stutzen, Löschen) gehören nach
+  `src/games/rueckwaerts/engine.ts`, Stellwerte nach `config.ts`, und nur
+  `ton.ts` fasst Mikrofon und Lautsprecher an. Eine Aufnahme ist eine Stimme:
+  Sie verlässt den Arbeitsspeicher nie (kein MediaRecorder, kein Blob, kein
+  IndexedDB, kein Netz), das Mikrofon wird mit dem Stopp freigegeben, und jeder
+  Weg aus einer Runde überschreibt alle Kopien mit Nullen. Genau das sagen die
+  Datenschutzerklärung und der Hinweis im Spiel zu – wer daran etwas ändert,
+  ändert zuerst diese beiden, und in der Play Console die Angabe zu Audio.
 - **Zweisprachig (Deutsch/Englisch):** `docs/design/zweisprachig/` – Deutsch ist
   die Ausgangssprache, Englisch die Übersetzung. Texte stehen in
   `src/i18n/texte/de.ts`; TypeScript verlangt dieselbe Stelle in `en.ts`, ein

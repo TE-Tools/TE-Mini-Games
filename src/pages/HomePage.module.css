@@ -557,6 +557,12 @@
   --kachel-farbe: #4338ca;
 }
 
+.kachel[data-game='rueckwaerts'] {
+  --kachel-ton: color-mix(in srgb, #0e7490 13%, #ffffff);
+  --kachel-rahmen: color-mix(in srgb, #0e7490 30%, transparent);
+  --kachel-farbe: #0e7490;
+}
+
 .kachel[data-game='schuetzenopoly'] {
   /* Olivgruen. Das Brett selbst ist dunkles Flaschengruen mit Gold, aber
      beides ist hier schon vergeben: Gruen bei der Schuetzenrunde und bei

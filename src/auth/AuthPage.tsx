@@ -82,9 +82,22 @@ export function AuthPage({ gate = false }: Props) {
   }
 
   useEffect(() => {
-    void getCurrentUser().then((u) => setUserEmail(u?.email ?? null))
-    void getMyUsername().then(setMyUsernameState)
-    void outboxCount().then(setPending)
+    // Abbruchmarke wie in der Anmeldeschranke (App.tsx): Drei Antworten
+    // sind unterwegs, und die Seite kann weg sein, bevor sie eintreffen --
+    // etwa wenn die Sitzung inzwischen da ist und die Schranke aufgeht.
+    let abgebrochen = false
+    void getCurrentUser().then((u) => {
+      if (!abgebrochen) setUserEmail(u?.email ?? null)
+    })
+    void getMyUsername().then((name) => {
+      if (!abgebrochen) setMyUsernameState(name)
+    })
+    void outboxCount().then((anzahl) => {
+      if (!abgebrochen) setPending(anzahl)
+    })
+    return () => {
+      abgebrochen = true
+    }
   }, [])
 
   useEffect(() => onPasswordRecovery(() => setRecovery(true)), [])

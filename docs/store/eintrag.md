@@ -30,7 +30,7 @@ TE-Mini Games
 ## Kurzbeschreibung (max. 80 Zeichen)
 
 ```
-21 kurze Spiele für zwischendurch – allein, zu zweit oder in der Gruppe.
+22 kurze Spiele für zwischendurch – allein, zu zweit oder in der Gruppe.
 ```
 
 (72 Zeichen.)
@@ -73,6 +73,8 @@ IN DER GRUPPE, EIN GERÄT REICHT
 • Finde den Imposter, Wer bin ich?, Stadt Land Fluss, Scharade,
   Wortbombe, Wer würde eher, Schützenrunde – das Handy wandert einmal
   um den Tisch.
+• Rückwärts – ein Wort einsprechen, rückwärts anhören, nachsprechen. Was
+  dabei herauskommt, müssen die anderen erraten.
 
 ONLINE GEGENEINANDER
 Kniffel, Texas Hold'em, Mau-Mau, Letzte Karte, Schützenopoly,

@@ -80,6 +80,7 @@ export const de = {
     Schauspiel: 'Schauspiel',
     Wortspiel: 'Wortspiel',
     Partyspiel: 'Partyspiel',
+    Hören: 'Hören',
   },
 
   spiele: {
@@ -104,6 +105,7 @@ export const de = {
     scharade: 'Scharade',
     wortbombe: 'Wortbombe',
     'wer-wuerde-eher': 'Wer würde eher?',
+    rueckwaerts: 'Rückwärts',
   },
 
   reiter: {
@@ -136,7 +138,7 @@ export const de = {
     datenschutz: 'Datenschutz',
     datenschutzerklaerung: 'Datenschutzerklärung',
     kontoLoeschen: 'Konto löschen',
-    stand: 'Stand: 7. November 2026',
+    stand: 'Stand: 10. November 2026',
   },
 
   /** Die 50 Abzeichen. Schlüssel ist die Kennung, nicht der Name. */
@@ -3101,6 +3103,67 @@ export const de = {
     hinweis: 'Werbevideo – freiwillig',
     laeuft: 'Video läuft…',
     abgebrochen: 'Video abgebrochen – keine Belohnung.',
+  },
+
+  /**
+   * Rückwärts: einsprechen, rückwärts anhören, nachsprechen, raten.
+   * Die Zusage unter `mikrofonHinweis` steht auch in der
+   * Datenschutzerklärung -- wer eine ändert, ändert beide.
+   */
+  rueckwaerts: {
+    untertitel:
+      'Ein Wort einsprechen, rückwärts anhören, nachsprechen – und am Ende erraten, was es war.',
+    soGehts: 'So geht’s',
+    schritt1: 'Eine Person spricht heimlich ein Wort ein.',
+    schritt2: 'Die nächste hört es rückwärts und spricht nach, was sie hört.',
+    schritt3: 'Die Nachahmung läuft wieder rückwärts – und die anderen raten das Wort.',
+    zuZweit: 'Zu zweit rät, wer nachgesprochen hat.',
+    mikrofonHinweis:
+      'Das Spiel braucht das Mikrofon. Die Aufnahmen bleiben auf diesem Gerät, werden nirgends gespeichert und nach jeder Runde gelöscht.',
+    runde: (n: number) => `Runde ${n}`,
+    einsprechenTitel: (name: string) => `${name} spricht ein Wort ein`,
+    einsprechenText: 'Heimlich! Alle anderen halten sich die Ohren zu oder gehen kurz raus.',
+    aufnahmeStarten: 'Aufnahme starten',
+    aufnahmeStoppen: 'Stopp',
+    aufnahmeLaeuft: 'Aufnahme läuft …',
+    mikrofonWartet: 'Mikrofon wird geöffnet …',
+    hoechstens: (sekunden: number) => `Höchstens ${sekunden} Sekunden.`,
+    nachsprechenTitel: (name: string) => `${name} hört zu und spricht nach`,
+    nachsprechenText:
+      'So klingt das Wort rückwärts. Hör es dir an, so oft du willst – dann sprich genau das nach, was du hörst.',
+    rueckwaertsAnhoeren: 'Rückwärts anhören',
+    nachsprechenStarten: 'Nachsprechen aufnehmen',
+    neuEinsprechen: 'Wort neu einsprechen',
+    ratenTitel: (namen: string) => `Jetzt raten: ${namen}`,
+    ratenText: 'So klingt die Nachahmung rückwärts. Welches Wort war es?',
+    anhoeren: 'Anhören',
+    aufloesen: 'Auflösen',
+    aufloesungTitel: (name: string) => `${name} verrät das Wort`,
+    hoer: {
+      original: 'Das Wort',
+      'original-rueckwaerts': 'Das Wort rückwärts',
+      nachahmung: 'Die Nachahmung',
+      'nachahmung-rueckwaerts': 'Die Nachahmung rückwärts',
+    },
+    richtigGeraten: 'Richtig geraten?',
+    ja: 'Ja',
+    nein: 'Nein',
+    wirdGeloescht: 'Mit der nächsten Runde werden die Aufnahmen gelöscht.',
+    beenden: 'Beenden',
+    endeTitel: 'Das war’s',
+    stand: (erraten: number, gespielt: number) => `${erraten} von ${gespielt} erraten`,
+    keineRunde: 'Keine Runde zu Ende gespielt.',
+    allesGeloescht: 'Alle Aufnahmen sind gelöscht.',
+    fehler: {
+      'zu-leise':
+        'Da war nichts zu hören. Halte das Gerät näher an den Mund und versuch es noch einmal.',
+      'zu-kurz': 'Das war zu kurz. Versuch es noch einmal.',
+      verweigert:
+        'Ohne Mikrofon geht dieses Spiel nicht. Erlaube den Zugriff in den Einstellungen deines Browsers oder Geräts.',
+      'kein-mikrofon': 'An diesem Gerät ist kein Mikrofon zu finden.',
+      'nicht-unterstuetzt': 'Dieser Browser kann hier nicht aufnehmen.',
+      unbekannt: 'Die Aufnahme hat nicht geklappt. Versuch es noch einmal.',
+    },
   },
 
   allgemein: {

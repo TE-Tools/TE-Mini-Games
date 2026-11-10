@@ -79,6 +79,7 @@ export const en: Texte = {
     Schauspiel: 'Acting',
     Wortspiel: 'Word game',
     Partyspiel: 'Party game',
+    Hören: 'Listening',
   },
 
   spiele: {
@@ -103,6 +104,7 @@ export const en: Texte = {
     scharade: 'Charades',
     wortbombe: 'Word Bomb',
     'wer-wuerde-eher': 'Who would rather?',
+    rueckwaerts: 'Backwards',
   },
 
   reiter: {
@@ -135,7 +137,7 @@ export const en: Texte = {
     datenschutz: 'Privacy',
     datenschutzerklaerung: 'Privacy policy',
     kontoLoeschen: 'Delete account',
-    stand: 'Last updated: 7 November 2026',
+    stand: 'Last updated: 10 November 2026',
   },
 
   /** The 50 badges, keyed by id. */
@@ -3032,6 +3034,61 @@ export const en: Texte = {
     hinweis: 'Ad video – optional',
     laeuft: 'Video playing…',
     abgebrochen: 'Video stopped – no reward.',
+  },
+
+  rueckwaerts: {
+    untertitel:
+      'Record a word, hear it backwards, copy what you hear – and at the end, guess what it was.',
+    soGehts: 'How it works',
+    schritt1: 'One person secretly records a word.',
+    schritt2: 'The next one hears it backwards and copies what they hear.',
+    schritt3: 'The copy is played backwards again – and the others guess the word.',
+    zuZweit: 'With two players, whoever copied it also guesses.',
+    mikrofonHinweis:
+      'This game needs the microphone. Recordings stay on this device, are not stored anywhere and are deleted after every round.',
+    runde: (n: number) => `Round ${n}`,
+    einsprechenTitel: (name: string) => `${name} records a word`,
+    einsprechenText: 'In secret! Everyone else covers their ears or steps outside for a moment.',
+    aufnahmeStarten: 'Start recording',
+    aufnahmeStoppen: 'Stop',
+    aufnahmeLaeuft: 'Recording …',
+    mikrofonWartet: 'Opening the microphone …',
+    hoechstens: (sekunden: number) => `${sekunden} seconds at most.`,
+    nachsprechenTitel: (name: string) => `${name} listens and copies`,
+    nachsprechenText:
+      'This is the word backwards. Listen as often as you like – then say exactly what you hear.',
+    rueckwaertsAnhoeren: 'Listen backwards',
+    nachsprechenStarten: 'Record your copy',
+    neuEinsprechen: 'Record the word again',
+    ratenTitel: (namen: string) => `Time to guess: ${namen}`,
+    ratenText: 'This is the copy played backwards. Which word was it?',
+    anhoeren: 'Listen',
+    aufloesen: 'Reveal',
+    aufloesungTitel: (name: string) => `${name} reveals the word`,
+    hoer: {
+      original: 'The word',
+      'original-rueckwaerts': 'The word backwards',
+      nachahmung: 'The copy',
+      'nachahmung-rueckwaerts': 'The copy backwards',
+    },
+    richtigGeraten: 'Guessed it?',
+    ja: 'Yes',
+    nein: 'No',
+    wirdGeloescht: 'The recordings are deleted with the next round.',
+    beenden: 'Finish',
+    endeTitel: 'That’s it',
+    stand: (erraten: number, gespielt: number) => `${erraten} of ${gespielt} guessed`,
+    keineRunde: 'No round was finished.',
+    allesGeloescht: 'All recordings have been deleted.',
+    fehler: {
+      'zu-leise': 'There was nothing to hear. Hold the device closer to your mouth and try again.',
+      'zu-kurz': 'That was too short. Try again.',
+      verweigert:
+        'This game does not work without the microphone. Allow access in the settings of your browser or device.',
+      'kein-mikrofon': 'No microphone was found on this device.',
+      'nicht-unterstuetzt': 'This browser cannot record here.',
+      unbekannt: 'The recording did not work. Try again.',
+    },
   },
 
   allgemein: {
