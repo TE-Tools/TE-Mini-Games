@@ -35,16 +35,33 @@ export function ProfilePage() {
   const [neuFrei, setNeuFrei] = useState<VideoAvatarId | null>(null)
 
   useEffect(() => {
+    // Abbruchmarke und Fangnetz wie in der Anmeldeschranke und der
+    // Anmeldeseite. Das Profil kommt aus dem Speicher des Geräts; ist die
+    // Seite schon weg, wenn es eintrifft, wird nichts mehr geschrieben --
+    // und ist der Speicher nicht lesbar (gesperrt, gerade gelöscht), endet
+    // das nicht als unbehandelte Ablehnung. Aufgefallen als Flattern: Ein
+    // voller Testlauf meldete „DatabaseClosedError", weil der nächste Test
+    // die Datenbank leerte, während diese Abfrage noch lief.
+    let abgebrochen = false
     void (async () => {
-      const p = await getOrCreateGuestProfile()
-      setProfile(p)
-      setFrei(freigeschaltetMit(p.avatar))
-      // Zeigt den Namen, der gerade wirklich gilt -- auch den aus dem Konto.
-      // Steht dort nur der Platzhalter, bleibt das Feld leer: Sonst müsste
-      // man "Gast" erst wegloeschen, um etwas eintippen zu koennen.
-      const gilt = await ermittleSpielerName().catch(() => p.displayName)
-      setName(istEchterName(gilt) ? gilt : '')
+      try {
+        const p = await getOrCreateGuestProfile()
+        if (abgebrochen) return
+        setProfile(p)
+        setFrei(freigeschaltetMit(p.avatar))
+        // Zeigt den Namen, der gerade wirklich gilt -- auch den aus dem Konto.
+        // Steht dort nur der Platzhalter, bleibt das Feld leer: Sonst müsste
+        // man "Gast" erst wegloeschen, um etwas eintippen zu koennen.
+        const gilt = await ermittleSpielerName().catch(() => p.displayName)
+        if (abgebrochen) return
+        setName(istEchterName(gilt) ? gilt : '')
+      } catch {
+        // Ohne lesbaren Speicher bleibt die Seite beim Laden stehen.
+      }
     })()
+    return () => {
+      abgebrochen = true
+    }
   }, [])
 
   const onPick = async (id: string) => {
