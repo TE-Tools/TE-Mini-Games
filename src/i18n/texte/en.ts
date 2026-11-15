@@ -3085,6 +3085,7 @@ export const en: Texte = {
     messwerte: (sekunden: string, stimme: string, rauschen: string) =>
       `Readings: ${sekunden} s recorded · voice ${stimme} · noise ${rauschen}`,
     fehler: {
+      abgerissen: 'The recording broke off – the microphone delivered only part of it. Try again.',
       'kein-ton': 'No sound is coming from the microphone. Is it muted, or in use by another app?',
       'zu-leise':
         'There was only noise to hear. Hold the device closer to your mouth and try again.',

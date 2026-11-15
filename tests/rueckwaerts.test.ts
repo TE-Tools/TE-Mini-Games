@@ -13,6 +13,7 @@ import {
   createRueckwaertsMatch,
   dauer,
   hoerbar,
+  istAbgerissen,
   kehreUm,
   klangFuer,
   naechsteRunde,
@@ -313,6 +314,44 @@ describe('Stutzen', () => {
     const e = stutze(klang(stille(0.3), wort(0.4), stille(0.2), wort(0.4), stille(0.3)))
     if (!e.ok) throw new Error('zählt nicht')
     expect(dauer(e.klang)).toBeGreaterThan(1.0)
+  })
+})
+
+describe('Abgerissene Aufnahmen', () => {
+  it('erkennt, wenn weit weniger ankam, als Zeit verging', () => {
+    // Drei Sekunden gedrückt, eine halbe Sekunde Werte: Der Tonfaden stand.
+    expect(istAbgerissen(klang(wort(0.5)), 3)).toBe(true)
+    expect(istAbgerissen({ samples: new Float32Array(0), rate: RATE }, 2)).toBe(true)
+  })
+
+  it('lässt vollständige Aufnahmen in Ruhe -- auch mit etwas Anlaufverlust', () => {
+    expect(istAbgerissen(klang(wort(2.0)), 2.0)).toBe(false)
+    expect(istAbgerissen(klang(wort(1.7)), 2.0)).toBe(false)
+  })
+
+  it('urteilt nicht über ein bloßes Antippen und nicht ohne Uhr', () => {
+    expect(istAbgerissen({ samples: new Float32Array(0), rate: RATE }, 0.3)).toBe(false)
+    expect(istAbgerissen({ samples: new Float32Array(0), rate: RATE })).toBe(false)
+  })
+
+  it('rechnet mit der Höchstlänge: Wer länger drückt, bekommt trotzdem nur zehn Sekunden', () => {
+    expect(istAbgerissen(klang(wort(RUECKWAERTS.maxSekunden)), 25)).toBe(false)
+  })
+
+  it('weist sie beim Einsprechen und beim Nachsprechen ab, mit dem, was ankam', () => {
+    const z = createRueckwaertsMatch({ names: NAMEN })
+    expect(nimmOriginal(z, klang(wort(0.4)), 3)).toMatchObject({
+      ok: false,
+      grund: 'abgerissen',
+      messung: { stimme: 0, rauschen: 0 },
+    })
+    expect(z.phase).toBe('einsprechen')
+    expect(nimmNachahmung(mitOriginal(), klang(wort(0.4)), 3)).toMatchObject({
+      ok: false,
+      grund: 'abgerissen',
+    })
+    // Dieselbe Aufnahme mit passender Uhrzeit zählt.
+    expect(nimmOriginal(z, aufnahme(), 1.9).ok).toBe(true)
   })
 })
 

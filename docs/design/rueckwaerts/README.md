@@ -178,6 +178,39 @@ Android-App auf einem echten Gerät. Für Safari ist vorgesorgt (der
 Tonkontext entsteht noch im Klick, bevor auf das Mikrofon gewartet wird);
 für die App siehe unten.
 
+## In der App: mal ja, mal nein (13.11.2026)
+
+Meldung aus der Android-App: Die Aufnahme klappt manchmal und manchmal
+nicht, bei erteilter Berechtigung. Nachstellen ließ sich das hier nicht --
+es gibt weder ein Android-Gerät noch einen Emulator. Geändert ist deshalb,
+was eine solche Laune erklären kann, und dazugekommen ist, was beim
+nächsten Mal sagt, woran es lag.
+
+- **Ein eigener Tonkontext je Aufnahme**, angelegt erst, wenn das Mikrofon
+  offen ist, und mit dem Stopp geschlossen. Vorher lief die Aufnahme über
+  den Kontext der Seite. Der hat das Öffnen des Mikrofons miterlebt, und
+  dabei stellen Android und das iPhone den Ton um; ein alter Kontext kann
+  danach stehen. Läuft der frische nicht an (Safari verlangt dafür unter
+  Umständen die Geste), übernimmt der gemeinsame, der im Klick entstand.
+- **Keine Echounterdrückung.** Mit ihr schaltet Android das ganze Gerät in
+  den Telefonie-Ton: anderer Mikrofoneingang, andere Abtastrate, Wiedergabe
+  über den Hörer. Gebraucht wird sie nicht; während der Aufnahme spielt
+  nichts.
+- **„Abgerissen" ist eine eigene Meldung.** Kam weniger als die Hälfte
+  dessen an, was nach der Uhr hätte ankommen müssen, stand der Tonfaden.
+  Vorher hieß das „zu kurz" oder „nichts zu hören" -- als hätte jemand
+  falsch gesprochen.
+- **Die Diagnosezeile** unter jeder Fehlermeldung nennt jetzt auch, wie die
+  Aufnahme technisch lief: Sekunden nach der Uhr, Abtastrate, Weg (Worklet
+  oder Ersatz), Zustand des Kontexts, eigener oder gemeinsamer Kontext,
+  Zahl der Stücke. Bei einem Fehler des Browsers steht dort dessen Name
+  (etwa `NotReadableError`).
+
+Im echten Chromium nachgeprüft: zwei Aufnahmen, zwei eigene Kontexte, beide
+danach `closed`; angefragt wird ohne Echounterdrückung; beide Wege und die
+leise Tondatei laufen durch. **Ob es die Laune in der App behebt, ist damit
+nicht gezeigt.**
+
 ## Android-App
 
 Die Webansicht darf das Mikrofon nur öffnen, wenn `RECORD_AUDIO` und
