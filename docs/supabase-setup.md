@@ -53,6 +53,13 @@ mit `node scripts/build-all-in-one.mjs`.
 
 - Site URL: `https://te-mini-games.pages.dev`  
 - Redirect URLs: `https://te-mini-games.pages.dev/**` und `http://localhost:5173/**`
+- **Für die Android-App zusätzlich:** `de.tetools.minigames://auth`  
+  Die App öffnet die Google-Anmeldung im Browser und springt über diese
+  Adresse zurück. Fehlt der Eintrag, schickt Supabase den Browser
+  stattdessen auf die Site URL: Man ist dann **im Browser** angemeldet und
+  in der App weiterhin nicht -- von außen sieht das aus, als merke sich
+  die App die Anmeldung nicht. E-Mail und Passwort gehen auch ohne den
+  Eintrag. (Stand bisher nur in `docs/werbung.md`, wo es niemand sucht.)
 
 ## 4. Keys holen
 
