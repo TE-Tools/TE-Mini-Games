@@ -41,7 +41,7 @@ import { ProfilePage } from '@/pages/profile/ProfilePage'
 import { registerAllGames } from '@/games/register'
 import { initRemoteSync, syncFullNow } from '@/services/remoteSync'
 import { ermittleSpielerName } from '@/services/spielername'
-import { onAuthStateChange, getSession } from '@/auth/authService'
+import { onAuthStateChange, getSession, sitzungNurUnerreichbar } from '@/auth/authService'
 import { getPlayMode, setPlayMode, type PlayMode } from '@/auth/sessionMode'
 import { SprachProvider } from '@/i18n/SprachProvider'
 
@@ -62,6 +62,25 @@ type GateState = { status: 'loading' } | { status: 'gate' } | { status: 'ready';
  */
 const OEFFENTLICHE_SEITEN = ['/impressum', '/datenschutz', '/konto-loeschen']
 
+/**
+ * Wohin es geht, wenn die Frage nach der Sitzung leer ausging.
+ *
+ * Gast bleibt Gast. Und wer mit Konto spielt, bleibt drin, wenn der Server
+ * nur gerade nicht zu erreichen war: Die Anmeldung liegt noch im Speicher
+ * und gilt wieder, sobald das Netz da ist. Vorher landete jeder, der die
+ * App ohne Netz öffnete, auf der Anmeldeseite -- und ein Spiel, das ohne
+ * Netz laufen soll, fing mit einer Anmeldung an, die ohne Netz nicht geht.
+ *
+ * Auf die Anmeldeseite führt nur noch: nie angemeldet, abgemeldet, oder
+ * der Server hat die Anmeldung wirklich abgelehnt.
+ */
+function ohneSitzung(): GateState {
+  const mode = getPlayMode()
+  if (mode === 'guest') return { status: 'ready', mode: 'guest' }
+  if (mode === 'account' && sitzungNurUnerreichbar()) return { status: 'ready', mode: 'account' }
+  return { status: 'gate' }
+}
+
 function AuthGate({ children }: { children: ReactNode }) {
   const [gate, setGate] = useState<GateState>({ status: 'loading' })
   const location = useLocation()
@@ -79,27 +98,26 @@ function AuthGate({ children }: { children: ReactNode }) {
         void syncFullNow()
         return
       }
-      const mode = getPlayMode()
-      if (mode === 'guest') {
-        setGate({ status: 'ready', mode: 'guest' })
-        return
-      }
-      setGate({ status: 'gate' })
+      setGate(ohneSitzung())
     })()
 
-    const unsub = onAuthStateChange((user) => {
+    const unsub = onAuthStateChange((user, abgemeldet) => {
       if (user) {
         setPlayMode('account')
         setGate({ status: 'ready', mode: 'account' })
         void ermittleSpielerName()
         void syncFullNow()
+      } else if (abgemeldet) {
+        // Wirklich abgemeldet: Hier zählt kein „nur nicht erreichbar".
+        setGate(getPlayMode() === 'guest' ? { status: 'ready', mode: 'guest' } : { status: 'gate' })
       } else {
-        const mode = getPlayMode()
-        if (mode === 'guest') {
-          setGate({ status: 'ready', mode: 'guest' })
-        } else {
-          setGate({ status: 'gate' })
-        }
+        // Supabase meldet beim Start „niemand da" -- auch dann, wenn es die
+        // gespeicherte Anmeldung nur gerade nicht auffrischen konnte.
+        // Erst nachfragen, dann entscheiden.
+        void getSession().then((session) => {
+          if (cancelled || session?.user) return
+          setGate(ohneSitzung())
+        })
       }
     })
 
@@ -123,12 +141,7 @@ function AuthGate({ children }: { children: ReactNode }) {
         setGate({ status: 'ready', mode: 'account' })
         return
       }
-      const mode = getPlayMode()
-      if (mode === 'guest') {
-        setGate({ status: 'ready', mode: 'guest' })
-        return
-      }
-      setGate({ status: 'gate' })
+      setGate(ohneSitzung())
     })
     return () => {
       abgebrochen = true

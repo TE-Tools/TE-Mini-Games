@@ -1,7 +1,7 @@
 import { onlineFehlerText } from '@/services/onlineFehler'
 import { supabase, isSupabaseConfigured } from '@/database/supabase'
 import { clearPlayMode, setPlayMode } from '@/auth/sessionMode'
-import type { User, Session } from '@supabase/supabase-js'
+import { isAuthRetryableFetchError, type User, type Session } from '@supabase/supabase-js'
 import { inDerApp } from '@/services/werbungAdmob'
 import { googleInDerApp } from '@/auth/appAnmeldung'
 
@@ -30,9 +30,27 @@ export function validatePassword(password: string): string | null {
   return null
 }
 
+/**
+ * Ob die letzte Frage nach der Sitzung nur deshalb leer ausging, weil der
+ * Server nicht zu erreichen war.
+ *
+ * Eine gespeicherte Anmeldung gilt eine Stunde; danach holt Supabase beim
+ * nächsten Start eine frische. Klappt das nicht -- kein Netz, Funkloch,
+ * die App ist schneller offen als das WLAN --, meldet `getSession()` „keine
+ * Sitzung", obwohl sie noch im Speicher liegt und beim nächsten Versuch
+ * wieder gilt. Wer daraus „abgemeldet" liest, schickt jemanden auf die
+ * Anmeldeseite, der angemeldet ist.
+ */
+let nurUnerreichbar = false
+
+export function sitzungNurUnerreichbar(): boolean {
+  return nurUnerreichbar
+}
+
 export async function getSession(): Promise<Session | null> {
   if (!supabase) return null
-  const { data } = await supabase.auth.getSession()
+  const { data, error } = await supabase.auth.getSession()
+  nurUnerreichbar = !data.session && error !== null && isAuthRetryableFetchError(error)
   return data.session
 }
 
@@ -268,13 +286,24 @@ export function onPasswordRecovery(callback: () => void): () => void {
   return () => data.subscription.unsubscribe()
 }
 
-export function onAuthStateChange(callback: (user: User | null) => void): () => void {
+/**
+ * `abgemeldet` sagt dem Empfänger, dass Supabase die Sitzung wirklich
+ * beendet hat (abgemeldet, oder der Server hat sie abgelehnt). Ohne diese
+ * Angabe sieht „beim Start nicht zu erreichen" genauso aus -- beide Male
+ * kommt kein Nutzer mit.
+ */
+export function onAuthStateChange(
+  callback: (user: User | null, abgemeldet: boolean) => void,
+): () => void {
   if (!supabase) {
-    callback(null)
+    callback(null, false)
     return () => undefined
   }
-  const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-    callback(session?.user ?? null)
+  const { data } = supabase.auth.onAuthStateChange((event, session) => {
+    const abgemeldet = event === 'SIGNED_OUT'
+    // Danach ist die Lage eindeutig; ein „nur nicht erreichbar" von vorhin gilt nicht mehr.
+    if (abgemeldet || session) nurUnerreichbar = false
+    callback(session?.user ?? null, abgemeldet)
   })
   return () => data.subscription.unsubscribe()
 }

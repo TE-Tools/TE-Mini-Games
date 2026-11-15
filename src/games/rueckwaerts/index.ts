@@ -17,6 +17,7 @@ export {
   ueberschreibe,
   dauer,
   pegelAnzeige,
+  istAbgerissen,
   MIN_SPIELER,
   MAX_SPIELER,
 } from './engine'
@@ -31,4 +32,4 @@ export type {
   Messung,
 } from './engine'
 export { erstelleTonanlage, TonFehler } from './ton'
-export type { Tonanlage, LaufendeAufnahme, Wiedergabe, TonMangel } from './ton'
+export type { Tonanlage, LaufendeAufnahme, Wiedergabe, TonMangel, AufnahmeLauf } from './ton'
