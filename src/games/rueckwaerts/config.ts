@@ -85,6 +85,14 @@ export const RUECKWAERTS = {
    */
   zielGipfel: 0.9,
   maxVerstaerkung: 60,
+  /**
+   * Abgerissen ist eine Aufnahme, wenn nach der Uhr mindestens so viele
+   * Sekunden vergangen sind und trotzdem weniger als dieser Anteil davon
+   * angekommen ist. Dann lag es nicht am Sprechen, sondern daran, dass
+   * der Tonfaden stand -- und das soll die Meldung auch sagen.
+   */
+  abrissAbSekunden: 0.8,
+  abrissAnteil: 0.5,
   minSpieler: 2,
   maxSpieler: 12,
 } as const

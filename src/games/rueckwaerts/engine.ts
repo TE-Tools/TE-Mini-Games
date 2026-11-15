@@ -50,7 +50,7 @@ export interface RueckZustand {
 }
 
 /** Warum eine Aufnahme nicht zählt. Als Kennung, der Satz dazu steht im Wörterbuch. */
-export type AufnahmeMangel = 'kein-ton' | 'zu-leise' | 'zu-kurz'
+export type AufnahmeMangel = 'abgerissen' | 'kein-ton' | 'zu-leise' | 'zu-kurz'
 
 /**
  * Was an einer abgewiesenen Aufnahme gemessen wurde -- für die Zeile unter
@@ -255,10 +255,40 @@ function verlange(z: RueckZustand, phase: RueckPhase, was: string): void {
     throw new Error(`${was} geht nur in der Phase ${phase}, nicht in ${z.phase}`)
 }
 
-/** Das eingesprochene Wort. Zählt die Aufnahme nicht, bleibt alles, wie es war. */
-export function nimmOriginal(z: RueckZustand, roh: Klang): AufnahmeErgebnis {
+/**
+ * Ob von der Aufnahme nur ein Bruchteil angekommen ist. `uhrSekunden` ist
+ * die Zeit zwischen Start und Stopp nach der Uhr; kam deutlich weniger an,
+ * stand der Tonfaden. Ohne Uhrzeit (oder bei einem bloßen Antippen) lässt
+ * sich das nicht sagen -- dann gilt die Aufnahme als vollständig.
+ */
+export function istAbgerissen(klang: Klang, uhrSekunden?: number): boolean {
+  if (uhrSekunden === undefined) return false
+  const erwartet = Math.min(uhrSekunden, RUECKWAERTS.maxSekunden)
+  if (erwartet < RUECKWAERTS.abrissAbSekunden) return false
+  return dauer(klang) < erwartet * RUECKWAERTS.abrissAnteil
+}
+
+function pruefe(
+  roh: Klang,
+  uhrSekunden?: number,
+): { ok: true; klang: Klang } | { ok: false; grund: AufnahmeMangel; messung: Messung } {
+  if (istAbgerissen(roh, uhrSekunden)) {
+    return {
+      ok: false,
+      grund: 'abgerissen',
+      messung: { sekunden: dauer(roh), stimme: 0, rauschen: 0 },
+    }
+  }
+  return stutze(roh)
+}
+
+/**
+ * Das eingesprochene Wort. Zählt die Aufnahme nicht, bleibt alles, wie es
+ * war. `uhrSekunden`: wie lange die Aufnahme nach der Uhr lief.
+ */
+export function nimmOriginal(z: RueckZustand, roh: Klang, uhrSekunden?: number): AufnahmeErgebnis {
   verlange(z, 'einsprechen', 'Einsprechen')
-  const gestutzt = stutze(roh)
+  const gestutzt = pruefe(roh, uhrSekunden)
   if (!gestutzt.ok) return gestutzt
   return {
     ok: true,
@@ -280,9 +310,13 @@ export function neuEinsprechen(z: RueckZustand): RueckZustand {
 }
 
 /** Die Nachahmung dessen, was rückwärts zu hören war. */
-export function nimmNachahmung(z: RueckZustand, roh: Klang): AufnahmeErgebnis {
+export function nimmNachahmung(
+  z: RueckZustand,
+  roh: Klang,
+  uhrSekunden?: number,
+): AufnahmeErgebnis {
   verlange(z, 'nachsprechen', 'Nachsprechen')
-  const gestutzt = stutze(roh)
+  const gestutzt = pruefe(roh, uhrSekunden)
   if (!gestutzt.ok) return gestutzt
   return {
     ok: true,

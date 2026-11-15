@@ -60,6 +60,12 @@ export function RueckwaertsPage() {
   const [mangel, setMangel] = useState<AufnahmeMangel | TonMangel | null>(null)
   /** Was an der zuletzt abgewiesenen Aufnahme gemessen wurde -- steht unter der Meldung. */
   const [messung, setMessung] = useState<Messung | null>(null)
+  /**
+   * Wie die Aufnahme technisch lief (oder wie der Browser seinen Fehler
+   * nennt). Keine Sprache, sondern Kennwerte -- steht hinter den Messwerten
+   * und ist dazu da, dass man sie abschreiben und weitergeben kann.
+   */
+  const [technik, setTechnik] = useState<string | null>(null)
   const [aufnahme, setAufnahme] = useState<AufnahmeLage>('aus')
   const [spielt, setSpielt] = useState<HoerArt | null>(null)
   /** Ausschlag der Pegelanzeige, 0 bis 1 -- nur während einer Aufnahme. */
@@ -103,6 +109,7 @@ export function RueckwaertsPage() {
       haltAn()
       setMangel(null)
       setMessung(null)
+      setTechnik(null)
       setZustand(naechster)
     },
     [haltAn],
@@ -127,14 +134,27 @@ export function RueckwaertsPage() {
     laufend.current = null
     setAufnahme('aus')
     setPegel(0)
-    const roh = a.stopp()
+    const { klang: roh, lauf } = a.stopp()
     const z = zustandRef.current
     if (z && (z.phase === 'einsprechen' || z.phase === 'nachsprechen')) {
-      const ergebnis = z.phase === 'einsprechen' ? nimmOriginal(z, roh) : nimmNachahmung(z, roh)
+      const ergebnis =
+        z.phase === 'einsprechen'
+          ? nimmOriginal(z, roh, lauf.uhrSekunden)
+          : nimmNachahmung(z, roh, lauf.uhrSekunden)
       if (ergebnis.ok) setZustand(ergebnis.zustand)
       else {
         setMangel(ergebnis.grund)
         setMessung(ergebnis.messung)
+        setTechnik(
+          [
+            `${lauf.uhrSekunden.toFixed(1)} s`,
+            `${lauf.rate} Hz`,
+            lauf.weg,
+            lauf.kontext,
+            lauf.eigenerKontext ? 'eigen' : 'gemeinsam',
+            String(lauf.stuecke),
+          ].join(' / '),
+        )
       }
     }
     // Der Zustand hat seine eigene, gestutzte Kopie. Die Rohfassung ist
@@ -147,6 +167,7 @@ export function RueckwaertsPage() {
     haltAn()
     setMangel(null)
     setMessung(null)
+    setTechnik(null)
     setAufnahme('wartet')
     try {
       const a = await ton().nimmAuf({
@@ -168,6 +189,9 @@ export function RueckwaertsPage() {
       if (!lebt.current) return
       setAufnahme('aus')
       setMangel(e instanceof TonFehler ? e.grund : 'unbekannt')
+      setTechnik(
+        e instanceof TonFehler ? (e.einzelheit ?? null) : e instanceof Error ? e.name : null,
+      )
     }
   }, [haltAn, stoppeAufnahme])
 
@@ -297,13 +321,19 @@ export function RueckwaertsPage() {
       <p className={shell.error} role="alert">
         {r.fehler[mangel]}
       </p>
-      {messung && (
+      {(messung || technik) && (
         <p className={shell.meta}>
-          {r.messwerte(
-            messung.sekunden.toFixed(1),
-            messung.stimme.toFixed(4),
-            messung.rauschen.toFixed(4),
-          )}
+          {[
+            messung &&
+              r.messwerte(
+                messung.sekunden.toFixed(1),
+                messung.stimme.toFixed(4),
+                messung.rauschen.toFixed(4),
+              ),
+            technik,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
         </p>
       )}
     </>

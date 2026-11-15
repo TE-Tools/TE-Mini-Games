@@ -58,28 +58,44 @@ const anlage = vi.hoisted(() => ({
   /** Was die nächste Aufnahme liefert; ein Fehler heißt: Mikrofon nicht zu haben. */
   naechste: null as null | (() => Klang),
   fehler: null as null | string,
+  /** Wie der Browser den Fehler nennt. */
+  einzelheit: undefined as undefined | string,
+  /** Wie lange die Aufnahme nach der Uhr lief; ohne Angabe so lange, wie Werte ankamen. */
+  uhr: null as null | number,
 }))
 
 vi.mock('@/games/rueckwaerts/ton', () => {
   class TonFehler extends Error {
     readonly grund: string
-    constructor(grund: string) {
+    readonly einzelheit: string | undefined
+    constructor(grund: string, einzelheit?: string) {
       super(grund)
       this.grund = grund
+      this.einzelheit = einzelheit
     }
   }
   return {
     TonFehler,
     erstelleTonanlage: () => ({
       nimmAuf: async (o: { beiVoll: () => void; beiPegel?: (rms: number) => void }) => {
-        if (anlage.fehler) throw new TonFehler(anlage.fehler)
+        if (anlage.fehler) throw new TonFehler(anlage.fehler, anlage.einzelheit)
         anlage.beiVoll = o.beiVoll
         anlage.beiPegel = o.beiPegel ?? null
         return {
           stopp: () => {
             const k = anlage.naechste!()
             anlage.roh.push(k.samples)
-            return k
+            return {
+              klang: k,
+              lauf: {
+                uhrSekunden: anlage.uhr ?? k.samples.length / k.rate,
+                rate: k.rate,
+                weg: 'worklet',
+                kontext: 'running',
+                eigenerKontext: true,
+                stuecke: 100,
+              },
+            }
           },
           abbrechen: () => {
             anlage.abgebrochen++
@@ -144,6 +160,8 @@ beforeEach(() => {
   anlage.beiPegel = null
   anlage.naechste = aufnahme
   anlage.fehler = null
+  anlage.einzelheit = undefined
+  anlage.uhr = null
 })
 
 describe('Rückwärts: eine Runde', () => {
@@ -280,7 +298,7 @@ describe('Rückwärts: wenn die Aufnahme nicht klappt', () => {
     // Darunter steht, was gemessen wurde -- für die Fehlersuche aus der Ferne.
     expect(
       screen.getByText(
-        /^Messwerte: 1[.,]0 s aufgenommen · Stimme 0[.,]002\d · Rauschen 0[.,]002\d$/,
+        /^Messwerte: 1[.,]0 s aufgenommen · Stimme 0[.,]002\d · Rauschen 0[.,]002\d · 1[.,]0 s \/ 8000 Hz \/ worklet \/ running \/ eigen \/ 100$/,
       ),
     ).toBeInTheDocument()
 
@@ -331,6 +349,30 @@ describe('Rückwärts: wenn die Aufnahme nicht klappt', () => {
       'Ohne Mikrofon geht dieses Spiel nicht',
     )
     expect(knopf(/Aufnahme starten/)).toBeEnabled()
+  })
+
+  it('sagt, wenn die Aufnahme abgerissen ist -- und nicht, man habe zu leise gesprochen', async () => {
+    const user = userEvent.setup()
+    // Drei Sekunden nach der Uhr, aber nur 0,2 s Werte: Der Tonfaden stand.
+    anlage.uhr = 3
+    anlage.naechste = () => ({ samples: new Float32Array(RATE * 0.2).fill(0.3), rate: RATE })
+    zeige()
+    await user.click(knopf('Losspielen'))
+    await nimmAuf(/Aufnahme starten/)
+    expect(screen.getByRole('alert')).toHaveTextContent('Die Aufnahme ist abgerissen')
+    expect(screen.getByText(/0[.,]2 s aufgenommen .* 3[.,]0 s \/ 8000 Hz/)).toBeInTheDocument()
+    expect(screen.getByText('Thomas spricht ein Wort ein')).toBeInTheDocument()
+  })
+
+  it('zeigt bei einem Mikrofonfehler, wie der Browser ihn nennt', async () => {
+    const user = userEvent.setup()
+    anlage.fehler = 'unbekannt'
+    anlage.einzelheit = 'NotReadableError'
+    zeige()
+    await user.click(knopf('Losspielen'))
+    await user.click(knopf(/Aufnahme starten/))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Die Aufnahme hat nicht geklappt')
+    expect(screen.getByText('NotReadableError')).toBeInTheDocument()
   })
 
   it('lässt ein verunglücktes Wort neu einsprechen', async () => {

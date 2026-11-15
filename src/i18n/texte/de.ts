@@ -3160,6 +3160,8 @@ export const de = {
     messwerte: (sekunden: string, stimme: string, rauschen: string) =>
       `Messwerte: ${sekunden} s aufgenommen · Stimme ${stimme} · Rauschen ${rauschen}`,
     fehler: {
+      abgerissen:
+        'Die Aufnahme ist abgerissen – das Mikrofon hat nur einen Teil geliefert. Versuch es noch einmal.',
       'kein-ton':
         'Vom Mikrofon kommt kein Ton. Ist es stummgeschaltet oder gerade von einer anderen App belegt?',
       'zu-leise':
