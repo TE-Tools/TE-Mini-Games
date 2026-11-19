@@ -66,8 +66,11 @@ describe('Computergegner', () => {
   it('mittel rechnet Schlagabtausche zu Ende', () => {
     // Sxd5 Sxd5 Lxd5: Weiß gewinnt einen Bauern -- aber erst im dritten
     // Halbzug. Wer nach zwei Halbzügen aufhört, sieht nur den verlorenen
-    // Springer und lässt den Bauern stehen.
-    const fen = '6k1/8/5n2/3p4/8/2N5/6B1/6K1 w - - 0 1'
+    // Springer und lässt den Bauern stehen. (Der König steht auf h8 und
+    // nicht auf g8: Sonst gäbe Lxd5 Schach, und die Schachverlängerung
+    // rechnete den Abtausch auch ohne Ruhesuche zu Ende -- so war es in
+    // der ersten Fassung dieses Tests, und er prüfte nichts.)
+    const fen = '7k/8/5n2/3p4/8/2N5/6B1/6K1 w - - 0 1'
     for (const seed of [1, 2, 3, 4, 5]) {
       expect(['c3d5', 'g2d5']).toContain(zug(fen, 'mittel', seed))
     }
@@ -100,11 +103,16 @@ describe('Computergegner', () => {
     }
   }, 20000)
 
-  it('treibt im gewonnenen Endspiel den König an den Rand', () => {
-    // Dieselbe Stellung, der schwarze König einmal in der Mitte, einmal am Rand.
-    const mitte = bewerte(Stellung.ausFen('8/8/8/4k3/8/8/8/K6Q w - - 0 1'))
-    const rand = bewerte(Stellung.ausFen('4k3/8/8/8/8/8/8/K6Q w - - 0 1'))
-    expect(rand).toBeGreaterThan(mitte + 20)
+  it('rückt im gewonnenen Endspiel mit dem eigenen König nach', () => {
+    // Zwei Stellungen, die sich nur darin unterscheiden, wie nah der weiße
+    // König dem schwarzen ist. Beide weißen Felder sind in der Feldtabelle
+    // gleich viel wert (d5 und e4: 40) -- den Unterschied macht allein die
+    // Mattführung. (Die erste Fassung verglich König am Rand gegen König in
+    // der Mitte; das entschied schon die Feldtabelle, und der Test merkte
+    // nicht, wenn die Mattführung fehlte.)
+    const nah = bewerte(Stellung.ausFen('k7/8/8/3K4/8/8/7Q/8 w - - 0 1'))
+    const fern = bewerte(Stellung.ausFen('k7/8/8/8/4K3/8/7Q/8 w - - 0 1'))
+    expect(nah).toBeGreaterThan(fern)
   })
 
   it('ist mit demselben Startwert gleich und mit anderen verschieden', () => {
