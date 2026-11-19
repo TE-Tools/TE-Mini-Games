@@ -27,6 +27,7 @@ export type GameId =
   | 'maumau'
   | 'letzte-karte'
   | 'rueckwaerts'
+  | 'schach'
 
 export interface GameLevelConfig {
   level: number
