@@ -175,3 +175,14 @@
   font: inherit;
   text-align: left;
 }
+
+/* Die Knöpfe der Spielseiten wollen 12rem breit sein -- zwei nebeneinander
+   sprengen dann ein 390 Pixel breites Handy. Im Raster bestimmt die Spalte. */
+.knoepfe > button {
+  min-width: 0;
+  padding-inline: var(--space-2);
+}
+
+.hinweis p {
+  margin: 0 0 var(--space-2);
+}

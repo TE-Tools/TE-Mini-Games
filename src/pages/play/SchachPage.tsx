@@ -116,7 +116,7 @@ export function SchachPage() {
   const [auswahl, setAuswahl] = useState<number | null>(null)
   const [umwandlung, setUmwandlung] = useState<{ von: number; nach: number } | null>(null)
   const [aufgebenFrage, setAufgebenFrage] = useState(false)
-  const [buchung, setBuchung] = useState<Buchung | null>(null)
+  const [buchung, setBuchung] = useState<(Buchung & { partieId: string }) | null>(null)
 
   const rechner = useRef<Rechner | null>(null)
   useEffect(() => {
@@ -180,15 +180,13 @@ export function SchachPage() {
     const ende = p.ende!
     if (ende.sieger === farbe) spiele('erfolg')
     else if (ende.sieger) spiele('niederlage')
-    let abbruch = false
+    // Die Buchung trägt ihre Partie mit: Kommt sie erst an, wenn schon die
+    // nächste läuft, steht sie dort nicht. (Ein Abbruch-Merker im Aufräumen
+    // ginge nicht -- unter StrictMode liefe der Effekt zweimal, und der
+    // zweite Lauf bucht wegen der Sperre oben nicht mehr.)
     buchePartie(partieId, ende, farbe, s, Math.ceil(p.zuege.length / 2))
-      .then((b) => {
-        if (!abbruch) setBuchung(b)
-      })
+      .then((b) => setBuchung({ ...b, partieId }))
       .catch((err) => console.error('[schach] Ergebnis konnte nicht gespeichert werden', err))
-    return () => {
-      abbruch = true
-    }
   }, [spiel])
 
   /* ----------------------------------------------------------- Züge */
@@ -252,7 +250,8 @@ export function SchachPage() {
    * Rechnung des Computers zurück und er rechnete gleich wieder los.
    */
   const zurueckBis = spiel && partie && !partie.ende && !computerDran ? partie.zuege.length - 2 : -1
-  const darfZurueck = !!spiel && zurueckBis >= (spiel.farbe === 'w' ? 0 : 1)
+  // Als Schwarz ist man nur nach einer ungeraden Zahl Züge dran, zurueckBis ist dann ≥ 1.
+  const darfZurueck = zurueckBis >= 0
 
   const zurueck = useCallback(() => {
     if (!darfZurueck) return
@@ -420,7 +419,7 @@ export function SchachPage() {
                 : t.schach.ergebnis.niederlage}
           </h2>
           <p>{t.schach.endeGrund[ende.art]}</p>
-          {buchung && (
+          {buchung?.partieId === spiel.partieId && (
             <p className={shell.scoreLine}>{t.schach.punkte(buchung.punkte, buchung.xp)}</p>
           )}
           <button type="button" className={shell.primaryBtn} onClick={() => starten()}>
