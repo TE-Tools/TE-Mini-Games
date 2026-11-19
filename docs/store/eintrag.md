@@ -30,7 +30,7 @@ TE-Mini Games
 ## Kurzbeschreibung (max. 80 Zeichen)
 
 ```
-22 kurze Spiele für zwischendurch – allein, zu zweit oder in der Gruppe.
+23 kurze Spiele für zwischendurch – allein, zu zweit oder in der Gruppe.
 ```
 
 (72 Zeichen.)
@@ -66,6 +66,8 @@ WÜRFEL, KARTEN UND BRETT
 • Texas Hold'em – Turnier gegen den Rechner oder online gegen andere.
 • Mau-Mau und Letzte Karte – zwei Spielarten, jede Hausregel einzeln
   umlegbar.
+• Schach – gegen den Computer in drei Stufen oder online gegen einen
+  Menschen.
 • Schützenopoly – ein Brettspiel rund ums Schützenfest, mit 22 Festen aus
   ganz Deutschland.
 
@@ -77,7 +79,7 @@ IN DER GRUPPE, EIN GERÄT REICHT
   dabei herauskommt, müssen die anderen erraten.
 
 ONLINE GEGENEINANDER
-Kniffel, Texas Hold'em, Mau-Mau, Letzte Karte, Schützenopoly,
+Kniffel, Texas Hold'em, Mau-Mau, Letzte Karte, Schach, Schützenopoly,
 Schützenrunde, Finde den Imposter, Wer bin ich? und Stadt Land Fluss lassen
 sich auch online spielen: Tisch aufmachen, Code weitergeben, losspielen.
 

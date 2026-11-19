@@ -77,6 +77,7 @@ export const SPIELE_KACHELN: readonly KachelEintrag[] = [
     icon: '🃏',
     art: 'Karten',
   },
+  { id: 'schach', name: 'Schach', pfad: '/play/schach', icon: '♞', art: 'Brettspiel' },
   {
     id: 'schuetzenopoly',
     name: 'Schützenopoly',
@@ -153,6 +154,7 @@ const GRUPPE: Partial<Record<GameId, SpielGruppe>> = {
   'letzte-karte': 'tisch',
   'texas-holdem': 'tisch',
   schuetzenopoly: 'tisch',
+  schach: 'tisch',
   schuetzenrunde: 'party',
   'finde-den-imposter': 'party',
   'wer-bin-ich': 'party',

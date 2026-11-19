@@ -29,7 +29,7 @@ TE-Mini Games
 ## Kurzbeschreibung (max. 80 Zeichen)
 
 ```
-22 quick games for any moment – solo, for two or with the whole group.
+23 quick games for any moment – solo, for two or with the whole group.
 ```
 
 (70 Zeichen.)
@@ -65,6 +65,7 @@ DICE, CARDS AND BOARD
 • Texas Hold'em – a tournament against the computer or online against
   others.
 • Mau-Mau and Last Card – two ways to play, every house rule switchable.
+• Chess – against the computer at three levels or online against a person.
 • Schützenopoly – a board game around German marksmen's festivals, with 22
   real festivals from all over Germany.
 
@@ -75,8 +76,8 @@ FOR GROUPS – ONE PHONE IS ENOUGH
   others have to guess what comes out.
 
 ONLINE AGAINST EACH OTHER
-The dice game, Texas Hold'em, Mau-Mau, Last Card, Schützenopoly, Marksmen
-Round, Find the Imposter, Who am I? and Categories can also be played
+The dice game, Texas Hold'em, Mau-Mau, Last Card, Chess, Schützenopoly,
+Marksmen Round, Find the Imposter, Who am I? and Categories can also be played
 online: open a table, share the code, play.
 
 IN ENGLISH AND GERMAN
