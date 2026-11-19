@@ -508,9 +508,7 @@ export function SchachOnline({ onZurueck }: Props) {
   const angebot = online.remisAngebot
 
   let status: string
-  if (ende) status = ts.endeGrund[ende.art]
-  else if (abgebrochen) status = to.abgebrochen
-  else if (binDran) status = imSchach ? `${ts.imSchach} ${ts.duBistDran}` : ts.duBistDran
+  if (binDran) status = imSchach ? `${ts.imSchach} ${ts.duBistDran}` : ts.duBistDran
   else status = ts.istDran(gegnerName)
 
   return (
@@ -541,9 +539,12 @@ export function SchachOnline({ onZurueck }: Props) {
         <Geschlagene figuren={ich === 'w' ? weg.b : weg.w} />
       </div>
 
-      <p className={`${styles.status} ${imSchach ? styles.statusSchach : ''}`} aria-live="polite">
-        {status}
-      </p>
+      {/* Am Ende sagt die Karte unten, wie es ausging -- nicht noch einmal hier. */}
+      {!ende && !abgebrochen && (
+        <p className={`${styles.status} ${imSchach ? styles.statusSchach : ''}`} aria-live="polite">
+          {status}
+        </p>
+      )}
 
       {umwandlung && (
         <Umwandlung

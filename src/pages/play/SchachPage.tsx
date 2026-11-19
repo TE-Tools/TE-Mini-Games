@@ -358,8 +358,7 @@ export function SchachPage() {
   const imSchach = !ende && partie.stellung.imSchach()
 
   let status: string
-  if (ende) status = t.schach.endeGrund[ende.art]
-  else if (computerDran) status = t.schach.computerDenkt
+  if (computerDran) status = t.schach.computerDenkt
   else status = imSchach ? `${t.schach.imSchach} ${t.schach.duBistDran}` : t.schach.duBistDran
 
   return (
@@ -396,9 +395,12 @@ export function SchachPage() {
         <Geschlagene figuren={spiel.farbe === 'w' ? weg.b : weg.w} />
       </div>
 
-      <p className={`${styles.status} ${imSchach ? styles.statusSchach : ''}`} aria-live="polite">
-        {status}
-      </p>
+      {/* Am Ende sagt die Karte unten, wie es ausging -- nicht noch einmal hier. */}
+      {!ende && (
+        <p className={`${styles.status} ${imSchach ? styles.statusSchach : ''}`} aria-live="polite">
+          {status}
+        </p>
+      )}
 
       {umwandlung && (
         <Umwandlung
