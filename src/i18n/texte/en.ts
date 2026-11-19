@@ -3139,7 +3139,7 @@ export const en: Texte = {
     weiss: 'White',
     schwarz: 'Black',
     feld: (feld: string, inhalt: string) => (inhalt ? `${feld}: ${inhalt}` : feld),
-    figurAuf: (farbe: string, figur: string) => `${farbe} ${figur}`,
+    figurAuf: (farbe: string, figur: string) => `${figur} (${farbe})`,
     brett: 'Chessboard',
     zuege: 'Moves',
     nochKeineZuege: 'No moves yet.',

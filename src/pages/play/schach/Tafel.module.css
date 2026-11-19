@@ -1,0 +1,93 @@
+.leise {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.zugliste {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-2) var(--space-1);
+  display: flex;
+  gap: var(--space-3);
+  overflow-x: auto;
+  width: 100%;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  scrollbar-width: thin;
+}
+
+.zugliste li {
+  display: flex;
+  gap: var(--space-1);
+  white-space: nowrap;
+  flex: none;
+}
+
+.nummer {
+  color: var(--color-text-muted);
+}
+
+.geschlagen {
+  min-height: 1.4em;
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1.2;
+  letter-spacing: -0.12em;
+  font-family: 'Noto Sans Symbols 2', 'Segoe UI Symbol', 'Apple Symbols', 'DejaVu Sans', serif;
+}
+
+.weiss {
+  color: #ffffff;
+  text-shadow:
+    1px 0 0 #1c1917,
+    -1px 0 0 #1c1917,
+    0 1px 0 #1c1917,
+    0 -1px 0 #1c1917;
+}
+
+.schwarz {
+  color: #1c1917;
+}
+
+.umwandlung {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-xl);
+  background: #ffffff;
+  border: 1px solid var(--color-border-strong);
+  box-shadow: var(--shadow-md);
+  width: 100%;
+}
+
+.umwandlung p {
+  margin: 0;
+  font-weight: 800;
+}
+
+.umwandlungWahl {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.umwandlungWahl button {
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-strong);
+  background: #f0d9b5;
+  font-size: 2.4rem;
+  line-height: 1;
+  font-family: 'Noto Sans Symbols 2', 'Segoe UI Symbol', 'Apple Symbols', 'DejaVu Sans', serif;
+}
+
+.klein {
+  border: 0;
+  background: none;
+  color: var(--color-text-muted);
+  font-weight: 700;
+  font-size: var(--text-sm);
+}

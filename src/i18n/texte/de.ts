@@ -3220,7 +3220,7 @@ export const de = {
     weiss: 'Weiß',
     schwarz: 'Schwarz',
     feld: (feld: string, inhalt: string) => (inhalt ? `${feld}: ${inhalt}` : feld),
-    figurAuf: (farbe: string, figur: string) => `${farbe}er ${figur}`,
+    figurAuf: (farbe: string, figur: string) => `${figur} (${farbe})`,
     brett: 'Schachbrett',
     zuege: 'Züge',
     nochKeineZuege: 'Noch kein Zug gespielt.',
