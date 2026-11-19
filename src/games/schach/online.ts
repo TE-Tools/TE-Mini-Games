@@ -47,7 +47,11 @@ export function farbeVon(seat: number, weissSitz: number): Farbe {
 }
 
 /** Eine Aktion anwenden -- oder liegen lassen. */
-export function wendeAn(stand: OnlineStand, eintrag: SchachEintrag, weissSitz: number): OnlineStand {
+export function wendeAn(
+  stand: OnlineStand,
+  eintrag: SchachEintrag,
+  weissSitz: number,
+): OnlineStand {
   const { partie, remisAngebot } = stand
   if (partie.ende) return stand
   const farbe = farbeVon(eintrag.seat, weissSitz)
@@ -70,7 +74,10 @@ export function wendeAn(stand: OnlineStand, eintrag: SchachEintrag, weissSitz: n
       }
     }
     case 'aufgeben':
-      return { partie: beende(partie, { art: 'aufgabe', sieger: andere(farbe) }), remisAngebot: null }
+      return {
+        partie: beende(partie, { art: 'aufgabe', sieger: andere(farbe) }),
+        remisAngebot: null,
+      }
     case 'remis_anbieten':
       return remisAngebot ? stand : { partie, remisAngebot: farbe }
     case 'remis_ablehnen':

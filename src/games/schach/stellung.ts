@@ -263,18 +263,46 @@ export class Stellung {
         if (!nurSchlagen && !(ziel & 0x88) && b[ziel] === 0) {
           if (ziel >> 4 === letzteReihe) {
             for (const u of [DAME, TURM, LAEUFER, SPRINGER]) {
-              zuege.push({ von: feld, nach: ziel, figur, geschlagen: 0, umwandlung: u, art: ZUG_NORMAL })
+              zuege.push({
+                von: feld,
+                nach: ziel,
+                figur,
+                geschlagen: 0,
+                umwandlung: u,
+                art: ZUG_NORMAL,
+              })
             }
           } else {
-            zuege.push({ von: feld, nach: ziel, figur, geschlagen: 0, umwandlung: 0, art: ZUG_NORMAL })
+            zuege.push({
+              von: feld,
+              nach: ziel,
+              figur,
+              geschlagen: 0,
+              umwandlung: 0,
+              art: ZUG_NORMAL,
+            })
             const doppel = ziel + vor
             if (feld >> 4 === startReihe && b[doppel] === 0) {
-              zuege.push({ von: feld, nach: doppel, figur, geschlagen: 0, umwandlung: 0, art: ZUG_DOPPEL })
+              zuege.push({
+                von: feld,
+                nach: doppel,
+                figur,
+                geschlagen: 0,
+                umwandlung: 0,
+                art: ZUG_DOPPEL,
+              })
             }
           }
         } else if (nurSchlagen && !(ziel & 0x88) && b[ziel] === 0 && ziel >> 4 === letzteReihe) {
           // Umwandeln ohne zu schlagen gehört in die Ruhesuche: Es ändert das Material.
-          zuege.push({ von: feld, nach: ziel, figur, geschlagen: 0, umwandlung: DAME, art: ZUG_NORMAL })
+          zuege.push({
+            von: feld,
+            nach: ziel,
+            figur,
+            geschlagen: 0,
+            umwandlung: DAME,
+            art: ZUG_NORMAL,
+          })
         }
         for (const seitlich of [-1, 1]) {
           const q = feld + vor + seitlich
@@ -283,13 +311,34 @@ export class Stellung {
           if (opfer !== 0 && (opfer > 0 ? 1 : -1) === -seite) {
             if (q >> 4 === letzteReihe) {
               for (const u of nurSchlagen ? [DAME] : [DAME, TURM, LAEUFER, SPRINGER]) {
-                zuege.push({ von: feld, nach: q, figur, geschlagen: opfer, umwandlung: u, art: ZUG_NORMAL })
+                zuege.push({
+                  von: feld,
+                  nach: q,
+                  figur,
+                  geschlagen: opfer,
+                  umwandlung: u,
+                  art: ZUG_NORMAL,
+                })
               }
             } else {
-              zuege.push({ von: feld, nach: q, figur, geschlagen: opfer, umwandlung: 0, art: ZUG_NORMAL })
+              zuege.push({
+                von: feld,
+                nach: q,
+                figur,
+                geschlagen: opfer,
+                umwandlung: 0,
+                art: ZUG_NORMAL,
+              })
             }
           } else if (q === this.ep) {
-            zuege.push({ von: feld, nach: q, figur, geschlagen: -seite * BAUER, umwandlung: 0, art: ZUG_EP })
+            zuege.push({
+              von: feld,
+              nach: q,
+              figur,
+              geschlagen: -seite * BAUER,
+              umwandlung: 0,
+              art: ZUG_EP,
+            })
           }
         }
         continue
@@ -302,10 +351,24 @@ export class Stellung {
           const opfer = b[q]!
           if (opfer === 0) {
             if (!nurSchlagen) {
-              zuege.push({ von: feld, nach: q, figur, geschlagen: 0, umwandlung: 0, art: ZUG_NORMAL })
+              zuege.push({
+                von: feld,
+                nach: q,
+                figur,
+                geschlagen: 0,
+                umwandlung: 0,
+                art: ZUG_NORMAL,
+              })
             }
           } else if ((opfer > 0 ? 1 : -1) === -seite) {
-            zuege.push({ von: feld, nach: q, figur, geschlagen: opfer, umwandlung: 0, art: ZUG_NORMAL })
+            zuege.push({
+              von: feld,
+              nach: q,
+              figur,
+              geschlagen: opfer,
+              umwandlung: 0,
+              art: ZUG_NORMAL,
+            })
           }
         }
         if (art === KOENIG && !nurSchlagen) this.rochaden(feld, zuege)
@@ -320,11 +383,25 @@ export class Stellung {
           const opfer = b[q]!
           if (opfer === 0) {
             if (!nurSchlagen) {
-              zuege.push({ von: feld, nach: q, figur, geschlagen: 0, umwandlung: 0, art: ZUG_NORMAL })
+              zuege.push({
+                von: feld,
+                nach: q,
+                figur,
+                geschlagen: 0,
+                umwandlung: 0,
+                art: ZUG_NORMAL,
+              })
             }
           } else {
             if ((opfer > 0 ? 1 : -1) === -seite) {
-              zuege.push({ von: feld, nach: q, figur, geschlagen: opfer, umwandlung: 0, art: ZUG_NORMAL })
+              zuege.push({
+                von: feld,
+                nach: q,
+                figur,
+                geschlagen: opfer,
+                umwandlung: 0,
+                art: ZUG_NORMAL,
+              })
             }
             break
           }
@@ -353,7 +430,14 @@ export class Stellung {
       !this.angegriffen(grund + 5, gegner) &&
       !this.angegriffen(grund + 6, gegner)
     ) {
-      zuege.push({ von: feld, nach: grund + 6, figur: b[feld]!, geschlagen: 0, umwandlung: 0, art: ZUG_KURZ })
+      zuege.push({
+        von: feld,
+        nach: grund + 6,
+        figur: b[feld]!,
+        geschlagen: 0,
+        umwandlung: 0,
+        art: ZUG_KURZ,
+      })
     }
     if (
       this.rochade & lang &&
@@ -364,7 +448,14 @@ export class Stellung {
       !this.angegriffen(grund + 3, gegner) &&
       !this.angegriffen(grund + 2, gegner)
     ) {
-      zuege.push({ von: feld, nach: grund + 2, figur: b[feld]!, geschlagen: 0, umwandlung: 0, art: ZUG_LANG })
+      zuege.push({
+        von: feld,
+        nach: grund + 2,
+        figur: b[feld]!,
+        geschlagen: 0,
+        umwandlung: 0,
+        art: ZUG_LANG,
+      })
     }
   }
 

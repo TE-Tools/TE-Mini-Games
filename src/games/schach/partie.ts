@@ -98,7 +98,9 @@ export function zuWenigMaterial(s: Stellung): boolean {
 
 function endeVon(s: Stellung, verlauf: string[]): Ende | null {
   if (s.legaleZuege().length === 0) {
-    return s.imSchach() ? { art: 'matt', sieger: s.seite === 1 ? 'b' : 'w' } : { art: 'patt', sieger: null }
+    return s.imSchach()
+      ? { art: 'matt', sieger: s.seite === 1 ? 'b' : 'w' }
+      : { art: 'patt', sieger: null }
   }
   if (zuWenigMaterial(s)) return { art: 'material', sieger: null }
   if (s.halbzuege >= 100) return { art: 'fuenfzig-zuege', sieger: null }
@@ -147,8 +149,9 @@ export function findeZug(s: Stellung, kurz: string, legale = s.legaleZuege()): Z
   const nach = feldAus(kurz.slice(2, 4))
   const um = kurz[4] ? ' pnbrqk'.indexOf(kurz[4].toLowerCase()) : 0
   return (
-    legale.find((z) => z.von === von && z.nach === nach && (z.umwandlung || 0) === (um > 0 ? um : 0)) ??
-    null
+    legale.find(
+      (z) => z.von === von && z.nach === nach && (z.umwandlung || 0) === (um > 0 ? um : 0),
+    ) ?? null
   )
 }
 
@@ -205,7 +208,8 @@ export function amZug(p: Partie): Farbe {
 export function geschlagen(p: Partie): { w: number[]; b: number[] } {
   const zaehle = (s: Stellung) => {
     const n = new Map<number, number>()
-    for (let f = 0; f < 128; f++) if (!(f & 0x88) && s.brett[f]) n.set(s.brett[f]!, (n.get(s.brett[f]!) ?? 0) + 1)
+    for (let f = 0; f < 128; f++)
+      if (!(f & 0x88) && s.brett[f]) n.set(s.brett[f]!, (n.get(s.brett[f]!) ?? 0) + 1)
     return n
   }
   const anfang = zaehle(Stellung.ausFen(p.startFen))

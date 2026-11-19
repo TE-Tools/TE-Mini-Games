@@ -3,9 +3,14 @@
  *
  * Ein Negamax mit Alpha-Beta-Schnitt, Ruhesuche für Schlagabtausche und
  * iterativer Vertiefung bei der schweren Stufe. Bewertet wird Material plus
- * Feldtabellen (wo steht eine Figur gut?), im Endspiel dazu, wie weit der
- * gegnerische König am Rand steht -- sonst schiebt der Rechner mit Dame
- * und König gegen König endlos hin und her, statt mattzusetzen.
+ * Feldtabellen (wo steht eine Figur gut?), im gewonnenen Endspiel dazu, wie
+ * weit der gegnerische König am Rand steht.
+ *
+ * Diese Mattführung ist ein kleiner Gewinn, kein Muss -- gemessen
+ * (19.11.2026, schwere Stufe aus der Mitte des Bretts): mit Dame matt nach
+ * 9 statt 11 Zügen, mit Turm nach 15 statt 18. Bei einem Zehntel der
+ * Bedenkzeit, wie auf einem langsamen Handy, dasselbe Bild (10/11, 15/18).
+ * Mattsetzen kann er auch ohne sie.
  *
  * Zufall nur über den mitgegebenen Startwert: Mit demselben Startwert zieht
  * er dasselbe. Das macht ihn prüfbar.
@@ -148,7 +153,7 @@ export function bewerte(s: Stellung): number {
   let wert = (mitte * p + ende * (24 - p)) / 24
 
   // Mattführung: Wer klar vorn liegt, treibt den König an den Rand und
-  // rückt mit dem eigenen nach.
+  // rückt mit dem eigenen nach (siehe oben: schneller, nicht nötig).
   const vorsprung = material[0]! - material[1]!
   if (p <= 8 && Math.abs(vorsprung) >= 300) {
     const sieger = vorsprung > 0 ? 0 : 1
@@ -181,7 +186,8 @@ function ordne(zuege: Zug[], erster: Zug | null, killer: Zug[] | undefined): Zug
   const wert = (z: Zug) => {
     if (erster && gleich(erster, z)) return 1e6
     let w = 0
-    if (z.geschlagen) w += 10000 + 10 * WERTE[Math.abs(z.geschlagen)]! - WERTE[Math.abs(z.figur)]! / 10
+    if (z.geschlagen)
+      w += 10000 + 10 * WERTE[Math.abs(z.geschlagen)]! - WERTE[Math.abs(z.figur)]! / 10
     if (z.umwandlung) w += 9000 + WERTE[z.umwandlung]!
     if (killer && (gleich(killer[0], z) || gleich(killer[1], z))) w += 5000
     return w
@@ -294,8 +300,7 @@ function alleBewerten(s: Stellung, verlauf: readonly string[], su: Suche): Bewer
   const ergebnis: Bewerteter[] = []
   for (const z of ordne(s.legaleZuege(), null, undefined)) {
     s.ziehe(z)
-    const wert =
-      sofort(s, verlauf) ?? -suche(s, su.werte.tiefe - 1, -UNENDLICH, UNENDLICH, su, 1)
+    const wert = sofort(s, verlauf) ?? -suche(s, su.werte.tiefe - 1, -UNENDLICH, UNENDLICH, su, 1)
     s.nimmZurueck()
     ergebnis.push({ zug: uci(z), wert })
   }
@@ -374,4 +379,3 @@ export function waehleZug(auftrag: KiAuftrag): string | null {
   }
   return bester.zug
 }
-
