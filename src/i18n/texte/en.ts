@@ -138,7 +138,7 @@ export const en: Texte = {
     datenschutz: 'Privacy',
     datenschutzerklaerung: 'Privacy policy',
     kontoLoeschen: 'Delete account',
-    stand: 'Last updated: 10 November 2026',
+    stand: 'Last updated: 19 November 2026',
   },
 
   /** The 50 badges, keyed by id. */

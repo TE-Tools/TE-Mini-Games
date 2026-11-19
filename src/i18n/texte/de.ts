@@ -139,7 +139,7 @@ export const de = {
     datenschutz: 'Datenschutz',
     datenschutzerklaerung: 'Datenschutzerklärung',
     kontoLoeschen: 'Konto löschen',
-    stand: 'Stand: 10. November 2026',
+    stand: 'Stand: 19. November 2026',
   },
 
   /** Die 50 Abzeichen. Schlüssel ist die Kennung, nicht der Name. */
