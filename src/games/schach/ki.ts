@@ -265,6 +265,21 @@ function suche(
   return alpha
 }
 
+/**
+ * Was ein Zug an der Wurzel sofort ergibt: Remis durch Wiederholung oder
+ * 50 Züge, Matt oder Patt. null, wenn weitergerechnet werden muss.
+ *
+ * Matt in einem Zug sieht damit jede Stufe -- auch die leichte, die nach
+ * ihrem Zug sonst nur noch die Stellung ansieht und nicht, ob der Gegner
+ * überhaupt noch ziehen kann.
+ */
+function sofort(s: Stellung, verlauf: readonly string[]): number | null {
+  if (s.legaleZuege().length === 0) return s.imSchach() ? MATT : 0
+  if (s.halbzuege >= 100) return 0
+  if (verlauf.filter((k) => k === s.schluessel()).length >= 2) return 0
+  return null
+}
+
 export interface Bewerteter {
   zug: string
   wert: number
@@ -279,8 +294,8 @@ function alleBewerten(s: Stellung, verlauf: readonly string[], su: Suche): Bewer
   const ergebnis: Bewerteter[] = []
   for (const z of ordne(s.legaleZuege(), null, undefined)) {
     s.ziehe(z)
-    const remis = s.halbzuege >= 100 || verlauf.filter((k) => k === s.schluessel()).length >= 2
-    const wert = remis ? 0 : -suche(s, su.werte.tiefe - 1, -UNENDLICH, UNENDLICH, su, 1)
+    const wert =
+      sofort(s, verlauf) ?? -suche(s, su.werte.tiefe - 1, -UNENDLICH, UNENDLICH, su, 1)
     s.nimmZurueck()
     ergebnis.push({ zug: uci(z), wert })
   }
@@ -297,8 +312,7 @@ function vertiefen(s: Stellung, verlauf: readonly string[], su: Suche): string |
     let besterHier: Zug | null = null
     for (const z of ordne(zuege, bester, undefined)) {
       s.ziehe(z)
-      const remis = s.halbzuege >= 100 || verlauf.filter((k) => k === s.schluessel()).length >= 2
-      const wert = remis ? 0 : -suche(s, tiefe - 1, -UNENDLICH, -alpha, su, 1)
+      const wert = sofort(s, verlauf) ?? -suche(s, tiefe - 1, -UNENDLICH, -alpha, su, 1)
       s.nimmZurueck()
       if (su.abgebrochen) break
       if (wert > alpha) {
@@ -342,11 +356,16 @@ export function waehleZug(auftrag: KiAuftrag): string | null {
 
   const bewertet = alleBewerten(s, auftrag.verlauf, su)
   if (bewertet.length === 0) return null
+  // Ein Matt in einem Zug lässt keine Stufe liegen -- auch nicht mit dem
+  // gelegentlichen Zufallszug. Alles andere wäre kein schwacher Gegner,
+  // sondern ein seltsamer.
+  const matt = bewertet.find((b) => b.wert === MATT)
+  if (matt) return matt.zug
   if (zufall() < werte.zufall) return bewertet[Math.floor(zufall() * bewertet.length)]!.zug
   let bester = bewertet[0]!
   let besterWert = -Infinity
   for (const b of bewertet) {
-    // Ein Matt bleibt ein Matt: Daran verschätzt sich auch der leichte nicht.
+    // Ein Matt bleibt ein Matt: Daran verschätzt sich keine Stufe.
     const rausch = Math.abs(b.wert) > MATT - 100 ? 0 : (zufall() * 2 - 1) * werte.rauschen
     if (b.wert + rausch > besterWert) {
       besterWert = b.wert + rausch
