@@ -1,0 +1,142 @@
+/*
+ * Das Schachbrett: Holztöne wie am Vereinsbrett, damit man sich darauf
+ * sofort zurechtfindet. Die Figurengröße folgt der Feldgröße.
+ */
+
+.brett {
+  --feld: calc(min(100vw - 2rem, 30rem) / 8);
+  display: flex;
+  flex-direction: column;
+  width: calc(var(--feld) * 8);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow:
+    0 0 0 3px #7a5230,
+    0 12px 28px rgb(26 31 49 / 0.25);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.reihe {
+  display: flex;
+}
+
+.feld {
+  position: relative;
+  width: var(--feld);
+  height: var(--feld);
+  padding: 0;
+  border: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.feld:disabled {
+  cursor: default;
+}
+
+.hell {
+  background: #f0d9b5;
+}
+
+.dunkel {
+  background: #b58863;
+}
+
+.letzter.hell {
+  background: #f6eb72;
+}
+
+.letzter.dunkel {
+  background: #dcc34b;
+}
+
+.gewaehlt {
+  box-shadow: inset 0 0 0 calc(var(--feld) * 0.06) #2563eb;
+}
+
+.schach {
+  background: radial-gradient(circle, #ef4444 0%, #ef444499 35%, transparent 75%), #b58863;
+}
+
+.hell.schach {
+  background: radial-gradient(circle, #ef4444 0%, #ef444499 35%, transparent 75%), #f0d9b5;
+}
+
+/* Ein Punkt für ein freies Ziel, ein Ring für ein Ziel mit Figur. */
+.ziel::after {
+  content: '';
+  position: absolute;
+  width: 30%;
+  height: 30%;
+  border-radius: 50%;
+  background: rgb(20 20 20 / 0.28);
+  pointer-events: none;
+}
+
+.schlagZiel::after {
+  content: '';
+  position: absolute;
+  inset: 4%;
+  border-radius: 50%;
+  border: calc(var(--feld) * 0.08) solid rgb(20 20 20 / 0.28);
+  pointer-events: none;
+}
+
+.figur {
+  font-size: calc(var(--feld) * 0.8);
+  line-height: 1;
+  font-family: 'Noto Sans Symbols 2', 'Segoe UI Symbol', 'Apple Symbols', 'DejaVu Sans', serif;
+  pointer-events: none;
+  transform: translateY(2%);
+}
+
+.weiss {
+  color: #ffffff;
+  text-shadow:
+    0 0 1px #1c1917,
+    1px 0 0 #1c1917,
+    -1px 0 0 #1c1917,
+    0 1px 0 #1c1917,
+    0 -1px 0 #1c1917,
+    0 2px 3px rgb(0 0 0 / 0.35);
+}
+
+.schwarz {
+  color: #1c1917;
+  text-shadow: 0 2px 3px rgb(0 0 0 / 0.25);
+}
+
+.reihenName,
+.linienName {
+  position: absolute;
+  font-size: calc(var(--feld) * 0.2);
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.reihenName {
+  top: 4%;
+  left: 5%;
+}
+
+.linienName {
+  bottom: 4%;
+  right: 6%;
+}
+
+.hell .reihenName,
+.hell .linienName {
+  color: #b58863;
+}
+
+.dunkel .reihenName,
+.dunkel .linienName {
+  color: #f0d9b5;
+}
