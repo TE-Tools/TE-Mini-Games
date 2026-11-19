@@ -6,7 +6,14 @@
  * online teilen sich denselben Weg -- zwei Buchungen wären zwei Formeln.
  */
 
-import { ausgangFuer, partiePunkte, partieXp, type Ende, type Farbe, type Gegner } from '@/games/schach'
+import {
+  ausgangFuer,
+  partiePunkte,
+  partieXp,
+  type Ende,
+  type Farbe,
+  type Gegner,
+} from '@/games/schach'
 import { addXp, saveGameResult } from '@/offline'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
@@ -38,7 +45,11 @@ export async function buchePartie(
     stars: 0,
   })
   await addXp('guest', xp)
-  await processAfterResult({ gameId: 'schach', level: 1, isPersonalRecord: gespeichert.isPersonalRecord })
+  await processAfterResult({
+    gameId: 'schach',
+    level: 1,
+    isPersonalRecord: gespeichert.isPersonalRecord,
+  })
   void trySyncNow()
   return { punkte, xp, ausgang, bestwert: gespeichert.isPersonalRecord }
 }

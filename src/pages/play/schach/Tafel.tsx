@@ -7,6 +7,7 @@ import { useEffect, useRef } from 'react'
 import { DAME, LAEUFER, SPRINGER, TURM, type Farbe } from '@/games/schach'
 import { useSprache } from '@/i18n/sprache'
 import { figurName, figurZeichen, zeichenNotation } from './figuren'
+import shell from '../PlayShell.module.css'
 import styles from './Tafel.module.css'
 
 export function Zugliste({ notation }: { notation: readonly string[] }) {
@@ -84,5 +85,32 @@ export function Umwandlung({
         {t.schach.nein}
       </button>
     </div>
+  )
+}
+
+/** Die Kopfzeile -- dieselbe auf allen Schach-Ansichten. */
+export function Kopf({
+  titel,
+  onZurueck,
+  rechts,
+}: {
+  titel: string
+  onZurueck: () => void
+  rechts?: string
+}) {
+  const { t } = useSprache()
+  return (
+    <header className={shell.header}>
+      <button
+        type="button"
+        className={shell.back}
+        onClick={onZurueck}
+        aria-label={t.allgemein.zurueck}
+      >
+        ←
+      </button>
+      <h1 className={shell.title}>{titel}</h1>
+      {rechts ? <span className={shell.levelBadge}>{rechts}</span> : <span aria-hidden="true" />}
+    </header>
   )
 }
