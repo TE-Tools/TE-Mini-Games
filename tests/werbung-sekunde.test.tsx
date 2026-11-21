@@ -142,7 +142,7 @@ describe('Die perfekte Sekunde: im Spiel', () => {
 
     expect(await screen.findByText(/Mit Hilfe eines Werbevideos geschafft/)).toBeTruthy()
     expect(screen.queryByText(/Neuer Rekord/i)).toBeNull()
-    expect(screen.getByText('⭐')).toBeTruthy()
+    expect(screen.getByRole('img', { name: '1 von 5 Sternen' })).toBeTruthy()
     const ergebnisse = await db.gameResults.toArray()
     const geschafft = ergebnisse.find((e) => e.level === LEVEL && !e.resultData['failedHit'])!
     expect(geschafft).toMatchObject({ score: 0, xp: 0, isPersonalRecord: false })

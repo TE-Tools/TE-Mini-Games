@@ -203,11 +203,6 @@
   font-weight: 600;
 }
 
-.stars {
-  font-size: var(--text-2xl);
-  letter-spacing: 0.1em;
-}
-
 .scoreLine {
   font-size: var(--text-base);
   color: var(--color-text-muted);
