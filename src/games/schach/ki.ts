@@ -22,6 +22,7 @@
  */
 
 import { mulberry32 } from '@/games/rng'
+import { buchZug } from './buch'
 import { STUFEN, WERTE, type SchachStufe, type StufenWerte } from './config'
 import { BAUER, DAME, KOENIG, LAEUFER, Stellung, TURM, uci, type Zug } from './stellung'
 
@@ -626,6 +627,10 @@ export function waehleZug(auftrag: KiAuftrag): string | null {
     su.pfadB.push(s.hashB)
   }
   const zufall = mulberry32(auftrag.seed)
+  if (werte.buch) {
+    const ausBuch = buchZug(s.schluessel(), auftrag.fen, zufall)
+    if (ausBuch) return ausBuch
+  }
 
   if (werte.rauschen === 0 && werte.zufall === 0) return vertiefen(s, auftrag.verlauf, su)
 

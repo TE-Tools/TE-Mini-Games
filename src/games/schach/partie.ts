@@ -200,6 +200,38 @@ export function zieleVon(p: Partie, feld: number): Zug[] {
   return p.stellung.legaleZuege().filter((z) => z.von === feld)
 }
 
+/** Wo der Turm steht, mit dem eine Rochade gezogen wird. */
+function rochadeTurm(z: Zug): number {
+  return z.art === ZUG_KURZ ? z.von + 3 : z.von - 4
+}
+
+/**
+ * Die Züge, die das Antippen von `von` und dann `nach` meint.
+ *
+ * Meist ist das einfach der Zug von `von` nach `nach` (bei der Umwandlung
+ * mehrere, je Figur einer). Dazu die Rochade auf zwei Wegen: König auf sein
+ * Zielfeld (e1–g1), oder König und dann den eigenen Turm antippen
+ * (e1–h1). Den zweiten Weg nehmen viele zuerst -- „König und Turm
+ * tauschen" ist, wie man die Rochade beschreibt.
+ */
+export function zuegeAuf(p: Partie, von: number, nach: number): Zug[] {
+  return zieleVon(p, von).filter(
+    (z) =>
+      z.nach === nach || ((z.art === ZUG_KURZ || z.art === ZUG_LANG) && rochadeTurm(z) === nach),
+  )
+}
+
+/** Die Felder, die nach Antippen von `von` ein Ziel sind -- samt dem Turm einer Rochade. */
+export function zielFelder(p: Partie, von: number): { feld: number; rochade: boolean }[] {
+  const felder: { feld: number; rochade: boolean }[] = []
+  for (const z of zieleVon(p, von)) {
+    const rochade = z.art === ZUG_KURZ || z.art === ZUG_LANG
+    if (!felder.some((f) => f.feld === z.nach)) felder.push({ feld: z.nach, rochade })
+    if (rochade) felder.push({ feld: rochadeTurm(z), rochade: true })
+  }
+  return felder
+}
+
 export function amZug(p: Partie): Farbe {
   return p.stellung.farbe()
 }

@@ -20,9 +20,14 @@ import {
   perft,
   zieheIn,
   zieleVon,
+  zielFelder,
+  zuegeAuf,
   feldAus,
+  feldName,
+  uci,
   type Partie,
 } from '@/games/schach'
+import { ZUG_KURZ, ZUG_LANG } from '@/games/schach/stellung'
 
 /** Quelle der Zahlen: die Perft-Sammlung des Chess Programming Wiki. */
 const PERFT: [string, string, number[]][] = [
@@ -262,5 +267,37 @@ describe('Zobrist-Kennung', () => {
     expect([s.hashA, s.seite, s.ep]).toEqual([frisch.hashA, -1, -1])
     s.nimmZurueck()
     expect([s.hashA, s.hashB, s.fen()]).toEqual(vorher)
+  })
+})
+
+describe('Rochade antippen', () => {
+  // Weiß kann kurz und lang rochieren.
+  const fen = 'r3k2r/pppqbppp/2np1n2/4p3/2B1P1b1/2NPBN2/PPPQ1PPP/R3K2R w KQkq - 0 1'
+
+  it('König auf g1 oder König auf den Turm h1 -- beides ist die kurze Rochade', () => {
+    const p = neuePartie(fen)
+    const e1 = feldAus('e1')
+    expect(zuegeAuf(p, e1, feldAus('g1')).map((z) => z.art)).toEqual([ZUG_KURZ])
+    expect(zuegeAuf(p, e1, feldAus('h1')).map((z) => z.art)).toEqual([ZUG_KURZ])
+    expect(zuegeAuf(p, e1, feldAus('a1')).map((z) => z.art)).toEqual([ZUG_LANG])
+    expect(zuegeAuf(p, e1, feldAus('c1')).map((z) => z.art)).toEqual([ZUG_LANG])
+    // Nach der Rochade stehen König und Turm richtig.
+    const nachher = zieheIn(p, uci(zuegeAuf(p, e1, feldAus('h1'))[0]!))!
+    expect(nachher.stellung.fen().split(' ')[0]!.split('/')[7]).toBe('R4RK1')
+  })
+
+  it('zeigt die Türme als Ziel, solange die Rochade erlaubt ist', () => {
+    const felder = (p: Partie) =>
+      zielFelder(p, feldAus('e1'))
+        .filter((f) => f.rochade)
+        .map((f) => feldName(f.feld))
+        .sort()
+    expect(felder(neuePartie(fen))).toEqual(['a1', 'c1', 'g1', 'h1'])
+    // Der Turm h1 zieht weg und zurück: Das kurze Rochaderecht ist verloren.
+    const ohneKurz = zieheIn(zieheIn(neuePartie(fen), 'h1g1')!, 'a7a6')!
+    const zurueck = zieheIn(zieheIn(ohneKurz, 'g1h1')!, 'a6a5')!
+    expect(felder(zurueck)).toEqual(['a1', 'c1'])
+    // Ein fremder Turm oder ein Turm ohne Rochaderecht ist kein Ziel des Königs.
+    expect(zuegeAuf(zurueck, feldAus('e1'), feldAus('h1'))).toEqual([])
   })
 })

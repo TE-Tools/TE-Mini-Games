@@ -4,7 +4,7 @@
  * keinen) -- derselbe Weg wie auf einem Gerät, auf dem der Worker fehlt.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { screen, waitFor, act } from '@testing-library/react'
+import { screen, waitFor, act, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { StrictMode } from 'react'
 import { MemoryRouter } from 'react-router-dom'
@@ -30,7 +30,18 @@ function zeige() {
 }
 
 const feld = (name: string) => document.querySelector<HTMLButtonElement>(`[data-feld="${name}"]`)!
-const zugliste = () => screen.queryByRole('list', { name: 'Züge' })?.textContent ?? ''
+/** Die Zugliste als Text: „1.e4e5 2.Nf3" -- die Figuren lesen sich über ihre Beschriftung. */
+const zugliste = () => {
+  const liste = screen.queryByRole('list', { name: 'Züge' })
+  if (!liste) return ''
+  return [...liste.querySelectorAll('li')]
+    .map(
+      (li, i) =>
+        `${i + 1}.` +
+        [...li.querySelectorAll('[aria-label]')].map((z) => z.getAttribute('aria-label')).join(''),
+    )
+    .join('')
+}
 
 async function zieh(von: string, nach: string) {
   await userEvent.click(feld(von))
@@ -38,7 +49,7 @@ async function zieh(von: string, nach: string) {
 }
 
 /** Bis der Computer geantwortet hat: Man ist wieder dran. */
-const computerHatGezogen = () => screen.findByText('Du bist am Zug', {}, { timeout: 4000 })
+const computerHatGezogen = () => screen.findByText(/Du bist am Zug/, {}, { timeout: 4000 })
 
 beforeEach(() => {
   localStorage.clear()
@@ -74,7 +85,7 @@ describe('Schach gegen den Computer', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Zug zurück' }))
     expect(screen.getByText('Noch kein Zug gespielt.')).toBeInTheDocument()
-    expect(feld('e2').textContent).not.toBe('')
+    expect(feld('e2').querySelector('svg')).not.toBeNull()
   })
 
   it('ein fremdes oder leeres Feld wählt nichts aus', async () => {
@@ -123,9 +134,50 @@ describe('Schach gegen den Computer', () => {
     expect(zugliste()).not.toMatch(/b8/)
     await userEvent.click(screen.getByRole('button', { name: 'Springer (Weiß)' }))
     expect(dialog).not.toBeInTheDocument()
-    expect(zugliste()).toMatch(/5\.b8=♞/)
+    expect(zugliste()).toMatch(/5\.b8=N/)
     await computerHatGezogen()
     expect(JSON.parse(localStorage.getItem(SPEICHER_SCHLUESSEL)!).zuege[8]).toBe('b7b8n')
+  })
+
+  it('Rochade: König antippen, dann den Turm -- König und Turm tauschen die Seiten', async () => {
+    // 1.e4 e5 2.Sf3 Sc6 3.Lc4 Lc5 -- Weiß darf kurz rochieren.
+    const zuege = ['e2e4', 'e7e5', 'g1f3', 'b8c6', 'f1c4', 'f8c5']
+    localStorage.setItem(
+      SPEICHER_SCHLUESSEL,
+      JSON.stringify({ stufe: 'leicht', farbe: 'w', zuege, seed: 3, partieId: 'p2' }),
+    )
+    zeige()
+    await userEvent.click(screen.getByRole('button', { name: /Partie fortsetzen/ }))
+    await userEvent.click(feld('e1'))
+    // Der Turm ist als Ziel markiert, und ein Hinweis erklärt den Sonderzug.
+    expect(feld('h1').className).toMatch(/rochadeZiel/)
+    expect(screen.getByText(/Rochade: Tippe auf den grün umrandeten Turm/)).toBeInTheDocument()
+    await userEvent.click(feld('h1'))
+    expect(zugliste()).toMatch(/4\.O-O/)
+    expect(feld('g1').getAttribute('aria-label')).toBe('g1: König (Weiß)')
+    expect(feld('f1').getAttribute('aria-label')).toBe('f1: Turm (Weiß)')
+    await computerHatGezogen()
+  })
+
+  it('ein Zug lässt sich auch mit dem Finger ziehen', async () => {
+    zeige()
+    await userEvent.click(screen.getByRole('button', { name: 'Partie starten' }))
+    // jsdom kennt keine Maße: Das Brett ist hier 400 Pixel groß, ein Feld 50.
+    const brett = screen.getByRole('grid', { name: 'Schachbrett' })
+    brett.getBoundingClientRect = () => ({ left: 0, top: 0, width: 400, height: 400 }) as DOMRect
+    const punkt = (linie: number, reihe: number) => ({
+      clientX: linie * 50 + 25,
+      clientY: (7 - reihe) * 50 + 25,
+      button: 0,
+      pointerId: 1,
+    })
+    fireEvent.pointerDown(feld('g1'), punkt(6, 0))
+    fireEvent.pointerMove(brett, punkt(6, 1))
+    fireEvent.pointerMove(brett, punkt(5, 2))
+    fireEvent.pointerUp(brett, punkt(5, 2))
+    expect(zugliste()).toMatch(/^1\.Nf3/)
+    expect(feld('f3').getAttribute('aria-label')).toBe('f3: Springer (Weiß)')
+    await computerHatGezogen()
   })
 
   it('verwirft einen Spielstand, der sich nicht nachspielen lässt', () => {

@@ -22,7 +22,8 @@ import {
   partieAus,
   uci,
   zieheIn,
-  zieleVon,
+  zielFelder,
+  zuegeAuf,
   type Farbe,
   type Partie,
   type Rechner,
@@ -33,7 +34,8 @@ import { spiele } from '@/services/sound'
 import { useSprache } from '@/i18n/sprache'
 import { Konfetti } from '@/components/konfetti/Konfetti'
 import { Brett } from './schach/Brett'
-import { Geschlagene, Kopf, Umwandlung, Zugliste } from './schach/Tafel'
+import { Kopf, SpielerZeile, Umwandlung, Zugliste } from './schach/Tafel'
+import { vorsprungVon } from './schach/figuren'
 import { buchePartie, type Buchung } from './schach/partieBuchen'
 import { SchachOnline } from './SchachOnline'
 import shell from './PlayShell.module.css'
@@ -229,7 +231,7 @@ export function SchachPage() {
     (feld: number) => {
       if (!partie || !spiel || computerDran || partie.ende) return
       if (auswahl !== null) {
-        const passend = zieleVon(partie, auswahl).filter((z) => z.nach === feld)
+        const passend = zuegeAuf(partie, auswahl, feld)
         if (passend.length > 0) {
           if (passend.some((z) => z.umwandlung)) setUmwandlung({ von: auswahl, nach: feld })
           else ziehe(uci(passend[0]!))
@@ -350,7 +352,8 @@ export function SchachPage() {
 
   const ende = partie.ende
   const weg = geschlagen(partie)
-  const ziele = auswahl !== null ? zieleVon(partie, auswahl).map((z) => z.nach) : []
+  const vorsprung = vorsprungVon(weg)
+  const ziele = auswahl !== null ? zielFelder(partie, auswahl) : []
   const letzter = partie.zuege.at(-1)
   const letzterZug = letzter
     ? { von: feldAus(letzter.slice(0, 2)), nach: feldAus(letzter.slice(2, 4)) }
@@ -371,35 +374,43 @@ export function SchachPage() {
         }}
       />
 
-      <div className={styles.spieler}>
-        <span className={computerDran ? styles.amZug : undefined}>
-          {t.schach.computer} · {t.schach.stufen[spiel.stufe]}
-        </span>
-        <Geschlagene figuren={spiel.farbe === 'w' ? weg.w : weg.b} />
-      </div>
+      <SpielerZeile
+        name={`${t.schach.computer} · ${t.schach.stufen[spiel.stufe]}`}
+        bild="🤖"
+        amZug={computerDran}
+        figuren={spiel.farbe === 'w' ? weg.w : weg.b}
+        vorsprung={vorsprung[spiel.farbe === 'w' ? 'b' : 'w']}
+      />
 
       <Brett
         stellung={partie.stellung}
         unten={spiel.farbe}
+        eigene={spiel.farbe}
         auswahl={auswahl}
         ziele={ziele}
         letzterZug={letzterZug}
+        zugNr={partie.zuege.length}
         gesperrt={!!ende || computerDran}
         onFeld={feldKlick}
       />
 
-      <div className={styles.spieler}>
-        <span className={!ende && !computerDran ? styles.amZug : undefined}>
-          {t.schach.farben[spiel.farbe]}
-        </span>
-        <Geschlagene figuren={spiel.farbe === 'w' ? weg.b : weg.w} />
-      </div>
+      <SpielerZeile
+        name={`${t.schach.du} · ${t.schach.farben[spiel.farbe]}`}
+        bild="🙂"
+        amZug={!ende && !computerDran}
+        figuren={spiel.farbe === 'w' ? weg.b : weg.w}
+        vorsprung={vorsprung[spiel.farbe]}
+      />
 
       {/* Am Ende sagt die Karte unten, wie es ausging -- nicht noch einmal hier. */}
       {!ende && (
         <p className={`${styles.status} ${imSchach ? styles.statusSchach : ''}`} aria-live="polite">
           {status}
         </p>
+      )}
+
+      {ziele.some((z) => z.rochade) && !umwandlung && (
+        <p className={styles.tipp}>{t.schach.rochadeHinweis}</p>
       )}
 
       {umwandlung && (

@@ -7,6 +7,7 @@
  * Zeichen steht U+FE0E -- sonst malt manches Handy den Bauern (♟) als
  * buntes Emoji.
  */
+import { WERTE, type Farbe } from '@/games/schach'
 import type { Texte } from '@/i18n/sprache'
 
 const ZEICHEN = ['', '♟', '♞', '♝', '♜', '♛', '♚']
@@ -34,4 +35,14 @@ export function figurName(t: Texte, figur: number): string {
  */
 export function zeichenNotation(san: string): string {
   return san.replace(/[NBRQK]/g, (b) => figurZeichen(' PNBRQK'.indexOf(b)))
+}
+
+/** Wer wie viele Bauerneinheiten vorn liegt -- aus den geschlagenen Figuren. */
+export function vorsprungVon(weg: {
+  w: readonly number[]
+  b: readonly number[]
+}): Record<Farbe, number> {
+  const summe = (l: readonly number[]) => l.reduce((n, f) => n + WERTE[Math.abs(f)]!, 0)
+  const w = Math.round((summe(weg.b) - summe(weg.w)) / 100)
+  return { w, b: -w }
 }

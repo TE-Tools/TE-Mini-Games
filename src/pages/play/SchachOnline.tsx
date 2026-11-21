@@ -21,7 +21,8 @@ import {
   standAus,
   uci,
   wendeAn,
-  zieleVon,
+  zielFelder,
+  zuegeAuf,
   type Farbe,
   type SchachAktion,
   type SchachEintrag,
@@ -44,7 +45,8 @@ import { HERZSCHLAG_MS, RAUM_GESCHLOSSEN_TEXT, RAUM_PARAM, istRaumWeg } from '@/
 import { spiele } from '@/services/sound'
 import { Konfetti } from '@/components/konfetti/Konfetti'
 import { Brett } from './schach/Brett'
-import { Geschlagene, Kopf, Umwandlung, Zugliste } from './schach/Tafel'
+import { Kopf, SpielerZeile, Umwandlung, Zugliste } from './schach/Tafel'
+import { vorsprungVon } from './schach/figuren'
 import { buchePartie, type Buchung } from './schach/partieBuchen'
 import { OeffentlicheRaeume } from './OeffentlicheRaeume'
 import raumStil from './OeffentlicheRaeume.module.css'
@@ -319,7 +321,7 @@ export function SchachOnline({ onZurueck }: Props) {
   const feldKlick = (feld: number) => {
     if (!partie || !binDran) return
     if (auswahl !== null) {
-      const passend = zieleVon(partie, auswahl).filter((z) => z.nach === feld)
+      const passend = zuegeAuf(partie, auswahl, feld)
       if (passend.length > 0) {
         setAuswahl(null)
         if (passend.some((z) => z.umwandlung)) setUmwandlung({ von: auswahl, nach: feld })
@@ -499,7 +501,8 @@ export function SchachOnline({ onZurueck }: Props) {
   const ende = partie.ende
   const abgebrochen = !ende && match.phase === 'ende'
   const weg = geschlagen(partie)
-  const ziele = auswahl !== null ? zieleVon(partie, auswahl).map((z) => z.nach) : []
+  const vorsprung = vorsprungVon(weg)
+  const ziele = auswahl !== null ? zielFelder(partie, auswahl) : []
   const letzter = partie.zuege.at(-1)
   const letzterZug = letzter
     ? { von: feldAus(letzter.slice(0, 2)), nach: feldAus(letzter.slice(2, 4)) }
@@ -515,35 +518,43 @@ export function SchachOnline({ onZurueck }: Props) {
     <main className={`${shell.page} ${styles.seite}`}>
       <Kopf titel={t.spiele.schach} onZurueck={() => void verlassen()} rechts={match.code} />
 
-      <div className={styles.spieler}>
-        <span className={!ende && !binDran ? styles.amZug : undefined}>
-          {gegnerName} · {ts.farben[ich === 'w' ? 'b' : 'w']}
-        </span>
-        <Geschlagene figuren={ich === 'w' ? weg.w : weg.b} />
-      </div>
+      <SpielerZeile
+        name={`${gegnerName} · ${ts.farben[ich === 'w' ? 'b' : 'w']}`}
+        bild="👤"
+        amZug={!ende && !binDran}
+        figuren={ich === 'w' ? weg.w : weg.b}
+        vorsprung={vorsprung[ich === 'w' ? 'b' : 'w']}
+      />
 
       <Brett
         stellung={partie.stellung}
         unten={ich}
+        eigene={ich}
         auswahl={auswahl}
         ziele={ziele}
         letzterZug={letzterZug}
+        zugNr={partie.zuege.length}
         gesperrt={!binDran || abgebrochen}
         onFeld={feldKlick}
       />
 
-      <div className={styles.spieler}>
-        <span className={binDran ? styles.amZug : undefined}>
-          {to.du} · {ts.farben[ich]}
-        </span>
-        <Geschlagene figuren={ich === 'w' ? weg.b : weg.w} />
-      </div>
+      <SpielerZeile
+        name={`${ts.du} · ${ts.farben[ich]}`}
+        bild="🙂"
+        amZug={binDran}
+        figuren={ich === 'w' ? weg.b : weg.w}
+        vorsprung={vorsprung[ich]}
+      />
 
       {/* Am Ende sagt die Karte unten, wie es ausging -- nicht noch einmal hier. */}
       {!ende && !abgebrochen && (
         <p className={`${styles.status} ${imSchach ? styles.statusSchach : ''}`} aria-live="polite">
           {status}
         </p>
+      )}
+
+      {ziele.some((z) => z.rochade) && !umwandlung && (
+        <p className={styles.tipp}>{t.schach.rochadeHinweis}</p>
       )}
 
       {umwandlung && (

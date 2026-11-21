@@ -8,7 +8,9 @@ import { describe, it, expect } from 'vitest'
 import {
   Stellung,
   bewerte,
+  BUCH_ZEILEN,
   neuePartie,
+  partieAus,
   waehleZug,
   zieheIn,
   type Partie,
@@ -133,4 +135,31 @@ describe('Computergegner', () => {
     // 1,2 s Bedenkzeit; Spielraum für einen langsamen Prüfrechner.
     expect(performance.now() - t).toBeLessThan(3000)
   }, 10000)
+})
+
+describe('Eröffnungsbuch', () => {
+  it('jede Buchzeile lässt sich Zug für Zug spielen', () => {
+    for (const zeile of BUCH_ZEILEN) {
+      const zuege = zeile.split(' ')
+      expect([zeile, partieAus(zuege).zuege.length]).toEqual([zeile, zuege.length])
+    }
+  })
+
+  it('mittel und schwer eröffnen aus dem Buch und wählen per Startwert, leicht nicht', () => {
+    const fen = neuePartie().stellung.fen()
+    const ersteZuege = new Set(BUCH_ZEILEN.map((z) => z.split(' ')[0]))
+    const schwer = new Set([1, 2, 3, 4, 5, 6, 7, 8].map((seed) => zug(fen, 'schwer', seed)))
+    for (const z of schwer) expect(ersteZuege.has(z!)).toBe(true)
+    expect(schwer.size).toBeGreaterThan(1)
+    expect(ersteZuege.has(zug(fen, 'mittel', 3)!)).toBe(true)
+    // Auf einen Buchzug des Menschen antwortet er aus dem Buch.
+    const nachE4 = partieAus(['e2e4'])
+    const antwort = waehleZug({
+      fen: nachE4.stellung.fen(),
+      verlauf: nachE4.verlauf,
+      stufe: 'schwer',
+      seed: 1,
+    })
+    expect(['e7e5', 'c7c5', 'e7e6', 'c7c6', 'd7d5', 'g8f6', 'd7d6']).toContain(antwort)
+  })
 })
