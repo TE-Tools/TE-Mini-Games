@@ -26,6 +26,7 @@ import { spielName, useSprache, type Texte } from '@/i18n/sprache'
 import { gueltigeKategorie } from './imposter/kategorien'
 import { WerBinIchOnline } from './WerBinIchOnline'
 import styles from './WerBinIchPage.module.css'
+import { Spielerbild } from './party/Spielerbild'
 
 const DEFAULT_NAMES = 'Thomas\nMarina\nPhillip\nSonja'
 
@@ -192,6 +193,7 @@ export function WerBinIchPage() {
           {w.begriffeAnsehen} · {rundeLabel} · {state.categoryLabel}
         </p>
         <div className={`${styles.card} ${styles.cover}`}>
+          <Spielerbild name={ap.name} />
           <p className={styles.subtitle}>{w.geraetWeitergeben}</p>
           <p className={styles.coverName}>{ap.name}</p>
           <p className={styles.meta}>{w.gleichSiehstDu}</p>

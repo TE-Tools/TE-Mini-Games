@@ -17,6 +17,7 @@ import {
 import { spielName, useSprache, type Texte } from '@/i18n/sprache'
 import { StadtLandFlussOnline } from './StadtLandFlussOnline'
 import styles from './StadtLandFlussPage.module.css'
+import { Spielerbild } from './party/Spielerbild'
 
 const DEFAULT_NAMES = 'Thomas\nMarina\nPhillip\nSonja'
 
@@ -212,6 +213,7 @@ export function StadtLandFlussPage() {
           {rundeLabel} · {s.buchstabe(state.buchstabe)}
         </p>
         <div className={`${styles.card} ${styles.cover}`}>
+          <Spielerbild name={ap.name} />
           <p className={styles.subtitle}>{s.geraetWeitergeben}</p>
           <p className={styles.coverName}>{ap.name}</p>
           <p className={styles.letter}>{state.buchstabe}</p>

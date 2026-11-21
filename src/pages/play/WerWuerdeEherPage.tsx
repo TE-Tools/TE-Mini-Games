@@ -17,6 +17,7 @@ import { useSprache } from '@/i18n/sprache'
 import { fehlerSatz, partyFehler } from './partyFehler'
 import shell from './PartyShell.module.css'
 import styles from './WerWuerdeEherPage.module.css'
+import { Spielerbild } from './party/Spielerbild'
 
 const DEFAULT_NAMES = 'Thomas\nMarina\nPhillip\nSonja'
 
@@ -127,6 +128,7 @@ export function WerWuerdeEherPage() {
       <main className={`${shell.page} ${styles.farbe}`}>
         <p className={shell.meta}>{fortschritt}</p>
         <div className={`${shell.card} ${shell.cover}`}>
+          <Spielerbild name={ap.name} />
           <p className={shell.subtitle}>{g.weitergebenAn}</p>
           <p className={shell.coverName}>{ap.name}</p>
           <p className={shell.hint}>{w.stimmeGeheim}</p>
