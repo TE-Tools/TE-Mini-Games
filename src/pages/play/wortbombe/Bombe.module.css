@@ -1,0 +1,169 @@
+/* Die Bombe und ihr Knall. Alles reine CSS-Animation -- die Zeit steuert der Zünder der Seite. */
+
+.wurf {
+  display: grid;
+  place-items: center;
+  animation: wurf 520ms cubic-bezier(0.2, 0.9, 0.25, 1.2) both;
+}
+
+/* Beim Weiterreichen fliegt die Bombe von der Seite herein und dreht sich dabei. */
+@keyframes wurf {
+  from {
+    transform: translateX(-70vw) rotate(-260deg) scale(0.7);
+  }
+}
+
+.bombe {
+  width: min(46vw, 11rem);
+  height: min(46vw, 11rem);
+  overflow: visible;
+  filter: drop-shadow(0 14px 16px rgb(15 23 42 / 0.35));
+  animation: atmen 1s ease-in-out infinite;
+}
+
+/* Ein gleichmäßiges Pochen im Sekundentakt -- es wird nie schneller. */
+@keyframes atmen {
+  0%,
+  100% {
+    transform: scale(1) rotate(-2deg);
+  }
+  50% {
+    transform: scale(1.05) rotate(2deg);
+  }
+}
+
+.schnur {
+  animation: glimmen 0.6s linear infinite;
+}
+
+@keyframes glimmen {
+  to {
+    stroke-dashoffset: -14;
+  }
+}
+
+.funke {
+  transform-origin: 97px 15px;
+  animation: flackern 0.18s steps(2, jump-none) infinite alternate;
+}
+
+@keyframes flackern {
+  from {
+    transform: scale(0.8) rotate(0deg);
+    opacity: 0.85;
+  }
+  to {
+    transform: scale(1.15) rotate(20deg);
+    opacity: 1;
+  }
+}
+
+.splitter {
+  transform-origin: 97px 15px;
+  animation: spruehen 0.5s ease-out infinite;
+}
+
+@keyframes spruehen {
+  from {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.8) rotate(40deg);
+    opacity: 0;
+  }
+}
+
+/* ------------------------------------------------------------ Knall */
+
+.knall {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(60vw, 14rem);
+  height: min(60vw, 14rem);
+}
+
+.blitz {
+  position: fixed;
+  inset: 0;
+  background: #fff7ed;
+  pointer-events: none;
+  z-index: 50;
+  animation: blitz 420ms ease-out both;
+}
+
+@keyframes blitz {
+  from {
+    opacity: 0.95;
+  }
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+.feuer {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 24px rgb(249 115 22 / 0.6));
+  animation:
+    feuer 600ms cubic-bezier(0.2, 1.5, 0.4, 1) both,
+    lodern 1.2s ease-in-out 600ms infinite;
+}
+
+@keyframes feuer {
+  from {
+    transform: scale(0.1) rotate(-40deg);
+    opacity: 0;
+  }
+}
+
+@keyframes lodern {
+  50% {
+    transform: scale(1.04) rotate(4deg);
+  }
+}
+
+.splitterFlug {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin: -5px;
+  border-radius: 2px;
+  background: #3f4656;
+  animation: fliegen 700ms cubic-bezier(0.1, 0.8, 0.3, 1) both;
+}
+
+.splitterFlug:nth-child(odd) {
+  background: #f97316;
+}
+
+@keyframes fliegen {
+  from {
+    transform: rotate(var(--winkel)) translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: rotate(var(--winkel)) translateY(-130px) rotate(220deg);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wurf,
+  .bombe,
+  .schnur,
+  .funke,
+  .splitter,
+  .feuer,
+  .splitterFlug {
+    animation: none;
+  }
+
+  .blitz {
+    display: none;
+  }
+}
