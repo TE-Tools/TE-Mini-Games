@@ -315,7 +315,12 @@ describe('Was fehlt?: zweiter Blick', () => {
     await videoSchauen(user, 'wasfehlt-chance', /Video ansehen: zweite Chance – alles noch einmal/)
     // Wieder die Merkphase, mit allen Objekten.
     expect(await screen.findByText(/^\d+\.\d s$/)).toBeInTheDocument()
-    expect(screen.getAllByText(fehlt.replace(/^\p{Extended_Pictographic}️?/u, '')).length).toBe(1)
+    // Das Emoji vorn kann aus mehreren Zeichen bestehen (🐈‍⬛ ist Katze, Verbinder,
+    // schwarzes Quadrat) -- alles davon gehört weg, sonst passt der Name nur manchmal.
+    expect(
+      screen.getAllByText(fehlt.replace(/^(?:\p{Extended_Pictographic}|\u200d|\ufe0f)+/u, ''))
+        .length,
+    ).toBe(1)
     await merkzeitVorbei()
     keinAngebot()
     expect(anfragen('wasfehlt-chance')).toHaveLength(1)
