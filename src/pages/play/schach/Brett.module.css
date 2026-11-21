@@ -1,21 +1,31 @@
 /*
- * Das Schachbrett: Holztöne wie am Vereinsbrett, damit man sich darauf
- * sofort zurechtfindet. Die Figurengröße folgt der Feldgröße.
+ * Das Schachbrett: kühle Blaugrau-Töne statt Holz, flache Figuren mit
+ * weichem Schatten, Markierungen als halbdurchsichtige Schichten über dem
+ * Feld -- so bleibt die Feldfarbe immer zu erkennen.
  */
 
 .brett {
   --feld: calc(min(100vw - 2rem, 30rem) / 8);
+  --hell: #e4eaf1;
+  --dunkel: #7f97b4;
+  --markiert: rgb(45 212 191 / 0.55);
+  --zuletzt: rgb(45 212 191 / 0.34);
+  --punkt: rgb(15 23 42 / 0.24);
+  --rochade: #16a34a;
+  position: relative;
   display: flex;
   flex-direction: column;
   width: calc(var(--feld) * 8);
-  border-radius: var(--radius-lg);
+  border-radius: 14px;
   overflow: hidden;
   box-shadow:
-    0 0 0 3px #7a5230,
-    0 12px 28px rgb(26 31 49 / 0.25);
+    0 0 0 1px rgb(15 23 42 / 0.12),
+    0 18px 40px -12px rgb(15 23 42 / 0.45),
+    0 6px 14px -6px rgb(15 23 42 / 0.3);
   user-select: none;
   -webkit-user-select: none;
-  touch-action: manipulation;
+  /* Kein Scrollen, solange der Finger eine Figur schiebt. */
+  touch-action: none;
 }
 
 .reihe {
@@ -40,32 +50,49 @@
   cursor: default;
 }
 
+.feld:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: -3px;
+  z-index: 3;
+}
+
 .hell {
-  background: #f0d9b5;
+  background: var(--hell);
 }
 
 .dunkel {
-  background: #b58863;
+  background: var(--dunkel);
 }
 
-.letzter.hell {
-  background: #f6eb72;
+/* Markierungen als Schicht über dem Feld, unter der Figur. */
+.letzter::before,
+.gewaehlt::before,
+.darueber::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
 
-.letzter.dunkel {
-  background: #dcc34b;
+.letzter::before {
+  background: var(--zuletzt);
 }
 
-.gewaehlt {
-  box-shadow: inset 0 0 0 calc(var(--feld) * 0.06) #2563eb;
+.gewaehlt::before {
+  background: var(--markiert);
+}
+
+.darueber::before {
+  box-shadow: inset 0 0 0 calc(var(--feld) * 0.06) rgb(255 255 255 / 0.85);
 }
 
 .schach {
-  background: radial-gradient(circle, #ef4444 0%, #ef444499 35%, transparent 75%), #b58863;
-}
-
-.hell.schach {
-  background: radial-gradient(circle, #ef4444 0%, #ef444499 35%, transparent 75%), #f0d9b5;
+  background-image: radial-gradient(
+    circle,
+    rgb(239 68 68 / 0.95) 0%,
+    rgb(239 68 68 / 0.55) 40%,
+    transparent 72%
+  );
 }
 
 /* Ein Punkt für ein freies Ziel, ein Ring für ein Ziel mit Figur. */
@@ -75,68 +102,98 @@
   width: 30%;
   height: 30%;
   border-radius: 50%;
-  background: rgb(20 20 20 / 0.28);
+  background: var(--punkt);
   pointer-events: none;
 }
 
-.schlagZiel::after {
+.schlagZiel::after,
+.rochadeZiel::after {
   content: '';
   position: absolute;
-  inset: 4%;
+  inset: 5%;
   border-radius: 50%;
-  border: calc(var(--feld) * 0.08) solid rgb(20 20 20 / 0.28);
+  border: calc(var(--feld) * 0.075) solid var(--punkt);
   pointer-events: none;
+}
+
+/* Der Turm einer möglichen Rochade: grün umrandet, damit man ihn als Ziel erkennt. */
+.rochadeZiel::after {
+  inset: 3%;
+  border-color: color-mix(in srgb, var(--rochade) 75%, transparent);
 }
 
 .figur {
-  font-size: calc(var(--feld) * 0.8);
-  line-height: 1;
-  font-family: 'Noto Sans Symbols 2', 'Segoe UI Symbol', 'Apple Symbols', 'DejaVu Sans', serif;
+  position: relative;
+  z-index: 1;
+  width: 88%;
+  height: 88%;
   pointer-events: none;
-  transform: translateY(2%);
+  filter: drop-shadow(0 calc(var(--feld) * 0.03) calc(var(--feld) * 0.025) rgb(15 23 42 / 0.35));
+  transition: opacity 120ms ease;
 }
 
-.weiss {
-  color: #ffffff;
-  text-shadow:
-    0 0 1px #1c1917,
-    1px 0 0 #1c1917,
-    -1px 0 0 #1c1917,
-    0 1px 0 #1c1917,
-    0 -1px 0 #1c1917,
-    0 2px 3px rgb(0 0 0 / 0.35);
+/* Der hereinkommende Zug gleitet vom Start- aufs Zielfeld. */
+.gleitet {
+  z-index: 4;
+  animation: gleiten 220ms cubic-bezier(0.25, 0.8, 0.3, 1) both;
 }
 
-.schwarz {
-  color: #1c1917;
-  text-shadow: 0 2px 3px rgb(0 0 0 / 0.25);
+@keyframes gleiten {
+  from {
+    transform: translate(calc(var(--dx) * var(--feld)), calc(var(--dy) * var(--feld)));
+  }
+}
+
+/* Die Figur am Finger: etwas größer, mit tieferem Schatten. */
+.angehoben {
+  opacity: 0.25;
+}
+
+.amFinger {
+  position: absolute;
+  z-index: 10;
+  width: calc(var(--feld) * 1.15);
+  height: calc(var(--feld) * 1.15);
+  transform: translate(-50%, -60%);
+  pointer-events: none;
+  filter: drop-shadow(0 calc(var(--feld) * 0.1) calc(var(--feld) * 0.08) rgb(15 23 42 / 0.4));
+}
+
+.ziehtGerade {
+  cursor: grabbing;
 }
 
 .reihenName,
 .linienName {
   position: absolute;
-  font-size: calc(var(--feld) * 0.2);
-  font-weight: 800;
+  font-size: calc(var(--feld) * 0.19);
+  font-weight: 700;
   line-height: 1;
   pointer-events: none;
 }
 
 .reihenName {
-  top: 4%;
-  left: 5%;
+  top: 5%;
+  left: 6%;
 }
 
 .linienName {
-  bottom: 4%;
-  right: 6%;
+  bottom: 5%;
+  right: 7%;
 }
 
 .hell .reihenName,
 .hell .linienName {
-  color: #b58863;
+  color: var(--dunkel);
 }
 
 .dunkel .reihenName,
 .dunkel .linienName {
-  color: #f0d9b5;
+  color: var(--hell);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gleitet {
+    animation: none;
+  }
 }

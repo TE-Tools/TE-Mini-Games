@@ -186,3 +186,21 @@
 .hinweis p {
   margin: 0 0 var(--space-2);
 }
+
+.tipp {
+  width: 100%;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, #16a34a 10%, #ffffff);
+  border: 1px solid color-mix(in srgb, #16a34a 35%, transparent);
+  color: #14532d;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Ohne „Zug zurück" (ab mittel) steht „Aufgeben" allein und über die ganze Breite. */
+.einKnopf {
+  grid-template-columns: 1fr;
+}
