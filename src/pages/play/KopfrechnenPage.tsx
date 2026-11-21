@@ -27,6 +27,8 @@ import { getLevelStand, type LevelStandEintrag } from '@/services/leaderboard'
 import { milestoneBonusXp } from '@/games/milestones'
 import { LevelMap } from '@/components/level-map/LevelMap'
 import { spielName, useSprache } from '@/i18n/sprache'
+import { Zeitring } from '@/components/zeitring/Zeitring'
+import { spiele, vibriere } from '@/services/sound'
 import shell from './PlayShell.module.css'
 import styles from './KopfrechnenPage.module.css'
 
@@ -257,6 +259,11 @@ export function KopfrechnenPage() {
     if (Number.isNaN(eingegeben)) return
 
     const richtig = eingegeben === aufgabe.answer
+    if (richtig) spiele('treffer')
+    else {
+      spiele('fehlschuss')
+      vibriere(40)
+    }
     const neu = [...treffer, richtig]
     setTreffer(neu)
     trefferRef.current = neu
@@ -303,6 +310,9 @@ export function KopfrechnenPage() {
 
   const aufgabe = config.tasks[index]
   const titel = spielName(t, 'kopfrechnen', 'Kopfrechnen')
+  /** Wie viele zuletzt in Folge richtig waren -- ab drei gibt es ein Abzeichen. */
+  let serie = 0
+  for (let i = treffer.length - 1; i >= 0 && treffer[i]; i--) serie++
 
   return (
     <main className={shell.page}>
@@ -359,13 +369,14 @@ export function KopfrechnenPage() {
 
       {phase === 'play' && aufgabe && (
         <section className={shell.section}>
-          <p
-            className={`${shell.timer} ${restSekunden !== null && restSekunden <= 10 ? shell.timerLow : ''}`}
-            aria-live="off"
-          >
-            {restSekunden ?? config.seconds} s
-          </p>
+          <Zeitring rest={restSekunden ?? config.seconds} gesamt={config.seconds} />
           <p className={styles.counter}>{k.aufgabe(index + 1, config.tasks.length)}</p>
+          {serie >= 3 && (
+            // Der Schlüssel lässt das Abzeichen bei jedem weiteren Treffer neu aufploppen.
+            <p key={`serie${serie}`} className={styles.serie}>
+              🔥 {k.serie(serie)}
+            </p>
+          )}
           {nachholNeu !== null && <p className={shell.hint}>{k.nachholen(nachholNeu)}</p>}
           <p key={index} className={styles.task}>
             {aufgabe.text} =

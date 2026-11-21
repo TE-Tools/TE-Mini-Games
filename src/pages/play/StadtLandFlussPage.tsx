@@ -16,6 +16,7 @@ import {
 } from '@/games/stadt-land-fluss'
 import { spielName, useSprache, type Texte } from '@/i18n/sprache'
 import { StadtLandFlussOnline } from './StadtLandFlussOnline'
+import { Zeitring } from '@/components/zeitring/Zeitring'
 import styles from './StadtLandFlussPage.module.css'
 import { Spielerbild } from './party/Spielerbild'
 
@@ -243,9 +244,7 @@ export function StadtLandFlussPage() {
         </p>
         <div className={`${styles.card} ${styles.cover}`}>
           <p className={styles.letter}>{state.buchstabe}</p>
-          <p className={`${styles.timer} ${rest !== null && rest <= 10 ? styles.timerLow : ''}`}>
-            {rest ?? state.seconds} s
-          </p>
+          <Zeitring rest={rest ?? state.seconds} gesamt={state.seconds} klein />
         </div>
         <div className={styles.card}>
           {state.spalten.map((sp) => (

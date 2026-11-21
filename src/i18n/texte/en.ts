@@ -2890,6 +2890,7 @@ export const en: Texte = {
     ergebnis: (richtig: number, von: number) => `${richtig} of ${von} correct`,
     davonZeit: (n: number) => ` (${n} of them for time)`,
     abRichtigen: (n: number) => `Get ${n} right to earn XP and unlock the next level.`,
+    serie: (n: number) => `${n} in a row`,
     zweiteChance: 'second chance – make up the wrong sums',
     nachholen: (neu: number) =>
       `Making up: ${neu} new ${neu === 1 ? 'sum' : 'sums'}, your correct ones stay.`,
