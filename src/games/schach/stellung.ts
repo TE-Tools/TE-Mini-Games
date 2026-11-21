@@ -55,11 +55,45 @@ export interface Zug {
 }
 
 interface Rueckweg {
-  zug: Zug
+  /** null beim Nullzug der Suche: Die Seite wechselt, sonst nichts. */
+  zug: Zug | null
   rochade: number
   ep: number
   halbzuege: number
+  hashA: number
+  hashB: number
 }
+
+/*
+ * Zobrist-Kennung: Jede Figur auf jedem Feld, die Seite am Zug, jedes
+ * Rochaderecht und jede en-passant-Linie bekommt eine feste Zufallszahl;
+ * die Kennung einer Stellung ist das XOR der Zahlen dessen, was zutrifft.
+ * Ein Zug ändert davon nur wenige -- die Kennung lässt sich also beim
+ * Ziehen nachführen, statt jedes Mal das ganze Brett zu lesen. Das braucht
+ * der Computer für sein Gedächtnis (Verwandlungstabelle) und um
+ * Wiederholungen in der Suche zu erkennen.
+ *
+ * Zwei unabhängige 32-Bit-Hälften: Die eine wählt den Platz in der
+ * Tabelle, die andere prüft, ob dort wirklich dieselbe Stellung liegt.
+ */
+function zobristTabelle(startwert: number, laenge: number): Int32Array {
+  let x = startwert | 0
+  const t = new Int32Array(laenge)
+  for (let i = 0; i < laenge; i++) {
+    // xorshift32 -- fest, damit die Kennungen auf jedem Gerät gleich sind.
+    x ^= x << 13
+    x ^= x >>> 17
+    x ^= x << 5
+    t[i] = x
+  }
+  return t
+}
+/** Figur f (−6..6) auf Feld q: Index (f + 6) * 128 + q. Danach Seite, Rochade (16), ep (8). */
+const Z_SEITE = 13 * 128
+const Z_ROCHADE = Z_SEITE + 1
+const Z_EP = Z_ROCHADE + 16
+const ZA = zobristTabelle(0x2545f491, Z_EP + 8)
+const ZB = zobristTabelle(0x6c8e9cf5, Z_EP + 8)
 
 const SPRINGER_SCHRITTE = [33, 31, 18, 14, -33, -31, -18, -14]
 const KOENIG_SCHRITTE = [1, -1, 16, -16, 17, 15, -17, -15]
@@ -93,6 +127,9 @@ const RECHTE_AN_FELD = new Map<number, number>([
   [0x70, SD],
   [0x77, SK],
 ])
+/** Dasselbe als Feld statt Map -- `ziehe` läuft in der Suche millionenfach. */
+const RECHTE_FELD = new Int8Array(128)
+for (const [feld, rechte] of RECHTE_AN_FELD) RECHTE_FELD[feld] = rechte
 
 export class Stellung {
   brett = new Int8Array(128)
@@ -106,6 +143,9 @@ export class Stellung {
   zugNummer = 1
   /** Wo die Könige stehen, Weiß und Schwarz. */
   koenig: [number, number] = [-1, -1]
+  /** Die Zobrist-Kennung in zwei Hälften (siehe oben). */
+  hashA = 0
+  hashB = 0
   private stapel: Rueckweg[] = []
 
   static ausFen(fen: string): Stellung {
@@ -140,7 +180,45 @@ export class Stellung {
     s.ep = ep && ep !== '-' ? feldAus(ep) : -1
     s.halbzuege = Number(halb ?? 0) || 0
     s.zugNummer = Number(voll ?? 1) || 1
+    s.berechneHash()
     return s
+  }
+
+  /** Die en-passant-Linie, wenn dort wirklich geschlagen werden kann, sonst -1. */
+  private epLinie(): number {
+    if (this.ep < 0) return -1
+    const bauer = this.seite * BAUER
+    const unten = this.seite === 1 ? -16 : 16
+    for (const seitlich of [-1, 1]) {
+      const q = this.ep + unten + seitlich
+      if (!(q & 0x88) && this.brett[q] === bauer) return this.ep & 7
+    }
+    return -1
+  }
+
+  /** Die Kennung von Grund auf -- beim Einlesen, und in Tests als Gegenprobe. */
+  berechneHash(): void {
+    let a = 0
+    let b = 0
+    for (let q = 0; q < 128; q++) {
+      const f = this.brett[q]!
+      if (q & 0x88 || f === 0) continue
+      a ^= ZA[(f + 6) * 128 + q]!
+      b ^= ZB[(f + 6) * 128 + q]!
+    }
+    if (this.seite === -1) {
+      a ^= ZA[Z_SEITE]!
+      b ^= ZB[Z_SEITE]!
+    }
+    a ^= ZA[Z_ROCHADE + this.rochade]!
+    b ^= ZB[Z_ROCHADE + this.rochade]!
+    const ep = this.epLinie()
+    if (ep >= 0) {
+      a ^= ZA[Z_EP + ep]!
+      b ^= ZB[Z_EP + ep]!
+    }
+    this.hashA = a
+    this.hashB = b
   }
 
   fen(): string {
@@ -181,6 +259,8 @@ export class Stellung {
     s.halbzuege = this.halbzuege
     s.zugNummer = this.zugNummer
     s.koenig = [this.koenig[0], this.koenig[1]]
+    s.hashA = this.hashA
+    s.hashB = this.hashB
     return s
   }
 
@@ -462,33 +542,81 @@ export class Stellung {
   /** Einen Zug ausführen. Ob er erlaubt ist, prüft `legaleZuege`. */
   ziehe(z: Zug): void {
     const b = this.brett
-    this.stapel.push({ zug: z, rochade: this.rochade, ep: this.ep, halbzuege: this.halbzuege })
-
-    b[z.von] = 0
-    b[z.nach] = z.umwandlung ? (z.figur > 0 ? z.umwandlung : -z.umwandlung) : z.figur
-    if (z.art === ZUG_EP) b[z.nach + (z.figur > 0 ? -16 : 16)] = 0
-    if (z.art === ZUG_KURZ) {
-      b[z.von + 1] = b[z.von + 3]!
-      b[z.von + 3] = 0
-    } else if (z.art === ZUG_LANG) {
-      b[z.von - 1] = b[z.von - 4]!
-      b[z.von - 4] = 0
+    this.stapel.push({
+      zug: z,
+      rochade: this.rochade,
+      ep: this.ep,
+      halbzuege: this.halbzuege,
+      hashA: this.hashA,
+      hashB: this.hashB,
+    })
+    let ha = this.hashA
+    let hb = this.hashB
+    // Was vom alten Zustand in der Kennung steckt, kommt heraus ...
+    const epAlt = this.epLinie()
+    if (epAlt >= 0) {
+      ha ^= ZA[Z_EP + epAlt]!
+      hb ^= ZB[Z_EP + epAlt]!
     }
-    if (Math.abs(z.figur) === KOENIG) this.koenig[z.figur > 0 ? 0 : 1] = z.nach
+    ha ^= ZA[Z_ROCHADE + this.rochade]!
+    hb ^= ZB[Z_ROCHADE + this.rochade]!
 
-    this.rochade &= ~((RECHTE_AN_FELD.get(z.von) ?? 0) | (RECHTE_AN_FELD.get(z.nach) ?? 0))
+    const neu = z.umwandlung ? (z.figur > 0 ? z.umwandlung : -z.umwandlung) : z.figur
+    ha ^= ZA[(z.figur + 6) * 128 + z.von]! ^ ZA[(neu + 6) * 128 + z.nach]!
+    hb ^= ZB[(z.figur + 6) * 128 + z.von]! ^ ZB[(neu + 6) * 128 + z.nach]!
+    b[z.von] = 0
+    b[z.nach] = neu
+    if (z.art === ZUG_EP) {
+      const q = z.nach + (z.figur > 0 ? -16 : 16)
+      b[q] = 0
+      ha ^= ZA[(z.geschlagen + 6) * 128 + q]!
+      hb ^= ZB[(z.geschlagen + 6) * 128 + q]!
+    } else if (z.geschlagen) {
+      ha ^= ZA[(z.geschlagen + 6) * 128 + z.nach]!
+      hb ^= ZB[(z.geschlagen + 6) * 128 + z.nach]!
+    }
+    if (z.art === ZUG_KURZ || z.art === ZUG_LANG) {
+      const turmVon = z.art === ZUG_KURZ ? z.von + 3 : z.von - 4
+      const turmNach = z.art === ZUG_KURZ ? z.von + 1 : z.von - 1
+      const turm = b[turmVon]!
+      b[turmNach] = turm
+      b[turmVon] = 0
+      ha ^= ZA[(turm + 6) * 128 + turmVon]! ^ ZA[(turm + 6) * 128 + turmNach]!
+      hb ^= ZB[(turm + 6) * 128 + turmVon]! ^ ZB[(turm + 6) * 128 + turmNach]!
+    }
+    if (z.figur === KOENIG || z.figur === -KOENIG) this.koenig[z.figur > 0 ? 0 : 1] = z.nach
+
+    this.rochade &= ~(RECHTE_FELD[z.von]! | RECHTE_FELD[z.nach]!)
     this.ep = z.art === ZUG_DOPPEL ? (z.von + z.nach) >> 1 : -1
-    this.halbzuege = Math.abs(z.figur) === BAUER || z.geschlagen ? 0 : this.halbzuege + 1
+    this.halbzuege =
+      z.figur === BAUER || z.figur === -BAUER || z.geschlagen ? 0 : this.halbzuege + 1
     if (this.seite === -1) this.zugNummer++
     this.seite = -this.seite
+
+    // ... und was vom neuen Zustand hineingehört, kommt hinein.
+    ha ^= ZA[Z_SEITE]! ^ ZA[Z_ROCHADE + this.rochade]!
+    hb ^= ZB[Z_SEITE]! ^ ZB[Z_ROCHADE + this.rochade]!
+    const epNeu = this.epLinie()
+    if (epNeu >= 0) {
+      ha ^= ZA[Z_EP + epNeu]!
+      hb ^= ZB[Z_EP + epNeu]!
+    }
+    this.hashA = ha
+    this.hashB = hb
   }
 
   nimmZurueck(): void {
     const r = this.stapel.pop()
     if (!r) return
+    this.hashA = r.hashA
+    this.hashB = r.hashB
     const z = r.zug
-    const b = this.brett
     this.seite = -this.seite
+    this.rochade = r.rochade
+    this.ep = r.ep
+    this.halbzuege = r.halbzuege
+    if (!z) return
+    const b = this.brett
     if (this.seite === -1) this.zugNummer--
     b[z.von] = z.figur
     if (z.art === ZUG_EP) {
@@ -504,10 +632,32 @@ export class Stellung {
       b[z.von - 4] = b[z.von - 1]!
       b[z.von - 1] = 0
     }
-    if (Math.abs(z.figur) === KOENIG) this.koenig[z.figur > 0 ? 0 : 1] = z.von
-    this.rochade = r.rochade
-    this.ep = r.ep
-    this.halbzuege = r.halbzuege
+    if (z.figur === KOENIG || z.figur === -KOENIG) this.koenig[z.figur > 0 ? 0 : 1] = z.von
+  }
+
+  /**
+   * Der Nullzug der Suche: Die Seite am Zug setzt aus. Im Spiel gibt es ihn
+   * nicht -- der Computer prüft damit, ob seine Stellung so gut ist, dass
+   * er sogar ohne Zug noch vorn läge. Zurück mit `nimmZurueck`.
+   */
+  zieheNull(): void {
+    this.stapel.push({
+      zug: null,
+      rochade: this.rochade,
+      ep: this.ep,
+      halbzuege: this.halbzuege,
+      hashA: this.hashA,
+      hashB: this.hashB,
+    })
+    const epAlt = this.epLinie()
+    if (epAlt >= 0) {
+      this.hashA ^= ZA[Z_EP + epAlt]!
+      this.hashB ^= ZB[Z_EP + epAlt]!
+    }
+    this.ep = -1
+    this.seite = -this.seite
+    this.hashA ^= ZA[Z_SEITE]!
+    this.hashB ^= ZB[Z_SEITE]!
   }
 
   /** Die Züge, die wirklich erlaubt sind: danach steht der eigene König nicht im Schach. */

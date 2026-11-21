@@ -22,6 +22,8 @@ export {
   partieAus,
   beende,
   zieleVon,
+  zuegeAuf,
+  zielFelder,
   amZug,
   geschlagen,
   notationVon,
@@ -30,6 +32,7 @@ export {
 } from './partie'
 export type { Partie, Ende, EndeArt } from './partie'
 export { waehleZug, bewerte } from './ki'
+export { BUCH_ZEILEN } from './buch'
 export type { KiAuftrag } from './ki'
 export { erstelleRechner } from './rechner'
 export type { Rechner } from './rechner'
