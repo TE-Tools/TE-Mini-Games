@@ -214,7 +214,12 @@ describe('Schach online', () => {
     server.stand = stand({ partie: 2, weiss: 2, am_zug: 1 }, buch(2, 'd2d4'))
     server.melde()
     expect(await screen.findByText('Du bist am Zug')).toBeInTheDocument()
-    expect(screen.getByRole('list', { name: 'Züge' }).textContent).toBe('1.d4')
+    expect(
+      screen
+        .getByRole('list', { name: 'Züge' })
+        .querySelector('[aria-label]')!
+        .getAttribute('aria-label'),
+    ).toBe('d4')
   })
 
   it('beendet der Server die Partie ohne Grund im Buch, heißt das: abgebrochen', async () => {

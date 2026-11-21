@@ -3186,9 +3186,9 @@ export const de = {
     staerke: 'Stärke',
     stufen: { leicht: 'Leicht', mittel: 'Mittel', schwer: 'Schwer' },
     stufenText: {
-      leicht: 'Übersieht auch mal etwas – gut zum Lernen.',
-      mittel: 'Stellt nichts ein, plant aber nicht weit.',
-      schwer: 'Rechnet mehrere Züge voraus.',
+      leicht: 'Übersieht oft etwas, und Züge lassen sich zurücknehmen – gut zum Lernen.',
+      mittel: 'Stellt nichts ein, plant aber nicht weit. Kein Zurücknehmen.',
+      schwer: 'Rechnet viele Züge voraus und kennt die Eröffnungen. Kein Zurücknehmen.',
     },
     deineFarbe: 'Deine Farbe',
     farben: { w: 'Weiß', b: 'Schwarz', zufall: 'Zufall' },
@@ -3202,12 +3202,15 @@ export const de = {
     computerDenkt: 'Der Computer überlegt …',
     istDran: (name: string) => `${name} ist am Zug`,
     imSchach: 'Schach!',
+    du: 'Du',
     computer: 'Computer',
     zugZurueck: 'Zug zurück',
     aufgeben: 'Aufgeben',
     aufgebenFrage: 'Wirklich aufgeben?',
     jaAufgeben: 'Ja, aufgeben',
     nein: 'Nein',
+    rochadeHinweis:
+      'Rochade: Tippe auf den grün umrandeten Turm – König und Turm tauschen die Seiten.',
     umwandeln: 'Der Bauer wird zu …',
     figuren: {
       bauer: 'Bauer',
@@ -3240,7 +3243,8 @@ export const de = {
     online: {
       titel: 'Schach online',
       einenMoment: 'Einen Moment …',
-      kontoNoetig: 'Online spielen geht nur mit Konto – so weiß dein Gegenüber, wer am Brett sitzt.',
+      kontoNoetig:
+        'Online spielen geht nur mit Konto – so weiß dein Gegenüber, wer am Brett sitzt.',
       anmelden: 'Anmelden',
       lieberComputer: 'Lieber gegen den Computer',
       einleitung:
