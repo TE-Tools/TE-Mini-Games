@@ -218,3 +218,49 @@ describe('Partie: Ende', () => {
     expect(partieAus(['e2e4', 'e7e5', 'e1e3', 'g1f3']).zuege).toEqual(['e2e4', 'e7e5'])
   })
 })
+
+describe('Zobrist-Kennung', () => {
+  it('bleibt beim Ziehen und Zurücknehmen gleich der frisch berechneten', () => {
+    // Alle Sonderzüge kommen in Kiwipete vor: Rochade, en passant, Umwandlung, Schlagen.
+    const s = Stellung.ausFen(
+      'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1',
+    )
+    let fehler = 0
+    const pruefe = (tiefe: number) => {
+      const frisch = s.kopie()
+      frisch.berechneHash()
+      if (frisch.hashA !== s.hashA || frisch.hashB !== s.hashB) fehler++
+      if (tiefe === 0) return
+      for (const z of s.legaleZuege()) {
+        const vorher = [s.hashA, s.hashB]
+        s.ziehe(z)
+        pruefe(tiefe - 1)
+        s.nimmZurueck()
+        if (s.hashA !== vorher[0] || s.hashB !== vorher[1]) fehler++
+      }
+    }
+    pruefe(3)
+    expect(fehler).toBe(0)
+  })
+
+  it('ist für dieselbe Stellung auf verschiedenen Wegen gleich, für andere verschieden', () => {
+    const a = Stellung.ausFen(START_FEN)
+    const b = Stellung.ausFen(START_FEN)
+    for (const k of ['g1f3', 'g8f6', 'b1c3']) a.ziehe(findeZug(a, k)!)
+    for (const k of ['b1c3', 'g8f6', 'g1f3']) b.ziehe(findeZug(b, k)!)
+    expect([a.hashA, a.hashB]).toEqual([b.hashA, b.hashB])
+    b.ziehe(findeZug(b, 'b8c6')!)
+    expect(b.hashA).not.toBe(a.hashA)
+  })
+
+  it('der Nullzug wechselt nur die Seite und lässt sich zurücknehmen', () => {
+    const s = Stellung.ausFen('4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 1')
+    const vorher = [s.hashA, s.hashB, s.fen()]
+    s.zieheNull()
+    const frisch = s.kopie()
+    frisch.berechneHash()
+    expect([s.hashA, s.seite, s.ep]).toEqual([frisch.hashA, -1, -1])
+    s.nimmZurueck()
+    expect([s.hashA, s.hashB, s.fen()]).toEqual(vorher)
+  })
+})
