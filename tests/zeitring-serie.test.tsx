@@ -11,10 +11,11 @@ import { SprachProvider } from '@/i18n/SprachProvider'
 import { db } from '@/offline/db'
 import { createKopfrechnenLevel } from '@/games/kopfrechnen'
 import { Zeitring } from '@/components/zeitring/Zeitring'
+import type * as Ton from '@/services/sound'
 
 const ton = vi.hoisted(() => ({ spiele: vi.fn(), vibriere: vi.fn() }))
 vi.mock('@/services/sound', async (original) => ({
-  ...(await original<typeof import('@/services/sound')>()),
+  ...(await original<typeof Ton>()),
   spiele: ton.spiele,
   vibriere: ton.vibriere,
 }))
