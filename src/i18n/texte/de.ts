@@ -3209,7 +3209,8 @@ export const de = {
     aufgebenFrage: 'Wirklich aufgeben?',
     jaAufgeben: 'Ja, aufgeben',
     nein: 'Nein',
-    rochadeHinweis: 'Rochade: Tippe auf den grün umrandeten Turm – König und Turm tauschen die Seiten.',
+    rochadeHinweis:
+      'Rochade: Tippe auf den grün umrandeten Turm – König und Turm tauschen die Seiten.',
     umwandeln: 'Der Bauer wird zu …',
     figuren: {
       bauer: 'Bauer',
@@ -3242,7 +3243,8 @@ export const de = {
     online: {
       titel: 'Schach online',
       einenMoment: 'Einen Moment …',
-      kontoNoetig: 'Online spielen geht nur mit Konto – so weiß dein Gegenüber, wer am Brett sitzt.',
+      kontoNoetig:
+        'Online spielen geht nur mit Konto – so weiß dein Gegenüber, wer am Brett sitzt.',
       anmelden: 'Anmelden',
       lieberComputer: 'Lieber gegen den Computer',
       einleitung:

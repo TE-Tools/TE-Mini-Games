@@ -80,8 +80,8 @@ gleich. Leicht spielt ohne Buch.
 Buch aus):
 
 - Schwer, neue gegen alte Fassung, 100 ms je Zug: 200 Partien,
-  +130 =52 −18, 78 % -- rund **+220 Elo**. Die Suche allein brachte etwa
-  +90, die Bewertung den Rest.
+  +127 =53 −20, 76,8 % -- rund **+210 Elo**. Die Suche allein brachte in
+  einem kürzeren Lauf (80 Partien) etwa +90, die Bewertung den Rest.
 - Leicht, neue gegen alte Fassung: 200 Partien, +16 =78 −106, 27,5 % --
   rund **170 Elo schwächer**, also spürbar leichter. Mit den alten
   Stellwerten hätte die bessere Bewertung Leicht sogar etwas stärker
