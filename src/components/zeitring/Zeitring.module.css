@@ -1,0 +1,93 @@
+/* Der Zeitring -- grün, dann gelb, am Ende rot und pulsierend. */
+
+.ring {
+  --ring-farbe: #10b981;
+  position: relative;
+  width: 6.5rem;
+  height: 6.5rem;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.klein {
+  width: 4.5rem;
+  height: 4.5rem;
+}
+
+.ring svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  overflow: visible;
+}
+
+.spur {
+  fill: rgb(255 255 255 / 0.85);
+  stroke: rgb(15 23 42 / 0.08);
+  stroke-width: 8;
+}
+
+.balken {
+  fill: none;
+  stroke: var(--ring-farbe);
+  stroke-width: 8;
+  stroke-linecap: round;
+  /* Eine Sekunde gleiten -- so läuft der Ring, statt zu springen. */
+  transition:
+    stroke-dashoffset 1s linear,
+    stroke 400ms ease;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--ring-farbe) 55%, transparent));
+}
+
+.zahl {
+  position: relative;
+  font-size: 2rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: #0f172a;
+}
+
+.klein .zahl {
+  font-size: 1.45rem;
+}
+
+.voll {
+  --ring-farbe: #10b981;
+}
+
+.halb {
+  --ring-farbe: #f59e0b;
+}
+
+.knapp {
+  --ring-farbe: #ef4444;
+  animation: pochen 1s ease-in-out infinite;
+}
+
+.knapp .zahl {
+  color: #dc2626;
+}
+
+@keyframes pochen {
+  50% {
+    transform: scale(1.07);
+  }
+}
+
+:global(:root[data-sparsam]) .knapp {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .knapp {
+    animation: none;
+  }
+
+  .balken {
+    transition: none;
+  }
+}
