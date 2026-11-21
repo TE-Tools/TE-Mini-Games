@@ -85,8 +85,9 @@ corresponding feature; do not invent a competing design.
   das Buch durch dieselbe Engine nach.
 - **Schach:** `docs/design/schach/` – Regeln gehören ausschließlich nach
   `src/games/schach/`, Stellwerte (Stufen, Figurenwerte, Punkte) ausschließlich
-  in dessen `config.ts`; die Seiten zeigen an, was `zieleVon()` hergibt. Wer an
+  in dessen `config.ts`; die Seiten zeigen an, was `zielFelder()` hergibt. Wer an
   der Zugerzeugung etwas ändert, lässt Perft laufen (`tests/schach-regeln.test.ts`).
+  Wer am Computer etwas ändert, misst mit `scripts/schach-turnier.mjs`.
   Online (Migration `031_schach_online.sql`) führt der Server wie bei
   Schützenopoly nur ein Zugbuch: wer sitzt, wer Weiß hat, wer am Zug ist. Es
   steht dort **keine** Schachregel, und es kommt auch keine hinein – jeder
