@@ -132,8 +132,9 @@ export function Brett(props: Props) {
     const feld = Number(knopf.dataset.nr)
     const figur = stellung.brett[feld]!
     const ziehbar = figur !== 0 && (figur > 0 ? 'w' : 'b') === eigene
-    // Die eigene Figur gleich auswählen: Dann zeigen sich ihre Ziele schon beim Ziehen.
-    const sofort = ziehbar && auswahl !== feld && !zielArt.get(feld)?.rochade
+    // Die eigene Figur gleich auswählen: Dann zeigen sich ihre Ziele schon beim
+    // Ziehen. (Ist es der Turm einer Rochade, macht die Seite daraus die Rochade.)
+    const sofort = ziehbar && auswahl !== feld
     if (sofort) onFeld(feld)
     start.current = { feld, x: e.clientX, y: e.clientY, sofort, ziehbar }
     if (ziehbar) {

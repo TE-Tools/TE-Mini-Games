@@ -69,6 +69,11 @@ describe('Schach gegen den Computer', () => {
     expect(feld('e4').className).toMatch(/ziel/)
     expect(feld('e5').className).not.toMatch(/ziel/)
     await userEvent.click(feld('e4'))
+    // Der Bauer gleitet von e2 herauf: zwei Felder, von unten.
+    const gleitet = feld('e4').querySelector('svg')!
+    expect(gleitet.getAttribute('class')).toMatch(/gleitet/)
+    expect(gleitet.style.getPropertyValue('--dy')).toBe('2')
+    expect(gleitet.style.getPropertyValue('--dx')).toBe('0')
 
     expect(screen.getByText('Der Computer überlegt …')).toBeInTheDocument()
     // Solange er überlegt, nimmt das Brett nichts an und Zurück geht nicht.
@@ -104,6 +109,7 @@ describe('Schach gegen den Computer', () => {
 
   it('als Schwarz steht Schwarz unten, und der Computer fängt an', async () => {
     zeige()
+    await userEvent.click(screen.getByRole('button', { name: 'Leicht' }))
     await userEvent.click(screen.getByRole('button', { name: 'Schwarz' }))
     await userEvent.click(screen.getByRole('button', { name: 'Partie starten' }))
     const felder = [...document.querySelectorAll('[data-feld]')].map((f) =>
@@ -154,9 +160,15 @@ describe('Schach gegen den Computer', () => {
     expect(screen.getByText(/Rochade: Tippe auf den grün umrandeten Turm/)).toBeInTheDocument()
     await userEvent.click(feld('h1'))
     expect(zugliste()).toMatch(/4\.O-O/)
+    // Bei der Rochade gleitet der Turm mit: von h1 zwei Felder nach links.
+    expect(feld('f1').querySelector('svg')!.style.getPropertyValue('--dx')).toBe('2')
     expect(feld('g1').getAttribute('aria-label')).toBe('g1: König (Weiß)')
     expect(feld('f1').getAttribute('aria-label')).toBe('f1: Turm (Weiß)')
     await computerHatGezogen()
+    // Zurücknehmen lässt nichts gleiten: Der jetzt letzte Zug (…Lc5) ist alt.
+    await userEvent.click(screen.getByRole('button', { name: 'Zug zurück' }))
+    expect(feld('e1').getAttribute('aria-label')).toBe('e1: König (Weiß)')
+    expect(feld('c5').querySelector('svg')!.getAttribute('class')).not.toMatch(/gleitet/)
   })
 
   it('ein Zug lässt sich auch mit dem Finger ziehen', async () => {
@@ -171,13 +183,34 @@ describe('Schach gegen den Computer', () => {
       button: 0,
       pointerId: 1,
     })
+    // Zurück aufs Startfeld fallen gelassen: kein Zug, die Figur bleibt gewählt.
+    fireEvent.pointerDown(feld('g1'), punkt(6, 0))
+    fireEvent.pointerMove(brett, punkt(6, 1))
+    fireEvent.pointerUp(brett, punkt(6, 0))
+    expect(zugliste()).toBe('')
+    expect(feld('g1').getAttribute('aria-selected')).toBe('true')
+
     fireEvent.pointerDown(feld('g1'), punkt(6, 0))
     fireEvent.pointerMove(brett, punkt(6, 1))
     fireEvent.pointerMove(brett, punkt(5, 2))
     fireEvent.pointerUp(brett, punkt(5, 2))
     expect(zugliste()).toMatch(/^1\.Nf3/)
     expect(feld('f3').getAttribute('aria-label')).toBe('f3: Springer (Weiß)')
+    // Wer selbst gezogen hat, sieht die Figur schon am Ziel -- sie gleitet nicht noch einmal.
+    expect(feld('f3').querySelector('svg')!.getAttribute('class')).not.toMatch(/gleitet/)
     await computerHatGezogen()
+  })
+
+  it('ab Mittel gibt es kein Zurücknehmen', async () => {
+    for (const stufe of ['Mittel', 'Schwer']) {
+      const { unmount } = zeige()
+      await userEvent.click(screen.getByRole('button', { name: stufe }))
+      await userEvent.click(screen.getByRole('button', { name: 'Partie starten' }))
+      expect(screen.queryByRole('button', { name: 'Zug zurück' })).toBeNull()
+      expect(screen.getByRole('button', { name: 'Aufgeben' })).toBeInTheDocument()
+      unmount()
+      localStorage.clear()
+    }
   })
 
   it('verwirft einen Spielstand, der sich nicht nachspielen lässt', () => {

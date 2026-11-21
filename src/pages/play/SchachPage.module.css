@@ -199,3 +199,8 @@
   font-weight: 700;
   text-align: center;
 }
+
+/* Ohne „Zug zurück" (ab mittel) steht „Aufgeben" allein und über die ganze Breite. */
+.einKnopf {
+  grid-template-columns: 1fr;
+}

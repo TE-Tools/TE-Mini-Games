@@ -3186,9 +3186,9 @@ export const de = {
     staerke: 'Stärke',
     stufen: { leicht: 'Leicht', mittel: 'Mittel', schwer: 'Schwer' },
     stufenText: {
-      leicht: 'Übersieht auch mal etwas – gut zum Lernen.',
-      mittel: 'Stellt nichts ein, plant aber nicht weit.',
-      schwer: 'Rechnet mehrere Züge voraus.',
+      leicht: 'Übersieht oft etwas, und Züge lassen sich zurücknehmen – gut zum Lernen.',
+      mittel: 'Stellt nichts ein, plant aber nicht weit. Kein Zurücknehmen.',
+      schwer: 'Rechnet viele Züge voraus und kennt die Eröffnungen. Kein Zurücknehmen.',
     },
     deineFarbe: 'Deine Farbe',
     farben: { w: 'Weiß', b: 'Schwarz', zufall: 'Zufall' },

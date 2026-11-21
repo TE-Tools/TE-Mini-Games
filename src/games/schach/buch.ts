@@ -16,7 +16,7 @@
  * hier wäre sonst ein illegaler Zug, der erst in einer Partie auffiele.
  */
 
-import { findeZug, neuePartie, zieheIn } from './partie'
+import { neuePartie, zieheIn } from './partie'
 
 export const BUCH_ZEILEN: readonly string[] = [
   // Offene Spiele
@@ -83,13 +83,11 @@ function baue(): Map<string, string[]> {
 
 /**
  * Ein Buchzug für diese Stellung, oder null. `zufall` liefert eine Zahl in
- * [0, 1) -- derselbe Startwert, derselbe Zug.
+ * [0, 1) -- derselbe Startwert, derselbe Zug. Dass jeder Buchzug legal ist,
+ * prüft der Test, der alle Zeilen nachspielt.
  */
-export function buchZug(schluessel: string, fen: string, zufall: () => number): string | null {
+export function buchZug(schluessel: string, zufall: () => number): string | null {
   buch ??= baue()
   const liste = buch.get(schluessel)
-  if (!liste) return null
-  const z = liste[Math.floor(zufall() * liste.length)]!
-  // Nur zur Sicherheit: Das Buch darf nie einen Zug liefern, den es nicht gibt.
-  return findeZug(neuePartie(fen).stellung, z) ? z : null
+  return liste ? liste[Math.floor(zufall() * liste.length)]! : null
 }

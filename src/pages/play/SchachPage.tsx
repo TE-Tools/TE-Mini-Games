@@ -12,6 +12,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   SPEICHER_SCHLUESSEL,
+  STUFEN as STUFEN_WERTE,
   amZug,
   beende,
   erstelleRechner,
@@ -254,6 +255,8 @@ export function SchachPage() {
   const zurueckBis = spiel && partie && !partie.ende && !computerDran ? partie.zuege.length - 2 : -1
   // Als Schwarz ist man nur nach einer ungeraden Zahl Züge dran, zurueckBis ist dann ≥ 1.
   const darfZurueck = zurueckBis >= 0
+  // Den Knopf gibt es nur, wo die Stufe es erlaubt (config.ts) -- ab mittel nicht.
+  const mitZurueck = !!spiel && STUFEN_WERTE[spiel.stufe].zuruecknehmen
 
   const zurueck = useCallback(() => {
     if (!darfZurueck) return
@@ -459,15 +462,17 @@ export function SchachPage() {
             </div>
           </div>
         ) : (
-          <div className={styles.knoepfe}>
-            <button
-              type="button"
-              className={shell.secondaryBtn}
-              onClick={zurueck}
-              disabled={!darfZurueck}
-            >
-              {t.schach.zugZurueck}
-            </button>
+          <div className={`${styles.knoepfe} ${mitZurueck ? '' : styles.einKnopf}`}>
+            {mitZurueck && (
+              <button
+                type="button"
+                className={shell.secondaryBtn}
+                onClick={zurueck}
+                disabled={!darfZurueck}
+              >
+                {t.schach.zugZurueck}
+              </button>
+            )}
             <button
               type="button"
               className={shell.secondaryBtn}

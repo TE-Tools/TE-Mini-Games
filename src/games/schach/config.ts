@@ -29,12 +29,43 @@ export interface StufenWerte {
   zeitMs: number
   /** In den ersten Zügen aus dem Eröffnungsbuch spielen (`buch.ts`). */
   buch: boolean
+  /**
+   * Darf man gegen diese Stufe Züge zurücknehmen? Nur bei leicht: Dort ist
+   * es eine Lernhilfe. Ab mittel zählt der Zug, den man gemacht hat
+   * (Thomas am 21.11.2026: „ab mittel und schwer soll es den zurück
+   * button nicht mehr geben").
+   */
+  zuruecknehmen: boolean
 }
 
 export const STUFEN: Record<SchachStufe, StufenWerte> = {
-  leicht: { tiefe: 1, ruhesuche: false, rauschen: 160, zufall: 0.35, zeitMs: 2000, buch: false },
-  mittel: { tiefe: 2, ruhesuche: true, rauschen: 25, zufall: 0, zeitMs: 2000, buch: true },
-  schwer: { tiefe: 64, ruhesuche: true, rauschen: 0, zufall: 0, zeitMs: 1200, buch: true },
+  leicht: {
+    tiefe: 1,
+    ruhesuche: false,
+    rauschen: 160,
+    zufall: 0.35,
+    zeitMs: 2000,
+    buch: false,
+    zuruecknehmen: true,
+  },
+  mittel: {
+    tiefe: 2,
+    ruhesuche: true,
+    rauschen: 25,
+    zufall: 0,
+    zeitMs: 2000,
+    buch: true,
+    zuruecknehmen: false,
+  },
+  schwer: {
+    tiefe: 64,
+    ruhesuche: true,
+    rauschen: 0,
+    zufall: 0,
+    zeitMs: 1200,
+    buch: true,
+    zuruecknehmen: false,
+  },
 }
 
 /** Figurenwerte in Hundertstel Bauern. */

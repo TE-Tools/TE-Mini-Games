@@ -3105,9 +3105,9 @@ export const en: Texte = {
     staerke: 'Strength',
     stufen: { leicht: 'Easy', mittel: 'Medium', schwer: 'Hard' },
     stufenText: {
-      leicht: 'Overlooks things now and then – good for learning.',
-      mittel: 'Doesn’t hang pieces, but doesn’t plan far ahead.',
-      schwer: 'Calculates several moves ahead.',
+      leicht: 'Often misses things, and you can take moves back – good for learning.',
+      mittel: "Doesn't hang pieces, but doesn't plan far ahead. No take-backs.",
+      schwer: 'Calculates many moves ahead and knows the openings. No take-backs.',
     },
     deineFarbe: 'Your colour',
     farben: { w: 'White', b: 'Black', zufall: 'Random' },

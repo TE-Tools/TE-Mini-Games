@@ -628,7 +628,7 @@ export function waehleZug(auftrag: KiAuftrag): string | null {
   }
   const zufall = mulberry32(auftrag.seed)
   if (werte.buch) {
-    const ausBuch = buchZug(s.schluessel(), auftrag.fen, zufall)
+    const ausBuch = buchZug(s.schluessel(), zufall)
     if (ausBuch) return ausBuch
   }
 
