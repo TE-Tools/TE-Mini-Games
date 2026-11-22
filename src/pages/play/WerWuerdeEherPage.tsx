@@ -18,6 +18,7 @@ import { fehlerSatz, partyFehler } from './partyFehler'
 import shell from './PartyShell.module.css'
 import styles from './WerWuerdeEherPage.module.css'
 import { Spielerbild } from './party/Spielerbild'
+import { Auszaehlung } from './party/Auszaehlung'
 
 const DEFAULT_NAMES = 'Thomas\nMarina\nPhillip\nSonja'
 
@@ -187,7 +188,6 @@ export function WerWuerdeEherPage() {
 
   if (state.phase === 'result') {
     const { counts, sieger } = auszaehlen(state)
-    const gesamt = Object.values(state.votes).length
 
     return (
       <main className={`${shell.page} ${styles.farbe}`}>
@@ -197,36 +197,40 @@ export function WerWuerdeEherPage() {
         </div>
 
         <div className={shell.card}>
-          <h2 className={shell.cardTitle}>
-            {sieger.length === 1
-              ? frage.modus === 'personen'
-                ? w.ganzKlar(nameOf(state, sieger[0]!))
-                : w.mehrheit((sieger[0] === 'a' ? frage.a : frage.b) ?? '')
-              : w.unentschieden}
-          </h2>
-          <ul className={shell.list}>
-            {(frage.modus === 'personen'
-              ? state.players.map((p) => ({ id: p.id, label: p.name }))
-              : [
-                  { id: 'a', label: frage.a ?? 'A' },
-                  { id: 'b', label: frage.b ?? 'B' },
-                ]
-            ).map((ziel) => {
-              const n = counts[ziel.id] ?? 0
-              const anteil = gesamt > 0 ? Math.round((n / gesamt) * 100) : 0
-              return (
-                <li key={ziel.id}>
-                  <span className={styles.balkenZelle}>
-                    <span>{ziel.label}</span>
-                    <span className={styles.balken} aria-hidden="true">
-                      <span className={styles.balkenFuell} style={{ width: `${anteil}%` }} />
-                    </span>
-                  </span>
-                  <strong>{n}</strong>
-                </li>
-              )
-            })}
-          </ul>
+          <Auszaehlung
+            // Eine neue Frage ist eine neue Auszählung -- mit eigenem Auftritt.
+            key={state.frageIndex}
+            ueberschrift={
+              sieger.length === 1
+                ? frage.modus === 'personen'
+                  ? w.ganzKlar(nameOf(state, sieger[0]!))
+                  : w.mehrheit((sieger[0] === 'a' ? frage.a : frage.b) ?? '')
+                : w.unentschieden
+            }
+            sieger={sieger}
+            zeilen={
+              frage.modus === 'personen'
+                ? state.players.map((p) => ({
+                    id: p.id,
+                    label: p.name,
+                    stimmen: counts[p.id] ?? 0,
+                  }))
+                : [
+                    {
+                      id: 'a',
+                      label: frage.a ?? 'A',
+                      stimmen: counts.a ?? 0,
+                      marke: { text: 'A', farbe: 'linear-gradient(140deg, #0ea5e9, #075985)' },
+                    },
+                    {
+                      id: 'b',
+                      label: frage.b ?? 'B',
+                      stimmen: counts.b ?? 0,
+                      marke: { text: 'B', farbe: 'linear-gradient(140deg, #f43f5e, #9f1239)' },
+                    },
+                  ]
+            }
+          />
         </div>
 
         <div className={shell.card}>

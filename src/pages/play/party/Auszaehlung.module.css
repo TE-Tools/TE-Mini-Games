@@ -1,0 +1,179 @@
+/* Die Auszählung: Balken nacheinander, dann Überschrift und Krone. */
+
+.auszaehlung {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.ueberschrift {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 800;
+  text-align: center;
+  animation: kommt 420ms cubic-bezier(0.2, 1.4, 0.4, 1) var(--fertig) backwards;
+}
+
+.zeilen {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.zeile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 10px 12px;
+  border-radius: var(--radius-lg);
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  animation: rein 260ms ease-out calc(var(--i) * var(--abstand)) backwards;
+}
+
+.sieger {
+  animation:
+    rein 260ms ease-out calc(var(--i) * var(--abstand)) backwards,
+    leuchten 600ms ease-out var(--fertig) forwards;
+}
+
+.marke {
+  position: relative;
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 1rem;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+}
+
+.krone {
+  position: absolute;
+  top: -0.95rem;
+  left: 50%;
+  font-size: 1.1rem;
+  text-shadow: none;
+  transform: translateX(-50%) rotate(-12deg);
+  animation: krone 520ms cubic-bezier(0.2, 1.6, 0.4, 1) var(--fertig) backwards;
+}
+
+.mitte {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.name {
+  font-weight: 700;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bahn {
+  display: block;
+  height: 12px;
+  border-radius: var(--radius-full);
+  background: rgb(15 23 42 / 0.07);
+  overflow: hidden;
+}
+
+.fuell {
+  /* Nicht --anteil: Den Namen hat die Startseite global als @property ohne
+     Vererbung angemeldet -- die Breite käme hier nie an. */
+  display: block;
+  height: 100%;
+  width: var(--balken-breite);
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, #818cf8, #c084fc);
+  animation: wachsen 700ms cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--i) * var(--abstand) + 120ms)
+    backwards;
+}
+
+.sieger .fuell {
+  background: linear-gradient(90deg, #f59e0b, #facc15);
+}
+
+.zahl {
+  flex: none;
+  min-width: 1.5rem;
+  text-align: right;
+  font-size: var(--text-lg);
+  font-variant-numeric: tabular-nums;
+  animation: rein 200ms ease-out calc(var(--i) * var(--abstand) + 500ms) backwards;
+}
+
+@keyframes rein {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes wachsen {
+  from {
+    width: 0;
+  }
+}
+
+@keyframes kommt {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+
+@keyframes leuchten {
+  to {
+    border-color: #facc15;
+    box-shadow:
+      0 0 0 3px rgb(250 204 21 / 0.25),
+      0 10px 24px -12px rgb(245 158 11 / 0.7);
+  }
+}
+
+@keyframes krone {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px) scale(0.3) rotate(-12deg);
+  }
+}
+
+/* Ohne Bewegung: alles steht gleich da, der Sieger trotzdem umrandet. */
+@media (prefers-reduced-motion: reduce) {
+  .ueberschrift,
+  .zeile,
+  .fuell,
+  .zahl,
+  .krone {
+    animation: none;
+  }
+
+  .sieger {
+    animation: none;
+    border-color: #facc15;
+  }
+}
+
+:global(:root[data-sparsam]) .ueberschrift,
+:global(:root[data-sparsam]) .zeile,
+:global(:root[data-sparsam]) .fuell,
+:global(:root[data-sparsam]) .zahl,
+:global(:root[data-sparsam]) .krone {
+  animation: none;
+}
+
+:global(:root[data-sparsam]) .sieger {
+  animation: none;
+  border-color: #facc15;
+}
