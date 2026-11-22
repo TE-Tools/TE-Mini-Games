@@ -27,6 +27,7 @@ import { Zeitring } from '@/components/zeitring/Zeitring'
 import shell from './PartyShell.module.css'
 import styles from './ScharadePage.module.css'
 import { Spielerbild } from './party/Spielerbild'
+import { spiele, vibriere } from '@/services/sound'
 
 const DEFAULT_NAMES = 'Thomas\nMarina\nPhillip\nSonja'
 
@@ -48,6 +49,13 @@ export function ScharadePage() {
   const [eigene] = useState<CustomCategory[]>(() => loadCustomCategories())
 
   const [ablauf, setAblauf] = useState<number | null>(null)
+  /** Der Begriff, der gerade wegfliegt (nur für die Animation). */
+  const [weg, setWeg] = useState<{
+    wort: string
+    richtig: boolean
+    nr: number
+    zug: string
+  } | null>(null)
   const [rest, setRest] = useState<number | null>(null)
 
   useEffect(() => {
@@ -196,26 +204,57 @@ export function ScharadePage() {
   }
 
   if (state.phase === 'play') {
+    // Ein wegfliegender Begriff gehört zu diesem Zug -- beim nächsten Zug fliegt
+    // nicht noch einmal der letzte Begriff der vorigen Person weg.
+    const zug = `${state.roundIndex}:${ap.id}`
+    const fliegt = weg?.zug === zug ? weg : null
     return (
       <main className={`${shell.page} ${styles.farbe}`}>
         <p className={shell.meta}>
           {ap.name} · {s.treffer(state.roundCorrect.length)}
         </p>
         <Zeitring rest={rest ?? state.seconds} gesamt={state.seconds} />
-        <div key={currentWord(state)} className={`${shell.card} ${styles.wordBox}`}>
-          <p className={styles.word}>{currentWord(state)}</p>
+        {/* Der alte Begriff fliegt weg -- nach oben bei Richtig, zur Seite beim
+            Überspringen --, während der neue hereinspringt. */}
+        <div className={styles.buehne}>
+          {fliegt && (
+            <div
+              key={`weg${fliegt.nr}`}
+              className={`${shell.card} ${styles.wordBox} ${fliegt.richtig ? styles.wegRichtig : styles.wegWeiter}`}
+              aria-hidden="true"
+            >
+              <p className={styles.word}>{fliegt.wort}</p>
+            </div>
+          )}
+          {fliegt?.richtig && (
+            <span key={`plus${fliegt.nr}`} className={styles.plusEins} aria-hidden="true">
+              +1
+            </span>
+          )}
+          <div key={currentWord(state)} className={`${shell.card} ${styles.wordBox}`}>
+            <p className={styles.word}>{currentWord(state)}</p>
+          </div>
         </div>
         <button
           type="button"
           className={`${shell.btn} ${styles.hit}`}
-          onClick={() => setState(markCorrect(state))}
+          onClick={() => {
+            spiele('treffer')
+            vibriere(20)
+            setWeg({ wort: currentWord(state), richtig: true, nr: (weg?.nr ?? 0) + 1, zug })
+            setState(markCorrect(state))
+          }}
         >
           {s.richtig}
         </button>
         <button
           type="button"
           className={shell.btnSecondary}
-          onClick={() => setState(markSkipped(state))}
+          onClick={() => {
+            spiele('knopf')
+            setWeg({ wort: currentWord(state), richtig: false, nr: (weg?.nr ?? 0) + 1, zug })
+            setState(markSkipped(state))
+          }}
         >
           {s.ueberspringen}
         </button>
