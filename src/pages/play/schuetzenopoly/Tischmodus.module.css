@@ -1,0 +1,255 @@
+/*
+ * Das Tablet als Tisch: Brett in der Mitte, ein Platz an jeder belegten
+ * Kante, jeder zu seinem Spieler gedreht.
+ *
+ * Die Plätze links und rechts sind hochkant, ihr Inhalt aber quer -- er ist
+ * um 90 Grad gedreht. Damit er die gedrehte Fläche genau füllt, misst er
+ * sich an seinem Platz (Container-Einheiten): Breite = Höhe des Platzes und
+ * umgekehrt.
+ */
+
+.tisch {
+  --sitz-tiefe: clamp(120px, 19vmin, 190px);
+  /* Schrift auf dem grünen Brett -- sonst setzt sie die normale Spielfläche. */
+  --auf-brett: #f4f1ff;
+  --auf-brett-leise: #b9c9bd;
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  /* Die Seitenplätze reichen über die volle Höhe: Dort ist ihre lange Kante. */
+  grid-template-areas:
+    'links oben rechts'
+    'links mitte rechts'
+    'links unten rechts';
+  grid-template-columns: var(--tiefe-links) minmax(0, 1fr) var(--tiefe-rechts);
+  grid-template-rows: var(--tiefe-oben) minmax(0, 1fr) var(--tiefe-unten);
+  gap: 8px;
+  padding: 8px;
+  background:
+    radial-gradient(circle at 50% 50%, rgb(255 255 255 / 0.5), transparent 70%), var(--color-bg);
+}
+
+/* --- Plätze --- */
+
+.sitz {
+  position: relative;
+  container-type: size;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--color-border);
+  background: var(--grad-surface);
+  box-shadow: var(--shadow-sm);
+  transition:
+    box-shadow 300ms ease,
+    background 300ms ease;
+}
+
+.sitzAmZug {
+  border-width: 3px;
+  background: var(--grad-primary-soft);
+  box-shadow: var(--glow-primary);
+}
+
+.sitzInnen {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100cqw;
+  height: 100cqh;
+  transform: translate(-50%, -50%) rotate(var(--dreh));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-content: center;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  overflow: auto;
+}
+
+.sitz[data-seite='links'] .sitzInnen,
+.sitz[data-seite='rechts'] .sitzInnen {
+  width: 100cqh;
+  height: 100cqw;
+}
+
+.sitzLeiste {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+/* Am Platz nebeneinander statt untereinander: Tief ist ein Platz nicht, aber lang. */
+.sitzLeiste > div {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.sitzLeiste > div > * {
+  flex: 1 1 auto;
+}
+
+.sitzLeiste > div > p {
+  flex-basis: 100%;
+}
+
+/* Am Platz ist kein Raum für die lange Rollenbeschreibung -- die Rolle steht im Schild. */
+.sitzLeiste > div > p:last-child {
+  display: none;
+}
+
+/* --- Platzschild --- */
+
+.schild {
+  flex: 0 1 240px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: var(--space-2);
+  align-items: center;
+  min-width: 0;
+}
+
+.raus {
+  opacity: 0.45;
+}
+
+.figur {
+  grid-row: 1 / 3;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 24px;
+  border: 2px solid rgb(0 0 0 / 0.25);
+  box-shadow: var(--shadow-sm);
+}
+
+.name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--space-2);
+  font-weight: 800;
+  font-size: var(--text-base);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.rolle {
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.werte {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.werte strong {
+  font-size: var(--text-lg);
+}
+
+.werte small {
+  color: var(--color-text-muted);
+}
+
+.zugMarke {
+  grid-column: 2;
+  justify-self: start;
+  margin-top: 2px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-gold);
+  color: #3b2a00;
+  font-size: var(--text-xs);
+  font-weight: 800;
+}
+
+/* --- Mitte --- */
+
+.mitte {
+  grid-area: mitte;
+  position: relative;
+  container-type: size;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+}
+
+.brett {
+  width: min(100cqw, 100cqh);
+  --brett-max: 100%;
+}
+
+.mitteDreh {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transform: rotate(var(--dreh));
+  transition: transform 500ms ease;
+}
+
+.letzteZeile {
+  max-width: 22em;
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--auf-brett, #f4f1ff);
+  opacity: 0.85;
+  text-align: center;
+}
+
+/* Am Tisch liest man die obere Reihe von außen, wie bei einem echten Brett. */
+.mitte [data-seite='oben'] > * {
+  transform: rotate(180deg);
+}
+
+/* --- Ecke und Überlagerungen --- */
+
+.ecke {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 3;
+  display: flex;
+  gap: var(--space-2);
+}
+
+/*
+ * Karten und Dialoge drehen sich zum Spieler am Zug.
+ *
+ * Sie sind selbst `position: fixed` und füllen das Fenster. Ein gedrehter
+ * Vorfahr wird für sie zum Bezugsrahmen -- also füllen sie diese gedrehte
+ * Fläche, die links und rechts hochkant liegt.
+ */
+.ueberlagerung {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 40;
+  width: 100vw;
+  height: 100dvh;
+  transform: translate(-50%, -50%) rotate(var(--dreh));
+  pointer-events: none;
+}
+
+.ueberlagerung[data-seite='links'],
+.ueberlagerung[data-seite='rechts'] {
+  width: 100dvh;
+  height: 100vw;
+}
+
+.ueberlagerung > * {
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mitteDreh {
+    transition: none;
+  }
+}

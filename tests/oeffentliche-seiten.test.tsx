@@ -50,6 +50,10 @@ function oeffne(pfad: string) {
 
 describe('Seiten ohne Anmeldung', () => {
   beforeEach(() => {
+    // Sprache ausdruecklich auf Deutsch. jsdom meldet en-US, die App
+    // waehlt dann Englisch -- und dieser Test prueft deutschen Text,
+    // beim Loeschen sogar das Bestaetigungswort LOESCHEN.
+    localStorage.setItem('te-sprache', 'de')
     vi.clearAllMocks()
   })
 

@@ -13,6 +13,13 @@ export interface LocalProfile {
   playerLevel: number
   streakDays: number
   lastPlayedAt: string | null
+  /**
+   * Tag (YYYY-MM-DD), an dem die Serie zuletzt gezählt hat. Eigenes Feld,
+   * weil `lastPlayedAt` schon von addXp auf heute gesetzt ist, bevor die
+   * Serie rechnet -- damit stand sie bei jeder Runde mit XP still
+   * (03.11.2026).
+   */
+  streakDate?: string | null
   createdAt: string
   updatedAt: string
 }

@@ -35,6 +35,7 @@ die Levelanzeige. Nimm, was ihr wirklich spielt:
 | … dazu Duell online und eigene Wortlisten | **+ 10 + 11** | 20 KB |
 | „Wer bin ich?" online | **01–05 + 07** | 60 KB |
 | „Kniffel" online | **13 + 14** | 17 KB |
+| Englische Wörter für Imposter und Wer bin ich? online | **54–78** | 326 KB |
 
 Alles zusammen sind es 123 KB.
 

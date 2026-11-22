@@ -1,4 +1,5 @@
 import type { WordEntry } from '../types'
+import { WORDS_EN } from './words.en'
 
 /**
  * Der eingebaute deutsche Wortschatz -- 50 Wörter je Kategorie, zusammen 1000
@@ -215,9 +216,12 @@ const BY_CATEGORY: Record<string, string[]> = {
   ],
 }
 
-export const WORDS: WordEntry[] = Object.entries(BY_CATEGORY).flatMap(([categoryId, words]) =>
+const WORDS_DE: WordEntry[] = Object.entries(BY_CATEGORY).flatMap(([categoryId, words]) =>
   words.map((word) => ({ word, categoryId })),
 )
+
+/** Deutsch und Englisch (words.en.ts, Kennungen mit `en-`) in einer Liste. */
+export const WORDS: WordEntry[] = [...WORDS_DE, ...WORDS_EN]
 
 export function wordsForCategory(categoryId: string): WordEntry[] {
   return WORDS.filter((w) => w.categoryId === categoryId)

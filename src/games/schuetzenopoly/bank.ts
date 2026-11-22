@@ -27,11 +27,7 @@ import {
 } from './zustand'
 
 /** Geld gutschreiben. */
-export function gutschrift(
-  state: SpielZustand,
-  spielerId: string,
-  betrag: number,
-): SpielZustand {
+export function gutschrift(state: SpielZustand, spielerId: string, betrag: number): SpielZustand {
   if (betrag <= 0) return state
   const spieler = spielerMit(state, spielerId)
   if (!spieler) return state
@@ -59,7 +55,11 @@ function naechsterNotverkauf(
 
   const frei = eigene.sort((a, b) => kaufpreis(a.feldId) - kaufpreis(b.feldId))[0]
   if (frei) {
-    return { feldId: frei.feldId, art: 'grundstueck', erloes: rueckkaufwert(kaufpreis(frei.feldId)) }
+    return {
+      feldId: frei.feldId,
+      art: 'grundstueck',
+      erloes: rueckkaufwert(kaufpreis(frei.feldId)),
+    }
   }
   return null
 }
@@ -83,6 +83,12 @@ function notverkauf(state: SpielZustand, spielerId: string, betrag: number): Spi
       spielerId,
       art: 'geld',
       text: `${spielerMit(s, spielerId)?.name} muss ${feldName(naechster.feldId)} versilbern (+${naechster.erloes} 🪙).`,
+      meldung: {
+        art: 'versilbern',
+        name: spielerMit(s, spielerId)?.name ?? '',
+        feldId: naechster.feldId,
+        betrag: naechster.erloes,
+      },
     })
   }
   return s
@@ -141,6 +147,7 @@ export function zahle(
         spielerId: vonId,
         art: 'strafe',
         text: `${spieler.name} kann ${betrag} 🪙 nicht aufbringen und scheidet aus.`,
+        meldung: { art: 'pleite', name: spieler.name, betrag },
       })
       s = abwickeln(s, vonId, anId)
       return { state: s, gezahlt, insolvent: true }
@@ -155,6 +162,7 @@ export function zahle(
       spielerId: vonId,
       art: 'strafe',
       text: `${jetzt.name} kann ${betrag} 🪙 nicht aufbringen und scheidet aus.`,
+      meldung: { art: 'pleite', name: jetzt.name, betrag },
     })
     s = abwickeln(s, vonId, anId)
     return { state: s, gezahlt, insolvent: true }

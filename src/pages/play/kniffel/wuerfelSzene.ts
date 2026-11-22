@@ -18,6 +18,8 @@ import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import { wuerfelSeite } from '@/components/drei/texturen'
+import { WUERFEL_FARBEN } from '@/components/designs/designs'
+import type { WuerfelDesignId } from '@/services/sammlung'
 
 /*
  * Welche Seite des Würfels welche Zahl trägt, und wie man sie nach oben
@@ -85,7 +87,11 @@ export interface WuerfelSzene {
 /** Wie lange ein Wurf höchstens taumelt -- für die Seite, die darauf wartet. */
 export const WURF_DAUER_MS = 900
 
-export function starteWuerfelSzene(leinwand: HTMLCanvasElement): WuerfelSzene {
+/** `design`: nur Aussehen (services/sammlung.ts) -- Farbe von Fläche und Augen. */
+export function starteWuerfelSzene(
+  leinwand: HTMLCanvasElement,
+  design: WuerfelDesignId = 'standard',
+): WuerfelSzene {
   const renderer = new THREE.WebGLRenderer({
     canvas: leinwand,
     alpha: true,
@@ -129,7 +135,8 @@ export function starteWuerfelSzene(leinwand: HTMLCanvasElement): WuerfelSzene {
   szene.add(boden)
 
   const geo = new RoundedBoxGeometry(1, 1, 1, 5, 0.17)
-  const texturen = SEITEN_AUGEN.map((n) => wuerfelSeite(n))
+  const farben = design === 'standard' ? undefined : WUERFEL_FARBEN[design]
+  const texturen = SEITEN_AUGEN.map((n) => wuerfelSeite(n, farben))
 
   let teilung = 1.15
 

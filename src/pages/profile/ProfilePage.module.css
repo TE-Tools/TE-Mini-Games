@@ -289,3 +289,32 @@
 .back:active {
   transform: scale(0.94);
 }
+
+/* Gesichter per Video: gesperrt sehen sie blasser aus und tragen eine Marke.
+   Ein Tipp waehlt nur aus, welches das naechste Video freischaltet. */
+.videoTitel {
+  font-weight: 700;
+  margin: 0;
+}
+
+.gesperrt {
+  opacity: 0.6;
+  border-style: dashed;
+}
+
+.gesperrt[aria-pressed='true'] {
+  opacity: 1;
+  border-color: var(--color-primary);
+}
+
+.marke {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.freiMeldung {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-align: center;
+}

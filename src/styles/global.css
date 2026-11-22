@@ -23,6 +23,21 @@ html {
   color-scheme: light;
 }
 
+/*
+ * Tablets (05.11.2026, Thomas: "tablet und handy optimiert").
+ *
+ * Die Seiten sind fürs Telefon gebaut und in rem bemessen. Auf einem Tablet
+ * stand dadurch eine schmale Spalte mit kleiner Schrift und kleinen Karten
+ * in viel leerem Rand. Eine größere Grundschrift zieht alles mit: Schrift,
+ * Knöpfe, Karten und die Spaltenbreite. Nur bei Touch-Geräten -- am Rechner
+ * mit Maus bleibt es, wie es war.
+ */
+@media (pointer: coarse) and (min-width: 700px) and (min-height: 600px) {
+  html {
+    font-size: 18px;
+  }
+}
+
 body {
   font-family: var(--font-sans);
   background-color: var(--color-bg);

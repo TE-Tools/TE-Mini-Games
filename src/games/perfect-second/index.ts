@@ -15,3 +15,5 @@ export {
 } from './score'
 export type { ScoreInput, ScoreResult } from './score'
 export { createTimer, formatTime, formatDeviation } from './timing'
+export { darfNochEinVersuch, nochEinVersuch } from './werbung'
+export type { VersuchLage, Anlauf } from './werbung'

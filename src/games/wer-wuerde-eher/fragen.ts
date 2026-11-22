@@ -10,6 +10,8 @@
  * Partyspiele kaputt, nicht am fehlenden Witz.
  */
 
+import { FRAGEN_EN } from './fragen.en'
+
 export type FrageModus = 'personen' | 'entweder'
 
 export interface Frage {
@@ -223,7 +225,10 @@ export const FRAGEN: Frage[] = [
   ...PERSONEN.map((text, i) => ({
     id: `p${i}`,
     modus: 'personen' as const,
-    text: `Wer würde am ehesten … ${text}?`,
+    // Die Einträge sind Nebensätze ("… einen Kuchen alleine isst"). Mit
+    // "Wer würde am ehesten … isst?" war jede Frage falsches Deutsch
+    // (03.11.2026); "die Person sein, die …" trägt sie alle.
+    text: `Wer würde am ehesten die Person sein, die ${text.replace(/^am ehesten /, '')}?`,
   })),
   ...ENTWEDER.map(([a, b], i) => ({
     id: `e${i}`,
@@ -234,7 +239,11 @@ export const FRAGEN: Frage[] = [
   })),
 ]
 
-export function fragenFuer(modi: FrageModus[]): Frage[] {
+/** In welcher Sprache die Fragen kommen -- die englischen stehen in `fragen.en.ts`. */
+export type FragenSprache = 'de' | 'en'
+
+export function fragenFuer(modi: FrageModus[], sprache: FragenSprache = 'de'): Frage[] {
   const erlaubt = modi.length > 0 ? modi : (['personen', 'entweder'] as FrageModus[])
-  return FRAGEN.filter((f) => erlaubt.includes(f.modus))
+  const liste = sprache === 'en' ? FRAGEN_EN : FRAGEN
+  return liste.filter((f) => erlaubt.includes(f.modus))
 }

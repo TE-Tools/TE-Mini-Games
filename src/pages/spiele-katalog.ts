@@ -7,14 +7,24 @@
  */
 
 import type { GameId } from '@/games/types'
+import type { Texte } from '@/i18n/sprache'
 
 export interface KachelEintrag {
   id: GameId
+  /**
+   * Der deutsche Name. Angezeigt wird er nicht mehr von hier aus,
+   * sondern über `t.spiele[id]` -- diese Zeile bleibt als Fundstelle
+   * für Suchen im Quelltext und als Beleg, welches Spiel gemeint ist.
+   */
   name: string
   pfad: string
   icon: string
-  /** Ein Wort, das die Art des Spiels benennt. */
-  art: string
+  /**
+   * Ein Wort, das die Art des Spiels benennt. Als Schlüssel getippt:
+   * Eine neue Art ohne Übersetzung ist damit ein Fehler beim Bauen und
+   * keine deutsche Insel in der englischen Oberfläche.
+   */
+  art: keyof Texte['spielarten']
 }
 
 export const SPIELE_KACHELN: readonly KachelEintrag[] = [
@@ -67,6 +77,7 @@ export const SPIELE_KACHELN: readonly KachelEintrag[] = [
     icon: '🃏',
     art: 'Karten',
   },
+  { id: 'schach', name: 'Schach', pfad: '/play/schach', icon: '♞', art: 'Brettspiel' },
   {
     id: 'schuetzenopoly',
     name: 'Schützenopoly',
@@ -105,10 +116,68 @@ export const SPIELE_KACHELN: readonly KachelEintrag[] = [
     icon: '🗳️',
     art: 'Partyspiel',
   },
+  { id: 'rueckwaerts', name: 'Rückwärts', pfad: '/play/rueckwaerts', icon: '⏪', art: 'Hören' },
 ]
 
 const NACH_ID = new Map(SPIELE_KACHELN.map((k) => [k.id, k]))
 
 export function kachelFuer(id: string): KachelEintrag | undefined {
   return NACH_ID.get(id as GameId)
+}
+
+/*
+ * Die Reiter über den Kacheln (03.11.2026): Bei zweiundzwanzig Spielen
+ * hilft eine grobe Sortierung beim Suchen -- "worauf hab ich Lust?" in vier
+ * Antworten. Ein Spiel steht in genau einer Gruppe.
+ */
+export type SpielGruppe = 'knobeln' | 'geschick' | 'tisch' | 'party'
+
+export const SPIEL_GRUPPEN: readonly { id: SpielGruppe; icon: string }[] = [
+  { id: 'knobeln', icon: '🧩' },
+  { id: 'geschick', icon: '⚡' },
+  { id: 'tisch', icon: '🎲' },
+  { id: 'party', icon: '🎉' },
+]
+
+const GRUPPE: Partial<Record<GameId, SpielGruppe>> = {
+  'perfect-second': 'geschick',
+  'what-is-missing': 'knobeln',
+  reihenfolge: 'knobeln',
+  kopfrechnen: 'knobeln',
+  sudoku: 'knobeln',
+  'bienen-flow': 'knobeln',
+  'squishy-dumplings': 'geschick',
+  trapbound: 'geschick',
+  emberwake: 'geschick',
+  kniffel: 'tisch',
+  maumau: 'tisch',
+  'letzte-karte': 'tisch',
+  'texas-holdem': 'tisch',
+  schuetzenopoly: 'tisch',
+  schach: 'tisch',
+  schuetzenrunde: 'party',
+  'finde-den-imposter': 'party',
+  'wer-bin-ich': 'party',
+  'stadt-land-fluss': 'party',
+  scharade: 'party',
+  wortbombe: 'party',
+  'wer-wuerde-eher': 'party',
+  rueckwaerts: 'party',
+}
+
+/** Ein Spiel ohne Eintrag landet bei "Knobeln" -- dort fällt es nicht aus dem Raster. */
+export function gruppeVon(id: GameId): SpielGruppe {
+  return GRUPPE[id] ?? 'knobeln'
+}
+
+/**
+ * Das Spiel des Tages: jeden Tag ein anderes, der Reihe nach durch alle
+ * Kacheln. Fest am Kalendertag (Ortszeit), nicht zufällig -- wer am selben
+ * Tag zweimal hineinschaut, sieht dasselbe, und morgen etwas Neues.
+ */
+export function spielDesTages(datum: Date = new Date()): KachelEintrag {
+  const tag = Math.floor(
+    Date.UTC(datum.getFullYear(), datum.getMonth(), datum.getDate()) / 86_400_000,
+  )
+  return SPIELE_KACHELN[tag % SPIELE_KACHELN.length]!
 }

@@ -10,6 +10,7 @@
  */
 
 import { LEVEL_ANZAHL } from './levels'
+import { ueberspringe } from './werbung'
 
 const SCHLUESSEL = 'trapbound:stand'
 
@@ -24,6 +25,11 @@ export interface LevelStand {
   kristall: boolean
   /** Tode insgesamt, über alle Versuche. */
   tode: number
+  /**
+   * Per Belohnungsvideo übersprungen: gilt als geschafft, aber ohne
+   * Bestwerte und Kristall. Fällt weg, sobald man es wirklich schafft.
+   */
+  uebersprungen?: boolean
 }
 
 export interface Einstellungen {
@@ -120,18 +126,34 @@ export interface Abschluss {
   kristall: boolean
 }
 
+/**
+ * JSON kennt kein Infinity und schreibt null -- und Math.min(null, 12) ist 0.
+ * Ein noch nie geschafftes (oder übersprungenes) Level hätte so beim ersten
+ * echten Abschluss die Bestzeit 0 bekommen.
+ */
+function bestwert(wert: number | null): number {
+  return typeof wert === 'number' ? wert : Infinity
+}
+
 /** Nach dem Levelabschluss: eintragen und das nächste Level öffnen. */
 export function merkeAbschluss(a: Abschluss): Stand {
   const stand = leseStand()
   const l = levelStand(a.nr, stand)
   stand.level[String(a.nr)] = {
     fertig: true,
-    besteTode: Math.min(l.besteTode, a.tode),
-    besteZeit: Math.min(l.besteZeit, a.zeit),
+    besteTode: Math.min(bestwert(l.besteTode), a.tode),
+    besteZeit: Math.min(bestwert(l.besteZeit), a.zeit),
     kristall: l.kristall || a.kristall,
     tode: l.tode,
   }
   stand.freigeschaltet = Math.max(stand.freigeschaltet, Math.min(LEVEL_ANZAHL, a.nr + 1))
+  schreibe(stand)
+  return stand
+}
+
+/** Per Belohnungsvideo übersprungen: eintragen und das nächste Level öffnen. */
+export function merkeUebersprungen(nr: number): Stand {
+  const stand = ueberspringe(leseStand(), nr)
   schreibe(stand)
   return stand
 }

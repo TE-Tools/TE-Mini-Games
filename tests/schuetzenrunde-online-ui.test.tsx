@@ -9,6 +9,8 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import type { OnlineState } from '@/services/schuetzenrundeOnline'
+import { SprachProvider } from '@/i18n/SprachProvider'
+import { renderAufDeutsch } from './aufDeutsch'
 
 const state = vi.hoisted(() => ({ current: null as OnlineState | null }))
 const calls = vi.hoisted(() => ({
@@ -125,7 +127,7 @@ beforeEach(() => {
 })
 
 function show() {
-  return render(
+  return renderAufDeutsch(
     <MemoryRouter>
       <SchuetzenrundeOnline onBack={() => {}} />
     </MemoryRouter>,
@@ -176,9 +178,24 @@ describe('Schützenrunde online – Oberfläche', () => {
     await screen.findByText(/Diskussion/)
 
     expect(screen.getByText(/Ich traue Bert nicht/)).toBeDefined()
-    await userEvent.type(screen.getByPlaceholderText('Sag was…'), 'Karl war das')
-    await userEvent.click(screen.getByRole('button', { name: 'Senden' }))
-    expect(calls.chat).toHaveBeenCalledWith('m1', 'Karl war das')
+    // Kein freier Text mehr: einen festen Satz wählen, dazu den Namen.
+    expect(screen.queryByPlaceholderText('Sag was…')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Sagen' })).toBeDisabled()
+    await userEvent.selectOptions(
+      screen.getByRole('combobox', { name: 'Was willst du sagen?' }),
+      'Ich traue … nicht.',
+    )
+    expect(screen.getByRole('button', { name: 'Sagen' })).toBeDisabled()
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Über wen?' }), 'Karl')
+    await userEvent.click(screen.getByRole('button', { name: 'Sagen' }))
+    expect(calls.chat).toHaveBeenCalledWith('m1', 'Ich traue Karl nicht.')
+
+    await userEvent.selectOptions(
+      screen.getByRole('combobox', { name: 'Was willst du sagen?' }),
+      'Lasst uns abstimmen.',
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Sagen' }))
+    expect(calls.chat).toHaveBeenCalledWith('m1', 'Lasst uns abstimmen.')
 
     await userEvent.click(screen.getByRole('button', { name: 'Bereit zur Abstimmung' }))
     expect(calls.ready).toHaveBeenCalledWith('m1')
@@ -214,11 +231,64 @@ describe('Schützenrunde online – Oberfläche', () => {
     vi.resetModules()
     vi.doMock('@/auth/authService', () => ({ getCurrentUser: vi.fn(async () => null) }))
     const mod = await import('@/pages/play/SchuetzenrundeOnline')
+    // Nach resetModules gibt es einen frischen Sprachkontext -- der Provider
+    // muss aus derselben Ladung kommen wie die Seite, sonst findet sie ihn nicht.
+    const frisch = await import('@/i18n/SprachProvider')
+    localStorage.setItem('te-sprache', 'de')
     render(
-      <MemoryRouter>
-        <mod.SchuetzenrundeOnline onBack={() => {}} />
-      </MemoryRouter>,
+      <frisch.SprachProvider>
+        <MemoryRouter>
+          <mod.SchuetzenrundeOnline onBack={() => {}} />
+        </MemoryRouter>
+      </frisch.SprachProvider>,
     )
     expect(await screen.findByRole('link', { name: 'Anmelden' })).toBeDefined()
+  })
+})
+
+describe('Schützenrunde online – auf Englisch', () => {
+  function showEnglish() {
+    localStorage.setItem('te-sprache', 'en')
+    return render(
+      <SprachProvider>
+        <MemoryRouter>
+          <SchuetzenrundeOnline onBack={() => {}} />
+        </MemoryRouter>
+      </SprachProvider>,
+    )
+  }
+
+  it('zeigt Nacht, Rolle, Erkenntnis und Verlauf auf Englisch', async () => {
+    showEnglish()
+    await userEvent.click(await screen.findByRole('button', { name: 'Open a round' }))
+    expect(await screen.findByText('Night 1')).toBeDefined()
+    expect(screen.getByText(/Range Master · Brotherhood/)).toBeDefined()
+    expect(screen.getByText(/Night 1: Karl belongs to the saboteurs\./)).toBeDefined()
+    expect(screen.getByText('Night 1: The saboteurs got Rosi.')).toBeDefined()
+    expect(screen.getByText('Who do you check?')).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Submit action' })).toBeDefined()
+    expect(screen.queryByText(/Nacht|Schießmeister|Bruderschaft/)).toBeNull()
+  })
+
+  it('übersetzt feste Sätze, freien Text aus älteren Runden nicht', async () => {
+    const s = makeState({ phase: 'day' })
+    s.messages.push({
+      seat: 1,
+      name: 'Bert',
+      is_bot: false,
+      text: 'Ich traue Karl nicht.',
+      round: 1,
+    })
+    s.messages.push({ seat: 1, name: 'Bert', is_bot: false, text: 'Karl war das', round: 1 })
+    state.current = s
+    showEnglish()
+    await userEvent.click(await screen.findByRole('button', { name: 'Open a round' }))
+    expect(await screen.findByText(/Day 1 · Discussion/)).toBeDefined()
+    expect(screen.getByText(/I don't trust Bert\./)).toBeDefined()
+    expect(screen.getByText(/I don't trust Karl\./)).toBeDefined()
+    expect(screen.getByText(/Karl war das/)).toBeDefined()
+    expect(screen.getByRole('combobox', { name: 'What do you want to say?' })).toBeDefined()
+    expect(screen.getByRole('option', { name: "Let's vote." })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Ready to vote' })).toBeDefined()
   })
 })

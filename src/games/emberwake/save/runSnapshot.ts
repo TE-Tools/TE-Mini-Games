@@ -45,6 +45,7 @@ export function snapshotRun(w: World): RunSnapshot {
     secretFound: w.secret.found,
     hintsShown: Array.from(w.hintsShown),
     stats: { ...w.stats },
+    revived: w.revived,
   }
 }
 
@@ -104,6 +105,8 @@ export function restoreRun(w: World, s: RunSnapshot): void {
   w.secret.found = s.secretFound
   w.hintsShown = new Set(s.hintsShown)
   Object.assign(w.stats, s.stats)
+  // Wer nach dem Wiederbeleben neu lädt, bekommt kein zweites Video.
+  w.revived = s.revived === true
 
   recomputeCampEffects(w)
   recomputeWeight(w)

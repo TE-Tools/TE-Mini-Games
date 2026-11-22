@@ -555,6 +555,5 @@ insert into public.fdi_words (category_id, word) values
   ('natur', 'Düne'),
   ('natur', 'Herbstlaub'),
   ('koerper', 'Kopf'),
-  ('koerper', 'Haar'),
-  ('koerper', 'Stirn'),
-  ('koerper', 'Auge');
+  ('koerper', 'Haar')
+on conflict (category_id, word) do nothing;

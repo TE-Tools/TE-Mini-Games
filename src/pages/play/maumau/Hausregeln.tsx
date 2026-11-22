@@ -9,7 +9,8 @@
  * nicht zweimal in zwei Seiten.
  */
 
-import { SPIELARTEN, type Konter, type Spielart } from '@/games/maumau'
+import type { Konter, Spielart } from '@/games/maumau'
+import { useSprache } from '@/i18n/sprache'
 import { KONTER_REGELN } from './konterRegeln'
 import styles from '../MauMauPage.module.css'
 
@@ -64,9 +65,10 @@ export function Spielartwahl({
   onArt: (a: Spielart) => void
   gesperrt?: boolean
 }) {
+  const { t } = useSprache()
   return (
     <fieldset className={styles.gruppe}>
-      <legend>Wie wird gespielt?</legend>
+      <legend>{t.maumau.wieWirdGespielt}</legend>
       <div className={styles.knopfreihe}>
         {(['bunt', 'extrem'] as Spielart[]).map((a) => (
           <button
@@ -76,11 +78,11 @@ export function Spielartwahl({
             onClick={() => onArt(a)}
             disabled={gesperrt}
           >
-            {SPIELARTEN[a].name}
+            {t.maumau.spielarten[a].name}
           </button>
         ))}
       </div>
-      <p className={styles.erklaerung}>{SPIELARTEN[art].erklaerung}</p>
+      <p className={styles.erklaerung}>{t.maumau.spielarten[art].erklaerung}</p>
     </fieldset>
   )
 }
@@ -97,15 +99,17 @@ export function Hausregelwahl({
   onStand: (neu: HausregelStand) => void
   gesperrt?: boolean
 }) {
+  const { t } = useSprache()
   return (
     <fieldset className={styles.gruppe}>
-      <legend>Hausregeln</legend>
+      <legend>{t.maumau.hausregeln}</legend>
       <ul className={styles.regelliste}>
         {KONTER_REGELN.filter((r) => klassisch === false || r.auchKlassisch).map((r) => (
           <li key={r.id}>
+            {/* Name und Erklärung kommen über die Kennung aus dem Wörterbuch. */}
             <Schalter
-              name={klassisch ? r.name : (r.buntName ?? r.name)}
-              erklaerung={r.erklaerung}
+              name={klassisch ? t.maumau.konter[r.id].nameKlassisch : t.maumau.konter[r.id].name}
+              erklaerung={t.maumau.konter[r.id].erklaerung}
               an={stand.konter[r.id]}
               gesperrt={gesperrt}
               onUm={() =>
@@ -119,8 +123,8 @@ export function Hausregelwahl({
         ))}
         <li>
           <Schalter
-            name="Ziehen, bis es passt"
-            erklaerung="Sonst zieht man eine Karte und ist fertig."
+            name={t.maumau.ziehenBisPassend}
+            erklaerung={t.maumau.ziehenBisPassendText}
             an={stand.ziehenBisPassend}
             gesperrt={gesperrt}
             onUm={() => onStand({ ...stand, ziehenBisPassend: !stand.ziehenBisPassend })}
@@ -129,8 +133,8 @@ export function Hausregelwahl({
         {!klassisch && (
           <li>
             <Schalter
-              name="Null tauscht die Hände"
-              erklaerung="Alle geben ihr Blatt in Spielrichtung weiter."
+              name={t.maumau.haendeWandern}
+              erklaerung={t.maumau.haendeWandernText}
               an={stand.haendeWandern}
               gesperrt={gesperrt}
               onUm={() => onStand({ ...stand, haendeWandern: !stand.haendeWandern })}

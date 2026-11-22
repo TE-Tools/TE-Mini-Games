@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useText } from '@/i18n/sprache'
 import styles from './InstallButton.module.css'
 
 /**
@@ -30,6 +31,7 @@ function isIos(): boolean {
  * button disappears.
  */
 export function InstallButton() {
+  const texte = useText().installieren
   const [promptEvent, setPromptEvent] = useState<BeforeInstallPromptEvent | null>(null)
   const [installed, setInstalled] = useState(() => isStandalone())
   const [showIosHint, setShowIosHint] = useState(false)
@@ -69,12 +71,15 @@ export function InstallButton() {
   return (
     <div className={styles.wrap}>
       <button type="button" className={styles.button} onClick={() => void install()}>
-        <span aria-hidden="true">⬇️</span> App installieren
+        <span aria-hidden="true">⬇️</span> {texte.knopf}
       </button>
       {showIosHint && (
         <p className={styles.hint}>
-          In Safari unten auf <strong>Teilen</strong> tippen und dann{' '}
-          <strong>„Zum Home-Bildschirm“</strong> wählen.
+          {texte.iosVor}
+          <strong>{texte.iosTeilen}</strong>
+          {texte.iosMitte}
+          <strong>{texte.iosHome}</strong>
+          {texte.iosNach}
         </p>
       )}
     </div>

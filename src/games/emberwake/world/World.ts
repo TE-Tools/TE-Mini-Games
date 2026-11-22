@@ -231,6 +231,11 @@ export interface World {
   stats: WorldStats
   status: WorldStatus
   deathCause: string | null
+  /**
+   * In diesem Anlauf schon per Werbevideo wiederbelebt (systems/ReviveSystem).
+   * Höchstens einmal; der Abschluss schreibt dann keinen Rekord.
+   */
+  revived: boolean
   nextId: number
 }
 
@@ -328,6 +333,7 @@ export function createEmptyWorld(level: LevelDef, worldDef: WorldDef, camp: Camp
     },
     status: 'running',
     deathCause: null,
+    revived: false,
     nextId: 1,
   }
 }

@@ -10,10 +10,15 @@
  */
 import { describe, it, expect } from 'vitest'
 import { WORDS, wordsForCategory } from '@/games/finde-den-imposter/data/words'
-import { CATEGORIES } from '@/games/finde-den-imposter/data/categories'
+import { CATEGORIES, categoriesFor } from '@/games/finde-den-imposter/data/categories'
 import sql from '../supabase/migrations/011b_imposter_words.sql?raw'
 
 const MINDESTENS_JE_KATEGORIE = 40
+
+// 011b führt nur die deutschen Listen; die englischen (`en-…`) stehen in 029
+// und werden in tests/imposter-englisch.test.ts geprüft.
+const DEUTSCH = categoriesFor('de')
+const WOERTER_DE = WORDS.filter((w) => DEUTSCH.some((c) => c.id === w.categoryId))
 
 describe('Wortschatz', () => {
   it('hat rund 1000 Wörter', () => {
@@ -50,18 +55,18 @@ describe('Wortschatz', () => {
 
 describe('Kopie für das Online-Spiel', () => {
   it('enthält jede Kategorie', () => {
-    for (const c of CATEGORIES) {
+    for (const c of DEUTSCH) {
       expect(sql, `Kategorie ${c.id} fehlt in 011b`).toContain(`('${c.id}', '${c.label}')`)
     }
   })
 
   it('enthält genauso viele Wörter wie das Spiel', () => {
     const zeilen = sql.match(/^ {2}\('[a-z]+', '.*'\)[,;]?$/gm) ?? []
-    expect(zeilen.length).toBe(WORDS.length + CATEGORIES.length)
+    expect(zeilen.length).toBe(WOERTER_DE.length + DEUTSCH.length)
   })
 
   it('enthält jedes einzelne Wort', () => {
-    const fehlen = WORDS.filter(
+    const fehlen = WOERTER_DE.filter(
       (w) => !sql.includes(`('${w.categoryId}', '${w.word.replace(/'/g, "''")}')`),
     )
     expect(fehlen.map((w) => `${w.categoryId}/${w.word}`)).toEqual([])

@@ -79,6 +79,11 @@ export interface RunSnapshot {
   waves: Array<{ at: number; announced: boolean; spawned: boolean; angle: number }>
   secretFound: boolean
   hintsShown: HintTrigger[]
+  /**
+   * Per Werbevideo wiederbelebt. Optional, damit ältere Sicherungen ohne
+   * Migration gültig bleiben: Fehlt es, war es nicht.
+   */
+  revived?: boolean
   stats: {
     gathered: number
     deposited: number

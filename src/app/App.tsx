@@ -16,7 +16,9 @@ import { StadtLandFlussPage } from '@/pages/play/StadtLandFlussPage'
 import { ScharadePage } from '@/pages/play/ScharadePage'
 import { WortbombePage } from '@/pages/play/WortbombePage'
 import { WerWuerdeEherPage } from '@/pages/play/WerWuerdeEherPage'
+import { RueckwaertsPage } from '@/pages/play/RueckwaertsPage'
 import { SchuetzenopolyPage } from '@/pages/play/SchuetzenopolyPage'
+import { SchachPage } from '@/pages/play/SchachPage'
 import { KniffelPage } from '@/pages/play/KniffelPage'
 import { BienenFlowPage } from '@/pages/play/BienenFlowPage'
 import { SquishyDumplingsPage } from '@/pages/play/SquishyDumplingsPage'
@@ -40,8 +42,9 @@ import { ProfilePage } from '@/pages/profile/ProfilePage'
 import { registerAllGames } from '@/games/register'
 import { initRemoteSync, syncFullNow } from '@/services/remoteSync'
 import { ermittleSpielerName } from '@/services/spielername'
-import { onAuthStateChange, getSession } from '@/auth/authService'
+import { onAuthStateChange, getSession, sitzungNurUnerreichbar } from '@/auth/authService'
 import { getPlayMode, setPlayMode, type PlayMode } from '@/auth/sessionMode'
+import { SprachProvider } from '@/i18n/SprachProvider'
 
 type GateState = { status: 'loading' } | { status: 'gate' } | { status: 'ready'; mode: PlayMode }
 
@@ -60,6 +63,25 @@ type GateState = { status: 'loading' } | { status: 'gate' } | { status: 'ready';
  */
 const OEFFENTLICHE_SEITEN = ['/impressum', '/datenschutz', '/konto-loeschen']
 
+/**
+ * Wohin es geht, wenn die Frage nach der Sitzung leer ausging.
+ *
+ * Gast bleibt Gast. Und wer mit Konto spielt, bleibt drin, wenn der Server
+ * nur gerade nicht zu erreichen war: Die Anmeldung liegt noch im Speicher
+ * und gilt wieder, sobald das Netz da ist. Vorher landete jeder, der die
+ * App ohne Netz öffnete, auf der Anmeldeseite -- und ein Spiel, das ohne
+ * Netz laufen soll, fing mit einer Anmeldung an, die ohne Netz nicht geht.
+ *
+ * Auf die Anmeldeseite führt nur noch: nie angemeldet, abgemeldet, oder
+ * der Server hat die Anmeldung wirklich abgelehnt.
+ */
+function ohneSitzung(): GateState {
+  const mode = getPlayMode()
+  if (mode === 'guest') return { status: 'ready', mode: 'guest' }
+  if (mode === 'account' && sitzungNurUnerreichbar()) return { status: 'ready', mode: 'account' }
+  return { status: 'gate' }
+}
+
 function AuthGate({ children }: { children: ReactNode }) {
   const [gate, setGate] = useState<GateState>({ status: 'loading' })
   const location = useLocation()
@@ -77,27 +99,26 @@ function AuthGate({ children }: { children: ReactNode }) {
         void syncFullNow()
         return
       }
-      const mode = getPlayMode()
-      if (mode === 'guest') {
-        setGate({ status: 'ready', mode: 'guest' })
-        return
-      }
-      setGate({ status: 'gate' })
+      setGate(ohneSitzung())
     })()
 
-    const unsub = onAuthStateChange((user) => {
+    const unsub = onAuthStateChange((user, abgemeldet) => {
       if (user) {
         setPlayMode('account')
         setGate({ status: 'ready', mode: 'account' })
         void ermittleSpielerName()
         void syncFullNow()
+      } else if (abgemeldet) {
+        // Wirklich abgemeldet: Hier zählt kein „nur nicht erreichbar".
+        setGate(getPlayMode() === 'guest' ? { status: 'ready', mode: 'guest' } : { status: 'gate' })
       } else {
-        const mode = getPlayMode()
-        if (mode === 'guest') {
-          setGate({ status: 'ready', mode: 'guest' })
-        } else {
-          setGate({ status: 'gate' })
-        }
+        // Supabase meldet beim Start „niemand da" -- auch dann, wenn es die
+        // gespeicherte Anmeldung nur gerade nicht auffrischen konnte.
+        // Erst nachfragen, dann entscheiden.
+        void getSession().then((session) => {
+          if (cancelled || session?.user) return
+          setGate(ohneSitzung())
+        })
       }
     })
 
@@ -109,19 +130,23 @@ function AuthGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (gate.status === 'loading') return
+    // Abbruchmarke wie im Effekt darueber. Ohne sie schreibt das
+    // Versprechen noch in den Zustand, wenn die Komponente laengst weg
+    // ist: In React eine Warnung, in Vitest ein harter Abbruch
+    // ("window is not defined"), weil jsdom dann schon abgeraeumt ist.
+    let abgebrochen = false
     void getSession().then((session) => {
+      if (abgebrochen) return
       if (session?.user) {
         setPlayMode('account')
         setGate({ status: 'ready', mode: 'account' })
         return
       }
-      const mode = getPlayMode()
-      if (mode === 'guest') {
-        setGate({ status: 'ready', mode: 'guest' })
-        return
-      }
-      setGate({ status: 'gate' })
+      setGate(ohneSitzung())
     })
+    return () => {
+      abgebrochen = true
+    }
   }, [location.pathname, gate.status])
 
   // Vor jeder Prüfung: Diese Seiten warten auf nichts. Selbst das
@@ -159,68 +184,72 @@ export function App() {
   }, [])
 
   return (
-    <BrowserRouter>
-      <AuthGate>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/play/perfect-second" element={<PerfectSecondPage />} />
-          <Route path="/play/what-is-missing" element={<WhatIsMissingPage />} />
-          <Route path="/play/schuetzenrunde" element={<SchuetzenrundePage />} />
-          <Route path="/play/finde-den-imposter" element={<FindeDenImposterPage />} />
-          <Route path="/play/reihenfolge" element={<ReihenfolgePage />} />
-          <Route path="/play/kopfrechnen" element={<KopfrechnenPage />} />
-          <Route path="/play/wer-bin-ich" element={<WerBinIchPage />} />
-          <Route path="/play/stadt-land-fluss" element={<StadtLandFlussPage />} />
-          <Route path="/play/scharade" element={<ScharadePage />} />
-          <Route path="/play/wortbombe" element={<WortbombePage />} />
-          <Route path="/play/wer-wuerde-eher" element={<WerWuerdeEherPage />} />
-          <Route path="/play/schuetzenopoly" element={<SchuetzenopolyPage />} />
-          <Route path="/play/kniffel" element={<KniffelPage />} />
-          <Route path="/play/texas-holdem" element={<TexasHoldemPage />} />
-          <Route path="/play/maumau" element={<MauMauPage spiel="maumau" />} />
-          <Route path="/play/letzte-karte" element={<MauMauPage spiel="letzte-karte" />} />
-          <Route path="/play/bienen-flow" element={<BienenFlowPage />} />
-          <Route path="/play/squishy-dumplings" element={<SquishyDumplingsPage />} />
-          <Route path="/play/trapbound" element={<TrapboundPage />} />
-          <Route
-            path="/play/emberwake"
-            element={
-              <Suspense
-                fallback={
-                  <main
-                    style={{
-                      flex: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      minHeight: '100dvh',
-                      padding: '1.5rem',
-                    }}
-                  >
-                    <p style={{ opacity: 0.7 }}>Emberwake lädt…</p>
-                  </main>
-                }
-              >
-                <EmberwakePage />
-              </Suspense>
-            }
-          />
-          <Route path="/play/sudoku" element={<SudokuPage />} />
-          <Route path="/offene-spiele" element={<OffeneSpielePage />} />
-          <Route path="/family" element={<FamilyPage />} />
-          <Route path="/daily" element={<DailyPage />} />
-          <Route path="/leaderboard" element={<LeaderboardPage />} />
-          <Route path="/achievements" element={<AchievementsPage />} />
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/impressum" element={<ImpressumPage />} />
-          <Route path="/datenschutz" element={<DatenschutzPage />} />
-          {/* Eigene Adresse, weil Google Play einen Löschweg ohne die App
+    <SprachProvider>
+      <BrowserRouter>
+        <AuthGate>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/play/perfect-second" element={<PerfectSecondPage />} />
+            <Route path="/play/what-is-missing" element={<WhatIsMissingPage />} />
+            <Route path="/play/schuetzenrunde" element={<SchuetzenrundePage />} />
+            <Route path="/play/finde-den-imposter" element={<FindeDenImposterPage />} />
+            <Route path="/play/reihenfolge" element={<ReihenfolgePage />} />
+            <Route path="/play/kopfrechnen" element={<KopfrechnenPage />} />
+            <Route path="/play/wer-bin-ich" element={<WerBinIchPage />} />
+            <Route path="/play/stadt-land-fluss" element={<StadtLandFlussPage />} />
+            <Route path="/play/scharade" element={<ScharadePage />} />
+            <Route path="/play/wortbombe" element={<WortbombePage />} />
+            <Route path="/play/wer-wuerde-eher" element={<WerWuerdeEherPage />} />
+            <Route path="/play/rueckwaerts" element={<RueckwaertsPage />} />
+            <Route path="/play/schach" element={<SchachPage />} />
+            <Route path="/play/schuetzenopoly" element={<SchuetzenopolyPage />} />
+            <Route path="/play/kniffel" element={<KniffelPage />} />
+            <Route path="/play/texas-holdem" element={<TexasHoldemPage />} />
+            <Route path="/play/maumau" element={<MauMauPage spiel="maumau" />} />
+            <Route path="/play/letzte-karte" element={<MauMauPage spiel="letzte-karte" />} />
+            <Route path="/play/bienen-flow" element={<BienenFlowPage />} />
+            <Route path="/play/squishy-dumplings" element={<SquishyDumplingsPage />} />
+            <Route path="/play/trapbound" element={<TrapboundPage />} />
+            <Route
+              path="/play/emberwake"
+              element={
+                <Suspense
+                  fallback={
+                    <main
+                      style={{
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minHeight: '100dvh',
+                        padding: '1.5rem',
+                      }}
+                    >
+                      <p style={{ opacity: 0.7 }}>Emberwake lädt…</p>
+                    </main>
+                  }
+                >
+                  <EmberwakePage />
+                </Suspense>
+              }
+            />
+            <Route path="/play/sudoku" element={<SudokuPage />} />
+            <Route path="/offene-spiele" element={<OffeneSpielePage />} />
+            <Route path="/family" element={<FamilyPage />} />
+            <Route path="/daily" element={<DailyPage />} />
+            <Route path="/leaderboard" element={<LeaderboardPage />} />
+            <Route path="/achievements" element={<AchievementsPage />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/impressum" element={<ImpressumPage />} />
+            <Route path="/datenschutz" element={<DatenschutzPage />} />
+            {/* Eigene Adresse, weil Google Play einen Löschweg ohne die App
               verlangt -- erreichbar auch abgemeldet. */}
-          <Route path="/konto-loeschen" element={<KontoLoeschenPage />} />
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </AuthGate>
-    </BrowserRouter>
+            <Route path="/konto-loeschen" element={<KontoLoeschenPage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </AuthGate>
+      </BrowserRouter>
+    </SprachProvider>
   )
 }

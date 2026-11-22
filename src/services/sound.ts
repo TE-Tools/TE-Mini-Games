@@ -30,6 +30,7 @@ export type Klang =
   | 'geschafft'
   | 'geheimnis'
   | 'knopf'
+  | 'knall'
 
 interface Ton {
   frequenz: number
@@ -94,6 +95,12 @@ const KLAENGE: Record<Klang, Ton[]> = {
     { frequenz: 1568, dauer: 0.18, typ: 'sine', lautstaerke: 0.12, ab: 0.08 },
   ],
   knopf: [{ frequenz: 520, dauer: 0.05, typ: 'square', lautstaerke: 0.1 }],
+  // Wortbombe: ein tiefer, fallender Schlag mit rauem Nachhall.
+  knall: [
+    { frequenz: 240, dauer: 0.35, typ: 'sawtooth', lautstaerke: 0.2, nach: 38 },
+    { frequenz: 110, dauer: 0.45, typ: 'square', lautstaerke: 0.12, ab: 0.03, nach: 28 },
+    { frequenz: 600, dauer: 0.08, typ: 'square', lautstaerke: 0.08, nach: 120 },
+  ],
 }
 
 const SPEICHER_SCHLUESSEL = 'te-mini-games:ton'
@@ -163,15 +170,42 @@ function holeKontext(): AudioContext | null {
   }
 }
 
+/**
+ * Für die Dauer eines Werbevideos still sein, ohne die Einstellung des
+ * Spielers anzufassen. Siehe services/werbung.ts.
+ */
+let pausiert = false
+export function pausiereTon(wert: boolean): void {
+  pausiert = wert
+}
+
 /** Einen Klang abspielen. Fehler bleiben stumm -- Ton ist Beiwerk. */
 export function spiele(klang: Klang): void {
-  if (!an || laut <= 0) return
+  abspielen(KLAENGE[klang])
+}
+
+/**
+ * Eine Note der Leiter für Spiele, in denen jedes Feld seinen eigenen Ton hat
+ * (Reihenfolge merken). Pentatonisch: Welche Felder auch nacheinander kommen,
+ * es klingt nie schief.
+ */
+const LEITER = [392, 440, 523.25, 587.33, 659.25, 784, 880, 1046.5, 1174.66]
+export function spieleNote(stufe: number): void {
+  const frequenz = LEITER[((stufe % LEITER.length) + LEITER.length) % LEITER.length]!
+  abspielen([
+    { frequenz, dauer: 0.32, typ: 'triangle', lautstaerke: 0.16 },
+    { frequenz: frequenz * 2, dauer: 0.18, typ: 'sine', lautstaerke: 0.05 },
+  ])
+}
+
+function abspielen(toene: readonly Ton[]): void {
+  if (!an || pausiert || laut <= 0) return
   const ctx = holeKontext()
   if (!ctx) return
   try {
     if (ctx.state === 'suspended') void ctx.resume()
     const start = ctx.currentTime
-    for (const ton of KLAENGE[klang]) {
+    for (const ton of toene) {
       const beginn = start + (ton.ab ?? 0)
       const osz = ctx.createOscillator()
       const verstaerker = ctx.createGain()

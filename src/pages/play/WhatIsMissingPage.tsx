@@ -1,9 +1,12 @@
-import { useCallback, useEffect, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   createWhatIsMissingLevel,
   calculateWhatIsMissingScore,
   whatIsMissingGame,
+  wertungMitZweiterChance,
+  zweiterBlickMoeglich,
+  zweiterBlickSekunden,
   type WhatIsMissingLevel,
   type WhatIsMissingScoreResult,
 } from '@/games/what-is-missing'
@@ -20,7 +23,11 @@ import { DATA_PULLED_EVENT } from '@/services/remotePull'
 import { getLevelStand, type LevelStandEintrag } from '@/services/leaderboard'
 import { milestoneBonusXp } from '@/games/milestones'
 import { LevelMap } from '@/components/level-map/LevelMap'
+import { BelohnungsKnopf } from '@/components/werbung/BelohnungsKnopf'
+import { spielName, useSprache } from '@/i18n/sprache'
 import styles from './WhatIsMissingPage.module.css'
+import { Sterne } from '@/components/sterne/Sterne'
+import { spiele, vibriere } from '@/services/sound'
 
 type Phase = 'map' | 'ready' | 'memorize' | 'choose' | 'result'
 
@@ -35,6 +42,8 @@ const MAX_GAME_LEVEL = whatIsMissingGame.maxLevel
 
 export function WhatIsMissingPage() {
   const navigate = useNavigate()
+  const { t } = useSprache()
+  const w = t.wasFehlt
   const [level, setLevel] = useState(1)
   const [highest, setHighest] = useState(1)
   const [avatarId, setAvatarId] = useState<string | null>(null)
@@ -45,6 +54,8 @@ export function WhatIsMissingPage() {
   const [pickedId, setPickedId] = useState<string | null>(null)
   const [completedLevel, setCompletedLevel] = useState<number | null>(null)
   const [milestoneXp, setMilestoneXp] = useState(0)
+  /** Zweiter Blick per Video in diesem Versuch genutzt? Höchstens einmal je Versuch. */
+  const [hilfe, setHilfe] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -113,8 +124,13 @@ export function WhatIsMissingPage() {
     setMilestoneXp(0)
   }, [])
 
+  /** Ein Doppeltipp auf die Antwort rechnete sonst zweimal ab (03.11.2026). */
+  const abgerechnet = useRef(false)
+
   const startRound = useCallback(() => {
     if (!config) return
+    abgerechnet.current = false
+    setHilfe(false)
     setScoreResult(null)
     setPickedId(null)
     setCompletedLevel(null)
@@ -122,29 +138,47 @@ export function WhatIsMissingPage() {
     setCountdown(config.displayTimeSeconds)
   }, [config])
 
+  /** Belohnung „zweite Chance“: alles noch einmal ansehen, dann weiter wählen. */
+  const zweiterBlick = useCallback(() => {
+    if (!config || abgerechnet.current) return
+    setHilfe(true)
+    setPhase('memorize')
+    setCountdown(zweiterBlickSekunden(config))
+  }, [config])
+
   useEffect(() => {
     if (phase !== 'memorize' || !config) return
     if (countdown <= 0) {
-      const t = window.setTimeout(() => setPhase('choose'), 0)
-      return () => window.clearTimeout(t)
+      const uhr = window.setTimeout(() => setPhase('choose'), 0)
+      return () => window.clearTimeout(uhr)
     }
-    const t = window.setTimeout(() => setCountdown((c) => Math.round((c - 0.1) * 10) / 10), 100)
-    return () => window.clearTimeout(t)
+    const uhr = window.setTimeout(() => setCountdown((c) => Math.round((c - 0.1) * 10) / 10), 100)
+    return () => window.clearTimeout(uhr)
   }, [phase, countdown, config])
 
   const pickObject = useCallback(
     async (objectId: string) => {
-      if (phase !== 'choose' || !config) return
+      if (phase !== 'choose' || !config || abgerechnet.current) return
+      abgerechnet.current = true
       setPickedId(objectId)
       const correct = objectId === config.missingObject.id
-      const result = calculateWhatIsMissingScore({ correct, level: config.level })
+      if (correct) spiele('erfolg')
+      else {
+        spiele('fehlschuss')
+        vibriere(60)
+      }
+      // Mit zweitem Blick: keine Punkte, keine XP, kein Rekord, höchstens ein
+      // Stern -- das Level zählt trotzdem (src/games/hilfe.ts).
+      const result = hilfe
+        ? wertungMitZweiterChance({ correct, level: config.level })
+        : calculateWhatIsMissingScore({ correct, level: config.level })
       setScoreResult(result)
       // Remember which level was just played – `level` moves on to the next one.
       setCompletedLevel(correct ? config.level : null)
 
       // Milestone bonus is a first-clear reward – replaying a level must not farm it.
       const firstClear = config.level >= highest
-      const bonus = correct && firstClear ? milestoneBonusXp(config.level) : 0
+      const bonus = correct && firstClear && !hilfe ? milestoneBonusXp(config.level) : 0
       setMilestoneXp(bonus)
       const xpTotal = result.xp + bonus
 
@@ -160,13 +194,15 @@ export function WhatIsMissingPage() {
           seed: config.seed,
           objectCount: config.objectCount,
           milestoneBonus: bonus,
+          zweiteChance: hilfe,
         },
         stars: result.stars,
-        isPersonalRecord: correct,
+        isPersonalRecord: correct && !hilfe,
+        ohneRekord: hilfe,
       })
 
-      if (xpTotal > 0) {
-        await addXp('guest', xpTotal)
+      if (xpTotal > 0) await addXp('guest', xpTotal)
+      if (correct) {
         const progress = await recordLevelComplete('what-is-missing', config.level, xpTotal)
         setHighest(progress.highestLevel)
         setLevel(progress.currentLevel)
@@ -175,14 +211,14 @@ export function WhatIsMissingPage() {
       await processAfterResult({
         gameId: 'what-is-missing',
         level: config.level,
-        isPersonalRecord: correct,
+        isPersonalRecord: correct && !hilfe,
       })
       // Upload right away – no manual sync on the account page needed.
       void trySyncNow()
 
       setPhase('result')
     },
-    [phase, config, highest],
+    [phase, config, highest, hilfe],
   )
 
   const playAgain = useCallback(() => {
@@ -212,10 +248,18 @@ export function WhatIsMissingPage() {
   if (loading || !config) {
     return (
       <main className={styles.page}>
-        <p className={styles.muted}>Laden…</p>
+        <p className={styles.muted}>{t.allgemein.laden}</p>
       </main>
     )
   }
+
+  const titel = spielName(t, 'what-is-missing', 'Was fehlt?')
+  /** Kennung behalten, Namen beim Rendern nachschlagen -- sonst steht er im Level fest. */
+  const objektName = (obj: { id: string; label: string }) =>
+    (w.objekte as Record<string, string | undefined>)[obj.id] ?? obj.label
+
+  /** Was gewählt wurde -- bei falscher Wahl steht es neben dem Gesuchten. */
+  const gewaehlt = config?.choiceObjects.find((o) => o.id === pickedId)
 
   return (
     <main className={styles.page}>
@@ -224,11 +268,11 @@ export function WhatIsMissingPage() {
           type="button"
           className={styles.back}
           onClick={() => (phase === 'map' ? navigate('/') : setPhase('map'))}
-          aria-label="Zurück"
+          aria-label={t.allgemein.zurueck}
         >
           ←
         </button>
-        <h1 className={styles.title}>Was fehlt?</h1>
+        <h1 className={styles.title}>{titel}</h1>
         <span className={styles.levelBadge}>L{config.level}</span>
       </header>
 
@@ -240,38 +284,34 @@ export function WhatIsMissingPage() {
             avatarId={avatarId}
             maxLevel={MAX_GAME_LEVEL}
             onSelectLevel={selectLevel}
-            gameLabel="Was fehlt?"
+            gameLabel={titel}
             mitspieler={mitspieler}
           />
           <button type="button" className={styles.primaryBtn} onClick={() => selectLevel(level)}>
-            Weiter spielen · Level {level}
+            {t.spiel.weiterSpielen(level)}
           </button>
-          <p className={styles.hint}>Oder tippe ein freies Level auf der Karte an.</p>
+          <p className={styles.hint}>{t.levelSpiele.freiesLevel}</p>
           <Link to="/profile" className={styles.homeLink}>
-            Avatar ändern
+            {t.spiel.avatarAendern}
           </Link>
         </section>
       )}
 
       {phase === 'ready' && (
         <section className={styles.ready}>
-          <p className={styles.info}>
-            {config.objectCount} Objekte · {config.displayTimeSeconds} s Zeit
-          </p>
-          <p className={styles.hint}>
-            Merke dir alle Objekte. Danach fehlt eines – tippe auf das fehlende.
-          </p>
+          <p className={styles.info}>{w.info(config.objectCount, config.displayTimeSeconds)}</p>
+          <p className={styles.hint}>{w.anleitung}</p>
           <button type="button" className={styles.primaryBtn} onClick={startRound}>
-            Start
+            {t.levelSpiele.start}
           </button>
           <button type="button" className={styles.secondaryBtn} onClick={() => setPhase('map')}>
-            Zur Karte
+            {t.levelSpiele.zurKarte}
           </button>
         </section>
       )}
 
       {phase === 'memorize' && (
-        <section className={styles.memorize} aria-label="Merken">
+        <section className={styles.memorize} aria-label={w.merken}>
           <p className={styles.timer} aria-live="polite">
             {countdown.toFixed(1)} s
           </p>
@@ -281,7 +321,7 @@ export function WhatIsMissingPage() {
                 <span className={styles.emoji} aria-hidden="true">
                   {obj.emoji}
                 </span>
-                <span className={styles.label}>{obj.label}</span>
+                <span className={styles.label}>{objektName(obj)}</span>
               </li>
             ))}
           </ul>
@@ -289,12 +329,12 @@ export function WhatIsMissingPage() {
       )}
 
       {phase === 'choose' && (
-        <section className={styles.choose} aria-label="Auswahl">
-          <p className={styles.hint}>Schau genau hin – eines fehlt:</p>
+        <section className={styles.choose} aria-label={w.auswahl}>
+          <p className={styles.hint}>{w.schauGenau}</p>
           <ul
             className={styles.grid}
             role="list"
-            aria-label="Noch sichtbare Objekte"
+            aria-label={w.nochSichtbar}
             style={gridStyle(config.remainingObjects.length)}
           >
             {config.remainingObjects.map((obj) => (
@@ -302,11 +342,11 @@ export function WhatIsMissingPage() {
                 <span className={styles.emoji} aria-hidden="true">
                   {obj.emoji}
                 </span>
-                <span className={styles.label}>{obj.label}</span>
+                <span className={styles.label}>{objektName(obj)}</span>
               </li>
             ))}
           </ul>
-          <p className={styles.question}>Welches Objekt fehlt?</p>
+          <p className={styles.question}>{w.welchesFehlt}</p>
           <ul className={styles.choiceGrid} role="list">
             {config.choiceObjects.map((obj) => (
               <li key={obj.id}>
@@ -318,45 +358,76 @@ export function WhatIsMissingPage() {
                   <span className={styles.emoji} aria-hidden="true">
                     {obj.emoji}
                   </span>
-                  <span className={styles.label}>{obj.label}</span>
+                  <span className={styles.label}>{objektName(obj)}</span>
                 </button>
               </li>
             ))}
           </ul>
+          <BelohnungsKnopf
+            name="wasfehlt-chance"
+            aktiv={zweiterBlickMoeglich({ waehlt: phase === 'choose', genutzt: hilfe })}
+            belohnung={w.zweiterBlick}
+            onBelohnt={zweiterBlick}
+          />
         </section>
       )}
 
       {phase === 'result' && scoreResult && (
-        <section className={styles.result} aria-label="Ergebnis">
+        <section className={styles.result} aria-label={w.ergebnis}>
           <p className={scoreResult.correct ? styles.correct : styles.wrong}>
-            {scoreResult.correct ? 'Richtig!' : 'Leider falsch'}
+            {scoreResult.correct ? w.richtig : w.falsch}
           </p>
+          {/* Die Auflösung als Bühne: Das Gesuchte springt groß herein -- richtig
+              mit grünem Leuchten, falsch neben dem gewählten, das rot wackelt. */}
+          <div
+            className={`${styles.buehne} ${scoreResult.correct ? styles.buehneRichtig : styles.buehneFalsch}`}
+          >
+            {!scoreResult.correct && gewaehlt && (
+              <>
+                <span
+                  className={`${styles.buehneEmoji} ${styles.buehneGewaehlt}`}
+                  aria-hidden="true"
+                >
+                  {gewaehlt.emoji}
+                </span>
+                <span className={styles.buehnePfeil} aria-hidden="true">
+                  →
+                </span>
+              </>
+            )}
+            <span className={`${styles.buehneEmoji} ${styles.buehneGesucht}`} aria-hidden="true">
+              {config.missingObject.emoji}
+            </span>
+          </div>
           <p className={styles.missingReveal}>
-            Es fehlte:{' '}
-            <span className={styles.emoji}>{config.missingObject.emoji}</span>{' '}
-            {config.missingObject.label}
+            {w.esFehlte} <span className={styles.emoji}>{config.missingObject.emoji}</span>{' '}
+            {objektName(config.missingObject)}
           </p>
           {pickedId && pickedId !== config.missingObject.id && (
-            <p className={styles.muted}>Deine Wahl war ein anderes Objekt.</p>
+            <p className={styles.muted}>{w.andereWahl}</p>
           )}
           {scoreResult.correct && (
             <>
-              <p className={styles.stars} aria-label="5 von 5 Sternen">
-                ⭐⭐⭐⭐⭐
-              </p>
-              <p className={styles.scoreLine}>
-                <strong>+{scoreResult.score}</strong> Punkte ·{' '}
-                <strong>+{scoreResult.xp + milestoneXp}</strong> XP
-              </p>
-              {milestoneXp > 0 && (
-                <p className={styles.correct}>🎉 Meilenstein-Bonus +{milestoneXp} XP!</p>
+              <Sterne anzahl={scoreResult.stars} label={t.levelSpiele.sterne(scoreResult.stars)} />
+              {!hilfe && (
+                <p className={styles.scoreLine}>
+                  <strong>+{scoreResult.score}</strong> {t.levelSpiele.punkte} ·{' '}
+                  <strong>+{scoreResult.xp + milestoneXp}</strong> XP
+                </p>
               )}
+              {milestoneXp > 0 && <p className={styles.correct}>{w.meilenstein(milestoneXp)}</p>}
             </>
+          )}
+          {hilfe && (
+            <p className={styles.hint}>
+              {t.levelSpiele.mitHilfe}
+              {scoreResult.correct && <> {t.levelSpiele.mitHilfeGeschafft}</>}
+            </p>
           )}
           <div className={styles.resultActions}>
             {completedLevel != null && (
               <button type="button" className={styles.primaryBtn} onClick={goToNextLevel}>
-                Weiter zu Level {Math.min(MAX_GAME_LEVEL, completedLevel + 1)}
+                {w.weiterZuLevel(Math.min(MAX_GAME_LEVEL, completedLevel + 1))}
               </button>
             )}
             <button
@@ -364,7 +435,7 @@ export function WhatIsMissingPage() {
               className={completedLevel != null ? styles.secondaryBtn : styles.primaryBtn}
               onClick={playAgain}
             >
-              Noch einmal
+              {t.spiel.nochEinmal}
             </button>
             <button
               type="button"
@@ -378,11 +449,11 @@ export function WhatIsMissingPage() {
                 setCompletedLevel(null)
               }}
             >
-              Zur Karte
+              {t.levelSpiele.zurKarte}
             </button>
           </div>
           <Link to="/" className={styles.homeLink}>
-            Zur Startseite
+            {t.spiel.zurStartseite}
           </Link>
         </section>
       )}

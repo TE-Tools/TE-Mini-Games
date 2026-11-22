@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TE-Mini Games</string>
+    <string name="title_activity_main">TE-Mini Games</string>
+    <string name="package_name">de.tetools.minigames</string>
+    <string name="custom_url_scheme">de.tetools.minigames</string>
+</resources>

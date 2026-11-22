@@ -74,3 +74,14 @@
   font-size: var(--text-sm);
 }
 .fuss a { color: var(--color-gold); }
+
+/* Ein Knopf, der wie ein Link im Fließtext aussieht (Werbe-Einwilligung). */
+.linkKnopf {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-primary);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}

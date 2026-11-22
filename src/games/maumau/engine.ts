@@ -369,7 +369,11 @@ export function legen(vorher: MauZustand, karte: Karte, wunschFarbe?: string): M
       else state.richtung = state.richtung === 1 ? -1 : 1
       break
     case 'haende':
-      if (regeln.haendeWandern) {
+      // Wer mit der Null die letzte Karte legt, hat gewonnen -- die Hände
+      // wandern dann nicht mehr. Vorher bekam er die Hand des Vorgängers,
+      // und seine leere Hand ging an einen, der nie als Sieger galt
+      // (03.11.2026; SQL gleich in Migration 028).
+      if (regeln.haendeWandern && spieler.hand.length > 0) {
         haendeWeiter(state)
         notiere(state, 'Die Hände wandern weiter')
       }

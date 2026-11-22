@@ -147,13 +147,25 @@ export function createWhatIsMissingLevel(level: number, seed?: string): WhatIsMi
   const shownObjects = selected
   const remainingObjects = selected.filter((o) => o.id !== missingObject.id)
 
-  // Look-alikes of the removed object come first, so the choice really is
-  // "which chair was it" and not "was there a chair at all".
-  const lookAlikes = remainingObjects.filter(
+  /*
+   * The wrong answers are objects that were NOT on the board.
+   *
+   * Until 05.11.2026 they were taken from the remaining objects -- the ones
+   * still visible in the grid right above the buttons. The only button
+   * without a twin in the grid was the answer, and the game could be solved
+   * without remembering anything.
+   *
+   * Look-alikes of the removed object still come first, so the choice is
+   * "which chair was it" and not "was there a chair at all" -- now with a
+   * chair that was never there.
+   */
+  const shownIds = new Set(selected.map((o) => o.id))
+  const unseen = OBJECT_CATALOG.filter((o) => !shownIds.has(o.id))
+  const lookAlikes = unseen.filter(
     (o) => missingObject.family != null && o.family === missingObject.family,
   )
-  const others = remainingObjects.filter((o) => !lookAlikes.includes(o))
-  const maxChoices = Math.min(Math.max(4, choiceCountForLevel(L)), selected.length)
+  const others = unseen.filter((o) => !lookAlikes.includes(o))
+  const maxChoices = Math.min(Math.max(4, choiceCountForLevel(L)), unseen.length + 1)
   let choicePool = [missingObject, ...lookAlikes, ...shuffle(others, rng)].slice(0, maxChoices)
   if (!choicePool.some((o) => o.id === missingObject.id)) {
     choicePool = [missingObject, ...choicePool.slice(0, maxChoices - 1)]

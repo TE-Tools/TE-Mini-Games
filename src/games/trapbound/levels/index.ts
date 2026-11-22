@@ -15,6 +15,7 @@ import type { LevelDaten, Welt } from '../types'
 import { TRAP_ZONEN, TRAP_MAX_LEVEL, LEVEL_PRO_WELT, weltNummer } from '../welten'
 import { WELT1 } from './welt1'
 import { erzeugeLevel } from './erzeugt'
+import { erzeugeEtagenLevel, istEtagenLevel } from './etagen'
 
 /** Die Welten in der Form, die das Spiel selbst benutzt. */
 export const WELTEN: Welt[] = TRAP_ZONEN.map((z) => ({
@@ -57,7 +58,8 @@ export function levelDaten(nr: number): LevelDaten {
   if (hand) return hand
   const da = merker.get(n)
   if (da) return da
-  const neu = erzeugeLevel(n)
+  // Einige Plätze sind Stockwerk-Level: hoch und runter statt nur nach rechts.
+  const neu = istEtagenLevel(n) ? erzeugeEtagenLevel(n) : erzeugeLevel(n)
   merker.set(n, neu)
   return neu
 }

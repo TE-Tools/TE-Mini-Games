@@ -27,8 +27,18 @@ export {
   belohnungFuer,
   naechsteBelohnung,
   knoedelFuer,
+  VIDEO_KNOEDEL,
+  videoKnoedelFrei,
+  schalteVideoKnoedelFrei,
   type SammelKnoedel,
 } from './sammlung'
+export {
+  ZUSATZ_SEKUNDEN,
+  zeitAngebot,
+  weiterMitZeit,
+  wertungFuer,
+  type DumplingWertung,
+} from './belohnung'
 export {
   DUMPLING_MAX_LEVEL,
   REIHEN,

@@ -1,0 +1,193 @@
+.leise {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+/* Die Züge als Leiste zum Wischen; der jüngste ist hervorgehoben. */
+.zugliste {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-2);
+  display: flex;
+  gap: var(--space-1);
+  overflow-x: auto;
+  width: 100%;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  scrollbar-width: none;
+  border-radius: var(--radius-xl);
+  background: rgb(255 255 255 / 0.7);
+  border: 1px solid var(--color-border);
+}
+
+.zugliste::-webkit-scrollbar {
+  display: none;
+}
+
+.zugliste li {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+  flex: none;
+}
+
+.nummer {
+  padding-left: var(--space-1);
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.zug,
+.aktuell {
+  padding: 3px 7px;
+  border-radius: 8px;
+}
+
+.aktuell {
+  background: #1e293b;
+  color: #ffffff;
+}
+
+.notation {
+  display: inline-flex;
+  align-items: center;
+}
+
+.notationFigur {
+  width: 1.15em;
+  height: 1.15em;
+  margin-right: 1px;
+  vertical-align: -0.2em;
+}
+
+.aktuell .notationFigur {
+  --figur-weiss-rand: #0f172a;
+}
+
+.geschlagen {
+  display: flex;
+  align-items: center;
+  min-height: 1.5rem;
+  margin: 0;
+}
+
+.geschlagenFigur {
+  width: 1.4rem;
+  height: 1.4rem;
+  margin-right: -0.55rem;
+}
+
+.vorsprung {
+  margin-left: 0.8rem;
+  font-size: var(--text-sm);
+  font-weight: 800;
+  color: var(--color-text-muted);
+}
+
+.umwandlung {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-2xl);
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 16px 32px -12px rgb(15 23 42 / 0.35);
+  width: 100%;
+  animation: auftauchen 160ms ease-out;
+}
+
+@keyframes auftauchen {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+
+.umwandlung p {
+  margin: 0;
+  font-weight: 800;
+}
+
+.umwandlungWahl {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.umwandlungWahl button {
+  width: 3.6rem;
+  height: 3.6rem;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
+  background: linear-gradient(180deg, #f1f5f9, #e2e8f0);
+  transition: transform 120ms ease;
+}
+
+.umwandlungWahl button:active {
+  transform: scale(0.94);
+}
+
+.wahlFigur {
+  width: 86%;
+  height: 86%;
+  filter: drop-shadow(0 2px 2px rgb(15 23 42 / 0.3));
+}
+
+.klein {
+  border: 0;
+  background: none;
+  color: var(--color-text-muted);
+  font-weight: 700;
+  font-size: var(--text-sm);
+}
+
+/* Spielerzeilen über und unter dem Brett: wer am Zug ist, leuchtet. */
+.spielerZeile {
+  width: calc(min(100vw - 2rem, 30rem));
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 0.65);
+  border: 1px solid transparent;
+  transition:
+    background 200ms ease,
+    border-color 200ms ease;
+}
+
+.spielerAmZug {
+  background: #ffffff;
+  border-color: color-mix(in srgb, #16a34a 45%, transparent);
+  box-shadow: 0 4px 14px -8px rgb(22 163 74 / 0.6);
+}
+
+.bild {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(160deg, #e2e8f0, #cbd5e1);
+  font-size: 1.1rem;
+  flex: none;
+}
+
+.spielerName {
+  font-weight: 800;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.spielerZeile .geschlagen {
+  margin-left: auto;
+}

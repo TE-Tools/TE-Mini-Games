@@ -112,11 +112,27 @@ describe('What Is Missing zones (level 1–500)', () => {
     expect(duplicated.length).toBeGreaterThan(0)
   })
 
-  it('the choices contain the look-alikes of the missing object', () => {
+  it('never offers an object that is still visible on the board', () => {
+    // Otherwise the answer is simply the one button without a twin in the
+    // grid above -- solvable without any memory (fixed 05.11.2026).
+    for (const level of [1, 40, 120, 300, 500]) {
+      for (const seed of ['a', 'b', 'c', 'd']) {
+        const L = createWhatIsMissingLevel(level, seed)
+        const still = new Set(L.remainingObjects.map((o) => o.id))
+        expect(L.choiceObjects.filter((o) => still.has(o.id))).toEqual([])
+        expect(L.choiceObjects.length).toBeGreaterThanOrEqual(4)
+      }
+    }
+  })
+
+  it('offers unseen look-alikes of the missing object first', () => {
     for (const seed of ['a', 'b', 'c', 'd']) {
       const L = createWhatIsMissingLevel(120, seed)
       if (!L.missingObject.family) continue
-      const partners = L.remainingObjects.filter((o) => o.family === L.missingObject.family)
+      const shown = new Set(L.shownObjects.map((o) => o.id))
+      const partners = OBJECT_CATALOG.filter(
+        (o) => o.family === L.missingObject.family && !shown.has(o.id),
+      )
       for (const p of partners.slice(0, 2)) {
         expect(L.choiceObjects.some((o) => o.id === p.id)).toBe(true)
       }

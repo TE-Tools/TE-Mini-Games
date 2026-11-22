@@ -1,5 +1,30 @@
 import type { GameDefinition } from '@/games/types'
 import { LEVEL_ANZAHL, levelDaten } from './levels'
+import { spieleLoesung } from './loesung'
+
+const sollzeiten = new Map<number, number>()
+
+/**
+ * Wie lange ein Level dauert, wenn man es kennt: die Zeit der hinterlegten
+ * Lösung.
+ *
+ * Der Tempo-Zuschlag hing bis zum 05.11.2026 an festen dreißig Sekunden.
+ * Das passte zu den ersten Leveln, die einen Bildschirm breit sind. Ein
+ * Level von zweieinhalb Bildschirmen braucht aber selbst fehlerfrei zwanzig
+ * Sekunden, und damit gab es ab Welt 3 keine fünf Sterne mehr -- außer mit
+ * Kristall, und Kristalle liegen nur in Welt 1.
+ */
+function sollzeit(level: number): number {
+  const da = sollzeiten.get(level)
+  if (da !== undefined) return da
+  const r = spieleLoesung(levelDaten(level))
+  const zeit = r.geschafft ? Math.max(2, r.zeit) : 15
+  sollzeiten.set(level, zeit)
+  return zeit
+}
+
+/** Der volle Tempo-Zuschlag. */
+const TEMPO_MAX = 180
 
 /**
  * Die Wertung.
@@ -33,7 +58,13 @@ export const trapboundGame: GameDefinition = {
     if (!raw.won) return 0
     const tode = Math.max(0, raw.tode ?? 0)
     const zeit = Math.max(1, raw.zeit ?? 60)
-    const flott = Math.max(0, Math.round((30 - zeit) * 6))
+    // Voller Zuschlag bis knapp über der Lösungszeit, danach weniger, und
+    // nichts mehr ab dem Zweieinhalbfachen (mindestens zwanzig Sekunden
+    // mehr -- ein kurzes Level soll nicht schon nach Sekunden nichts geben).
+    const soll = sollzeit(level)
+    const voll = soll * 1.3
+    const nichts = Math.max(soll * 2.5, soll + 20)
+    const flott = Math.round(TEMPO_MAX * Math.min(1, Math.max(0, (nichts - zeit) / (nichts - voll))))
     return 250 + level * 12 + Math.max(0, 200 - tode * 25) + flott + (raw.kristall ? 150 : 0)
   },
   calculateXP: (level, score) => {

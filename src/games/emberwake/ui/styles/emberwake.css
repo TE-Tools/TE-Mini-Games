@@ -645,6 +645,18 @@
     display: flex;
     gap: 10px;
   }
+  /* Belohnungsvideo: immer als Werbung erkennbar, nie die Hauptaktion. */
+  .btn.is-ad {
+    flex-direction: column;
+    gap: 2px;
+    border-style: dashed;
+    border-color: var(--ember-soft);
+  }
+  .btn.is-ad .ad-note {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--ink-faint);
+  }
   .btn-row .btn {
     flex: 1;
   }

@@ -23,7 +23,9 @@ import {
   type MinispielId,
   type ScheibenGroesse,
 } from '@/games/schuetzenopoly'
+import { useSprache } from '@/i18n/sprache'
 import { spiele, vibriere } from '@/services/sound'
+import { minispielText } from './texte'
 import styles from './Minispiele.module.css'
 
 interface MinispielProps {
@@ -36,6 +38,7 @@ interface MinispielProps {
 /* ------------------------------------------------------- Königsschießen */
 
 function Koenigsschiessen({ onSchuss }: { onSchuss: (punkte: number) => void }) {
+  const { t } = useSprache()
   const [x, setX] = useState(0.5)
   const bahnRef = useRef<number>(0)
 
@@ -45,8 +48,8 @@ function Koenigsschiessen({ onSchuss }: { onSchuss: (punkte: number) => void }) 
     const tick = (jetzt: number) => {
       if (!laeuft) return
       // Hin und her, mit leicht unrunder Periode -- sonst lernt man den Takt.
-      const t = (jetzt - start) / 1000
-      const wert = 0.5 + 0.46 * Math.sin(t * 2.1) * Math.cos(t * 0.37)
+      const sek = (jetzt - start) / 1000
+      const wert = 0.5 + 0.46 * Math.sin(sek * 2.1) * Math.cos(sek * 0.37)
       bahnRef.current = wert
       setX(wert)
       requestAnimationFrame(tick)
@@ -63,14 +66,14 @@ function Koenigsschiessen({ onSchuss }: { onSchuss: (punkte: number) => void }) 
       type="button"
       className={styles.buehne}
       onClick={() => onSchuss(trefferPunkte((bahnRef.current - 0.5) * 2))}
-      aria-label="Schießen"
+      aria-label={t.schuetzenopoly.minispiele.schiessen}
     >
       <span className={styles.stange} aria-hidden="true" />
       <span className={styles.mitteMarke} aria-hidden="true" />
       <span className={styles.vogel} style={{ left: `${x * 100}%` }} aria-hidden="true">
         🦅
       </span>
-      <span className={styles.hinweis}>Tippen, wenn der Vogel in der Mitte steht</span>
+      <span className={styles.hinweis}>{t.schuetzenopoly.minispiele.vogelHinweis}</span>
     </button>
   )
 }
@@ -94,6 +97,8 @@ function Ringschiessen({
   onPunkte: (delta: number) => void
   onEnde: () => void
 }) {
+  const { t } = useSprache()
+  const tm = t.schuetzenopoly.minispiele
   const [scheiben, setScheiben] = useState<Scheibe[]>([])
   const [restMs, setRestMs] = useState(RING_SEKUNDEN * 1000)
   const naechsteId = useRef(0)
@@ -161,10 +166,10 @@ function Ringschiessen({
           className={`${styles.scheibe} ${styles[s.groesse]}`}
           style={{ left: `${s.x}%`, top: `${s.y}%` }}
           onClick={(e) => treffer(s, e)}
-          aria-label={`Zielscheibe ${s.groesse}`}
+          aria-label={tm.scheibe(tm.groessen[s.groesse])}
         />
       ))}
-      <span className={styles.hinweis}>Kleine Scheiben zählen mehr</span>
+      <span className={styles.hinweis}>{tm.scheibenHinweis}</span>
     </div>
   )
 }
@@ -172,6 +177,7 @@ function Ringschiessen({
 /* -------------------------------------------------- Präzisionsschießen */
 
 function Praezision({ onSchuss }: { onSchuss: (punkte: number) => void }) {
+  const { t } = useSprache()
   const [x, setX] = useState(0)
   const bahnRef = useRef(0)
 
@@ -180,9 +186,9 @@ function Praezision({ onSchuss }: { onSchuss: (punkte: number) => void }) {
     const start = performance.now()
     const tick = (jetzt: number) => {
       if (!laeuft) return
-      const t = (jetzt - start) / 1000
+      const sek = (jetzt - start) / 1000
       // Dreieckskurve: gleichmäßiges Wandern, damit Geschick zählt und nicht Glück.
-      const phase = (t * 0.85) % 2
+      const phase = (sek * 0.85) % 2
       const wert = phase < 1 ? phase : 2 - phase
       bahnRef.current = wert
       setX(wert)
@@ -200,7 +206,7 @@ function Praezision({ onSchuss }: { onSchuss: (punkte: number) => void }) {
       type="button"
       className={styles.buehne}
       onClick={() => onSchuss(trefferPunkte((bahnRef.current - 0.5) * 2))}
-      aria-label="Schießen"
+      aria-label={t.schuetzenopoly.minispiele.schiessen}
     >
       <span className={styles.ringe} aria-hidden="true">
         <span className={styles.ringAussen} />
@@ -213,7 +219,7 @@ function Praezision({ onSchuss }: { onSchuss: (punkte: number) => void }) {
           ✛
         </span>
       </span>
-      <span className={styles.hinweis}>Halte das Fadenkreuz in der Mitte an</span>
+      <span className={styles.hinweis}>{t.schuetzenopoly.minispiele.fadenkreuzHinweis}</span>
     </button>
   )
 }
@@ -221,7 +227,10 @@ function Praezision({ onSchuss }: { onSchuss: (punkte: number) => void }) {
 /* ---------------------------------------------------------- Rahmenspiel */
 
 export function Minispiel({ id, punkteBonus, onFertig }: MinispielProps) {
+  const { t } = useSprache()
+  const tm = t.schuetzenopoly.minispiele
   const daten = minispiel(id)
+  const text = minispielText(t, id)
   const [punkte, setPunkte] = useState(0)
   const [schuesse, setSchuesse] = useState(0)
   const [letzter, setLetzter] = useState<number | null>(null)
@@ -283,19 +292,19 @@ export function Minispiel({ id, punkteBonus, onFertig }: MinispielProps) {
   const medaille = medailleFuer(id, mitBonus)
 
   return (
-    <section className={styles.rahmen} aria-label={daten.name}>
+    <section className={styles.rahmen} aria-label={text.name}>
       <header className={styles.kopf}>
         <h2 className={styles.titel}>
-          <span aria-hidden="true">{daten.icon}</span> {daten.name}
+          <span aria-hidden="true">{daten.icon}</span> {text.name}
         </h2>
-        <p className={styles.anleitung}>{daten.anleitung}</p>
+        <p className={styles.anleitung}>{text.anleitung}</p>
       </header>
 
       <div className={styles.stand}>
-        <span className={styles.punkte}>{mitBonus} Punkte</span>
+        <span className={styles.punkte}>{tm.punkte(mitBonus)}</span>
         {id !== 'ringschiessen' && (
           <span className={styles.schuesse}>
-            Schuss {Math.min(schuesse + 1, maxSchuesse)} von {maxSchuesse}
+            {tm.schuss(Math.min(schuesse + 1, maxSchuesse), maxSchuesse)}
           </span>
         )}
         {letzter !== null && (
@@ -314,18 +323,17 @@ export function Minispiel({ id, punkteBonus, onFertig }: MinispielProps) {
       {fertig && (
         <div className={styles.ergebnis} role="status">
           <p className={styles.medaille}>
-            {medaille === 'gold' && '🥇 Gold'}
-            {medaille === 'silber' && '🥈 Silber'}
-            {medaille === 'bronze' && '🥉 Bronze'}
-            {medaille === 'keine' && '🎯 Knapp daneben'}
+            {medaille === 'gold' && tm.gold}
+            {medaille === 'silber' && tm.silber}
+            {medaille === 'bronze' && tm.bronze}
+            {medaille === 'keine' && tm.daneben}
           </p>
-          <p className={styles.endpunkte}>{mitBonus} Punkte</p>
+          <p className={styles.endpunkte}>{tm.punkte(mitBonus)}</p>
         </div>
       )}
 
       <p className={styles.schwellen}>
-        Bronze ab {daten.schwellen.bronze} · Silber ab {daten.schwellen.silber} · Gold ab{' '}
-        {daten.schwellen.gold}
+        {tm.schwellen(daten.schwellen.bronze, daten.schwellen.silber, daten.schwellen.gold)}
       </p>
     </section>
   )

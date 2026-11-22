@@ -13,9 +13,11 @@
  */
 
 import type { CSSProperties, ReactNode } from 'react'
-import { FARB_NAME, type Karte } from '@/games/maumau'
+import type { Karte } from '@/games/maumau'
+import { useSprache } from '@/i18n/sprache'
 import { Blattkarte, Farbwunsch, Ziehstapel } from './Blattkarte'
 import { Handfaecher } from './Handfaecher'
+import { farbName, protokollZeile } from './kartenText'
 import styles from '../MauMauPage.module.css'
 
 /** Ein Mitspieler, wie der Tisch ihn braucht: Name und Kartenzahl. */
@@ -96,6 +98,7 @@ export function MauTisch({
   kopfzeile,
   fehler,
 }: MauTischProps) {
+  const { t } = useSprache()
   /*
    * Woher die zuletzt gelegte Karte kommt: von dem Platz, der sie gelegt
    * hat. Ausgelöst wird die Bewegung ohne Zustand -- der Schlüssel der
@@ -122,7 +125,7 @@ export function MauTisch({
             ))}
           </div>
 
-          <div className={styles.mitte} role="group" aria-label="Tischmitte">
+          <div className={styles.mitte} role="group" aria-label={t.maumau.tischmitte}>
             <Ziehstapel anzahl={stapel} gesperrt={!amZug || Boolean(gezogene)} onClick={onZiehen} />
             <div className={styles.ablage}>
               <span
@@ -153,12 +156,13 @@ export function MauTisch({
         </div>
       </div>
 
-      <ol className={styles.protokoll} aria-label="Was bisher geschah">
+      <ol className={styles.protokoll} aria-label={t.maumau.wasBisherGeschah}>
+        {/* Das Protokoll ist deutsch (Engine und Server) -- übersetzt wird hier. */}
         {protokoll
           .slice(-2)
           .reverse()
           .map((zeile, i) => (
-            <li key={`${protokoll.length}-${i}`}>{zeile}</li>
+            <li key={`${protokoll.length}-${i}`}>{protokollZeile(t, zeile)}</li>
           ))}
       </ol>
 
@@ -170,8 +174,14 @@ export function MauTisch({
 
       <div className={styles.unten}>
         {wunschFuer ? (
-          <div className={styles.farbwahl} role="group" aria-label="Farbe wünschen">
-            <p className={styles.farbfrage}>Welche Farbe?</p>
+          <div
+            className={styles.farbwahl}
+            role="group"
+            aria-label={klassisch ? t.maumau.farbeWuenschenKlassisch : t.maumau.farbeWuenschen}
+          >
+            <p className={styles.farbfrage}>
+              {klassisch ? t.maumau.welcheFarbeKlassisch : t.maumau.welcheFarbe}
+            </p>
             <div className={styles.farbknoepfe}>
               {(klassisch
                 ? (['herz', 'karo', 'pik', 'kreuz'] as const)
@@ -184,19 +194,19 @@ export function MauTisch({
                   data-farbe={f}
                   onClick={() => onFarbe(f)}
                 >
-                  {FARB_NAME[f]}
+                  {farbName(t, f)}
                 </button>
               ))}
             </div>
             <button type="button" className={styles.abbruch} onClick={onWunschAbbruch}>
-              Abbrechen
+              {t.allgemein.abbrechen}
             </button>
           </div>
         ) : (
           <>
             <div className={styles.handZeile}>
               <span className={styles.handTitel}>
-                {amZug ? 'Du bist dran' : `${amZugName} ist dran …`}
+                {amZug ? t.maumau.duBistDran : t.maumau.istDran(amZugName)}
               </span>
               {amZug && mauMoeglich && (
                 <button
@@ -216,7 +226,7 @@ export function MauTisch({
                 Bei einer langen Hand sucht man sie sonst.
               */
               <div className={styles.gezogen}>
-                <span>Gezogen – legen?</span>
+                <span>{t.maumau.gezogenLegen}</span>
                 <Blattkarte
                   karte={gezogene}
                   klein
@@ -224,16 +234,14 @@ export function MauTisch({
                   onClick={istSpielbar(gezogene) ? () => onLegen(gezogene) : undefined}
                 />
                 <button type="button" className={styles.klein} onClick={onBehalten}>
-                  Behalten
+                  {t.maumau.behalten}
                 </button>
               </div>
             )}
 
             <Handfaecher karten={hand} istSpielbar={istSpielbar} onLegen={onLegen} amZug={amZug} />
 
-            {nichtsPasst && (
-              <p className={styles.hinweis}>Nichts passt – zieh eine Karte vom Stapel.</p>
-            )}
+            {nichtsPasst && <p className={styles.hinweis}>{t.maumau.nichtsPasst}</p>}
           </>
         )}
       </div>
@@ -242,6 +250,7 @@ export function MauTisch({
 }
 
 function Gegner({ spieler }: { spieler: TischSpieler }) {
+  const { t } = useSprache()
   return (
     <div className={styles.gegnerKarte} data-zug={spieler.amZug ? 'ja' : undefined}>
       <div className={styles.gegnerBlatt} aria-hidden="true">
@@ -256,9 +265,7 @@ function Gegner({ spieler }: { spieler: TischSpieler }) {
         ))}
       </div>
       <span className={styles.gegnerName}>{spieler.name}</span>
-      <span className={styles.gegnerZahl}>
-        {spieler.karten} {spieler.karten === 1 ? 'Karte' : 'Karten'}
-      </span>
+      <span className={styles.gegnerZahl}>{t.maumau.karten(spieler.karten)}</span>
     </div>
   )
 }

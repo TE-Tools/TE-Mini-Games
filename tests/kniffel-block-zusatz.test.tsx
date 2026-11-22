@@ -8,7 +8,8 @@
  * Endsumme stünde, aber in keiner Zwischensumme.
  */
 import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
+import { renderAufDeutsch as render } from './aufDeutsch'
 import {
   KATEGORIE_IDS,
   KNIFFEL_PUNKTE,

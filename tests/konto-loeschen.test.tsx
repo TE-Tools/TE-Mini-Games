@@ -16,6 +16,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
+import { SprachProvider } from '@/i18n/SprachProvider'
 import type * as AuthService from '@/auth/authService'
 import type * as Outbox from '@/offline/outbox'
 
@@ -73,15 +74,21 @@ const { KontoLoeschenPage } = await import('@/pages/recht/KontoLoeschenPage')
 
 async function angemeldeteSeite() {
   render(
-    <MemoryRouter>
-      <AuthPage />
-    </MemoryRouter>,
+    <SprachProvider>
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>
+    </SprachProvider>,
   )
   await screen.findByRole('button', { name: 'Konto löschen' })
 }
 
 describe('Konto löschen in der App', () => {
   beforeEach(() => {
+    // Sprache ausdruecklich auf Deutsch. jsdom meldet en-US, die App
+    // waehlt dann Englisch -- und dieser Test prueft deutschen Text,
+    // beim Loeschen sogar das Bestaetigungswort LOESCHEN.
+    localStorage.setItem('te-sprache', 'de')
     konto.geloescht = 0
     konto.fehler = null
     konto.zuruecksetzen = 0
@@ -138,13 +145,30 @@ describe('Konto löschen in der App', () => {
 
   it('hat eine öffentliche Seite, die auch abgemeldet erklärt, wie es geht', async () => {
     render(
-      <MemoryRouter>
-        <KontoLoeschenPage />
-      </MemoryRouter>,
+      <SprachProvider>
+        <MemoryRouter>
+          <KontoLoeschenPage />
+        </MemoryRouter>
+      </SprachProvider>,
     )
     expect(await screen.findByRole('heading', { name: 'Konto löschen' })).toBeInTheDocument()
     // Was gelöscht wird, steht da -- nicht nur „bitte melden Sie sich".
     expect(screen.getByText(/Bestenlisten/)).toBeInTheDocument()
     expect(screen.getByText(/te-alltagshelfer@outlook\.de/)).toBeInTheDocument()
+  })
+
+  it('erklärt den Weg auch auf Englisch, mit dem Wort, das die Kontoseite verlangt', async () => {
+    localStorage.setItem('te-sprache', 'en')
+    render(
+      <SprachProvider>
+        <MemoryRouter>
+          <KontoLoeschenPage />
+        </MemoryRouter>
+      </SprachProvider>,
+    )
+    expect(await screen.findByRole('heading', { name: 'Delete account' })).toBeInTheDocument()
+    expect(screen.getByText(/leaderboards/)).toBeInTheDocument()
+    expect(screen.getByText(/cannot be undone/)).toBeInTheDocument()
+    expect(screen.queryByText(/Bestenlisten/)).toBeNull()
   })
 })

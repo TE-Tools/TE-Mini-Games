@@ -307,8 +307,15 @@ export function teileAus(vorher: TexasZustand): TexasZustand {
     state.amZug = naechsterAktiver(state, state.amZug)
   }
 
-  // Alle all-in durch die Blinds? Dann wird nur noch aufgedeckt.
-  if (aktive(state).length <= 1 && imRennen(state).length > 1) {
+  // Alle all-in durch die Blinds? Dann wird nur noch aufgedeckt. Einer, der
+  // noch handeln kann, muss aber erst entscheiden dürfen, wenn er weniger
+  // liegen hat als der höchste Einsatz -- sonst galt er als ausgestiegen
+  // oder als mitgegangen, ohne gefragt zu sein (03.11.2026).
+  const nochDa = aktive(state)
+  if (
+    imRennen(state).length > 1 &&
+    (nochDa.length === 0 || (nochDa.length === 1 && nochDa[0]!.einsatz >= state.hoechsterEinsatz))
+  ) {
     return setzrundeFertig(state)
   }
   return state
@@ -603,7 +610,10 @@ function beendeHand(vorher: TexasZustand, gezeigt: boolean): TexasZustand {
     const sortiert = [...pleite].sort((a, b) => b.gesamt - a.gesamt)
     sortiert.forEach((s, i) => {
       s.status = 'raus'
-      s.platz = uebrig + sortiert.length - i
+      // Der Erste in der Liste hatte am meisten gesetzt und bekommt den
+      // besten freien Platz. Vorher stand hier uebrig + n - i -- genau
+      // verkehrt herum (03.11.2026; SQL gleich in Migration 028).
+      s.platz = uebrig + 1 + i
       notiere(state, sagt(s, `bist raus (Platz ${s.platz})`, `ist raus (Platz ${s.platz})`))
     })
   }

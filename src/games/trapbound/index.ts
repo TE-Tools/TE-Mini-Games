@@ -28,6 +28,7 @@ export {
   istOffen,
   merkeTod,
   merkeAbschluss,
+  merkeUebersprungen,
   setzeEinstellungen,
   kristalle,
   geschaffte,
@@ -37,6 +38,25 @@ export {
   type LevelStand,
   type Einstellungen,
 } from './fortschritt'
+export {
+  UEBERSPRINGEN_AB_TODEN,
+  darfUeberspringen,
+  ueberspringe,
+  type UeberspringenLage,
+} from './werbung'
+export {
+  FIGUREN,
+  figur,
+  istFrei,
+  schalteFrei,
+  waehle,
+  aktuelleFigur,
+  leseAussehen,
+  schreibeAussehen,
+  type Figur,
+  type FigurId,
+  type Aussehen,
+} from './aussehen'
 export {
   BILD_BREITE,
   BILD_HOEHE,

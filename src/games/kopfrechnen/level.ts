@@ -103,7 +103,7 @@ function dreiZahlen(rng: () => number, max: number): RechenAufgabe {
   return { text: `(${teil} + ${summe * c - teil}) : ${c}`, answer: summe }
 }
 
-function aufgabeFor(stufe: Stufe, level: number, rng: () => number): RechenAufgabe {
+export function aufgabeFor(stufe: Stufe, level: number, rng: () => number): RechenAufgabe {
   const L = clampMapLevel(level)
   switch (stufe) {
     case 'grund':

@@ -93,7 +93,63 @@ export interface LogEintrag {
   spielerId: string | null
   text: string
   art: 'info' | 'geld' | 'kauf' | 'bau' | 'karte' | 'strafe' | 'minispiel' | 'ende'
+  /**
+   * Dieselbe Zeile als Daten -- damit die Oberfläche sie in ihrer Sprache
+   * sagen kann. `text` bleibt deutsch; Tests und Logs lesen ihn. Fehlt bei
+   * Partien, die vor dem 06.11.2026 gespeichert wurden.
+   *
+   * An den Regeln ändert das nichts, und am Zugbuch auch nicht: Die Meldung
+   * entsteht beim Nachspielen genauso wie der Text daneben.
+   */
+  meldung?: ProtokollMeldung
 }
+
+/** Feld-IDs statt Namen: Die Oberfläche schlägt den Namen in ihrer Sprache nach. */
+export type ProtokollMeldung =
+  | { art: 'start' }
+  | { art: 'wurf'; name: string; a: number; b: number }
+  | { art: 'dritterPasch'; name: string }
+  | { art: 'paschFrei'; name: string; felder: number }
+  | { art: 'strafbankBezahlt'; name: string; betrag: number }
+  | { art: 'keinPasch'; name: string; versuch: number; von: number }
+  | { art: 'freigekauft'; name: string; betrag: number }
+  | { art: 'fuersprache'; name: string }
+  | { art: 'startBonus'; name: string; betrag: number }
+  | { art: 'besuch'; name: string }
+  | { art: 'freiesFest'; name: string; betrag: number }
+  | { art: 'zurStrafbank'; name: string }
+  | { art: 'geschuetzt'; feldId: string }
+  | { art: 'gebuehrErlassen'; name: string }
+  | { art: 'rabatt'; name: string }
+  | { art: 'gebuehr'; name: string; betrag: number; an: string | null; feldId: string }
+  | { art: 'kauf'; name: string; feldId: string; preis: number }
+  | { art: 'karteNeu'; name: string }
+  | { art: 'baustopp'; name: string }
+  | { art: 'hausrecht'; feldId: string }
+  | { art: 'tausch'; meinFeldId: string; fremdFeldId: string }
+  | { art: 'schiessstandLeer'; name: string }
+  | { art: 'medaille'; name: string; medaille: Medaille; betrag: number }
+  | { art: 'duell'; name: string }
+  | { art: 'koenigsaktion'; name: string; betrag: number }
+  | { art: 'bau'; name: string; feldId: string; stufe: number }
+  | { art: 'rueckbau'; name: string; feldId: string; betrag: number }
+  | { art: 'rueckgabe'; name: string; feldId: string; betrag: number }
+  | { art: 'sieg'; name: string; vermoegen: number }
+  | { art: 'aufgabe'; name: string }
+  | { art: 'versilbern'; name: string; feldId: string; betrag: number }
+  | { art: 'pleite'; name: string; betrag: number }
+  | {
+      art: 'handel'
+      von: string
+      an: string
+      gebeFelder: string[]
+      gebeTaler: number
+      willFelder: string[]
+      willTaler: number
+    }
+  | { art: 'karte'; name: string; karteId: string }
+  | { art: 'vorstand' }
+  | { art: 'nichtsZuReparieren' }
 
 export interface KaufAngebot {
   position: number
@@ -102,10 +158,7 @@ export interface KaufAngebot {
 }
 
 /** Eine Karte verlangt eine Auswahl, bevor es weitergeht. */
-export type OffeneWahl =
-  | { art: 'baustopp' }
-  | { art: 'schutz' }
-  | { art: 'tausch' }
+export type OffeneWahl = { art: 'baustopp' } | { art: 'schutz' } | { art: 'tausch' }
 
 export interface MinispielAuftrag {
   spielerId: string
@@ -194,7 +247,7 @@ function pruefeNamen(spieler: SpielerEinrichtung[]): void {
 
 export function erstellePartie(optionen: PartieOptionen): SpielZustand {
   pruefeNamen(optionen.spieler)
-  const seed = optionen.seed ?? ((Date.now() ^ (Math.random() * 0x100000000)) >>> 0)
+  const seed = optionen.seed ?? (Date.now() ^ (Math.random() * 0x100000000)) >>> 0
   const rundenLimit = Math.max(
     MIN_RUNDEN_LIMIT,
     Math.min(MAX_RUNDEN_LIMIT, optionen.rundenLimit ?? STANDARD_RUNDEN_LIMIT),
@@ -259,7 +312,13 @@ export function erstellePartie(optionen: PartieOptionen): SpielZustand {
     offenesMinispiel: null,
     offeneWahl: null,
     protokoll: [
-      { runde: 1, spielerId: null, text: 'Das Fest beginnt. Viel Erfolg!', art: 'info' },
+      {
+        runde: 1,
+        spielerId: null,
+        text: 'Das Fest beginnt. Viel Erfolg!',
+        art: 'info',
+        meldung: { art: 'start' },
+      },
     ],
     seed,
     rngZaehler: 0,
@@ -297,7 +356,8 @@ export function feldName(feldId: string): string {
 /** Neuer Zustand mit einem Protokolleintrag mehr. Das Protokoll bleibt kurz. */
 export function mitLog(
   state: SpielZustand,
-  eintrag: Omit<LogEintrag, 'runde'>,
+  // Die Meldung ist hier Pflicht: Eine neue Zeile ohne sie bliebe auf Englisch deutsch.
+  eintrag: Omit<LogEintrag, 'runde' | 'meldung'> & { meldung: ProtokollMeldung },
 ): SpielZustand {
   const protokoll = [...state.protokoll, { ...eintrag, runde: state.runde }]
   return { ...state, protokoll: protokoll.slice(-60) }

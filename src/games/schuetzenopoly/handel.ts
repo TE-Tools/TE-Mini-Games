@@ -34,34 +34,58 @@ export interface Handelsangebot {
   willTaler: number
 }
 
+/** Warum ein Angebot nicht geht -- als Kennung, die Oberfläche sagt es in ihrer Sprache. */
+export type HandelGrund =
+  | 'unbekannt'
+  | 'selbst'
+  | 'ausgeschieden'
+  | 'negativ'
+  | 'zuWenigAnbieter'
+  | 'zuWenigPartner'
+  | 'leer'
+  | 'nichtSeins'
+  | 'gebaeude'
+
 export interface HandelPruefung {
   gueltig: boolean
+  /** Deutsch, wie bisher. */
   grund?: string
+  code?: HandelGrund
+  /** Bei `nichtSeins` und `gebaeude`: welches Feld. */
+  feldId?: string
 }
 
 export function pruefeHandel(state: SpielZustand, angebot: Handelsangebot): HandelPruefung {
+  const nein = (code: HandelGrund, grund: string, feldId?: string): HandelPruefung =>
+    feldId ? { gueltig: false, grund, code, feldId } : { gueltig: false, grund, code }
   const von = spielerMit(state, angebot.vonId)
   const an = spielerMit(state, angebot.anId)
-  if (!von || !an) return { gueltig: false, grund: 'Spieler unbekannt' }
-  if (von.id === an.id) return { gueltig: false, grund: 'Nicht mit sich selbst' }
-  if (von.insolvent || an.insolvent) return { gueltig: false, grund: 'Spieler ist ausgeschieden' }
+  if (!von || !an) return nein('unbekannt', 'Spieler unbekannt')
+  if (von.id === an.id) return nein('selbst', 'Nicht mit sich selbst')
+  if (von.insolvent || an.insolvent) return nein('ausgeschieden', 'Spieler ist ausgeschieden')
   if (angebot.gebeTaler < 0 || angebot.willTaler < 0)
-    return { gueltig: false, grund: 'Negative Beträge gibt es nicht' }
-  if (angebot.gebeTaler > von.taler) return { gueltig: false, grund: 'So viel hat er nicht' }
-  if (angebot.willTaler > an.taler) return { gueltig: false, grund: 'So viel hat der andere nicht' }
-  if (angebot.gebeFelder.length === 0 && angebot.willFelder.length === 0 &&
-      angebot.gebeTaler === 0 && angebot.willTaler === 0)
-    return { gueltig: false, grund: 'Leeres Angebot' }
+    return nein('negativ', 'Negative Beträge gibt es nicht')
+  if (angebot.gebeTaler > von.taler) return nein('zuWenigAnbieter', 'So viel hat er nicht')
+  if (angebot.willTaler > an.taler) return nein('zuWenigPartner', 'So viel hat der andere nicht')
+  if (
+    angebot.gebeFelder.length === 0 &&
+    angebot.willFelder.length === 0 &&
+    angebot.gebeTaler === 0 &&
+    angebot.willTaler === 0
+  )
+    return nein('leer', 'Leeres Angebot')
 
   for (const feldId of angebot.gebeFelder) {
     const b = state.besitz[feldId]
-    if (!b || b.besitzerId !== von.id) return { gueltig: false, grund: `${feldName(feldId)} gehört ihm nicht` }
-    if (b.stufe > 0) return { gueltig: false, grund: `Auf ${feldName(feldId)} steht ein Gebäude` }
+    if (!b || b.besitzerId !== von.id)
+      return nein('nichtSeins', `${feldName(feldId)} gehört ihm nicht`, feldId)
+    if (b.stufe > 0) return nein('gebaeude', `Auf ${feldName(feldId)} steht ein Gebäude`, feldId)
   }
   for (const feldId of angebot.willFelder) {
     const b = state.besitz[feldId]
-    if (!b || b.besitzerId !== an.id) return { gueltig: false, grund: `${feldName(feldId)} gehört ihm nicht` }
-    if (b.stufe > 0) return { gueltig: false, grund: `Auf ${feldName(feldId)} steht ein Gebäude` }
+    if (!b || b.besitzerId !== an.id)
+      return nein('nichtSeins', `${feldName(feldId)} gehört ihm nicht`, feldId)
+    if (b.stufe > 0) return nein('gebaeude', `Auf ${feldName(feldId)} steht ein Gebäude`, feldId)
   }
   return { gueltig: true }
 }
@@ -97,6 +121,15 @@ export function handelAusfuehren(state: SpielZustand, angebot: Handelsangebot): 
     spielerId: von.id,
     art: 'kauf',
     text: `Handel: ${von.name} gibt ${beschreibe(angebot.gebeFelder, angebot.gebeTaler)} an ${an.name} für ${beschreibe(angebot.willFelder, angebot.willTaler)}.`,
+    meldung: {
+      art: 'handel',
+      von: von.name,
+      an: an.name,
+      gebeFelder: [...angebot.gebeFelder],
+      gebeTaler: angebot.gebeTaler,
+      willFelder: [...angebot.willFelder],
+      willTaler: angebot.willTaler,
+    },
   })
   return s
 }
@@ -125,7 +158,8 @@ export function feldWert(state: SpielZustand, feldId: string, fuerSpielerId: str
   const fehlende = geschwister.length - 1 - eigene
 
   let wert = basis
-  if (fehlende === 0) wert = Math.round(basis * 2.2) // schließt die Gruppe
+  if (fehlende === 0)
+    wert = Math.round(basis * 2.2) // schließt die Gruppe
   else if (eigene > 0) wert = Math.round(basis * (1 + 0.35 * eigene))
 
   // Ein Feld, das ein Gegner zum Gruppenschluss braucht, ist mehr wert.

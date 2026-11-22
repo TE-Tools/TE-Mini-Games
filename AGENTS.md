@@ -83,6 +83,34 @@ corresponding feature; do not invent a competing design.
   führt der Server nur ein Zugbuch: Startwert, Sitzordnung, Aktionen. Es steht
   dort **keine** Regel, und es kommt auch keine hinein – die Mitspieler spielen
   das Buch durch dieselbe Engine nach.
+- **Schach:** `docs/design/schach/` – Regeln gehören ausschließlich nach
+  `src/games/schach/`, Stellwerte (Stufen, Figurenwerte, Punkte) ausschließlich
+  in dessen `config.ts`; die Seiten zeigen an, was `zielFelder()` hergibt. Wer an
+  der Zugerzeugung etwas ändert, lässt Perft laufen (`tests/schach-regeln.test.ts`).
+  Wer am Computer etwas ändert, misst mit `scripts/schach-turnier.mjs`.
+  Online (Migration `031_schach_online.sql`) führt der Server wie bei
+  Schützenopoly nur ein Zugbuch: wer sitzt, wer Weiß hat, wer am Zug ist. Es
+  steht dort **keine** Schachregel, und es kommt auch keine hinein – jeder
+  Mitspieler spielt das Buch durch dieselbe Engine nach.
+- **Rückwärts:** `docs/design/rueckwaerts/` – das einzige Spiel mit Mikrofon.
+  Regeln (wer wann was hören darf, Stutzen, Löschen) gehören nach
+  `src/games/rueckwaerts/engine.ts`, Stellwerte nach `config.ts`, und nur
+  `ton.ts` fasst Mikrofon und Lautsprecher an. Eine Aufnahme ist eine Stimme:
+  Sie verlässt den Arbeitsspeicher nie (kein MediaRecorder, kein Blob, kein
+  IndexedDB, kein Netz), das Mikrofon wird mit dem Stopp freigegeben, und jeder
+  Weg aus einer Runde überschreibt alle Kopien mit Nullen. Genau das sagen die
+  Datenschutzerklärung und der Hinweis im Spiel zu – wer daran etwas ändert,
+  ändert zuerst diese beiden, und in der Play Console die Angabe zu Audio.
+- **Zweisprachig (Deutsch/Englisch):** `docs/design/zweisprachig/` – Deutsch ist
+  die Ausgangssprache, Englisch die Übersetzung. Texte stehen in
+  `src/i18n/texte/de.ts`; TypeScript verlangt dieselbe Stelle in `en.ts`, ein
+  vergessener Text ist ein roter Build. Nicht übersetzt werden die Wortlisten
+  der Ratespiele (ein englischer Spieler braucht englische Wörter, keine
+  übersetzten deutschen) und die 22 Grundstücke von Schützenopoly, die für
+  echte Feste stehen. Wer daran weiterarbeitet, liest zuerst die vier Fallen
+  in der README – jede ist hier schon zugeschnappt, und drei davon fallen
+  weder beim Bauen noch beim eigenen Durchklicken auf.
+
 - **Level map 1–500 („Zeitreise“):** `docs/design/level-map-500/` – five biomes of
   100 levels each (jungle → volcanic → rock desert → ice age → glacier peak),
   one winding vertical path, level 500 as the final ice palace.

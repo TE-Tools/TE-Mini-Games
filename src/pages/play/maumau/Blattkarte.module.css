@@ -206,7 +206,7 @@
 /* -------------------------------------------------------- Rückseite */
 
 .rueckseite {
-  background: linear-gradient(145deg, #3a4a92, #1b2350);
+  background: var(--ruecken-flaeche, linear-gradient(145deg, #3a4a92, #1b2350));
   box-shadow:
     0 2px 5px rgb(0 0 0 / 0.32),
     inset 0 0 0 3px #e9eaf2,
@@ -218,7 +218,10 @@
   position: absolute;
   inset: 0.28rem;
   border-radius: 0.3rem;
-  background-image:
+  /* Ein freigeschaltetes Design (components/designs) setzt --ruecken-muster;
+     ohne bleibt die Raute. */
+  background: var(
+    --ruecken-muster,
     repeating-linear-gradient(
       45deg,
       rgb(255 255 255 / 0.16) 0,
@@ -232,7 +235,8 @@
       rgb(255 255 255 / 0.16) 2px,
       transparent 2px,
       transparent 6px
-    );
+    )
+  );
 }
 
 .muster::after {
@@ -395,5 +399,5 @@
 }
 
 .rueckseite {
-  background: linear-gradient(145deg, #6d4ae8, #3b2a8f);
+  background: var(--ruecken-flaeche, linear-gradient(145deg, #6d4ae8, #3b2a8f));
 }

@@ -1,0 +1,58 @@
+.bild {
+  position: relative;
+  width: 4.75rem;
+  height: 4.75rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 2.1rem;
+  font-weight: 800;
+  text-shadow: 0 2px 6px rgb(0 0 0 / 0.2);
+  box-shadow:
+    0 10px 24px -8px var(--glanz),
+    inset 0 2px 0 rgb(255 255 255 / 0.35);
+  margin-bottom: var(--space-2);
+  animation: rein 520ms cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+
+/* Ein Ring läuft nach außen -- „du bist dran". */
+.bild::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 3px solid var(--glanz);
+  animation: welle 1.8s ease-out 400ms infinite;
+  opacity: 0;
+}
+
+@keyframes rein {
+  from {
+    transform: scale(0.3) rotate(-25deg);
+    opacity: 0;
+  }
+}
+
+@keyframes welle {
+  from {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+:global(:root[data-sparsam]) .bild,
+:global(:root[data-sparsam]) .bild::after {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bild,
+  .bild::after {
+    animation: none;
+  }
+}

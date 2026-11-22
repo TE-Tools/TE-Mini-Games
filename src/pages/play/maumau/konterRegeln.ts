@@ -12,6 +12,10 @@ import type { Konter } from '@/games/maumau'
  * Beim französischen Blatt gibt es nur die Sieben, also heisst dieselbe
  * Regel dort anders -- die Namen stehen deshalb hier und nicht in der
  * Engine.
+ *
+ * Angezeigt werden Name und Erklärung aus dem Wörterbuch
+ * (`t.maumau.konter[id]`); die deutschen Texte hier sind die Vorlage
+ * dafür und bleiben als Beschreibung der Regel stehen.
  */
 export const KONTER_REGELN: {
   id: keyof Konter

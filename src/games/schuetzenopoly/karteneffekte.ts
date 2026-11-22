@@ -7,7 +7,7 @@
  * und genau das macht Kartenspiele interessant.
  */
 
-import { FELDER, START_BONUS } from './config'
+import { FELDER } from './config'
 import { ALLE_KARTEN, istHandkarte, type Karte, type KartenStapel } from './karten'
 import { istGrundstueck } from './gebuehren'
 import { rollenBonus } from './rollen'
@@ -78,6 +78,7 @@ export function wendeKarteAn(state: SpielZustand, karte: Karte): KartenFolge {
     spielerId: spieler.id,
     art: 'karte',
     text: `${spieler.name}: ${karte.icon} ${karte.titel} – ${karte.text}`,
+    meldung: { art: 'karte', name: spieler.name, karteId: karte.id },
   })
 
   if (istSchlecht(karte) && spieler.schutzschild) {
@@ -86,6 +87,7 @@ export function wendeKarteAn(state: SpielZustand, karte: Karte): KartenFolge {
       spielerId: spieler.id,
       art: 'karte',
       text: 'Der Vorstandsbeschluss fängt das ab – die Karte verfällt.',
+      meldung: { art: 'vorstand' },
     })
     return { state: { ...s, offeneKarte: null }, feldAuswerten: false }
   }
@@ -111,10 +113,11 @@ export function wendeKarteAn(state: SpielZustand, karte: Karte): KartenFolge {
       break
     }
     case 'gehe_zu': {
-      const alt = spieler.position
+      // Nur das Ziel setzen -- den START-Bonus verbucht ankommen(), wie bei
+      // jedem Zug. Vorher zahlte die Karte ihn selbst, setzte die Figur schon
+      // aufs Ziel, und ankommen() zahlte ein zweites Mal: "Gehe zu START"
+      // brachte +4000, jedes andere Ziel immer +2000 (03.11.2026).
       const ziel = ((w.position % FELDER) + FELDER) % FELDER
-      if (ziel <= alt) s = gutschrift(s, spieler.id, START_BONUS)
-      s = mitSpieler(s, spieler.id, { position: ziel })
       return { state: { ...s, offeneKarte: null, zielPosition: ziel }, feldAuswerten: true }
     }
     case 'strafbank': {
@@ -135,17 +138,27 @@ export function wendeKarteAn(state: SpielZustand, karte: Karte): KartenFolge {
           spielerId: spieler.id,
           art: 'karte',
           text: 'Nichts gebaut, nichts zu reparieren.',
+          meldung: { art: 'nichtsZuReparieren' },
         })
       break
     }
     case 'baustopp': {
-      return { state: { ...s, offeneKarte: null, offeneWahl: { art: 'baustopp' } }, feldAuswerten: false }
+      return {
+        state: { ...s, offeneKarte: null, offeneWahl: { art: 'baustopp' } },
+        feldAuswerten: false,
+      }
     }
     case 'grundstueck_schuetzen': {
-      return { state: { ...s, offeneKarte: null, offeneWahl: { art: 'schutz' } }, feldAuswerten: false }
+      return {
+        state: { ...s, offeneKarte: null, offeneWahl: { art: 'schutz' } },
+        feldAuswerten: false,
+      }
     }
     case 'tausch': {
-      return { state: { ...s, offeneKarte: null, offeneWahl: { art: 'tausch' } }, feldAuswerten: false }
+      return {
+        state: { ...s, offeneKarte: null, offeneWahl: { art: 'tausch' } },
+        feldAuswerten: false,
+      }
     }
     case 'minispiel': {
       const { minispiel, zaehler } = zufaelligesMinispiel(s)

@@ -4,9 +4,7 @@
  */
 
 import {
-  AUSBAU_NAMEN,
   besitzVon,
-  feldName,
   grundstueck,
   gruppe,
   istGrundstueck,
@@ -15,8 +13,11 @@ import {
   baukosten,
   kaufpreis,
   tauschKandidaten,
+  type BauPruefung,
   type SpielZustand,
 } from '@/games/schuetzenopoly'
+import { useSprache } from '@/i18n/sprache'
+import { ausbauName, feldNameIn } from './texte'
 import styles from './Aktionen.module.css'
 
 /* ------------------------------------------------------------------ Bauen */
@@ -38,6 +39,8 @@ export function BauPanel({
   onVerkaufen,
   onSchliessen,
 }: BauPanelProps) {
+  const { t, sprache } = useSprache()
+  const ta = t.schuetzenopoly.aktionen
   const eigene = besitzVon(zustand, spielerId)
 
   return (
@@ -46,17 +49,19 @@ export function BauPanel({
         className={styles.tafel}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
-        aria-label="Bauen und verkaufen"
+        aria-label={ta.bauenLabel}
       >
-        <h3 className={styles.titel}>🏗️ Dein Besitz</h3>
-        {eigene.length === 0 && <p className={styles.leer}>Du besitzt noch nichts.</p>}
+        <h3 className={styles.titel}>{ta.deinBesitz}</h3>
+        {eigene.length === 0 && <p className={styles.leer}>{ta.nichts}</p>}
 
         <ul className={styles.liste}>
           {eigene.map((b) => {
             const g = grundstueck(b.feldId)
-            const pruefung = istGrundstueck(b.feldId)
+            const pruefung: BauPruefung = istGrundstueck(b.feldId)
               ? kannBauen(zustand, spielerId, b.feldId)
-              : { erlaubt: false, grund: 'Kein Grundstück', kosten: 0 }
+              : { erlaubt: false, grund: ta.keinGrundstueck, kosten: 0 }
+            // Der Grund kommt als Kennung; der deutsche Satz der Engine ist nur der Rückfall.
+            const grund = pruefung.code ? ta.bauGrund[pruefung.code] : pruefung.grund
             return (
               <li key={b.feldId} className={styles.eintrag}>
                 <div className={styles.zeile}>
@@ -67,9 +72,9 @@ export function BauPanel({
                       aria-hidden="true"
                     />
                   )}
-                  <span className={styles.feldName}>{feldName(b.feldId)}</span>
+                  <span className={styles.feldName}>{feldNameIn(t, b.feldId)}</span>
                   <span className={styles.stufe}>
-                    {istGrundstueck(b.feldId) ? AUSBAU_NAMEN[b.stufe] : 'Sonderfeld'}
+                    {istGrundstueck(b.feldId) ? ausbauName(t, b.stufe) : ta.sonderfeld}
                   </span>
                 </div>
                 <div className={styles.knoepfe}>
@@ -79,9 +84,9 @@ export function BauPanel({
                       className={styles.bauen}
                       disabled={!pruefung.erlaubt}
                       onClick={() => onBauen(b.feldId)}
-                      title={pruefung.grund}
+                      title={grund}
                     >
-                      Bauen · {pruefung.kosten.toLocaleString('de-DE')} 🪙
+                      {ta.bauen(pruefung.kosten.toLocaleString(sprache))}
                     </button>
                   )}
                   {istGrundstueck(b.feldId) && b.stufe > 0 && (
@@ -90,7 +95,7 @@ export function BauPanel({
                       className={styles.zurueckbauen}
                       onClick={() => onAbreissen(b.feldId)}
                     >
-                      Rückbau · +{rueckkaufwert(baukosten(b.feldId)).toLocaleString('de-DE')} 🪙
+                      {ta.rueckbau(rueckkaufwert(baukosten(b.feldId)).toLocaleString(sprache))}
                     </button>
                   )}
                   {b.stufe === 0 && (
@@ -99,12 +104,12 @@ export function BauPanel({
                       className={styles.zurueckbauen}
                       onClick={() => onVerkaufen(b.feldId)}
                     >
-                      Verkauf · +{rueckkaufwert(kaufpreis(b.feldId)).toLocaleString('de-DE')} 🪙
+                      {ta.verkauf(rueckkaufwert(kaufpreis(b.feldId)).toLocaleString(sprache))}
                     </button>
                   )}
                 </div>
-                {istGrundstueck(b.feldId) && !pruefung.erlaubt && pruefung.grund && (
-                  <p className={styles.grund}>{pruefung.grund}</p>
+                {istGrundstueck(b.feldId) && !pruefung.erlaubt && grund && (
+                  <p className={styles.grund}>{grund}</p>
                 )}
               </li>
             )
@@ -112,7 +117,7 @@ export function BauPanel({
         </ul>
 
         <button type="button" className={styles.fertig} onClick={onSchliessen}>
-          Fertig
+          {ta.fertig}
         </button>
       </div>
     </div>
@@ -138,21 +143,27 @@ export function WahlPanel({
   onTausch,
   onUeberspringen,
 }: WahlPanelProps) {
+  const { t, sprache } = useSprache()
+  const ta = t.schuetzenopoly.aktionen
   const wahl = zustand.offeneWahl
   if (!wahl) return null
 
   return (
     <div className={styles.hintergrund} role="presentation">
-      <div className={styles.tafel} role="dialog" aria-label="Karte: Auswahl">
+      <div className={styles.tafel} role="dialog" aria-label={ta.wahlLabel}>
         {wahl.art === 'baustopp' && (
           <>
-            <h3 className={styles.titel}>🚧 Wen trifft der Baustopp?</h3>
+            <h3 className={styles.titel}>{ta.wenBaustopp}</h3>
             <ul className={styles.liste}>
               {zustand.spieler
                 .filter((s) => s.id !== spielerId && !s.insolvent)
                 .map((s) => (
                   <li key={s.id}>
-                    <button type="button" className={styles.wahlKnopf} onClick={() => onBaustopp(s.id)}>
+                    <button
+                      type="button"
+                      className={styles.wahlKnopf}
+                      onClick={() => onBaustopp(s.id)}
+                    >
                       {s.name}
                     </button>
                   </li>
@@ -163,7 +174,7 @@ export function WahlPanel({
 
         {wahl.art === 'schutz' && (
           <>
-            <h3 className={styles.titel}>🛡️ Welches Grundstück schützen?</h3>
+            <h3 className={styles.titel}>{ta.welchesSchuetzen}</h3>
             <ul className={styles.liste}>
               {besitzVon(zustand, spielerId)
                 .filter((b) => istGrundstueck(b.feldId))
@@ -174,7 +185,7 @@ export function WahlPanel({
                       className={styles.wahlKnopf}
                       onClick={() => onSchutz(b.feldId)}
                     >
-                      {feldName(b.feldId)}
+                      {feldNameIn(t, b.feldId)}
                     </button>
                   </li>
                 ))}
@@ -184,7 +195,7 @@ export function WahlPanel({
 
         {wahl.art === 'tausch' && (
           <>
-            <h3 className={styles.titel}>🔄 Welchen Tausch?</h3>
+            <h3 className={styles.titel}>{ta.welcherTausch}</h3>
             <ul className={styles.liste}>
               {tauschKandidaten(zustand, spielerId)
                 .slice(0, 10)
@@ -195,12 +206,13 @@ export function WahlPanel({
                       className={styles.wahlKnopf}
                       onClick={() => onTausch(p.meinFeldId, p.fremdFeldId)}
                     >
-                      {feldName(p.meinFeldId)} → {feldName(p.fremdFeldId)}
+                      {feldNameIn(t, p.meinFeldId)} → {feldNameIn(t, p.fremdFeldId)}
                       {p.ausgleich !== 0 && (
                         <small>
+                          {' '}
                           {p.ausgleich > 0
-                            ? ` (du zahlst ${p.ausgleich} 🪙)`
-                            : ` (du erhältst ${-p.ausgleich} 🪙)`}
+                            ? ta.duZahlst(p.ausgleich.toLocaleString(sprache))
+                            : ta.duErhaeltst((-p.ausgleich).toLocaleString(sprache))}
                         </small>
                       )}
                     </button>
@@ -211,7 +223,7 @@ export function WahlPanel({
         )}
 
         <button type="button" className={styles.fertig} onClick={onUeberspringen}>
-          Verfallen lassen
+          {ta.verfallen}
         </button>
       </div>
     </div>

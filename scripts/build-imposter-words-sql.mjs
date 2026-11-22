@@ -11,6 +11,7 @@
  * Aufruf: node scripts/build-imposter-words-sql.mjs
  */
 import { readFileSync, writeFileSync } from 'node:fs'
+import { schreibeEnglischeWoerter } from './imposter-englisch-sql.mjs'
 
 const src = readFileSync('src/games/finde-den-imposter/data/words.ts', 'utf8')
 const body = src.match(/const BY_CATEGORY[^=]*=\s*\{([\s\S]*?)\n\}/)
@@ -26,6 +27,8 @@ if (rows.length === 0) throw new Error('Keine Wörter gefunden – Format von wo
 const cats = readFileSync('src/games/finde-den-imposter/data/categories.ts', 'utf8')
 const catRows = []
 for (const m of cats.matchAll(/\{\s*id:\s*'([^']+)',\s*label:\s*'([^']+)'/g)) {
+  // Die englischen Kategorien (`en-…`) stehen in 029, nicht hier.
+  if (m[1].startsWith('en-')) continue
   catRows.push({ id: m[1], label: m[2] })
 }
 
@@ -50,3 +53,6 @@ on conflict (category_id, word) do nothing;
 `
 writeFileSync('supabase/migrations/011b_imposter_words.sql', sql)
 console.log(`011b_imposter_words.sql: ${catRows.length} Kategorien, ${rows.length} Wörter`)
+
+// Die englischen Wörter (words.en.ts) gehen in eine eigene Migration.
+await schreibeEnglischeWoerter()

@@ -1,0 +1,57 @@
+-- 57_029_englische_woerter_teil4von25.sql
+-- Aus 029_englische_woerter.sql. Nacheinander einfuegen, Reihenfolge der Dateinamen.
+-- Gefahrlos mehrfach ausfuehrbar. Erzeugt mit scripts/build-teile.mjs --
+-- die Begruendungen stehen in der Ursprungsdatei.
+
+insert into public.fdi_words (category_id, word) values
+  ('en-beruehmt', 'Marie Curie'),
+  ('en-beruehmt', 'Charles Darwin'),
+  ('en-beruehmt', 'Stephen Hawking'),
+  ('en-beruehmt', 'Thomas Edison'),
+  ('en-beruehmt', 'Leonardo da Vinci'),
+  ('en-beruehmt', 'Michelangelo'),
+  ('en-beruehmt', 'Vincent van Gogh'),
+  ('en-beruehmt', 'Pablo Picasso'),
+  ('en-beruehmt', 'Ludwig van Beethoven'),
+  ('en-beruehmt', 'Wolfgang Amadeus Mozart'),
+  ('en-beruehmt', 'William Shakespeare'),
+  ('en-beruehmt', 'Charles Dickens'),
+  ('en-beruehmt', 'Jane Austen'),
+  ('en-beruehmt', 'Roald Dahl'),
+  ('en-beruehmt', 'Agatha Christie'),
+  ('en-beruehmt', 'Anne Frank'),
+  ('en-beruehmt', 'Martin Luther King'),
+  ('en-beruehmt', 'Mahatma Gandhi'),
+  ('en-beruehmt', 'Nelson Mandela'),
+  ('en-beruehmt', 'Mother Teresa'),
+  ('en-beruehmt', 'Florence Nightingale'),
+  ('en-beruehmt', 'Abraham Lincoln'),
+  ('en-beruehmt', 'George Washington'),
+  ('en-beruehmt', 'Winston Churchill'),
+  ('en-beruehmt', 'Queen Elizabeth II'),
+  ('en-beruehmt', 'Henry VIII'),
+  ('en-beruehmt', 'Christopher Columbus'),
+  ('en-beruehmt', 'Neil Armstrong'),
+  ('en-beruehmt', 'Amelia Earhart'),
+  ('en-beruehmt', 'Napoleon'),
+  ('en-beruehmt', 'Cleopatra'),
+  ('en-beruehmt', 'Julius Caesar'),
+  ('en-beruehmt', 'Elvis Presley'),
+  ('en-beruehmt', 'The Beatles'),
+  ('en-beruehmt', 'Freddie Mercury'),
+  ('en-beruehmt', 'Frank Sinatra'),
+  ('en-beruehmt', 'Taylor Swift'),
+  ('en-beruehmt', 'Marilyn Monroe'),
+  ('en-beruehmt', 'Charlie Chaplin'),
+  ('en-beruehmt', 'Walt Disney'),
+  ('en-beruehmt', 'Steve Jobs'),
+  ('en-beruehmt', 'Bill Gates'),
+  ('en-beruehmt', 'Muhammad Ali'),
+  ('en-beruehmt', 'Pelé'),
+  ('en-beruehmt', 'Serena Williams'),
+  ('en-beruehmt', 'Usain Bolt'),
+  ('en-beruehmt', 'Michael Jordan'),
+  ('en-beruehmt', 'David Beckham')
+on conflict (category_id, word) do nothing;
+
+delete from public.fdi_helper where category_id like 'en-%';

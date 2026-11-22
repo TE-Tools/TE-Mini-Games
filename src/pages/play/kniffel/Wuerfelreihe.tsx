@@ -16,9 +16,12 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useEffekte3d } from '@/components/drei/useEffekte3d'
+import { wuerfelStil } from '@/components/designs/designs'
+import { useDesign } from '@/components/designs/useDesign'
 import { Konfetti } from '@/components/konfetti/Konfetti'
 import { AUGEN_PLAETZE } from './augen'
 import type { WuerfelSzene } from './wuerfelSzene'
+import { useSprache } from '@/i18n/sprache'
 import styles from './Wuerfelreihe.module.css'
 
 interface WuerfelProps {
@@ -33,6 +36,7 @@ interface WuerfelProps {
 }
 
 function Wuerfel({ augen, gehalten, rollt, anklickbar, unsichtbar, onClick }: WuerfelProps) {
+  const { t } = useSprache()
   const plaetze = AUGEN_PLAETZE[augen] ?? []
   const leer = augen === 0
 
@@ -48,7 +52,9 @@ function Wuerfel({ augen, gehalten, rollt, anklickbar, unsichtbar, onClick }: Wu
       onClick={onClick}
       disabled={!anklickbar}
       aria-pressed={gehalten}
-      aria-label={leer ? 'Noch nicht gewürfelt' : `${augen}${gehalten ? ', liegen gelassen' : ''}`}
+      aria-label={
+        leer ? t.kniffel.wuerfel.leer : gehalten ? t.kniffel.wuerfel.gehalten(augen) : `${augen}`
+      }
     >
       {!unsichtbar && (
         <span className={styles.flaeche} aria-hidden="true">
@@ -60,7 +66,7 @@ function Wuerfel({ augen, gehalten, rollt, anklickbar, unsichtbar, onClick }: Wu
       )}
       {gehalten && (
         <span className={styles.marke} aria-hidden="true">
-          bleibt
+          {t.kniffel.wuerfel.bleibt}
         </span>
       )}
     </button>
@@ -94,6 +100,9 @@ export function Wuerfelreihe({
   onHalten,
 }: WuerfelreiheProps) {
   const drei = useEffekte3d()
+  // Nur Aussehen, nur auf diesem Gerät (services/sammlung.ts).
+  const design = useDesign('wuerfel')
+  const { t } = useSprache()
   const [kaputt, setKaputt] = useState(false)
   const [szeneDa, setSzeneDa] = useState(false)
   const mit3d = drei && !kaputt
@@ -127,7 +136,7 @@ export function Wuerfelreihe({
     void import('./wuerfelSzene')
       .then(({ starteWuerfelSzene }) => {
         if (abbruch) return
-        const s = starteWuerfelSzene(c)
+        const s = starteWuerfelSzene(c, design)
         szene.current = s
 
         // Die Würfel stehen genau dort, wo die Knöpfe stehen: Teilung aus
@@ -159,7 +168,7 @@ export function Wuerfelreihe({
       szene.current = null
       setSzeneDa(false)
     }
-  }, [mit3d])
+  }, [mit3d, design])
 
   /* ------------------------------------------------- Neuer Stand, Wurf */
 
@@ -188,7 +197,11 @@ export function Wuerfelreihe({
   }, [jubel])
 
   return (
-    <div className={`${styles.brett} ${mit3d ? styles.brett3d : ''}`}>
+    <div
+      className={`${styles.brett} ${mit3d ? styles.brett3d : ''}`}
+      style={wuerfelStil(design)}
+      data-wuerfel-design={design}
+    >
       <div ref={reihe} className={styles.reihe} role="group" aria-label="Würfel">
         {mit3d && (
           <canvas
@@ -213,7 +226,7 @@ export function Wuerfelreihe({
       {jubel > 0 && (
         <div key={jubel} className={styles.jubel} role="status">
           <Konfetti />
-          <span className={styles.jubelText}>Kniffel!</span>
+          <span className={styles.jubelText}>{t.kniffel.jubel}</span>
         </div>
       )}
     </div>

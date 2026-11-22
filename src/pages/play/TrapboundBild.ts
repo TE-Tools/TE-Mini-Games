@@ -22,6 +22,10 @@ export interface ZeichenOptionen {
   beben: boolean
   /** Laufende Gesamtzeit für Animationen. */
   uhr: number
+  /** Anstrich der Figur (reine Optik). Ohne Angabe: hell, ohne Spur. */
+  figur?: { farbe: string; spur: string | null }
+  /** Letzte Mittelpunkte der Figur, ältester zuerst -- für die Leuchtspur. */
+  spur?: ReadonlyArray<{ x: number; y: number }>
 }
 
 /** Ein Zackenband für Stacheln und Sägen. */
@@ -269,17 +273,32 @@ export function zeichne(
   // Die Spielfigur: eine schlanke Silhouette mit einem Auge. Wenig Striche,
   // damit sie auf dem Handy noch zu erkennen ist.
   const k = stand.koerper
+  const koerperFarbe = opt.figur?.farbe ?? '#f4f1ff'
   if (stand.phase !== 'tot') {
+    // Die Leuchtspur: kleine, verblassende Quadrate an den letzten Orten.
+    const spurFarbe = opt.figur?.spur
+    if (spurFarbe && opt.spur && opt.spur.length > 1) {
+      ctx.fillStyle = spurFarbe
+      const n = opt.spur.length
+      for (let i = 0; i < n - 1; i++) {
+        const punkt = opt.spur[i]!
+        const anteil = (i + 1) / n
+        ctx.globalAlpha = anteil * 0.45
+        const g = 1.5 + anteil * 3
+        ctx.fillRect(punkt.x - g / 2, punkt.y - g / 2, g, g)
+      }
+      ctx.globalAlpha = 1
+    }
     const kopfUnten = stand.schwerkraft < 0
     ctx.save()
     ctx.translate(k.x + PHYSIK.breite / 2, k.y + PHYSIK.hoehe / 2)
     if (kopfUnten) ctx.scale(1, -1)
     const lauf = k.amBoden && Math.abs(k.vx) > 8 ? Math.sin(opt.uhr * 18) * 1.6 : 0
-    ctx.fillStyle = '#f4f1ff'
+    ctx.fillStyle = koerperFarbe
     ctx.beginPath()
     ctx.roundRect(-PHYSIK.breite / 2, -PHYSIK.hoehe / 2 + 3, PHYSIK.breite, PHYSIK.hoehe - 3, 3)
     ctx.fill()
-    ctx.fillStyle = '#f4f1ff'
+    ctx.fillStyle = koerperFarbe
     ctx.beginPath()
     ctx.arc(0, -PHYSIK.hoehe / 2 + 3, 4.4, 0, Math.PI * 2)
     ctx.fill()

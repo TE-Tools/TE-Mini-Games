@@ -76,6 +76,7 @@ export {
   KOSTEN_FEHLER,
   KOSTEN_TIPP,
   MAX_ZEIT_BONUS,
+  STERNE_MIT_HILFE,
   type SudokuErgebnis,
   type SudokuWertung,
 } from './wertung'
@@ -96,3 +97,4 @@ export {
   type Partie,
   type Einstellungen,
 } from './fortschritt'
+export { falscheZiffern, istVoll, hilfeAnbieten, entferneFalsche, type HilfeLage } from './hilfe'

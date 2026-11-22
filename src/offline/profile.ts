@@ -54,7 +54,9 @@ export async function getOrCreateGuestProfile(): Promise<LocalProfile> {
   return profile
 }
 
-export async function getProfile(userId: string = GUEST_USER_ID): Promise<LocalProfile | undefined> {
+export async function getProfile(
+  userId: string = GUEST_USER_ID,
+): Promise<LocalProfile | undefined> {
   return db.profiles.get(userId)
 }
 
@@ -74,11 +76,16 @@ export async function addXp(userId: string, amount: number): Promise<LocalProfil
   return updated
 }
 
-export async function updateStreak(userId: string, streakDays: number): Promise<LocalProfile> {
+export async function updateStreak(
+  userId: string,
+  streakDays: number,
+  streakDate?: string | null,
+): Promise<LocalProfile> {
   const profile = (await getProfile(userId)) ?? (await getOrCreateGuestProfile())
   const updated: LocalProfile = {
     ...profile,
     streakDays: Math.max(0, streakDays),
+    ...(streakDate !== undefined ? { streakDate } : {}),
     lastPlayedAt: nowIso(),
     updatedAt: nowIso(),
   }

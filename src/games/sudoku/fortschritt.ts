@@ -38,6 +38,11 @@ export interface Partie {
   sekunden: number
   fehler: number
   tipps: number
+  /**
+   * Schon per Video geholfen? Steht in der Partie, damit Weggehen und
+   * Wiederkommen die Hilfe nicht vergessen lässt.
+   */
+  mitHilfe?: boolean
 }
 
 export interface Einstellungen {
@@ -128,18 +133,33 @@ export interface Abschluss {
   sekunden: number
   punkte: number
   sterne: number
+  /**
+   * Mit Hilfe aus einem Belohnungsvideo gelöst: Das Level zählt als
+   * geschafft und öffnet das nächste, aber Bestzeit und Bestpunkte bleiben,
+   * wie sie waren, und mehr als ein Stern wird nicht eingetragen.
+   */
+  mitHilfe?: boolean
 }
 
 /** Nach dem Lösen: eintragen, nächste Stufe öffnen, Partie vergessen. */
 export function merkeAbschluss(a: Abschluss): Stand {
   const stand = leseStand()
   const alt = levelStand(a.nr, stand)
-  stand.level[String(a.nr)] = {
-    fertig: true,
-    besteZeit: Math.min(alt.besteZeit, a.sekunden),
-    bestePunkte: Math.max(alt.bestePunkte, a.punkte),
-    sterne: Math.max(alt.sterne, a.sterne),
-  }
+  // JSON kennt kein Infinity: Eine nie gesetzte Bestzeit kommt als null zurück.
+  const alteZeit = Number.isFinite(alt.besteZeit) ? alt.besteZeit : Infinity
+  stand.level[String(a.nr)] = a.mitHilfe
+    ? {
+        fertig: true,
+        besteZeit: alteZeit,
+        bestePunkte: alt.bestePunkte,
+        sterne: Math.max(alt.sterne, Math.min(1, a.sterne)),
+      }
+    : {
+        fertig: true,
+        besteZeit: Math.min(alteZeit, a.sekunden),
+        bestePunkte: Math.max(alt.bestePunkte, a.punkte),
+        sterne: Math.max(alt.sterne, a.sterne),
+      }
   const s = schwierigkeitVon(a.nr)
   stand.frei[s] = Math.max(stand.frei[s], Math.min(LEVEL_PRO_STUFE, stufeVon(a.nr) + 1))
   delete stand.partien[String(a.nr)]

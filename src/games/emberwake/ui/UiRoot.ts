@@ -3,7 +3,6 @@ import { CAMP_POS, buildingLevel } from '@/games/emberwake/world/World'
 import type { ProfileData, Settings } from '@/games/emberwake/save/schema'
 import { MAX_LIVES } from '@/games/emberwake/save/schema'
 import { LEVELS } from '@/games/emberwake/data/levels'
-import { ITEMS } from '@/games/emberwake/data/items'
 import { BUILDINGS } from '@/games/emberwake/data/buildings'
 import type {
   BuildingId,
@@ -17,6 +16,23 @@ import { interactionProgress } from '@/games/emberwake/systems/InteractionSystem
 import { enemyInAttackRange } from '@/games/emberwake/systems/PlayerSystem'
 import { formatElapsed } from '@/games/emberwake/systems/EmberSystem'
 import type { InputElements } from '@/games/emberwake/input/InputManager'
+import {
+  aktionText,
+  emberwakeTexte,
+  gebaeudeName,
+  gebaeudeStufe,
+  gegenstandName,
+  grundText,
+  hauptziel,
+  levelName,
+  levelUntertitel,
+  rezeptBeschreibung,
+  rezeptName,
+  weltName,
+  werbeTexte,
+  zusatzziel,
+  type EmberwakeTexte,
+} from '@/games/emberwake/ui/texte'
 
 /**
  * Gesamte Benutzeroberfläche in reinem DOM (ARCHITECTURE.md §2).
@@ -52,9 +68,14 @@ export type ScreenName =
   'title' | 'levels' | 'pause' | 'camp' | 'death' | 'results' | 'update' | null
 type CampTab = 'core' | 'build' | 'craft' | 'stock'
 
-const PHASE_NAMES = { day: 'Tag', dusk: 'Dämmerung', night: 'Nacht', dawn: 'Morgen' } as const
-
 export class UiRoot {
+  /**
+   * Die Texte in der Sprache der App, einmal beim Start gelesen. Ein
+   * Sprachwechsel greift beim nächsten Start von Emberwake.
+   */
+  readonly tx: EmberwakeTexte = emberwakeTexte()
+  /** Beschriftung der Werbevideos, wie in der App. */
+  private readonly wx = werbeTexte()
   readonly root: HTMLElement
   readonly canvas: HTMLCanvasElement
   private readonly hud: HTMLElement
@@ -73,6 +94,7 @@ export class UiRoot {
     private readonly cb: UiCallbacks,
   ) {
     this.root = root
+    const tx = this.tx
     root.innerHTML = `
       <canvas id="game"></canvas>
       <div id="touch-layer"></div>
@@ -84,14 +106,14 @@ export class UiRoot {
             <div class="bar hp-bar"><i data-el="hp"></i></div>
           </div>
           <div class="hud-core">
-            <span class="label">Kern</span>
+            <span class="label">${tx.kern}</span>
             <div class="bar core-bar" data-el="coreBar"><i data-el="core"></i></div>
             <span class="core-pct" data-el="corePct">–</span>
             <span class="core-drain" data-el="coreDrain"></span>
           </div>
           <div class="hud-clock">
             <div class="phase" data-el="phase"></div>
-            <button id="btn-pause" aria-label="Pause">❙❙</button>
+            <button id="btn-pause" aria-label="${tx.pause}">❙❙</button>
           </div>
         </div>
         <div class="hud-objective">
@@ -109,15 +131,15 @@ export class UiRoot {
         <div class="hud-hint" data-el="hint" hidden></div>
         <div class="hud-bottom-left">
           <div class="weight">
-            <div class="label"><span>Ballast</span><span data-el="weightVal"></span></div>
+            <div class="label"><span>${tx.ballast}</span><span data-el="weightVal"></span></div>
             <div class="bar weight-bar" data-el="weightBar"><i data-el="weight"></i></div>
           </div>
           <div class="inv-list" data-el="inv"></div>
-          <button id="btn-drop">Abwerfen</button>
+          <button id="btn-drop">${tx.abwerfen}</button>
         </div>
         <div class="hud-buttons">
-          <button id="btn-sprint">SPRINT</button>
-          <button id="btn-attack" aria-label="Angriff">⚔</button>
+          <button id="btn-sprint">${tx.sprint}</button>
+          <button id="btn-attack" aria-label="${tx.angriff}">⚔</button>
           <button id="btn-action"><span class="ring"></span><span class="label" data-el="actionLabel">…</span></button>
         </div>
       </div>
@@ -191,17 +213,19 @@ export class UiRoot {
     const c = w.clock
     const remaining = Math.max(0, c.phaseDuration - c.phaseTime)
     let label: string
+    const tx = this.tx
     if (w.level.cycle.nights === 0)
-      label = `${PHASE_NAMES[c.phase]}<b>${formatElapsed(c.elapsed)}</b>`
-    else if (c.phase === 'day') label = `Nacht in<b>${formatElapsed(remaining)}</b>`
-    else if (c.phase === 'night') label = `Nacht ${c.night}<b>${formatElapsed(remaining)}</b>`
-    else label = `${PHASE_NAMES[c.phase]}<b>${formatElapsed(remaining)}</b>`
+      label = `${tx.phasen[c.phase]}<b>${formatElapsed(c.elapsed)}</b>`
+    else if (c.phase === 'day') label = `${tx.nachtIn}<b>${formatElapsed(remaining)}</b>`
+    else if (c.phase === 'night')
+      label = `${tx.nachtNummer(c.night)}<b>${formatElapsed(remaining)}</b>`
+    else label = `${tx.phasen[c.phase]}<b>${formatElapsed(remaining)}</b>`
     if (this.el.phase!.innerHTML !== label) this.el.phase!.innerHTML = label
     this.el.phase!.classList.toggle('is-night', c.phase === 'night' || c.phase === 'dusk')
 
     // Ziele
     const prim = w.level.objectives.primary
-    let primText = prim.text
+    let primText = hauptziel(tx, w.level)
     if (prim.kind === 'store_resource')
       primText += ` (${Math.min(prim.amount, w.camp.stock[prim.resource] ?? 0)}/${prim.amount})`
     if (prim.kind === 'core_charge')
@@ -210,7 +234,7 @@ export class UiRoot {
     this.el.objPrimary!.textContent = primText
     this.el.objPrimary!.classList.toggle('obj-done', w.objectives.primary >= 1)
     const sec = w.level.objectives.secondary
-    this.el.objSecondary!.textContent = `★★ ${sec.text}`
+    this.el.objSecondary!.textContent = `★★ ${zusatzziel(tx, w.level)}`
     this.el.objSecondary!.classList.toggle('is-failed', w.objectives.secondaryFailed)
     this.el.objSecondary!.classList.toggle(
       'obj-done',
@@ -223,7 +247,7 @@ export class UiRoot {
     this.el.compass!.hidden = !showCompass
     if (showCompass) {
       this.el.compassArrow!.style.transform = `rotate(${compassAngle}rad)`
-      this.el.compassDist!.textContent = `Lager · ${Math.round(dCamp)} m`
+      this.el.compassDist!.textContent = tx.lagerEntfernung(Math.round(dCamp))
     }
     if (waveAngle !== null) this.el.warningArrow!.style.transform = `rotate(${waveAngle}rad)`
 
@@ -238,7 +262,7 @@ export class UiRoot {
       this.lastHudKey = invKey
       this.el.inv!.textContent = Object.entries(p.inventory)
         .filter(([, n]) => (n ?? 0) > 0)
-        .map(([id, n]) => `${n} ${ITEMS[id as ItemId].name}`)
+        .map(([id, n]) => `${n} ${gegenstandName(tx, id as ItemId)}`)
         .join(' · ')
     }
     const dropBtn = this.root.querySelector<HTMLElement>('#btn-drop')!
@@ -246,7 +270,7 @@ export class UiRoot {
 
     // Tasten
     const action = this.root.querySelector<HTMLElement>('#btn-action')!
-    const actionLabel = w.interactable?.label ?? ''
+    const actionLabel = aktionText(tx, w)
     action.classList.toggle('is-idle', !actionLabel)
     this.el.actionLabel!.textContent = actionLabel || '·'
     action.style.setProperty('--p', String(interactionProgress(w)))
@@ -312,23 +336,24 @@ export class UiRoot {
   }
 
   showTitle(profile: ProfileData, hasRun: boolean, portrait: boolean, showExit = false): void {
+    const tx = this.tx
     const s = this.open(
       'title',
       'is-solid',
       `
       <div class="card">
-        <p class="eyebrow">Der letzte Funke</p>
+        <p class="eyebrow">${tx.untertitel}</p>
         <h1 class="title">EMBERWAKE</h1>
-        <p class="lede is-ember">Jeder Schritt vom Lager weg macht dein Lager dunkler.</p>
-        ${portrait ? '<p class="orientation-hint">Tipp: Im Querformat siehst du mehr vom Wald.</p>' : ''}
-        <button class="btn is-primary" data-act="continue">${hasRun ? 'Fortsetzen' : profile.unlockedLevelId > 1 ? `Weiter · Level ${profile.unlockedLevelId}` : 'Spielen'}</button>
-        <button class="btn" data-act="levels">Level wählen</button>
+        <p class="lede is-ember">${tx.leitsatz}</p>
+        ${portrait ? `<p class="orientation-hint">${tx.querformatTipp}</p>` : ''}
+        <button class="btn is-primary" data-act="continue">${hasRun ? tx.fortsetzen : profile.unlockedLevelId > 1 ? tx.weiterMitLevel(profile.unlockedLevelId) : tx.spielen}</button>
+        <button class="btn" data-act="levels">${tx.levelWaehlen}</button>
         <dl class="kv">
-          <dt>Leben</dt><dd>${'♥'.repeat(profile.lives)}<span style="opacity:.25">${'♥'.repeat(Math.max(0, MAX_LIVES - profile.lives))}</span></dd>
-          <dt>Sterne</dt><dd>${Object.values(profile.levels).reduce((n, l) => n + l.stars, 0)} / ${LEVELS.length * 3}</dd>
+          <dt>${tx.leben}</dt><dd>${'♥'.repeat(profile.lives)}<span style="opacity:.25">${'♥'.repeat(Math.max(0, MAX_LIVES - profile.lives))}</span></dd>
+          <dt>${tx.sterne}</dt><dd>${Object.values(profile.levels).reduce((n, l) => n + l.stars, 0)} / ${LEVELS.length * 3}</dd>
         </dl>
-        ${showExit ? '<button class="btn is-ghost" data-act="exit">← Zurück zur Übersicht</button>' : ''}
-        <p class="small center">Version 0.1.0 · Vertical Slice · Offline spielbar</p>
+        ${showExit ? `<button class="btn is-ghost" data-act="exit">${tx.zurueckZurUebersicht}</button>` : ''}
+        <p class="small center">${tx.versionZeile}</p>
       </div>
     `,
     )
@@ -351,6 +376,7 @@ export class UiRoot {
   }
 
   showLevels(profile: ProfileData): void {
+    const tx = this.tx
     const items = LEVELS.map((l) => {
       const rec = profile.levels[l.id]
       const locked = l.id > profile.unlockedLevelId
@@ -358,7 +384,7 @@ export class UiRoot {
       const st = `${'★'.repeat(stars)}<span class="off">${'★'.repeat(3 - stars)}</span>`
       return `<button class="level-item" data-level="${l.id}" ${locked ? 'disabled' : ''}>
         <span class="num">${String(l.id).padStart(2, '0')}</span>
-        <span><span class="name">${l.name}</span><br><span class="sub">${locked ? 'Gesperrt' : l.subtitle}</span></span>
+        <span><span class="name">${levelName(tx, l)}</span><br><span class="sub">${locked ? tx.gesperrt : levelUntertitel(tx, l)}</span></span>
         <span class="st">${st}</span>
       </button>`
     }).join('')
@@ -367,9 +393,9 @@ export class UiRoot {
       'is-solid',
       `
       <div class="card">
-        <p class="eyebrow">Welt 1 · Der Aschenwald</p>
+        <p class="eyebrow">${tx.weltZeile(1, weltName(tx, 1))}</p>
         <div class="level-list">${items}</div>
-        <button class="btn is-ghost" data-act="back">Zurück</button>
+        <button class="btn is-ghost" data-act="back">${tx.zurueck}</button>
       </div>
     `,
     )
@@ -380,33 +406,34 @@ export class UiRoot {
   }
 
   showPause(settings: Settings, hasVibration: boolean): void {
+    const tx = this.tx
     const s = this.open(
       'pause',
       'is-dim',
       `
       <div class="card">
-        <p class="eyebrow">Pause</p>
-        <button class="btn is-primary" data-act="resume">Weiter</button>
-        <div class="settings-row"><span>Haptik${hasVibration ? '' : ' <span class="small">(auf diesem Gerät nicht verfügbar)</span>'}</span><button class="toggle ${settings.haptics ? 'is-on' : ''}" data-set="haptics" aria-label="Haptik"></button></div>
-        <div class="settings-row"><span>Grafik</span>
+        <p class="eyebrow">${tx.pause}</p>
+        <button class="btn is-primary" data-act="resume">${tx.weiterSpielen}</button>
+        <div class="settings-row"><span>${tx.haptik}${hasVibration ? '' : ` <span class="small">${tx.haptikFehlt}</span>`}</span><button class="toggle ${settings.haptics ? 'is-on' : ''}" data-set="haptics" aria-label="${tx.haptik}"></button></div>
+        <div class="settings-row"><span>${tx.grafik}</span>
           <select data-set="quality">
-            <option value="auto" ${settings.quality === 'auto' ? 'selected' : ''}>Automatisch</option>
-            <option value="low" ${settings.quality === 'low' ? 'selected' : ''}>Niedrig</option>
-            <option value="medium" ${settings.quality === 'medium' ? 'selected' : ''}>Mittel</option>
-            <option value="high" ${settings.quality === 'high' ? 'selected' : ''}>Hoch</option>
+            <option value="auto" ${settings.quality === 'auto' ? 'selected' : ''}>${tx.qualitaet.auto}</option>
+            <option value="low" ${settings.quality === 'low' ? 'selected' : ''}>${tx.qualitaet.low}</option>
+            <option value="medium" ${settings.quality === 'medium' ? 'selected' : ''}>${tx.qualitaet.medium}</option>
+            <option value="high" ${settings.quality === 'high' ? 'selected' : ''}>${tx.qualitaet.high}</option>
           </select>
         </div>
-        <div class="settings-row"><span>Ton</span><button class="toggle ${settings.sfxVolume > 0 ? 'is-on' : ''}" data-set="sound" aria-label="Ton"></button></div>
+        <div class="settings-row"><span>${tx.ton}</span><button class="toggle ${settings.sfxVolume > 0 ? 'is-on' : ''}" data-set="sound" aria-label="${tx.ton}"></button></div>
         <div class="btn-row">
-          <button class="btn" data-act="restart">Level neu</button>
-          <button class="btn" data-act="quit">Zum Menü</button>
+          <button class="btn" data-act="restart">${tx.levelNeu}</button>
+          <button class="btn" data-act="quit">${tx.zumMenue}</button>
         </div>
         <div class="btn-row">
-          <button class="btn is-ghost" data-act="export">Spielstand exportieren</button>
-          <label class="btn is-ghost" style="cursor:pointer">Importieren<input type="file" accept=".ewsave,application/json" hidden data-act="import"></label>
+          <button class="btn is-ghost" data-act="export">${tx.exportieren}</button>
+          <label class="btn is-ghost" style="cursor:pointer">${tx.importieren}<input type="file" accept=".ewsave,application/json" hidden data-act="import"></label>
         </div>
-        <button class="btn is-ghost is-danger" data-act="reset">Alles zurücksetzen</button>
-        <p class="small center">Tastatur: WASD bewegen · E fällen/sammeln · Leertaste Angriff · Shift Sprint · Q abwerfen · Esc Pause</p>
+        <button class="btn is-ghost is-danger" data-act="reset">${tx.allesZuruecksetzen}</button>
+        <p class="small center">${tx.tastatur}</p>
       </div>
     `,
     )
@@ -419,8 +446,7 @@ export class UiRoot {
       if (file) this.cb.onImport(file)
     })
     s.querySelector('[data-act="reset"]')!.addEventListener('click', () => {
-      if (confirm('Wirklich alles zurücksetzen? Lager, Sterne und Leben gehen verloren.'))
-        this.cb.onReset()
+      if (confirm(tx.zuruecksetzenFrage)) this.cb.onReset()
     })
     s.querySelector<HTMLElement>('[data-set="haptics"]')!.addEventListener('click', (e) => {
       const t = e.currentTarget as HTMLElement
@@ -444,25 +470,64 @@ export class UiRoot {
     resetNote: string | null,
     carriedNote: string | null,
   ): void {
+    const tx = this.tx
     const s = this.open(
       'death',
       'is-dim',
       `
       <div class="card">
-        <p class="eyebrow">Erloschen</p>
+        <p class="eyebrow">${tx.erloschen}</p>
         <p class="cause">${cause}.</p>
         <dl class="kv">
-          <dt>Leben übrig</dt><dd>${'♥'.repeat(livesLeft)}<span style="opacity:.25">${'♥'.repeat(Math.max(0, MAX_LIVES - livesLeft))}</span></dd>
-          ${carriedNote ? `<dt>Rucksack</dt><dd>${carriedNote}</dd>` : ''}
+          <dt>${tx.lebenUebrig}</dt><dd>${'♥'.repeat(livesLeft)}<span style="opacity:.25">${'♥'.repeat(Math.max(0, MAX_LIVES - livesLeft))}</span></dd>
+          ${carriedNote ? `<dt>${tx.rucksack}</dt><dd>${carriedNote}</dd>` : ''}
         </dl>
-        ${resetNote ? `<p class="lede">${resetNote}</p>` : '<p class="lede">Lager, Gebäude und Vorräte bleiben erhalten.</p>'}
-        <button class="btn is-primary" data-act="retry">Nochmal</button>
-        <button class="btn is-ghost" data-act="quit">Zum Menü</button>
+        <p class="lede">${resetNote ?? tx.lagerBleibt}</p>
+        <button class="btn is-primary" data-act="retry">${tx.nochmal}</button>
+        <button class="btn is-ghost" data-act="quit">${tx.zumMenue}</button>
       </div>
     `,
     )
     s.querySelector('[data-act="retry"]')!.addEventListener('click', () => this.cb.onRestart())
     s.querySelector('[data-act="quit"]')!.addEventListener('click', () => this.cb.onQuit())
+  }
+
+  /**
+   * Belohnungsvideo im Todesbildschirm anbieten. Wird nur aufgerufen, wenn
+   * wirklich ein Video bereitsteht -- sonst sieht der Bildschirm aus wie
+   * immer. Beschriftet als Werbevideo, wie der `BelohnungsKnopf` der App.
+   * `ansehen` liefert, ob das Video zu Ende geschaut wurde.
+   */
+  offerRevive(ansehen: () => Promise<boolean>): void {
+    if (this.currentScreen !== 'death') return
+    const card = this.screens.querySelector('.card')
+    if (!card || card.querySelector('[data-act="revive"]')) return
+    const wx = this.wx
+    const rahmen = document.createElement('div')
+    const knopf = document.createElement('button')
+    knopf.type = 'button'
+    knopf.className = 'btn is-ad'
+    knopf.dataset.act = 'revive'
+    const text = document.createElement('span')
+    text.textContent = `▶ ${wx.videoAnsehen(this.tx.wiederbelebenBelohnung)}`
+    const hinweis = document.createElement('small')
+    hinweis.className = 'ad-note'
+    hinweis.textContent = wx.hinweis
+    knopf.append(text, hinweis)
+    knopf.addEventListener('click', () => {
+      knopf.disabled = true
+      text.textContent = wx.laeuft
+      void ansehen().then((geschaut) => {
+        if (geschaut) return
+        const status = document.createElement('p')
+        status.className = 'small center'
+        status.setAttribute('role', 'status')
+        status.textContent = wx.abgebrochen
+        rahmen.replaceChildren(status)
+      })
+    })
+    rahmen.append(knopf)
+    card.insertBefore(rahmen, card.querySelector('[data-act="retry"]'))
   }
 
   showResults(r: {
@@ -475,31 +540,35 @@ export class UiRoot {
     rewards: ResourceCost
     lifeGained: boolean
     hasNext: boolean
+    /** Mit Wiederbelebung per Video geschafft: Hinweis, warum es weniger gibt. */
+    revived?: boolean
   }): void {
+    const tx = this.tx
     const stars = `${'★'.repeat(r.stars)}<span class="off">${'★'.repeat(3 - r.stars)}</span>`
     const rewards =
       Object.entries(r.rewards)
-        .map(([id, n]) => `${n} ${ITEMS[id as ItemId].name}`)
+        .map(([id, n]) => `${n} ${gegenstandName(tx, id as ItemId)}`)
         .join(', ') || '–'
     const s = this.open(
       'results',
       'is-dim',
       `
       <div class="card">
-        <p class="eyebrow">Geschafft</p>
+        <p class="eyebrow">${tx.geschafft}</p>
         <h2 class="title is-small">${r.levelName}</h2>
         <p class="stars">${stars}</p>
         <dl class="kv">
-          <dt>Zeit</dt><dd>${formatElapsed(r.time)}</dd>
-          <dt>★★ ${r.secondaryText}</dt><dd class="${r.secondary ? 'ok' : 'bad'}">${r.secondary ? 'erfüllt' : 'verfehlt'}</dd>
-          <dt>★★★ Geheimnis</dt><dd class="${r.secret ? 'ok' : 'bad'}">${r.secret ? 'gefunden' : 'nicht gefunden'}</dd>
-          <dt>Belohnung ins Lager</dt><dd>${rewards}</dd>
-          ${r.lifeGained ? '<dt>Drei Sterne</dt><dd class="ok">+1 Leben</dd>' : ''}
+          <dt>${tx.zeit}</dt><dd>${formatElapsed(r.time)}</dd>
+          <dt>★★ ${r.secondaryText}</dt><dd class="${r.secondary ? 'ok' : 'bad'}">${r.secondary ? tx.erfuellt : tx.verfehlt}</dd>
+          <dt>★★★ ${tx.geheimnis}</dt><dd class="${r.secret ? 'ok' : 'bad'}">${r.secret ? tx.gefunden : tx.nichtGefunden}</dd>
+          <dt>${tx.belohnung}</dt><dd>${rewards}</dd>
+          ${r.lifeGained ? `<dt>${tx.dreiSterne}</dt><dd class="ok">${tx.einLebenMehr}</dd>` : ''}
         </dl>
-        ${r.hasNext ? '<button class="btn is-primary" data-act="next">Weiter</button>' : '<p class="lede is-ember">Mehr Level folgen. Das war der Vertical Slice.</p>'}
+        ${r.revived ? `<p class="small center">${tx.mitWiederbelebung}</p>` : ''}
+        ${r.hasNext ? `<button class="btn is-primary" data-act="next">${tx.naechstesLevel}</button>` : `<p class="lede is-ember">${tx.mehrLevelFolgen}</p>`}
         <div class="btn-row">
-          <button class="btn" data-act="retry">Nochmal</button>
-          <button class="btn" data-act="quit">Zum Menü</button>
+          <button class="btn" data-act="retry">${tx.nochmal}</button>
+          <button class="btn" data-act="quit">${tx.zumMenue}</button>
         </div>
       </div>
     `,
@@ -510,15 +579,16 @@ export class UiRoot {
   }
 
   showUpdate(): void {
+    const tx = this.tx
     const s = this.open(
       'update',
       'is-dim',
       `
       <div class="card">
-        <p class="eyebrow">Neue Version</p>
-        <p class="lede">Eine neue Version von EMBERWAKE ist bereit. Jetzt neu starten?</p>
-        <button class="btn is-primary" data-act="update">Neu starten</button>
-        <button class="btn is-ghost" data-act="later">Später</button>
+        <p class="eyebrow">${tx.neueVersion}</p>
+        <p class="lede">${tx.neueVersionFrage}</p>
+        <button class="btn is-primary" data-act="update">${tx.neuStarten}</button>
+        <button class="btn is-ghost" data-act="later">${tx.spaeter}</button>
       </div>
     `,
     )
@@ -544,11 +614,12 @@ export class UiRoot {
   private renderCamp(): void {
     const w = this.campWorld!
     const card = this.screens.querySelector<HTMLElement>('[data-el="campCard"]')!
+    const tx = this.tx
     const tabs: Array<[CampTab, string]> = [
-      ['core', 'Kern'],
-      ['build', 'Bauen'],
-      ['craft', 'Werkstatt'],
-      ['stock', 'Vorrat'],
+      ['core', tx.reiter.core],
+      ['build', tx.reiter.build],
+      ['craft', tx.reiter.craft],
+      ['stock', tx.reiter.stock],
     ]
     const showCraft = buildingLevel(w, 'workbench') > 0
     const tabHtml = tabs
@@ -576,10 +647,10 @@ export class UiRoot {
     }
 
     card.innerHTML = `
-      <p class="eyebrow">Lager</p>
+      <p class="eyebrow">${tx.lager}</p>
       <div class="tabs">${tabHtml}</div>
       ${body}
-      <button class="btn is-primary" data-act="close">Zurück ins Spiel</button>
+      <button class="btn is-primary" data-act="close">${tx.zurueckInsSpiel}</button>
     `
     card.querySelectorAll<HTMLElement>('[data-tab]').forEach((b) => {
       b.addEventListener('click', () => {
@@ -614,24 +685,25 @@ export class UiRoot {
     const per = w.level.ember.regenPerWood
     const pct = Math.round(w.ember.charge)
     const dmg = w.player.hp < w.player.maxHp
+    const tx = this.tx
     return `
       <div class="core-status">
         <div class="bar core-bar"><i style="width:${Math.min(100, (w.ember.charge / w.ember.capacity) * 100)}%"></i></div>
         <span class="pct">${pct} %</span>
       </div>
-      <p class="small">Kapazität ${w.ember.capacity} · Lichtradius ${w.ember.lightRadius.toFixed(1)} m · Grundlast −${w.level.ember.drainBase.toFixed(2)}/s</p>
+      <p class="small">${tx.kernWerte(w.ember.capacity, w.ember.lightRadius.toFixed(1), w.level.ember.drainBase.toFixed(2))}</p>
       <div class="row">
-        <div><div class="name">Kern nähren</div><div class="desc">+${per} % je Zunderholz · ${wood} Holz im Lager</div></div>
+        <div><div class="name">${tx.kernNaehren}</div><div class="desc">${tx.jeHolz(per, wood)}</div></div>
         <div class="btn-row">
           <button class="btn" data-refuel="1" ${wood < 1 ? 'disabled' : ''}>+1</button>
           <button class="btn" data-refuel="5" ${wood < 1 ? 'disabled' : ''}>+5</button>
-          <button class="btn" data-refuel="all" ${wood < 1 ? 'disabled' : ''}>Alles</button>
+          <button class="btn" data-refuel="all" ${wood < 1 ? 'disabled' : ''}>${tx.alles}</button>
         </div>
       </div>
-      ${crystal > 0 ? `<div class="row"><div><div class="name">Glutkristall einsetzen</div><div class="desc">+25 % · ${crystal} vorhanden</div></div><button class="btn" data-act="crystal">Einsetzen</button></div>` : ''}
+      ${crystal > 0 ? `<div class="row"><div><div class="name">${tx.kristallEinsetzen}</div><div class="desc">${tx.kristallVorrat(crystal)}</div></div><button class="btn" data-act="crystal">${tx.einsetzen}</button></div>` : ''}
       <div class="row">
-        <div><div class="name">Essen</div><div class="desc">+30 Gesundheit · ${food} Nahrung im Lager</div></div>
-        <button class="btn" data-act="eat" ${food < 1 || !dmg ? 'disabled' : ''}>Essen</button>
+        <div><div class="name">${tx.essen}</div><div class="desc">${tx.essenVorrat(food)}</div></div>
+        <button class="btn" data-act="eat" ${food < 1 || !dmg ? 'disabled' : ''}>${tx.essen}</button>
       </div>
     `
   }
@@ -639,63 +711,67 @@ export class UiRoot {
   private costHtml(w: World, cost: ResourceCost, ember: number): string {
     const parts = Object.entries(cost).map(([id, n]) => {
       const have = w.camp.stock[id as ItemId] ?? 0
-      return `<span class="${have < (n ?? 0) ? 'lack' : ''}">${n} ${ITEMS[id as ItemId].name}</span>`
+      return `<span class="${have < (n ?? 0) ? 'lack' : ''}">${n} ${gegenstandName(this.tx, id as ItemId)}</span>`
     })
-    if (ember > 0) parts.push(`<span class="ember">${ember} % Kern</span>`)
+    if (ember > 0) parts.push(`<span class="ember">${this.tx.kernKosten(ember)}</span>`)
     return parts.join(' · ')
   }
 
   private campBuildHtml(w: World): string {
+    const tx = this.tx
     const ids = (Object.keys(BUILDINGS) as BuildingId[]).filter(
       (id) => w.level.camp.unlockedBuildings.includes(id) || buildingLevel(w, id) > 0,
     )
     const rows = ids.map((id) => {
       const def = BUILDINGS[id]
+      const name = gebaeudeName(tx, id)
       const lvl = buildingLevel(w, id)
       const next = def.levels[lvl]
       const check = canBuild(w, id)
       if (!next) {
-        return `<div class="row"><div><div class="name">${def.name} · Stufe ${lvl}</div><div class="desc">${def.levels[lvl - 1]?.description ?? ''}</div></div><span class="reason">Ausgebaut</span></div>`
+        return `<div class="row"><div><div class="name">${name} · ${tx.stufe(lvl)}</div><div class="desc">${gebaeudeStufe(tx, id, lvl - 1)}</div></div><span class="reason">${tx.ausgebaut}</span></div>`
       }
       return `<div class="row">
         <div>
-          <div class="name">${def.name} ${lvl > 0 ? `· Stufe ${lvl} → ${lvl + 1}` : ''}</div>
-          <div class="desc">${next.description}</div>
+          <div class="name">${name} ${lvl > 0 ? `· ${tx.stufeAuf(lvl, lvl + 1)}` : ''}</div>
+          <div class="desc">${gebaeudeStufe(tx, id, lvl)}</div>
           <div class="cost">${this.costHtml(w, next.cost, next.emberCost)}</div>
         </div>
         <div style="text-align:right">
-          <button class="btn ${check.ok ? 'is-primary' : ''}" data-build="${id}" ${check.ok ? '' : 'disabled'}>${lvl > 0 ? 'Ausbauen' : 'Bauen'}</button>
-          ${check.reason ? `<div class="reason">${check.reason}</div>` : ''}
+          <button class="btn ${check.ok ? 'is-primary' : ''}" data-build="${id}" ${check.ok ? '' : 'disabled'}>${lvl > 0 ? tx.ausbauen : tx.bauenKnopf}</button>
+          ${check.reason ? `<div class="reason">${grundText(tx, check.reason)}</div>` : ''}
         </div>
       </div>`
     })
-    return `<div class="list">${rows.join('') || '<p class="small">Hier ist noch nichts freigeschaltet.</p>'}</div>`
+    return `<div class="list">${rows.join('') || `<p class="small">${tx.nichtsFreigeschaltet}</p>`}</div>`
   }
 
   private campCraftHtml(w: World): string {
+    const tx = this.tx
     const rows = availableRecipes(w).map((r) => {
       const check = canCraft(w, r)
       return `<div class="row">
         <div>
-          <div class="name">${r.name}</div>
-          <div class="desc">${r.description}</div>
+          <div class="name">${rezeptName(tx, r)}</div>
+          <div class="desc">${rezeptBeschreibung(tx, r)}</div>
           <div class="cost">${this.costHtml(w, r.cost, r.emberCost)}</div>
         </div>
         <div style="text-align:right">
-          <button class="btn ${check.ok ? 'is-primary' : ''}" data-craft="${r.id}" ${check.ok ? '' : 'disabled'}>Herstellen</button>
-          ${check.reason ? `<div class="reason">${check.reason}</div>` : ''}
+          <button class="btn ${check.ok ? 'is-primary' : ''}" data-craft="${r.id}" ${check.ok ? '' : 'disabled'}>${tx.herstellen}</button>
+          ${check.reason ? `<div class="reason">${grundText(tx, check.reason)}</div>` : ''}
         </div>
       </div>`
     })
-    return `<div class="list">${rows.join('') || '<p class="small">Keine Rezepte verfügbar.</p>'}</div>`
+    return `<div class="list">${rows.join('') || `<p class="small">${tx.keineRezepte}</p>`}</div>`
   }
 
   private campStockHtml(w: World): string {
+    const tx = this.tx
     const items = Object.entries(w.camp.stock).filter(([, n]) => (n ?? 0) > 0)
     const tools = Array.from(w.player.tools)
     return `
-      <div class="stock">${items.map(([id, n]) => `<div class="item"><b>${n}</b><span>${ITEMS[id as ItemId].name}</span></div>`).join('') || '<p class="small">Das Lager ist leer.</p>'}</div>
-      <p class="small">Werkzeuge: ${tools.length ? tools.map((t) => ITEMS[t].name).join(', ') : 'keine'}</p>
+      <div class="stock">${items.map(([id, n]) => `<div class="item"><b>${n}</b><span>${gegenstandName(tx, id as ItemId)}</span></div>`).join('') || `<p class="small">${tx.lagerLeer}</p>`}</div>
+      <p class="small">${tx.werkzeuge(tools.length ? tools.map((werkzeug) => gegenstandName(tx, werkzeug)).join(', ') : tx.keineWerkzeuge)}</p>
     `
   }
 }

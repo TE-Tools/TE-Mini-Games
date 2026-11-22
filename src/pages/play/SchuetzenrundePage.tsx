@@ -18,11 +18,22 @@ import {
   humanPlayer,
   hasNightAction,
   nightTargetRequired,
-  roleOf,
   factionOf,
+  saboteurCount,
   type MatchState,
 } from '@/games/schuetzenrunde'
+import { useSprache, WOERTERBUECHER } from '@/i18n/sprache'
 import { SchuetzenrundeOnline } from './SchuetzenrundeOnline'
+import {
+  aussageText,
+  fraktionName,
+  notizZeile,
+  protokollZeile,
+  rollenName,
+  rollenText,
+  zugKurz,
+  zugName,
+} from './schuetzenrunde/srText'
 import { saveGameResult, addXp, getOrCreateGuestProfile, getRecentResults } from '@/offline'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
@@ -55,7 +66,10 @@ async function readZugBoard(): Promise<ZugScore[]> {
 
 export function SchuetzenrundePage() {
   const navigate = useNavigate()
-  const [name, setName] = useState('Du')
+  const { t } = useSprache()
+  const s = t.schuetzenrunde
+  // null: noch nichts eingetippt -- dann gilt die Vorbelegung der Sprache.
+  const [name, setName] = useState<string | null>(null)
   const [size, setSize] = useState(MATCH_SIZE)
   const [zugId, setZugId] = useState(ZUEGE[0]!.id)
   const [event, setEvent] = useState(false)
@@ -78,7 +92,17 @@ export function SchuetzenrundePage() {
   const secondsLeft = deadline == null ? null : Math.max(0, Math.round((deadline - now) / 1000))
 
   const me = match ? humanPlayer(match) : null
-  const myRole = me ? roleOf(me.role) : null
+
+  /**
+   * Der eigene Name, wie er auf dem Tisch steht. Wer die Vorbelegung einer
+   * Sprache übernommen hat („Du"/„You"), sieht sie in der aktuellen Sprache.
+   */
+  const anzeigeName = (isHuman: boolean, playerName: string): string =>
+    isHuman &&
+    (playerName === WOERTERBUECHER.de.schuetzenrunde.duName ||
+      playerName === WOERTERBUECHER.en.schuetzenrunde.duName)
+      ? s.duName
+      : playerName
 
   const armTimer = useCallback(
     (state: MatchState | null) => {
@@ -108,7 +132,8 @@ export function SchuetzenrundePage() {
 
   const start = useCallback(async () => {
     const profile = await getOrCreateGuestProfile()
-    const fresh = createMatch(name || profile.displayName || 'Du', `sr-${Date.now()}`, size, {
+    const chosen = name ?? s.duName
+    const fresh = createMatch(chosen || profile.displayName || s.duName, `sr-${Date.now()}`, size, {
       event,
       zugId,
     })
@@ -118,7 +143,7 @@ export function SchuetzenrundePage() {
     setSpreadRumour(false)
     setSaved(false)
     armTimer(fresh)
-  }, [name, size, event, zugId, armTimer])
+  }, [name, s.duName, size, event, zugId, armTimer])
 
   const finish = useCallback(
     async (state: MatchState) => {
@@ -209,9 +234,9 @@ export function SchuetzenrundePage() {
   useEffect(() => {
     if (deadline == null) return
     const id = window.setInterval(() => {
-      const t = Date.now()
-      setNow(t)
-      if (t >= deadline) {
+      const jetzt = Date.now()
+      setNow(jetzt)
+      if (jetzt >= deadline) {
         setDeadline(null)
         onTimeoutRef.current()
       }
@@ -229,12 +254,12 @@ export function SchuetzenrundePage() {
             type="button"
             className={styles.back}
             onClick={() => navigate('/')}
-            aria-label="Zurück"
+            aria-label={t.allgemein.zurueck}
           >
             ←
           </button>
-          <h1 className={styles.title}>Schützenrunde</h1>
-          <span className={styles.roundBadge}>online</span>
+          <h1 className={styles.title}>{s.titel}</h1>
+          <span className={styles.roundBadge}>{s.online}</span>
         </header>
         <SchuetzenrundeOnline onBack={() => setOnline(false)} />
       </main>
@@ -243,7 +268,7 @@ export function SchuetzenrundePage() {
 
   /* -------------------------------- lobby -------------------------------- */
 
-  if (!match || !me || !myRole) {
+  if (!match || !me) {
     return (
       <main className={styles.page}>
         <header className={styles.header}>
@@ -251,30 +276,27 @@ export function SchuetzenrundePage() {
             type="button"
             className={styles.back}
             onClick={() => navigate('/')}
-            aria-label="Zurück"
+            aria-label={t.allgemein.zurueck}
           >
             ←
           </button>
-          <h1 className={styles.title}>Schützenrunde</h1>
+          <h1 className={styles.title}>{s.titel}</h1>
           <span />
         </header>
-        <p className={styles.lead}>
-          Die Bruderschaft trifft sich. Unter euch sitzen Saboteure – findet sie bei Tag, oder
-          sabotiert selbst bei Nacht.
-        </p>
+        <p className={styles.lead}>{s.einleitung}</p>
 
         <label className={styles.label}>
-          Dein Name
+          {s.deinName}
           <input
             className={styles.input}
-            value={name}
+            value={name ?? s.duName}
             onChange={(e) => setName(e.target.value)}
             maxLength={20}
           />
         </label>
 
         <fieldset className={styles.sizes}>
-          <legend className={styles.sizesLegend}>Wie viele Mitglieder?</legend>
+          <legend className={styles.sizesLegend}>{s.wieVieleMitglieder}</legend>
           {[8, 10, 12, 16].map((option) => (
             <button
               key={option}
@@ -287,12 +309,12 @@ export function SchuetzenrundePage() {
           ))}
         </fieldset>
         <p className={styles.muted}>
-          {size >= 12 ? 'Drei Saboteure' : 'Zwei Saboteure'} · {MIN_MATCH_SIZE}–{MAX_MATCH_SIZE}{' '}
-          Mitglieder möglich · je größer die Runde, desto mehr Ämter
+          {s.saboteureAnzahl(saboteurCount(size))} ·{' '}
+          {s.groessenHinweis(MIN_MATCH_SIZE, MAX_MATCH_SIZE)}
         </p>
 
         <fieldset className={styles.sizes}>
-          <legend className={styles.sizesLegend}>Dein Zug</legend>
+          <legend className={styles.sizesLegend}>{s.deinZug}</legend>
           {ZUEGE.slice(0, zugCount(size)).map((zug) => (
             <button
               key={zug.id}
@@ -300,48 +322,44 @@ export function SchuetzenrundePage() {
               className={zug.id === zugId ? styles.sizeActive : styles.size}
               onClick={() => setZugId(zug.id)}
             >
-              {zug.badge} {zug.name.replace('zug', '')}
+              {zug.badge} {zugKurz(t, zug.id)}
             </button>
           ))}
         </fieldset>
 
         <label className={styles.checkbox}>
           <input type="checkbox" checked={event} onChange={(e) => setEvent(e.target.checked)} />
-          Schützenfest: drei Schuss und Vogelschießen am Ende
+          {s.schuetzenfestWahl}
         </label>
         <label className={styles.checkbox}>
           <input type="checkbox" checked={timed} onChange={(e) => setTimed(e.target.checked)} />
-          Mit Zeitdruck ({DEFAULT_TIMERS.night}/{DEFAULT_TIMERS.day}/{DEFAULT_TIMERS.vote} s)
+          {s.zeitdruck(DEFAULT_TIMERS.night, DEFAULT_TIMERS.day, DEFAULT_TIMERS.vote)}
         </label>
 
         <button type="button" className={styles.primaryBtn} onClick={() => void start()}>
-          Runde starten
+          {s.starten}
         </button>
         <button type="button" className={styles.secondaryBtn} onClick={() => setOnline(true)}>
-          🌐 Online mit Freunden spielen
+          {s.onlineMitFreunden}
         </button>
 
         {zugBoard.length > 0 && (
-          <section className={styles.board} aria-label="Zug-Bilanz">
-            <p className={styles.boardTitle}>Zug-Bilanz</p>
+          <section className={styles.board} aria-label={s.zugBilanz}>
+            <p className={styles.boardTitle}>{s.zugBilanz}</p>
             {zugBoard.map((entry) => (
               <p key={entry.zugId} className={styles.boardRow}>
                 <span>
-                  {zugById(entry.zugId).badge} {zugById(entry.zugId).name}
+                  {zugById(entry.zugId).badge} {zugName(t, entry.zugId)}
                 </span>
-                <strong>
-                  {entry.points} Punkte · {entry.matches} Runden
-                </strong>
+                <strong>{s.bilanzZeile(entry.points, entry.matches)}</strong>
               </p>
             ))}
           </section>
         )}
 
-        <p className={styles.muted}>
-          Eine lokale Runde gegen regelbasierte Mitspieler – ohne Netzwerk, ohne KI.
-        </p>
+        <p className={styles.muted}>{s.lokalHinweis}</p>
         <Link to="/" className={styles.homeLink}>
-          Zur Startseite
+          {s.zurStartseite}
         </Link>
       </main>
     )
@@ -357,16 +375,14 @@ export function SchuetzenrundePage() {
   const king = match.kingId != null ? match.players.find((p) => p.id === match.kingId) : null
 
   const nightHint = isSaboteur
-    ? 'Wen schaltet ihr aus?'
+    ? s.wenAusschalten
     : me.role === 'schiessmeister'
-      ? 'Wen prüfst du?'
+      ? s.wenPruefen
       : me.role === 'zeugwart'
-        ? 'Wen schließt du heute Nacht im Zeughaus ein?'
+        ? s.wenEinschliessenHeute
         : match.shotsLeft > 0
-          ? `Du kannst schießen – noch ${match.shotsLeft} ${
-              match.shotsLeft === 1 ? 'Schuss' : 'Schüsse'
-            }.`
-          : 'Deine Schüsse sind verbraucht.'
+          ? s.kannstSchiessen(match.shotsLeft)
+          : s.schuesseVerbraucht
 
   return (
     <main className={styles.page}>
@@ -375,11 +391,11 @@ export function SchuetzenrundePage() {
           type="button"
           className={styles.back}
           onClick={() => navigate('/')}
-          aria-label="Zurück"
+          aria-label={t.allgemein.zurueck}
         >
           ←
         </button>
-        <h1 className={styles.title}>Schützenrunde</h1>
+        <h1 className={styles.title}>{s.titel}</h1>
         <span className={styles.roundBadge}>R{match.round}</span>
       </header>
 
@@ -391,29 +407,27 @@ export function SchuetzenrundePage() {
 
       <section className={styles.roleCard} data-faction={factionOf(me.role)}>
         <p className={styles.roleName}>
-          {myRole.name} · {factionOf(me.role) === 'saboteure' ? 'Saboteure' : 'Bruderschaft'}
+          {rollenName(t, me.role)} · {fraktionName(t, factionOf(me.role))}
         </p>
-        <p className={styles.roleText}>{myRole.description}</p>
+        <p className={styles.roleText}>{rollenText(t, me.role)}</p>
         <p className={styles.roleText}>
-          {zugById(me.zugId).badge} {zugById(me.zugId).name}
-          {match.event ? ' · Schützenfest' : ''}
+          {zugById(me.zugId).badge} {zugName(t, me.zugId)}
+          {match.event ? ` · ${s.schuetzenfest}` : ''}
         </p>
-        {!me.alive && (
-          <p className={styles.dead}>Du bist ausgeschieden – du schaust nur noch zu.</p>
-        )}
+        {!me.alive && <p className={styles.dead}>{s.ausgeschieden}</p>}
       </section>
 
       {match.notes.length > 0 && (
-        <section className={styles.notes} aria-label="Deine Erkenntnisse">
+        <section className={styles.notes} aria-label={s.erkenntnisse}>
           {match.notes.map((n) => (
             <p key={n} className={styles.note}>
-              🔎 {n}
+              🔎 {notizZeile(t, n)}
             </p>
           ))}
         </section>
       )}
 
-      <section className={styles.players} aria-label="Mitspieler">
+      <section className={styles.players} aria-label={s.mitspieler}>
         {match.players.map((p) => {
           const isTarget = selected === p.id
           const selectable =
@@ -438,10 +452,11 @@ export function SchuetzenrundePage() {
             >
               <span className={styles.playerName}>
                 {p.id === match.kingId ? '👑 ' : ''}
-                {p.name}
+                {anzeigeName(p.isHuman, p.name)}
               </span>
               <span className={styles.playerState}>
-                {zugById(p.zugId).badge} {reveal ? roleOf(p.role).name : p.isHuman ? 'du' : 'dabei'}
+                {zugById(p.zugId).badge}{' '}
+                {reveal ? rollenName(t, p.role) : p.isHuman ? s.du : s.dabei}
               </span>
             </button>
           )
@@ -450,7 +465,7 @@ export function SchuetzenrundePage() {
 
       {match.phase === 'night' && (
         <section className={styles.actions}>
-          <p className={styles.phaseTitle}>Nacht {match.round}</p>
+          <p className={styles.phaseTitle}>{s.nacht(match.round)}</p>
           {nightActive ? (
             <>
               <p className={styles.hint}>{nightHint}</p>
@@ -461,7 +476,7 @@ export function SchuetzenrundePage() {
                     checked={useShot}
                     onChange={(e) => setUseShot(e.target.checked)}
                   />
-                  Schuss auf die gewählte Person abgeben
+                  {s.schussAbgeben}
                 </label>
               )}
               {me.role === 'geruechtemacher' && !match.rumourUsed && (
@@ -471,7 +486,7 @@ export function SchuetzenrundePage() {
                     checked={spreadRumour}
                     onChange={(e) => setSpreadRumour(e.target.checked)}
                   />
-                  Gerücht über die gewählte Person streuen
+                  {s.geruechtStreuen}
                 </label>
               )}
               <button
@@ -480,14 +495,14 @@ export function SchuetzenrundePage() {
                 disabled={targetNeeded && selected == null}
                 onClick={doNight}
               >
-                Nacht beenden
+                {s.nachtBeenden}
               </button>
             </>
           ) : (
             <>
-              <p className={styles.hint}>Du schläfst. Die anderen sind aktiv.</p>
+              <p className={styles.hint}>{s.duSchlaefst}</p>
               <button type="button" className={styles.primaryBtn} onClick={doNight}>
-                Nacht abwarten
+                {s.nachtAbwarten}
               </button>
             </>
           )}
@@ -496,78 +511,75 @@ export function SchuetzenrundePage() {
 
       {match.phase === 'day' && (
         <section className={styles.actions}>
-          <p className={styles.phaseTitle}>Tag {match.round} · Diskussion</p>
+          <p className={styles.phaseTitle}>{s.tagDiskussion(match.round)}</p>
           {match.statements.length > 0 && (
             <ul className={styles.talk}>
               {match.statements.map((st) => (
                 <li key={`${st.round}-${st.speaker}-${st.text}`} className={styles.talkLine}>
-                  <strong>{st.speaker}:</strong> „{st.text}“
+                  <strong>{st.speaker}:</strong> „{aussageText(t, st.text)}“
                 </li>
               ))}
             </ul>
           )}
-          <p className={styles.hint}>Hör dir an, was geredet wird. Danach wird abgestimmt.</p>
+          <p className={styles.hint}>{s.zuhoeren}</p>
           <button type="button" className={styles.primaryBtn} onClick={doStartVote}>
-            Zur Abstimmung
+            {s.zurAbstimmung}
           </button>
         </section>
       )}
 
       {match.phase === 'vote' && (
         <section className={styles.actions}>
-          <p className={styles.phaseTitle}>Tag {match.round} · Abstimmung</p>
-          <p className={styles.hint}>
-            {me.alive
-              ? 'Wähle eine Person zum Ausschluss – oder stimme nicht ab.'
-              : 'Du bist raus und stimmst nicht mehr mit ab.'}
-          </p>
+          <p className={styles.phaseTitle}>{s.tagAbstimmung(match.round)}</p>
+          <p className={styles.hint}>{me.alive ? s.waehleAusschluss : s.stimmstNichtMehr}</p>
           <button type="button" className={styles.primaryBtn} onClick={doVote}>
-            {selected != null && me.alive ? 'Stimme abgeben' : 'Abstimmen ohne eigene Stimme'}
+            {selected != null && me.alive ? s.stimmeAbgeben : s.ohneEigeneStimme}
           </button>
         </section>
       )}
 
       {match.phase === 'result' && (
         <section className={styles.actions}>
-          <p className={styles.phaseTitle}>Ergebnis</p>
+          <p className={styles.phaseTitle}>{s.ergebnis}</p>
           {match.lastVotes.length > 0 && (
             <ul className={styles.talk}>
               {match.lastVotes.map((v) => (
                 <li key={`${v.voterId}-${v.targetId}`} className={styles.talkLine}>
-                  {v.voter} → <strong>{v.target}</strong>
+                  {anzeigeName(v.voterId === me.id, v.voter)} →{' '}
+                  <strong>{anzeigeName(v.targetId === me.id, v.target)}</strong>
                 </li>
               ))}
             </ul>
           )}
           <button type="button" className={styles.primaryBtn} onClick={doNext}>
-            Nächste Nacht
+            {s.naechsteNacht}
           </button>
         </section>
       )}
 
       {over && outcome && (
         <section className={styles.actions}>
-          <p className={styles.phaseTitle}>{outcome.won ? '🏆 Gewonnen!' : 'Verloren'}</p>
+          <p className={styles.phaseTitle}>{outcome.won ? s.gewonnen : s.verloren}</p>
           <p className={styles.hint}>
-            {match.winner === 'saboteure'
-              ? 'Die Saboteure haben die Bruderschaft übernommen.'
-              : 'Die Bruderschaft hat alle Saboteure entlarvt.'}
+            {match.winner === 'saboteure' ? s.sabotageSieg : s.bruderschaftSieg}
           </p>
           {king && (
-            <p className={styles.crown}>
-              👑 {king.isHuman ? 'Du trägst' : `${king.name} trägt`} die Königswürde.
-            </p>
+            <p className={styles.crown}>👑 {s.koenigswuerde(king.isHuman ? null : king.name)}</p>
           )}
           <p className={styles.scoreLine}>
-            <strong>{outcome.score}</strong> Punkte · <strong>+{outcome.xp}</strong> XP
-            {saved ? '' : ' (wird gespeichert…)'}
+            <strong>{outcome.score}</strong> {s.punkte} · <strong>+{outcome.xp}</strong>{' '}
+            {t.start.xp}
+            {saved ? '' : ` ${s.wirdGespeichert}`}
           </p>
           <p className={styles.muted}>
-            {zugById(me.zugId).badge} {zugById(me.zugId).name}: +
-            {zugPointsFor(outcome.won, outcome.survived, outcome.king)} Zugpunkte
+            {zugById(me.zugId).badge}{' '}
+            {s.zugpunkte(
+              zugName(t, me.zugId),
+              zugPointsFor(outcome.won, outcome.survived, outcome.king),
+            )}
           </p>
           <button type="button" className={styles.primaryBtn} onClick={() => void start()}>
-            Neue Runde
+            {s.neueRunde}
           </button>
           <button
             type="button"
@@ -577,18 +589,18 @@ export function SchuetzenrundePage() {
               setDeadline(null)
             }}
           >
-            Andere Einstellungen
+            {s.andereEinstellungen}
           </button>
           <Link to="/" className={styles.homeLink}>
-            Zur Startseite
+            {s.zurStartseite}
           </Link>
         </section>
       )}
 
-      <section className={styles.log} aria-label="Verlauf">
+      <section className={styles.log} aria-label={s.verlauf}>
         {[...match.log].reverse().map((entry) => (
           <p key={entry} className={styles.logEntry}>
-            {entry}
+            {protokollZeile(t, entry)}
           </p>
         ))}
       </section>

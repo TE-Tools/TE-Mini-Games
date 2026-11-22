@@ -18,13 +18,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getCurrentUser } from '@/auth/authService'
 import { ermittleSpielerName, istEchterName } from '@/services/spielername'
-import {
-  besteHand,
-  handTextMit,
-  type Aktion,
-  type Handwert,
-  type Karte,
-} from '@/games/texas-holdem'
+import { besteHand, type Aktion, type Handwert, type Karte } from '@/games/texas-holdem'
+import { useSprache } from '@/i18n/sprache'
 import {
   createTexasMatch,
   fetchMeineTexasRunden,
@@ -45,6 +40,7 @@ import { HERZSCHLAG_MS, RAUM_GESCHLOSSEN_TEXT, RAUM_PARAM, istRaumWeg } from '@/
 import { Einsatzleiste } from './texas/Einsatzleiste'
 import { PokerTisch } from './texas/PokerTisch'
 import { bucheOnlinePartie } from './texas/partieBuchen'
+import { gewinnSatz, protokollZeile } from './texas/texasText'
 import { OeffentlicheRaeume } from './OeffentlicheRaeume'
 import raumStil from './OeffentlicheRaeume.module.css'
 import shell from './PlayShell.module.css'
@@ -55,6 +51,8 @@ interface Props {
 }
 
 export function TexasHoldemOnline({ onZurueck }: Props) {
+  const { t } = useSprache()
+  const o = t.texas.online
   const [matchId, setMatchId] = useState<string | null>(null)
   const [state, setState] = useState<TexasOnlineState | null>(null)
   const [offene, setOffene] = useState<TexasOffeneRunde[]>([])
@@ -67,22 +65,25 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
   const aktuellerRaum = useRef<string | null>(null)
   const verbucht = useRef<string | null>(null)
 
-  const laden = useCallback(async (id: string) => {
-    try {
-      const neu = await fetchTexasState(id)
-      setState(neu)
-      setFehler(null)
-    } catch (err) {
-      // Der Server löscht Tische, an denen zwanzig Minuten niemand war.
-      if (istRaumWeg(err) && aktuellerRaum.current === id) {
-        setMatchId(null)
-        setState(null)
-        setFehler(RAUM_GESCHLOSSEN_TEXT)
-        return
+  const laden = useCallback(
+    async (id: string) => {
+      try {
+        const neu = await fetchTexasState(id)
+        setState(neu)
+        setFehler(null)
+      } catch (err) {
+        // Der Server löscht Tische, an denen zwanzig Minuten niemand war.
+        if (istRaumWeg(err) && aktuellerRaum.current === id) {
+          setMatchId(null)
+          setState(null)
+          setFehler(RAUM_GESCHLOSSEN_TEXT)
+          return
+        }
+        setFehler(err instanceof Error ? err.message : o.ladeFehler)
       }
-      setFehler(err instanceof Error ? err.message : 'Der Tisch ließ sich nicht laden.')
-    }
-  }, [])
+    },
+    [o.ladeFehler],
+  )
 
   useEffect(() => {
     let abbruch = false
@@ -150,7 +151,7 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
       await was()
       if (matchId) await laden(matchId)
     } catch (err) {
-      setFehler(err instanceof Error ? err.message : 'Das hat nicht geklappt.')
+      setFehler(err instanceof Error ? err.message : o.fehler)
       if (matchId) await laden(matchId)
     } finally {
       setLaeuft(false)
@@ -159,7 +160,7 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
 
   async function nameFuerDieRunde(): Promise<string> {
     const name = await ermittleSpielerName().catch(() => null)
-    return istEchterName(name) ? (name as string) : 'Spieler'
+    return istEchterName(name) ? (name as string) : o.spielerName
   }
 
   const eroeffnen = () =>
@@ -181,10 +182,10 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
     const raumCode = new URLSearchParams(window.location.search).get(RAUM_PARAM)
     if (!raumCode) return
     autoBeigetreten.current = true
-    const t = window.setTimeout(() => {
+    const uhr = window.setTimeout(() => {
       void beitreten(raumCode.toUpperCase())
     }, 0)
-    return () => window.clearTimeout(t)
+    return () => window.clearTimeout(uhr)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [angemeldet])
 
@@ -194,7 +195,7 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
     try {
       if (matchId) await leaveTexasMatch(matchId)
     } catch (err) {
-      setFehler(err instanceof Error ? err.message : 'Das hat nicht geklappt.')
+      setFehler(err instanceof Error ? err.message : o.fehler)
     } finally {
       setMatchId(null)
       setState(null)
@@ -209,30 +210,32 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
     return (
       <main className={shell.page}>
         <header className={shell.header}>
-          <button type="button" className={shell.back} onClick={onZurueck} aria-label="Zurück">
+          <button
+            type="button"
+            className={shell.back}
+            onClick={onZurueck}
+            aria-label={t.texas.zurueck}
+          >
             ←
           </button>
-          <h1 className={shell.title}>Hold&apos;em online</h1>
+          <h1 className={shell.title}>{o.titel}</h1>
           <span aria-hidden="true" />
         </header>
 
         {angemeldet === null && (
           <section className={styles.menue}>
-            <p className={styles.einleitung}>Einen Moment…</p>
+            <p className={styles.einleitung}>{o.moment}</p>
           </section>
         )}
 
         {angemeldet === false && (
           <section className={styles.menue}>
-            <p className={styles.einleitung}>
-              Online spielst du mit deinem Konto – nur so weiß der Server, wessen Karten wessen
-              sind, und niemand kann sich sein Blatt selbst aussuchen.
-            </p>
+            <p className={styles.einleitung}>{o.ohneKonto}</p>
             <Link to="/auth" className={styles.start} style={{ textAlign: 'center' }}>
-              Anmelden
+              {o.anmelden}
             </Link>
             <button type="button" className={styles.grosserKnopf} onClick={onZurueck}>
-              Lieber gegen den Rechner
+              {o.lieberRechner}
             </button>
           </section>
         )}
@@ -240,9 +243,7 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
         {angemeldet === true && (
           <section className={styles.menue}>
             <p className={styles.einleitung}>
-              Einer eröffnet den Tisch und gibt den Code weiter, bis zu sechs spielen mit. Gemischt
-              wird auf dem Server – niemand sieht die Karten der anderen, auch nicht, wer nachsieht.
-              Gespielt wird mit Spielgeld: Es gibt nichts zu kaufen und nichts zu gewinnen.
+              {o.einleitung} {t.texas.spielgeld}
             </p>
 
             <label className={raumStil.oeffentlich}>
@@ -252,21 +253,21 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
                 onChange={(e) => setOeffentlich(e.target.checked)}
               />
               <span>
-                Öffentlicher Tisch
-                <small>Steht für alle in der Lobby, mit deinem Namen. Jeder kann beitreten.</small>
+                {o.oeffentlich}
+                <small>{o.oeffentlichText}</small>
               </span>
             </label>
 
             <button type="button" className={styles.start} onClick={eroeffnen} disabled={laeuft}>
-              ➕ Tisch eröffnen
+              {o.eroeffnen}
             </button>
 
             <div className={styles.trenner}>
-              <span>oder</span>
+              <span>{o.oder}</span>
             </div>
 
             <label className={styles.feld}>
-              <span>Spielcode</span>
+              <span>{o.spielcode}</span>
               <input
                 className={styles.codeEingabe}
                 value={code}
@@ -284,7 +285,7 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
               onClick={() => beitreten()}
               disabled={laeuft || code.length < 4}
             >
-              Beitreten
+              {o.beitreten}
             </button>
 
             <OeffentlicheRaeume
@@ -295,14 +296,14 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
 
             {offene.length > 0 && (
               <div className={styles.offeneListe}>
-                <h3>Deine offenen Tische</h3>
+                <h3>{o.offeneTische}</h3>
                 <ul>
                   {offene.map((m) => (
                     <li key={m.match_id}>
                       <button type="button" onClick={() => setMatchId(m.match_id)}>
                         <strong>{m.code}</strong>
                         <span>
-                          {m.phase === 'lobby' ? 'wartet' : `Hand ${m.hand_nr}`} · {m.size} Spieler
+                          {m.phase === 'lobby' ? o.wartet : o.hand(m.hand_nr)} · {o.spieler(m.size)}
                         </span>
                       </button>
                     </li>
@@ -318,7 +319,7 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
             )}
 
             <Link to="/" className={shell.homeLink}>
-              Zum Menü
+              {t.texas.zumMenue}
             </Link>
           </section>
         )}
@@ -335,21 +336,26 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
     return (
       <main className={shell.page}>
         <header className={shell.header}>
-          <button type="button" className={shell.back} onClick={verlassen} aria-label="Zurück">
+          <button
+            type="button"
+            className={shell.back}
+            onClick={verlassen}
+            aria-label={t.texas.zurueck}
+          >
             ←
           </button>
-          <h1 className={shell.title}>Warteraum</h1>
+          <h1 className={shell.title}>{o.warteraum}</h1>
           <span aria-hidden="true" />
         </header>
 
         <section className={styles.menue}>
-          <p className={styles.codeLabel}>Spielcode</p>
+          <p className={styles.codeLabel}>{o.spielcode}</p>
           <p className={styles.code}>{match.code}</p>
           <p className={styles.einleitung}>
-            Gib den Code weiter. Sobald alle da sind, startet{' '}
-            {match.is_host ? 'du' : 'der Gastgeber'} das Turnier. Jeder beginnt mit{' '}
-            {match.aufbau.start_chips} Chips; die Blinds steigen alle {match.aufbau.haende_je_stufe}{' '}
-            Hände.
+            {(match.is_host ? o.codeWeitergebenHost : o.codeWeitergebenGast)(
+              match.aufbau.start_chips,
+              match.aufbau.haende_je_stufe,
+            )}
           </p>
 
           <ul className={styles.spielerListe}>
@@ -357,7 +363,7 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
               <li key={p.seat}>
                 <span className={styles.platzZahl}>{p.seat}</span>
                 {p.name}
-                {p.is_you && <small> (du)</small>}
+                {p.is_you && <small> {o.duKlein}</small>}
               </li>
             ))}
           </ul>
@@ -369,7 +375,7 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
               onClick={() => versuche(() => startTexasMatch(matchId))}
               disabled={laeuft || players.length < 2}
             >
-              {players.length < 2 ? 'Es fehlt noch jemand' : '🃏 Turnier starten'}
+              {players.length < 2 ? o.fehltNoch : o.starten}
             </button>
           )}
 
@@ -380,7 +386,7 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
           )}
 
           <button type="button" className={styles.textKnopf} onClick={verlassen}>
-            Tisch verlassen
+            {o.verlassen}
           </button>
         </section>
       </main>
@@ -395,15 +401,22 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
     return (
       <main className={shell.page}>
         <header className={shell.header}>
-          <button type="button" className={shell.back} onClick={verlassen} aria-label="Zurück">
+          <button
+            type="button"
+            className={shell.back}
+            onClick={verlassen}
+            aria-label={t.texas.zurueck}
+          >
             ←
           </button>
-          <h1 className={shell.title}>Endstand</h1>
+          <h1 className={shell.title}>{o.endstand}</h1>
           <span aria-hidden="true" />
         </header>
         <section className={shell.section}>
           <p className={gewonnen ? shell.correct : shell.wrong}>
-            {gewonnen ? '🏆 Turnier gewonnen!' : `Platz ${ich?.platz ?? '–'} von ${players.length}`}
+            {gewonnen
+              ? t.texas.gewonnen
+              : t.texas.platzVon(String(ich?.platz ?? '–'), players.length)}
           </p>
           <ol className={styles.endstand}>
             {tabelle.map((p) => (
@@ -411,21 +424,19 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
                 <span className={styles.endPlatz}>{p.platz ?? '–'}.</span>
                 <span className={styles.endName}>
                   {p.name}
-                  {p.is_you && ' (du)'}
+                  {p.is_you && ` ${o.duKlein}`}
                 </span>
-                <span className={styles.endWert}>{p.chips} Chips</span>
+                <span className={styles.endWert}>{t.texas.chips(p.chips)}</span>
               </li>
             ))}
           </ol>
-          <p className={styles.handZahl}>
-            {match.hand_nr} {match.hand_nr === 1 ? 'Hand' : 'Hände'} gespielt
-          </p>
+          <p className={styles.handZahl}>{t.texas.haendeGespielt(match.hand_nr)}</p>
           <div className={shell.resultActions}>
             <button type="button" className={shell.primaryBtn} onClick={verlassen}>
-              Zurück zur Lobby
+              {o.zurLobby}
             </button>
             <Link to="/" className={shell.homeLink}>
-              Zum Menü
+              {t.texas.zumMenue}
             </Link>
           </div>
         </section>
@@ -456,17 +467,18 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
 
   /*
    * Der Satz zum Ergebnis. Der Server schickt nur, wer wie viel bekommt;
-   * wie das Blatt heisst, steht in wertung.ts -- an einer Stelle.
+   * welche Hand das ist, rechnet besteHand() aus wertung.ts, und wie sie
+   * heisst, steht im Wörterbuch (texasText.ts).
    */
   const ergebnisText = match.ergebnis
     ? match.ergebnis.anteile
         .filter((a) => a.betrag > 0)
         .map((a) => {
           const s = players.find((p) => p.seat === a.seat)
-          const anrede = s?.is_you ? 'Du gewinnst' : `${s?.name ?? 'Jemand'} gewinnt`
-          if (!gezeigt || !s?.karten?.length) return `${anrede} ${a.betrag}`
-          const hand = besteHand([...s.karten, ...match.board])
-          return `${anrede} ${a.betrag} mit ${handTextMit(hand)}`
+          const wer = s?.is_you ? null : (s?.name ?? t.texas.jemand)
+          const hand =
+            gezeigt && s?.karten?.length ? besteHand([...s.karten, ...match.board]) : null
+          return gewinnSatz(t, wer, a.betrag, hand)
         })
         .join(' · ') || null
     : null
@@ -478,12 +490,17 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
   }
 
   const meinZug = match.am_zug === me.seat && !imShowdown
-  const amZugName = players.find((p) => p.seat === match.am_zug)?.name ?? 'Jemand'
+  const amZugName = players.find((p) => p.seat === match.am_zug)?.name ?? t.texas.jemand
 
   return (
     <main className={shell.page}>
       <header className={shell.header}>
-        <button type="button" className={shell.back} onClick={verlassen} aria-label="Zurück">
+        <button
+          type="button"
+          className={shell.back}
+          onClick={verlassen}
+          aria-label={t.texas.zurueck}
+        >
           ←
         </button>
         <h1 className={shell.title}>Hold&apos;em · {match.code}</h1>
@@ -493,7 +510,7 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
       <PokerTisch
         spieler={players.map((p) => ({
           id: String(p.seat),
-          name: p.is_you ? 'Du' : p.name,
+          name: p.is_you ? t.texas.du : p.name,
           karten: p.karten,
           chips: p.chips,
           einsatz: p.einsatz,
@@ -508,7 +525,8 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
         blinds={match.blinds ?? { klein: 0, gross: 0 }}
         gezeigt={gezeigt}
         zaehltMit={zaehltMit}
-        protokoll={match.protokoll}
+        // Der Server schreibt deutsch; gesagt wird in der Sprache der Oberfläche.
+        protokoll={match.protokoll.map((zeile) => protokollZeile(t, zeile))}
         ergebnisText={imShowdown ? ergebnisText : null}
         aktionen={
           imShowdown ? (
@@ -518,7 +536,7 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
               onClick={() => versuche(() => naechsteHandOnline(matchId))}
               disabled={laeuft}
             >
-              Nächste Hand
+              {t.texas.naechsteHand}
             </button>
           ) : meinZug ? (
             <Einsatzleiste
@@ -536,10 +554,10 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
           ) : (
             <p className={styles.wartet} aria-live="polite">
               {ich?.status === 'aktiv' || ich?.status === 'allin'
-                ? `${amZugName} ist dran …`
+                ? t.texas.istDran(amZugName)
                 : ich?.status === 'raus'
-                  ? 'Du bist ausgeschieden – die anderen spielen weiter.'
-                  : 'Die anderen spielen die Hand zu Ende …'}
+                  ? o.ausgeschieden
+                  : t.texas.andereSpielenZuEnde}
             </p>
           )
         }

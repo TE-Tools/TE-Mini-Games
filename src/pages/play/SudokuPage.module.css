@@ -681,3 +681,48 @@
     transform: translateX(3px);
   }
 }
+
+/*
+ * Tablet quer (05.11.2026).
+ *
+ * Untereinander passten Gitter und Zifferntasten nicht in 768 Punkte Höhe:
+ * Für jede Ziffer ging es nach unten und für die nächste Zelle wieder nach
+ * oben. Quer steht das Gitter links so hoch wie das Fenster, Werkzeuge und
+ * Tasten rechts daneben -- die Tasten als Block wie auf einem Telefon.
+ */
+@media (orientation: landscape) and (min-width: 820px) and (max-height: 62rem) {
+  .spielSeite {
+    max-width: 62rem;
+    display: grid;
+    grid-template-columns: auto minmax(15rem, 20rem);
+    grid-template-rows: auto auto auto auto auto 1fr;
+    justify-content: center;
+    align-content: start;
+    align-items: start;
+    column-gap: var(--space-6);
+  }
+
+  .spielSeite > * {
+    grid-column: 2;
+  }
+
+  .spielSeite > .kopf {
+    grid-column: 1 / -1;
+  }
+
+  .spielSeite > .gitterRahmen {
+    grid-column: 1;
+    grid-row: 2 / -1;
+    width: min(36rem, calc(100dvh - 7rem));
+    max-width: none;
+  }
+
+  .tasten {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2);
+  }
+
+  .werkzeuge {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

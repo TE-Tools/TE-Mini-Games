@@ -29,6 +29,14 @@ beim Start aus dem normalen Browser-Cache geladen.
 
 ## Google Play (der realistische Weg)
 
+> **Seit 07.11.2026 ist die Play-App eine Capacitor-App, keine Trusted Web
+> Activity mehr** -- AdMob braucht Android-Code in der App
+> ([`docs/werbung.md`](werbung.md), [`capacitor.config.ts`](../capacitor.config.ts),
+> Ordner `android/`). Gebaut wird weiter über Actions → „Android-Paket
+> bauen“, mit denselben Geheimnissen und demselben Schlüssel. Die
+> Bubblewrap-Schritte unten gelten nur noch als Geschichte; App-Symbol und
+> Startbild baut jetzt `node scripts/build-android-icons.mjs`.
+
 Android kann eine PWA als **Trusted Web Activity** verpacken. Die App im
 Store ist dann eine dünne Hülle, die deine echte Seite anzeigt – ohne
 Adressleiste, ohne Browser-Rahmen. Jede Änderung an der Seite ist sofort

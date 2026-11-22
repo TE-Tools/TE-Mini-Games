@@ -11,6 +11,8 @@ Verbindliche Gestaltungs- und Umsetzungsvorgaben.
 | **Texas Hold'em**                  | umgesetzt                  | [texas-holdem/](./texas-holdem/)               |
 | **Mau-Mau / Letzte Karte**         | umgesetzt                  | [maumau/](./maumau/)                           |
 | **Kartenspiele online**            | umgesetzt                  | [kartenspiele-online/](./kartenspiele-online/) |
+| **Rückwärts**                      | umgesetzt                  | [rueckwaerts/](./rueckwaerts/)                 |
+| **Schach**                         | umgesetzt                  | [schach/](./schach/)                           |
 
 ## Levelkarte 1–500 (Kurz)
 
@@ -43,6 +45,16 @@ Faktencheck: [`schuetzenopoly/grundstuecke.md`](./schuetzenopoly/grundstuecke.md
 - Lobby, Code, Beitreten, öffentliche Räume: unverändert aus `services/raeume.ts`
 
 Details: [`kartenspiele-online/README.md`](./kartenspiele-online/README.md)
+
+## Schach (Kurz)
+
+- Gegen den Computer in drei Stufen (Leicht, Mittel, Schwer) oder online an einem Tisch mit Code
+- Vollständige Regeln, die Zugerzeugung per Perft an sechs Standardstellungen geprüft
+- Online wie Schützenopoly: Der Server führt nur ein Zugbuch, die Regeln prüft jeder Mitspieler
+  mit derselben Engine -- beim Schach ist nichts verdeckt und nichts zufällig
+- Figuren und Notation als Schriftzeichen: offline, scharf, ohne Übersetzung
+
+Details: [`schach/README.md`](./schach/README.md)
 
 ## Sudoku (Kurz)
 

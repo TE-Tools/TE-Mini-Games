@@ -12,6 +12,7 @@ import {
   type LevelZone,
 } from '@/progression/zones'
 import styles from './LevelMap.module.css'
+import { useSprache } from '@/i18n/sprache'
 
 export interface MitspielerStand {
   username: string
@@ -141,6 +142,7 @@ export function LevelMap({
   gameLabel,
   mitspieler = [],
 }: LevelMapProps) {
+  const { t } = useSprache()
   const avatar = getAvatar(avatarId)
 
   // Nach Level einsortieren, damit jede Stufe in einem Griff weiss, wer dort
@@ -231,15 +233,15 @@ export function LevelMap({
   }, [gateOpen, opening, segmentIndex, walkTo])
 
   return (
-    <section className={styles.map} aria-label={`Levelkarte ${gameLabel}`}>
-      <h2 className={styles.heading}>Levelübersicht</h2>
+    <section className={styles.map} aria-label={t.levelkarte.karteVon(gameLabel)}>
+      <h2 className={styles.heading}>{t.levelkarte.titel}</h2>
       <p className={styles.caption}>
-        Du bist hier: <strong>Level {currentLevel}</strong>
-        {unlocked > currentLevel ? ` · frei bis ${unlocked}` : ''}
+        {t.levelkarte.duBistHier} <strong>{t.levelkarte.level(currentLevel)}</strong>
+        {unlocked > currentLevel ? t.levelkarte.freiBis(unlocked) : ''}
       </p>
       <p className={styles.zoneLine} style={zoneStyle(zone)}>
         <span className={styles.zoneBadge}>
-          {aufbau === ZEITREISE ? `Zone ${zone.index}` : `Welt ${zone.index}`}
+          {aufbau === ZEITREISE ? t.levelkarte.zone(zone.index) : t.levelkarte.welt(zone.index)}
         </span>
         <strong>{zone.name}</strong>
         <span className={styles.zoneProgress}>
@@ -253,7 +255,7 @@ export function LevelMap({
         aria-valuemin={0}
         aria-valuemax={zoneGroesse}
         aria-valuenow={positionInZone}
-        aria-label={`Fortschritt in ${zone.name}`}
+        aria-label={t.levelkarte.fortschrittIn(zone.name)}
       >
         <span
           className={styles.zoneFuellung}
@@ -303,8 +305,8 @@ export function LevelMap({
                 onClick={openGate}
                 aria-label={
                   gateOpen
-                    ? `${segment.gateName} öffnen`
-                    : `${segment.gateName} – erst nach Level ${to}`
+                    ? t.levelkarte.torOeffnen(segment.gateName)
+                    : t.levelkarte.torZu(segment.gateName, to)
                 }
               >
                 <span className={styles.gateWing} aria-hidden="true" />
@@ -326,13 +328,13 @@ export function LevelMap({
                 type="button"
                 className={[styles.gate, styles.gateBack].join(' ')}
                 onClick={() => walkTo(segmentIndex - 1)}
-                aria-label={`Zurück zu Abschnitt ${segmentIndex - 1}`}
+                aria-label={t.levelkarte.zurueckZuAbschnitt(segmentIndex - 1)}
               >
                 <span className={styles.gateGlyph} aria-hidden="true">
                   ↓
                 </span>
               </button>
-              <span className={styles.gateCaption}>Abschnitt {segmentIndex - 1}</span>
+              <span className={styles.gateCaption}>{t.levelkarte.abschnitt(segmentIndex - 1)}</span>
             </div>
           )}
 
@@ -407,12 +409,12 @@ export function LevelMap({
                   aria-current={isCurrent ? 'step' : undefined}
                   aria-label={
                     isLocked
-                      ? `Level ${L} gesperrt`
+                      ? t.levelkarte.gesperrt(L)
                       : isCurrent
-                        ? `Level ${L}, aktuell`
+                        ? t.levelkarte.aktuell(L)
                         : isZoneGateLevel
-                          ? `Level ${L}, ${levelZone.gateName}`
-                          : `Level ${L} spielen`
+                          ? t.levelkarte.mitTor(L, levelZone.gateName)
+                          : t.levelkarte.spielen(L)
                   }
                 >
                   <span className={styles.nodeNumber}>{L}</span>
@@ -444,8 +446,8 @@ export function LevelMap({
       </div>
 
       <p className={styles.hint}>
-        Abschnitt {segmentIndex} · Level {segment.from}–{to}
-        {hasGate ? (gateOpen ? ' · Tor oben ist offen' : ` · Tor öffnet nach Level ${to}`) : ''}
+        {t.levelkarte.abschnittVonBis(segmentIndex, segment.from, to)}
+        {hasGate ? (gateOpen ? t.levelkarte.torOffen : t.levelkarte.torOeffnet(to)) : ''}
       </p>
     </section>
   )

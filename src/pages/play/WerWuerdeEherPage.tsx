@@ -13,21 +13,27 @@ import {
   type WweeState,
 } from '@/games/wer-wuerde-eher'
 import type { FrageModus } from '@/games/wer-wuerde-eher'
+import { useSprache } from '@/i18n/sprache'
+import { fehlerSatz, partyFehler } from './partyFehler'
 import shell from './PartyShell.module.css'
 import styles from './WerWuerdeEherPage.module.css'
+import { Spielerbild } from './party/Spielerbild'
+import { Auszaehlung } from './party/Auszaehlung'
 
 const DEFAULT_NAMES = 'Thomas\nMarina\nPhillip\nSonja'
 
-const MODI: { id: FrageModus; label: string; erklaerung: string }[] = [
-  { id: 'personen', label: 'Wer würde am ehesten…?', erklaerung: 'Alle tippen auf einen Namen.' },
-  { id: 'entweder', label: 'Was wäre dir lieber?', erklaerung: 'Alle entscheiden sich für A oder B.' },
-]
+/** Die Fragensorten -- die Namen stehen im Wörterbuch. */
+const MODI: FrageModus[] = ['personen', 'entweder']
 
 export function WerWuerdeEherPage() {
+  const { t, sprache } = useSprache()
+  const w = t.werWuerdeEher
+  const g = t.partyGemeinsam
   const [state, setState] = useState<WweeState | null>(null)
   const [namesText, setNamesText] = useState(DEFAULT_NAMES)
   const [modi, setModi] = useState<FrageModus[]>(['personen', 'entweder'])
   const [runden, setRunden] = useState(STANDARD_RUNDEN)
+  /** Der Satz der Engine, deutsch -- übersetzt wird beim Rendern. */
   const [error, setError] = useState<string | null>(null)
 
   const start = useCallback(() => {
@@ -37,28 +43,29 @@ export function WerWuerdeEherPage() {
         .split(/[\n,;]+/)
         .map((n) => n.trim())
         .filter(Boolean)
-      setState(createWweeMatch({ names, modi, rounds: runden }))
+      setState(createWweeMatch({ names, modi, rounds: runden, sprache }))
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Start fehlgeschlagen')
+      setError(fehlerSatz(e))
     }
-  }, [namesText, modi, runden])
+  }, [namesText, modi, runden, sprache])
 
   if (!state) {
+    const modusText: Record<FrageModus, { label: string; erklaerung: string }> = {
+      personen: { label: w.modusPersonen, erklaerung: w.modusPersonenText },
+      entweder: { label: w.modusEntweder, erklaerung: w.modusEntwederText },
+    }
     return (
       <main className={`${shell.page} ${styles.farbe}`}>
         <Link to="/" className={shell.back}>
-          {'←'} Zurück
+          {'←'} {t.allgemein.zurueck}
         </Link>
-        <h1 className={shell.title}>🗳️ Wer würde eher?</h1>
-        <p className={shell.subtitle}>
-          Das Handy geht reihum, jeder stimmt heimlich ab. Aufgedeckt wird erst, wenn alle
-          dran waren – danach wird erklärt.
-        </p>
+        <h1 className={shell.title}>🗳️ {t.spiele['wer-wuerde-eher']}</h1>
+        <p className={shell.subtitle}>{w.untertitel}</p>
 
         <div className={shell.card}>
-          <h2 className={shell.cardTitle}>Spieler (3–12)</h2>
+          <h2 className={shell.cardTitle}>{g.spielerAnzahl(3, 12)}</h2>
           <label className={shell.label}>
-            Namen (eine Zeile pro Person)
+            {g.namenLabel}
             <textarea
               className={shell.textarea}
               value={namesText}
@@ -69,28 +76,26 @@ export function WerWuerdeEherPage() {
         </div>
 
         <div className={shell.card}>
-          <h2 className={shell.cardTitle}>Fragen</h2>
-          {MODI.map((m) => {
-            const an = modi.includes(m.id)
+          <h2 className={shell.cardTitle}>{w.fragen}</h2>
+          {MODI.map((id) => {
+            const an = modi.includes(id)
             return (
               <button
-                key={m.id}
+                key={id}
                 type="button"
                 aria-pressed={an}
                 className={an ? styles.modusAktiv : styles.modus}
                 onClick={() =>
-                  setModi((alt) =>
-                    alt.includes(m.id) ? alt.filter((x) => x !== m.id) : [...alt, m.id],
-                  )
+                  setModi((alt) => (alt.includes(id) ? alt.filter((x) => x !== id) : [...alt, id]))
                 }
               >
-                <span className={styles.modusName}>{m.label}</span>
-                <span className={styles.modusText}>{m.erklaerung}</span>
+                <span className={styles.modusName}>{modusText[id].label}</span>
+                <span className={styles.modusText}>{modusText[id].erklaerung}</span>
               </button>
             )
           })}
           <label className={shell.label}>
-            Fragen in dieser Partie: {runden}
+            {w.fragenInPartie(runden)}
             <input
               type="range"
               min={3}
@@ -101,11 +106,15 @@ export function WerWuerdeEherPage() {
           </label>
         </div>
 
-        {error && <p className={shell.error}>{error}</p>}
-        {modi.length === 0 && <p className={shell.error}>Wähle mindestens eine Sorte Fragen.</p>}
+        {error && (
+          <p className={shell.error}>
+            {partyFehler(t, error, { 'Keine Fragen für diese Auswahl': w.keineFragen })}
+          </p>
+        )}
+        {modi.length === 0 && <p className={shell.error}>{w.mindestensEineSorte}</p>}
 
         <button type="button" className={shell.btn} disabled={modi.length === 0} onClick={start}>
-          Losspielen
+          {g.losspielen}
         </button>
       </main>
     )
@@ -113,18 +122,19 @@ export function WerWuerdeEherPage() {
 
   const frage = currentFrage(state)
   const ap = activeWweePlayer(state)
-  const fortschritt = `Frage ${state.frageIndex + 1} von ${state.fragen.length}`
+  const fortschritt = w.fortschritt(state.frageIndex + 1, state.fragen.length)
 
   if (state.phase === 'handoff') {
     return (
       <main className={`${shell.page} ${styles.farbe}`}>
         <p className={shell.meta}>{fortschritt}</p>
         <div className={`${shell.card} ${shell.cover}`}>
-          <p className={shell.subtitle}>Gerät weitergeben an</p>
+          <Spielerbild name={ap.name} />
+          <p className={shell.subtitle}>{g.weitergebenAn}</p>
           <p className={shell.coverName}>{ap.name}</p>
-          <p className={shell.hint}>Deine Stimme sieht niemand – aufgedeckt wird erst am Ende.</p>
+          <p className={shell.hint}>{w.stimmeGeheim}</p>
           <button type="button" className={shell.btn} onClick={() => setState(openVote(state))}>
-            Ich bin {ap.name}
+            {w.ichBin(ap.name)}
           </button>
         </div>
       </main>
@@ -135,7 +145,7 @@ export function WerWuerdeEherPage() {
     return (
       <main className={`${shell.page} ${styles.farbe}`}>
         <p className={shell.meta}>
-          {fortschritt} · nur für {ap.name}
+          {fortschritt} · {w.nurFuer(ap.name)}
         </p>
         <div className={`${shell.card} ${styles.frageBox}`}>
           <p className={styles.frage}>{frage.text}</p>
@@ -150,7 +160,7 @@ export function WerWuerdeEherPage() {
                 onClick={() => setState(vote(state, p.id))}
               >
                 {p.name}
-                {p.id === ap.id ? ' (du)' : ''}
+                {p.id === ap.id ? w.du : ''}
               </button>
             ))}
           </div>
@@ -178,7 +188,6 @@ export function WerWuerdeEherPage() {
 
   if (state.phase === 'result') {
     const { counts, sieger } = auszaehlen(state)
-    const gesamt = Object.values(state.votes).length
 
     return (
       <main className={`${shell.page} ${styles.farbe}`}>
@@ -188,40 +197,44 @@ export function WerWuerdeEherPage() {
         </div>
 
         <div className={shell.card}>
-          <h2 className={shell.cardTitle}>
-            {sieger.length === 1
-              ? frage.modus === 'personen'
-                ? `${nameOf(state, sieger[0]!)} – ganz klar`
-                : `Mehrheit: ${sieger[0] === 'a' ? frage.a : frage.b}`
-              : 'Unentschieden'}
-          </h2>
-          <ul className={shell.list}>
-            {(frage.modus === 'personen'
-              ? state.players.map((p) => ({ id: p.id, label: p.name }))
-              : [
-                  { id: 'a', label: frage.a ?? 'A' },
-                  { id: 'b', label: frage.b ?? 'B' },
-                ]
-            ).map((ziel) => {
-              const n = counts[ziel.id] ?? 0
-              const anteil = gesamt > 0 ? Math.round((n / gesamt) * 100) : 0
-              return (
-                <li key={ziel.id}>
-                  <span className={styles.balkenZelle}>
-                    <span>{ziel.label}</span>
-                    <span className={styles.balken} aria-hidden="true">
-                      <span className={styles.balkenFuell} style={{ width: `${anteil}%` }} />
-                    </span>
-                  </span>
-                  <strong>{n}</strong>
-                </li>
-              )
-            })}
-          </ul>
+          <Auszaehlung
+            // Eine neue Frage ist eine neue Auszählung -- mit eigenem Auftritt.
+            key={state.frageIndex}
+            ueberschrift={
+              sieger.length === 1
+                ? frage.modus === 'personen'
+                  ? w.ganzKlar(nameOf(state, sieger[0]!))
+                  : w.mehrheit((sieger[0] === 'a' ? frage.a : frage.b) ?? '')
+                : w.unentschieden
+            }
+            sieger={sieger}
+            zeilen={
+              frage.modus === 'personen'
+                ? state.players.map((p) => ({
+                    id: p.id,
+                    label: p.name,
+                    stimmen: counts[p.id] ?? 0,
+                  }))
+                : [
+                    {
+                      id: 'a',
+                      label: frage.a ?? 'A',
+                      stimmen: counts.a ?? 0,
+                      marke: { text: 'A', farbe: 'linear-gradient(140deg, #0ea5e9, #075985)' },
+                    },
+                    {
+                      id: 'b',
+                      label: frage.b ?? 'B',
+                      stimmen: counts.b ?? 0,
+                      marke: { text: 'B', farbe: 'linear-gradient(140deg, #f43f5e, #9f1239)' },
+                    },
+                  ]
+            }
+          />
         </div>
 
         <div className={shell.card}>
-          <h2 className={shell.cardTitle}>Wer wie gestimmt hat</h2>
+          <h2 className={shell.cardTitle}>{w.werWieGestimmt}</h2>
           <ul className={shell.list}>
             {state.players.map((p) => {
               const ziel = state.votes[p.id]
@@ -246,7 +259,7 @@ export function WerWuerdeEherPage() {
         </div>
 
         <button type="button" className={shell.btn} onClick={() => setState(nextFrage(state))}>
-          Nächste Frage
+          {w.naechsteFrage}
         </button>
       </main>
     )
@@ -254,18 +267,16 @@ export function WerWuerdeEherPage() {
 
   return (
     <main className={`${shell.page} ${styles.farbe}`}>
-      <h1 className={shell.title}>Das war&apos;s</h1>
-      <p className={shell.subtitle}>
-        {state.fragen.length} Fragen durch. Nochmal mit neuen?
-      </p>
+      <h1 className={shell.title}>{w.dasWars}</h1>
+      <p className={shell.subtitle}>{w.fragenDurch(state.fragen.length)}</p>
       <button type="button" className={shell.btn} onClick={start}>
-        Neue Partie
+        {g.neuePartie}
       </button>
       <button type="button" className={shell.btnSecondary} onClick={() => setState(null)}>
-        Einstellungen ändern
+        {g.einstellungenAendern}
       </button>
       <Link to="/" className={shell.back}>
-        Zum Menü
+        {t.allgemein.zumMenue}
       </Link>
     </main>
   )

@@ -55,7 +55,10 @@ export function normalisieren(s: string): string {
 export function passtZumBuchstaben(antwort: string, buchstabe: string): boolean {
   const a = antwort.trim()
   if (!a) return false
-  return a[0]!.toLocaleUpperCase('de') === buchstabe.toLocaleUpperCase('de')
+  // Ä, Ö, Ü zählen wie A, O, U -- "Ägypten" ist ein Land mit A (03.11.2026).
+  const grund = (z: string) =>
+    z.toLocaleUpperCase('de').replace('Ä', 'A').replace('Ö', 'O').replace('Ü', 'U')
+  return grund(a[0]!) === grund(buchstabe)
 }
 
 export const PUNKTE_ALLEIN = 20
@@ -72,10 +75,7 @@ export interface SlfEintrag {
  * Eine Spalte werten. Bekommt alle Antworten dieser Spalte und gibt je
  * Person die Punkte zurück.
  */
-export function werteSpalte(
-  eintraege: SlfEintrag[],
-  buchstabe: string,
-): Record<string, number> {
+export function werteSpalte(eintraege: SlfEintrag[], buchstabe: string): Record<string, number> {
   const gueltig = eintraege.filter((e) => passtZumBuchstaben(e.antwort, buchstabe))
   const punkte: Record<string, number> = {}
   for (const e of eintraege) punkte[e.playerId] = 0

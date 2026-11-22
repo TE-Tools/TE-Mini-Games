@@ -44,6 +44,7 @@ import {
 import { trapboundGame } from '@/games/trapbound/definition'
 import { BILD_BREITE, BILD_HOEHE, type Eingabe, type LevelDaten } from '@/games/trapbound/types'
 import { BODEN_Y } from '@/games/trapbound/levels/bausteine'
+import { istEtagenLevel } from '@/games/trapbound/levels/etagen'
 
 const NICHTS: Eingabe = { links: false, rechts: false, sprung: false }
 const TAKT = 1 / 60
@@ -731,6 +732,22 @@ describe('Die Wertung', () => {
     expect(sterne[1]).toBe(5)
   })
 
+  /*
+   * Fünf Sterne müssen in jedem Level zu holen sein -- fehlerfrei und so
+   * schnell wie die hinterlegte Lösung, ohne Kristall. Bis zum 05.11.2026
+   * maß der Tempo-Zuschlag gegen feste dreißig Sekunden, und ab Welt 3
+   * blieben dann höchstens vier.
+   */
+  it('lässt in jedem Level fünf Sterne zu', () => {
+    const ohne: number[] = []
+    for (let nr = 1; nr <= LEVEL_ANZAHL; nr++) {
+      const r = spieleLoesung(levelDaten(nr))
+      const punkte = trapboundGame.calculateScore(nr, { won: true, tode: 0, zeit: r.zeit })
+      if (trapboundGame.calculateStars!(nr, punkte) < 5) ohne.push(nr)
+    }
+    expect(ohne).toEqual([])
+  }, 120_000)
+
   it('ist im Spielverzeichnis eingetragen', () => {
     expect(trapboundGame.id).toBe('trapbound')
     expect(trapboundGame.maxLevel).toBe(LEVEL_ANZAHL)
@@ -1229,8 +1246,10 @@ describe('Längere Level', () => {
     }
     expect(levelBreite(41)).toBeGreaterThan(BILD_BREITE)
     expect(levelBreite(LEVEL_ANZAHL)).toBeGreaterThanOrEqual(BILD_BREITE * 2.5)
-    // Und die Leveldaten tragen die Breite auch wirklich.
+    // Und die Leveldaten tragen die Breite auch wirklich. Die Stockwerk-
+    // Level sind die Ausnahme: Sie wachsen in die Höhe, nicht in die Breite.
     for (let nr = 11; nr <= LEVEL_ANZAHL; nr++) {
+      if (istEtagenLevel(nr)) continue
       expect(`${nr}: ${levelDaten(nr).breite}`).toBe(`${nr}: ${levelBreite(nr)}`)
     }
   }, 120_000)

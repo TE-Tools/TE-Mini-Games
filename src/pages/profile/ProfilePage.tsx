@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { AVATARS } from '@/profile/avatars'
+import { AVATARS, VIDEO_AVATARS, getAvatar, type VideoAvatarId } from '@/profile/avatars'
+import {
+  freigeschaltetMit,
+  gesichtFreischalten,
+  naechstesGesperrtes,
+} from '@/profile/videoGesichter'
 import { getOrCreateGuestProfile, setAvatar, type LocalProfile } from '@/offline'
+import { werbungAktiv } from '@/services/werbung'
+import { BelohnungsKnopf } from '@/components/werbung/BelohnungsKnopf'
 import {
   NAME_MAX,
   ermittleSpielerName,
@@ -11,30 +18,77 @@ import {
   setzeSpielerName,
 } from '@/services/spielername'
 import styles from './ProfilePage.module.css'
+import { useSprache } from '@/i18n/sprache'
 
 export function ProfilePage() {
+  const { t } = useSprache()
   const navigate = useNavigate()
   const [profile, setProfile] = useState<LocalProfile | null>(null)
   const [name, setName] = useState('')
   const [nameFehler, setNameFehler] = useState<string | null>(null)
   const [gespeichert, setGespeichert] = useState(false)
   const [laeuft, setLaeuft] = useState(false)
+  /** Freigeschaltete Video-Gesichter -- Kennungen, die Namen kommen beim Rendern. */
+  const [frei, setFrei] = useState<VideoAvatarId[]>([])
+  /** Welches gesperrte Gesicht das nächste Video freischaltet (sonst das erste). */
+  const [wunsch, setWunsch] = useState<VideoAvatarId | null>(null)
+  const [neuFrei, setNeuFrei] = useState<VideoAvatarId | null>(null)
 
   useEffect(() => {
+    // Abbruchmarke und Fangnetz wie in der Anmeldeschranke und der
+    // Anmeldeseite. Das Profil kommt aus dem Speicher des Geräts; ist die
+    // Seite schon weg, wenn es eintrifft, wird nichts mehr geschrieben --
+    // und ist der Speicher nicht lesbar (gesperrt, gerade gelöscht), endet
+    // das nicht als unbehandelte Ablehnung. Aufgefallen als Flattern: Ein
+    // voller Testlauf meldete „DatabaseClosedError", weil der nächste Test
+    // die Datenbank leerte, während diese Abfrage noch lief.
+    let abgebrochen = false
     void (async () => {
-      const p = await getOrCreateGuestProfile()
-      setProfile(p)
-      // Zeigt den Namen, der gerade wirklich gilt -- auch den aus dem Konto.
-      // Steht dort nur der Platzhalter, bleibt das Feld leer: Sonst müsste
-      // man "Gast" erst wegloeschen, um etwas eintippen zu koennen.
-      const gilt = await ermittleSpielerName().catch(() => p.displayName)
-      setName(istEchterName(gilt) ? gilt : '')
+      try {
+        const p = await getOrCreateGuestProfile()
+        if (abgebrochen) return
+        setProfile(p)
+        setFrei(freigeschaltetMit(p.avatar))
+        // Zeigt den Namen, der gerade wirklich gilt -- auch den aus dem Konto.
+        // Steht dort nur der Platzhalter, bleibt das Feld leer: Sonst müsste
+        // man "Gast" erst wegloeschen, um etwas eintippen zu koennen.
+        const gilt = await ermittleSpielerName().catch(() => p.displayName)
+        if (abgebrochen) return
+        setName(istEchterName(gilt) ? gilt : '')
+      } catch {
+        // Ohne lesbaren Speicher bleibt die Seite beim Laden stehen.
+      }
     })()
+    return () => {
+      abgebrochen = true
+    }
   }, [])
 
   const onPick = async (id: string) => {
     const updated = await setAvatar(id)
     setProfile(updated)
+  }
+
+  const gesichtName = (a: { id: string; label: string }) =>
+    (t.profil.gesichter as Record<string, string | undefined>)[a.id] ?? a.label
+
+  const gesperrte = VIDEO_AVATARS.filter((a) => !frei.includes(a.id))
+  const ziel = wunsch && !frei.includes(wunsch) ? wunsch : naechstesGesperrtes(frei)
+  const zielGesicht = VIDEO_AVATARS.find((a) => a.id === ziel)
+  // Ohne Werbung oder offline gibt es kein Angebot -- dann zeigen wir auch
+  // keine gesperrten Gesichter, die sich gerade gar nicht holen ließen.
+  const videoAngebot =
+    werbungAktiv() &&
+    gesperrte.length > 0 &&
+    (typeof navigator === 'undefined' || navigator.onLine !== false)
+
+  const freischalten = async () => {
+    if (!ziel) return
+    setFrei(gesichtFreischalten(ziel))
+    setNeuFrei(ziel)
+    setWunsch(null)
+    // Wer dafür ein Video schaut, will es auch tragen.
+    setProfile(await setAvatar(ziel))
   }
 
   const nameSpeichern = useCallback(async () => {
@@ -76,11 +130,16 @@ export function ProfilePage() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <button type="button" className={styles.back} onClick={() => navigate('/')} aria-label="Zurück">
+        <button
+          type="button"
+          className={styles.back}
+          onClick={() => navigate('/')}
+          aria-label={t.profil.zurueck}
+        >
           ←
         </button>
-        <h1 className={styles.title}>Profil</h1>
-        <span className={styles.badge}>15</span>
+        <h1 className={styles.title}>{t.profil.titel}</h1>
+        <span className={styles.badge}>{AVATARS.length + frei.length}</span>
       </header>
 
       {/* Der Name zuerst: Er steht in jeder Runde und auf jeder Liste --
@@ -89,12 +148,9 @@ export function ProfilePage() {
           immer "Gast" (06.09.2026, Thomas). */}
       <section className={styles.nameBlock}>
         <label className={styles.nameLabel} htmlFor="spielername">
-          Dein Name im Spiel
+          {t.profil.nameLabel}
         </label>
-        <p className={styles.nameHinweis}>
-          So stehst du in Runden und in der Rangliste. Angemeldet wird er auch auf
-          deine anderen Geräte übernommen.
-        </p>
+        <p className={styles.nameHinweis}>{t.profil.nameHinweis}</p>
         <div className={styles.nameZeile}>
           <input
             id="spielername"
@@ -106,7 +162,7 @@ export function ProfilePage() {
               setGespeichert(false)
             }}
             maxLength={NAME_MAX}
-            placeholder="Wie sollen dich die anderen sehen?"
+            placeholder={t.profil.namePlatzhalter}
             autoComplete="nickname"
             spellCheck={false}
           />
@@ -116,7 +172,7 @@ export function ProfilePage() {
             onClick={() => void nameSpeichern()}
             disabled={laeuft || !name.trim()}
           >
-            Speichern
+            {t.profil.speichern}
           </button>
         </div>
 
@@ -127,7 +183,7 @@ export function ProfilePage() {
         )}
         {gespeichert && !nameFehler && (
           <p className={styles.nameOk} role="status">
-            Gespeichert.
+            {t.profil.gespeichert}
           </p>
         )}
 
@@ -137,23 +193,20 @@ export function ProfilePage() {
           onClick={() => void vomKonto()}
           disabled={laeuft}
         >
-          Namen aus dem Konto übernehmen
+          {t.profil.nameAusKonto}
         </button>
       </section>
 
-      <p className={styles.hint}>Wähle dein Gesicht – es erscheint auf der Levelkarte.</p>
+      <p className={styles.hint}>{t.profil.gesichtHinweis}</p>
 
       {profile && (
         <p className={styles.current} aria-live="polite">
-          Aktiv:{' '}
-          <span className={styles.big}>
-            {AVATARS.find((a) => a.id === profile.avatar)?.emoji ?? AVATARS[0].emoji}
-          </span>
+          {t.profil.aktiv} <span className={styles.big}>{getAvatar(profile.avatar).emoji}</span>
         </p>
       )}
 
       <ul className={styles.grid}>
-        {AVATARS.map((a) => {
+        {[...AVATARS, ...VIDEO_AVATARS.filter((a) => frei.includes(a.id))].map((a) => {
           const selected = profile?.avatar === a.id || (!profile?.avatar && a.id === 'face-1')
           return (
             <li key={a.id}>
@@ -162,15 +215,53 @@ export function ProfilePage() {
                 className={selected ? styles.avatarSelected : styles.avatarBtn}
                 onClick={() => void onPick(a.id)}
                 aria-pressed={selected}
-                aria-label={a.label}
+                aria-label={gesichtName(a)}
               >
                 <span className={styles.emoji}>{a.emoji}</span>
-                <span className={styles.label}>{a.label}</span>
+                <span className={styles.label}>{gesichtName(a)}</span>
               </button>
             </li>
           )
         })}
       </ul>
+
+      {neuFrei && (
+        <p className={styles.freiMeldung} role="status">
+          {t.profil.freigeschaltet(gesichtName(getAvatar(neuFrei)))}
+        </p>
+      )}
+
+      {videoAngebot && (
+        <section className={styles.nameBlock} aria-label={t.profil.videoGesichterTitel}>
+          <h2 className={styles.videoTitel}>{t.profil.videoGesichterTitel}</h2>
+          <p className={styles.hint}>{t.profil.videoGesichterHinweis}</p>
+          <ul className={styles.grid}>
+            {gesperrte.map((a) => (
+              <li key={a.id}>
+                <button
+                  type="button"
+                  className={`${styles.avatarBtn} ${styles.gesperrt}`}
+                  onClick={() => setWunsch(a.id)}
+                  aria-pressed={ziel === a.id}
+                  aria-label={t.profil.gesperrt(gesichtName(a))}
+                >
+                  <span className={styles.emoji}>{a.emoji}</span>
+                  <span className={styles.label}>{gesichtName(a)}</span>
+                  <span className={styles.marke}>▶ {t.profil.perVideo}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          {zielGesicht && (
+            <BelohnungsKnopf
+              name="gesicht-freischalten"
+              aktiv
+              belohnung={t.profil.gesichtFreischalten(gesichtName(zielGesicht))}
+              onBelohnt={() => void freischalten()}
+            />
+          )}
+        </section>
+      )}
 
       {/* Von hier geht es weiter zum Konto. Vorher war der Avatar oben der
           einzige Eingang dorthin; seit er ins Profil fuehrt, muss der Weg
@@ -181,16 +272,14 @@ export function ProfilePage() {
           ⚙️
         </span>
         <span className={styles.accountText}>
-          <span className={styles.accountTitle}>Konto &amp; Anmeldung</span>
-          <span className={styles.accountHint}>
-            Benutzername, Anmeldung, Synchronisierung
-          </span>
+          <span className={styles.accountTitle}>{t.profil.kontoTitel}</span>
+          <span className={styles.accountHint}>{t.profil.kontoHinweis}</span>
         </span>
         <span aria-hidden="true">›</span>
       </Link>
 
       <Link to="/" className={styles.homeLink}>
-        Zur Startseite
+        {t.profil.zurStartseite}
       </Link>
     </main>
   )

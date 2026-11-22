@@ -1,0 +1,130 @@
+/* Die Designauswahl im Menü: eine Reihe kleiner Vorschauen. */
+
+.wahl {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-elevated);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+.titel {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.reihe {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding-block: 2px;
+}
+
+.feld {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 4.6rem;
+  padding: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--color-border);
+  color: var(--color-text);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.gewaehlt {
+  box-shadow: inset 0 0 0 2px var(--color-primary);
+}
+
+.gesperrt .wuerfel,
+.gesperrt .karte {
+  opacity: 0.55;
+}
+
+.vorgemerkt {
+  outline: 2px dashed var(--color-gold, #e0b13a);
+  outline-offset: -2px;
+}
+
+.name {
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 700;
+}
+
+.zusatz {
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+  max-width: 5.5rem;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.hinweis {
+  margin: 0;
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--color-text-muted);
+}
+
+/* ------------------------------------------------- Würfelvorschau */
+
+/* Dieselben Variablen wie die Würfelreihe -- ohne sie der Standard. */
+.wuerfel {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 8%;
+  width: 2.4rem;
+  height: 2.4rem;
+  padding: 14%;
+  border-radius: 22%;
+  border: 1px solid var(--color-border-strong);
+  background: var(--wuerfel-flaeche, linear-gradient(160deg, #ffffff, #eceff7));
+  box-shadow: 0 2px 4px rgb(0 0 0 / 0.25);
+}
+
+.auge {
+  border-radius: 50%;
+  background: var(--wuerfel-auge, radial-gradient(circle at 35% 30%, #3a3f55, #05070d 70%));
+}
+
+/* ------------------------------------------------ Kartenvorschau */
+
+.karte {
+  position: relative;
+  display: block;
+  width: 2rem;
+  height: 2.8rem;
+  border-radius: 0.3rem;
+  background: var(
+    --ruecken-flaeche,
+    var(--ruecken-standard, linear-gradient(135deg, #3b4a8c, #212a52))
+  );
+  box-shadow:
+    0 2px 4px rgb(0 0 0 / 0.3),
+    inset 0 0 0 1px rgb(255 255 255 / 0.18);
+}
+
+.muster {
+  position: absolute;
+  inset: 0.18rem;
+  border-radius: 0.2rem;
+  background: var(
+    --ruecken-muster,
+    repeating-linear-gradient(
+      45deg,
+      rgb(255 255 255 / 0.14) 0,
+      rgb(255 255 255 / 0.14) 2px,
+      transparent 2px,
+      transparent 5px
+    )
+  );
+}

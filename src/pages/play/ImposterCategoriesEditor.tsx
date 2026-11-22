@@ -9,6 +9,8 @@ import {
   MIN_WORDS,
   type CustomCategory,
 } from '@/games/finde-den-imposter'
+import { useSprache, type Texte } from '@/i18n/sprache'
+import { meldungText } from './imposter/imposterText'
 import styles from './FindeDenImposterPage.module.css'
 
 interface Props {
@@ -19,18 +21,54 @@ interface Props {
 }
 
 /**
+ * Was zuletzt geklappt hat -- als Art und Werte, nicht als fertiger Satz,
+ * damit ein Sprachwechsel die Meldung mitnimmt.
+ */
+type Info =
+  | { art: 'geaendert' | 'angelegt' | 'geloescht'; name: string }
+  | { art: 'kopiert' | 'kopierenGingNicht' | 'datei' }
+  | { art: 'import'; neu: number; aktualisiert: number; uebersprungen: number }
+
+function infoText(t: Texte, info: Info): string {
+  const e = t.imposter.editor
+  switch (info.art) {
+    case 'geaendert':
+      return e.geaendert(info.name)
+    case 'angelegt':
+      return e.angelegt(info.name)
+    case 'geloescht':
+      return e.geloescht(info.name)
+    case 'kopiert':
+      return e.kopiert
+    case 'kopierenGingNicht':
+      return e.kopierenGingNicht
+    case 'datei':
+      return e.dateiGespeichert(e.dateiname)
+    case 'import': {
+      const teile = [e.neu(info.neu), e.aktualisiert(info.aktualisiert)]
+      if (info.uebersprungen > 0) teile.push(e.uebersprungen(info.uebersprungen))
+      return teile.join(', ')
+    }
+  }
+}
+
+/**
  * Eigene Wortlisten anlegen, ändern, löschen -- und als Datei weitergeben.
  * Die Listen liegen nur auf diesem Gerät; Export und Import sind der Weg
  * aufs zweite Handy.
  */
 export function ImposterCategoriesEditor({ categories, onChanged, onClose }: Props) {
+  const { t } = useSprache()
+  const te = t.imposter.editor
   const [editId, setEditId] = useState<string | null>(null)
   const [label, setLabel] = useState('')
   const [wordsText, setWordsText] = useState('')
   const [importText, setImportText] = useState('')
   const [zeigeImport, setZeigeImport] = useState(false)
-  const [fehler, setFehler] = useState<string | null>(null)
-  const [info, setInfo] = useState<string | null>(null)
+  // Meldungen bleiben, wie sie aus dem Spielmodul kommen (deutsch), und
+  // werden erst beim Rendern übersetzt.
+  const [fehler, setFehler] = useState<string[] | null>(null)
+  const [info, setInfo] = useState<Info | null>(null)
   const dateiRef = useRef<HTMLInputElement>(null)
 
   const wortzahl = parseWords(wordsText).length
@@ -41,7 +79,7 @@ export function ImposterCategoriesEditor({ categories, onChanged, onClose }: Pro
     setWordsText('')
   }
 
-  const melden = (nachricht: string) => {
+  const melden = (nachricht: Info) => {
     setInfo(nachricht)
     setFehler(null)
   }
@@ -54,10 +92,10 @@ export function ImposterCategoriesEditor({ categories, onChanged, onClose }: Pro
         words: parseWords(wordsText),
       })
       onChanged(loadCustomCategories())
-      melden(editId ? `„${label}" geändert` : `„${label}" angelegt`)
+      melden({ art: editId ? 'geaendert' : 'angelegt', name: label })
       formularLeeren()
     } catch (e) {
-      setFehler(e instanceof Error ? e.message : 'Speichern fehlgeschlagen')
+      setFehler([e instanceof Error ? e.message : te.speichernFehlgeschlagen])
       setInfo(null)
     }
   }
@@ -74,18 +112,18 @@ export function ImposterCategoriesEditor({ categories, onChanged, onClose }: Pro
     deleteCustomCategory(c.id)
     onChanged(loadCustomCategories())
     if (editId === c.id) formularLeeren()
-    melden(`„${c.label}" gelöscht`)
+    melden({ art: 'geloescht', name: c.label })
   }
 
   const exportieren = async () => {
     const text = exportCustomCategories()
     try {
       await navigator.clipboard.writeText(text)
-      melden('In die Zwischenablage kopiert – jetzt kannst du sie dir schicken.')
+      melden({ art: 'kopiert' })
     } catch {
       setImportText(text)
       setZeigeImport(true)
-      melden('Kopieren ging nicht – der Text steht jetzt unten zum Markieren.')
+      melden({ art: 'kopierenGingNicht' })
     }
   }
 
@@ -94,24 +132,27 @@ export function ImposterCategoriesEditor({ categories, onChanged, onClose }: Pro
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'imposter-kategorien.json'
+    a.download = te.dateiname
     a.click()
     URL.revokeObjectURL(url)
-    melden('Datei gespeichert: imposter-kategorien.json')
+    melden({ art: 'datei' })
   }
 
   const importieren = (text: string) => {
     try {
       const r = importCustomCategories(text)
       onChanged(loadCustomCategories())
-      const teile = [`${r.added} neu`, `${r.updated} aktualisiert`]
-      if (r.skipped.length > 0) teile.push(`${r.skipped.length} übersprungen`)
-      setFehler(r.skipped.length > 0 ? r.skipped.join(' · ') : null)
-      setInfo(teile.join(', '))
+      setFehler(r.skipped.length > 0 ? r.skipped : null)
+      setInfo({
+        art: 'import',
+        neu: r.added,
+        aktualisiert: r.updated,
+        uebersprungen: r.skipped.length,
+      })
       setImportText('')
       setZeigeImport(false)
     } catch (e) {
-      setFehler(e instanceof Error ? e.message : 'Import fehlgeschlagen')
+      setFehler([e instanceof Error ? e.message : te.importFehlgeschlagen])
       setInfo(null)
     }
   }
@@ -124,29 +165,24 @@ export function ImposterCategoriesEditor({ categories, onChanged, onClose }: Pro
   return (
     <>
       <div className={styles.card}>
-        <h2 className={styles.cardTitle}>Eigene Kategorien</h2>
-        <p className={styles.subtitle}>
-          Eigene Wortlisten für die Runde – zum Beispiel Namen aus dem Verein oder Insider aus
-          der Familie. Sie liegen nur auf diesem Gerät; zum Weitergeben nimmst du Export und
-          Import. Online gehen sie nicht: dort zieht der Server das Wort, und der kennt nur
-          den eingebauten Wortschatz.
-        </p>
+        <h2 className={styles.cardTitle}>{t.imposter.eigeneKategorien}</h2>
+        <p className={styles.subtitle}>{te.einleitung}</p>
 
         {categories.length === 0 ? (
-          <p className={styles.meta}>Noch keine eigene Kategorie.</p>
+          <p className={styles.meta}>{te.keine}</p>
         ) : (
           <ul className={styles.hintList}>
             {categories.map((c) => (
               <li key={c.id}>
                 <span>
-                  {c.label} <span className={styles.badge}>{c.words.length} Wörter</span>
+                  {c.label} <span className={styles.badge}>{te.woerter(c.words.length)}</span>
                 </span>
                 <span className={styles.row}>
                   <button type="button" className={styles.voteBtn} onClick={() => bearbeiten(c)}>
-                    Ändern
+                    {te.aendern}
                   </button>
                   <button type="button" className={styles.voteBtn} onClick={() => loeschen(c)}>
-                    Löschen
+                    {te.loeschen}
                   </button>
                 </span>
               </li>
@@ -156,49 +192,49 @@ export function ImposterCategoriesEditor({ categories, onChanged, onClose }: Pro
       </div>
 
       <div className={styles.card}>
-        <h2 className={styles.cardTitle}>{editId ? 'Kategorie ändern' : 'Neue Kategorie'}</h2>
+        <h2 className={styles.cardTitle}>{editId ? te.kategorieAendern : te.neueKategorie}</h2>
         <label className={styles.label}>
-          Name
+          {te.name}
           <input
             className={styles.input}
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             maxLength={40}
-            placeholder="z. B. Schützenverein"
+            placeholder={te.namePlatzhalter}
             autoComplete="off"
           />
         </label>
         <label className={styles.label}>
-          Wörter (eine Zeile pro Wort)
+          {te.woerterLabel}
           <textarea
             className={styles.textarea}
             value={wordsText}
             onChange={(e) => setWordsText(e.target.value)}
-            placeholder={'Königsschuss\nVogelstange\nFahnenträger\n…'}
+            placeholder={te.woerterPlatzhalter}
           />
         </label>
-        <p className={styles.meta}>
-          {wortzahl} Wörter · mindestens {MIN_WORDS} nötig
-        </p>
-        {fehler && <p className={styles.error}>{fehler}</p>}
-        {info && <p className={styles.meta}>{info}</p>}
+        <p className={styles.meta}>{te.wortzahl(wortzahl, MIN_WORDS)}</p>
+        {fehler && (
+          <p className={styles.error}>{fehler.map((f) => meldungText(t, f)).join(' · ')}</p>
+        )}
+        {info && <p className={styles.meta}>{infoText(t, info)}</p>}
         <button
           type="button"
           className={styles.btn}
           disabled={!label.trim() || wortzahl < MIN_WORDS}
           onClick={speichern}
         >
-          {editId ? 'Änderung speichern' : 'Kategorie anlegen'}
+          {editId ? te.speichern : te.anlegen}
         </button>
         {editId && (
           <button type="button" className={styles.btnSecondary} onClick={formularLeeren}>
-            Abbrechen
+            {te.abbrechen}
           </button>
         )}
       </div>
 
       <div className={styles.card}>
-        <h2 className={styles.cardTitle}>Weitergeben</h2>
+        <h2 className={styles.cardTitle}>{te.weitergeben}</h2>
         <div className={styles.row}>
           <button
             type="button"
@@ -206,7 +242,7 @@ export function ImposterCategoriesEditor({ categories, onChanged, onClose }: Pro
             disabled={categories.length === 0}
             onClick={() => void exportieren()}
           >
-            Kopieren
+            {te.kopieren}
           </button>
           <button
             type="button"
@@ -214,7 +250,7 @@ export function ImposterCategoriesEditor({ categories, onChanged, onClose }: Pro
             disabled={categories.length === 0}
             onClick={alsDatei}
           >
-            Als Datei
+            {te.alsDatei}
           </button>
         </div>
         <div className={styles.row}>
@@ -223,14 +259,14 @@ export function ImposterCategoriesEditor({ categories, onChanged, onClose }: Pro
             className={styles.btnSecondary}
             onClick={() => dateiRef.current?.click()}
           >
-            Datei öffnen
+            {te.dateiOeffnen}
           </button>
           <button
             type="button"
             className={styles.btnSecondary}
             onClick={() => setZeigeImport((v) => !v)}
           >
-            Text einfügen
+            {te.textEinfuegen}
           </button>
         </div>
         <input
@@ -243,7 +279,7 @@ export function ImposterCategoriesEditor({ categories, onChanged, onClose }: Pro
         {zeigeImport && (
           <>
             <label className={styles.label}>
-              Exportierter Text
+              {te.exportierterText}
               <textarea
                 className={styles.textarea}
                 value={importText}
@@ -257,14 +293,14 @@ export function ImposterCategoriesEditor({ categories, onChanged, onClose }: Pro
               disabled={!importText.trim()}
               onClick={() => importieren(importText)}
             >
-              Einlesen
+              {te.einlesen}
             </button>
           </>
         )}
       </div>
 
       <button type="button" className={styles.btnSecondary} onClick={onClose}>
-        Fertig
+        {te.fertig}
       </button>
     </>
   )

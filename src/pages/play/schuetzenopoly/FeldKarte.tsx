@@ -61,6 +61,8 @@ import {
   type BrettFeld,
   type SpielZustand,
 } from '@/games/schuetzenopoly'
+import { useSprache, type Sprache, type Texte } from '@/i18n/sprache'
+import { ausbauName, feldAnzeige } from './texte'
 import styles from './FeldKarte.module.css'
 
 /**
@@ -101,16 +103,9 @@ interface FeldKarteProps {
   onSchliessen: () => void
 }
 
-const ART_TEXT: Record<string, string> = {
-  schuetzenfest: 'Schützenfest',
-  kirmes: 'Kirmes',
-  umzug: 'Umzug',
-  volksfest: 'Volksfest',
-}
-
-/** Zahlen auf der Karte: immer mit Tausenderpunkt, nie mit Währungswort. */
-function zahl(n: number): string {
-  return Math.round(n).toLocaleString('de-DE')
+/** Zahlen auf der Karte: immer mit Tausendertrennung, nie mit Währungswort. */
+function zahlIn(sprache: Sprache, n: number): string {
+  return Math.round(n).toLocaleString(sprache)
 }
 
 export function FeldKarte({
@@ -122,6 +117,10 @@ export function FeldKarte({
   akteur,
   onSchliessen,
 }: FeldKarteProps) {
+  const { t, sprache } = useSprache()
+  const tk = t.schuetzenopoly.karte
+  const zahl = (n: number) => zahlIn(sprache, n)
+  const feldTitel = feldAnzeige(t, feld).name
   const feldId = feld.grundstueckId
   const besitz = feldId ? zustand.besitz[feldId] : undefined
   const besitzer = besitz?.besitzerId ? spielerMit(zustand, besitz.besitzerId) : null
@@ -150,13 +149,15 @@ export function FeldKarte({
           className={`${styles.karte} ${geht ? styles.karteGeht : ''}`}
           onClick={(e) => e.stopPropagation()}
           role="dialog"
-          aria-label={feld.name}
+          aria-label={feldTitel}
         >
           <header className={styles.fahne} style={gr ? { background: gr.farbe } : undefined}>
             <span className={styles.art}>
-              {g ? (ART_TEXT[g.art] ?? 'Veranstaltung') : feldArt(feld)}
+              {g
+                ? ((tk.arten as Record<string, string | undefined>)[g.art] ?? tk.veranstaltung)
+                : feldArt(t, feld)}
             </span>
-            <h3 className={styles.titel}>{g?.stadt ?? feld.name}</h3>
+            <h3 className={styles.titel}>{g?.stadt ?? feldTitel}</h3>
             {g && <span className={styles.veranstaltung}>{g.veranstaltung}</span>}
           </header>
 
@@ -169,11 +170,11 @@ export function FeldKarte({
                   steht der Kaufpreis. Ohne "Standgeld" darüber standen
                   zweimal dieselben Wörter für zwei verschiedene Zahlen.
                 */}
-                <caption className={styles.staffelTitel}>Standgeld</caption>
+                <caption className={styles.staffelTitel}>{tk.standgeld}</caption>
                 <tbody>
-                  {AUSBAU_NAMEN.map((name, stufe) => (
-                    <tr key={name} className={besitz.stufe === stufe ? styles.aktuell : undefined}>
-                      <th scope="row">{name}</th>
+                  {AUSBAU_NAMEN.map((_, stufe) => (
+                    <tr key={stufe} className={besitz.stufe === stufe ? styles.aktuell : undefined}>
+                      <th scope="row">{ausbauName(t, stufe)}</th>
                       <td>
                         {zahl(
                           g.grundgebuehr *
@@ -185,14 +186,14 @@ export function FeldKarte({
                   ))}
                 </tbody>
               </table>
-              {komplett && <p className={styles.notiz}>Gruppe komplett – Gebühren erhöht.</p>}
+              {komplett && <p className={styles.notiz}>{tk.gruppeKomplett}</p>}
               <dl className={styles.fuss}>
                 <div>
-                  <dt>Kaufpreis</dt>
+                  <dt>{tk.kaufpreis}</dt>
                   <dd>{zahl(kaufpreis(feldId))}</dd>
                 </div>
                 <div>
-                  <dt>Ausbau je Stufe</dt>
+                  <dt>{tk.ausbauJeStufe}</dt>
                   <dd>{zahl(baukosten(feldId))}</dd>
                 </div>
               </dl>
@@ -202,13 +203,11 @@ export function FeldKarte({
           {feldId && besitz && istSonderfeld(feldId) && (
             <>
               <table className={styles.staffel}>
-                <caption className={styles.staffelTitel}>Standgeld</caption>
+                <caption className={styles.staffelTitel}>{tk.standgeld}</caption>
                 <tbody>
                   {SONDERFELD_GEBUEHR.slice(1).map((betrag, i) => (
                     <tr key={i}>
-                      <th scope="row">
-                        {i + 1} Feld{i > 0 ? 'er' : ''} im Besitz
-                      </th>
+                      <th scope="row">{tk.felderImBesitz(i + 1)}</th>
                       <td>{zahl(betrag)}</td>
                     </tr>
                   ))}
@@ -216,7 +215,7 @@ export function FeldKarte({
               </table>
               <dl className={styles.fuss}>
                 <div>
-                  <dt>Kaufpreis</dt>
+                  <dt>{tk.kaufpreis}</dt>
                   <dd>{zahl(kaufpreis(feldId))}</dd>
                 </div>
               </dl>
@@ -226,21 +225,21 @@ export function FeldKarte({
           {feldId && besitz && istVerband(feldId) && (
             <>
               <table className={styles.staffel}>
-                <caption className={styles.staffelTitel}>Standgeld</caption>
+                <caption className={styles.staffelTitel}>{tk.standgeld}</caption>
                 <tbody>
                   <tr>
-                    <th scope="row">Ein Verband</th>
-                    <td>Würfel × {VERBAND_FAKTOR_EINER}</td>
+                    <th scope="row">{tk.einVerband}</th>
+                    <td>{tk.wuerfelMal(VERBAND_FAKTOR_EINER)}</td>
                   </tr>
                   <tr>
-                    <th scope="row">Beide Verbände</th>
-                    <td>Würfel × {VERBAND_FAKTOR_BEIDE}</td>
+                    <th scope="row">{tk.beideVerbaende}</th>
+                    <td>{tk.wuerfelMal(VERBAND_FAKTOR_BEIDE)}</td>
                   </tr>
                 </tbody>
               </table>
               <dl className={styles.fuss}>
                 <div>
-                  <dt>Kaufpreis</dt>
+                  <dt>{tk.kaufpreis}</dt>
                   <dd>{zahl(kaufpreis(feldId))}</dd>
                 </div>
               </dl>
@@ -262,16 +261,18 @@ export function FeldKarte({
                   >
                     {figur(besitzer.figurId).icon}
                   </span>
-                  Im Besitz von <strong>{besitzer.name}</strong>
-                  {istGrundstueck(feldId) && besitz.stufe > 0 && ` · ${AUSBAU_NAMEN[besitz.stufe]}`}
+                  {tk.imBesitzVon} <strong>{besitzer.name}</strong>
+                  {istGrundstueck(feldId) &&
+                    besitz.stufe > 0 &&
+                    ` · ${ausbauName(t, besitz.stufe)}`}
                 </>
               ) : (
-                'Noch frei'
+                tk.nochFrei
               )}
             </p>
           )}
 
-          {!feldId && <p className={styles.sonderText}>{beschreibeSonderfeld(feld)}</p>}
+          {!feldId && <p className={styles.sonderText}>{beschreibeSonderfeld(t, feld)}</p>}
 
           {g && <p className={styles.fakt}>{g.fakt}</p>}
 
@@ -291,7 +292,7 @@ export function FeldKarte({
                 >
                   {akteur.icon}
                 </span>
-                {aktionen?.length ? `${akteur.name} entscheidet …` : `${akteur.name} steht hier.`}
+                {aktionen?.length ? tk.entscheidet(akteur.name) : tk.stehtHier(akteur.name)}
               </p>
             )}
             {aktionen?.map((a) => (
@@ -314,7 +315,7 @@ export function FeldKarte({
               </button>
             ))}
             <button type="button" className={styles.schliessen} onClick={onSchliessen}>
-              {aktionen?.length ? 'Karte weglegen' : 'Schließen'}
+              {aktionen?.length ? tk.weglegen : tk.schliessen}
             </button>
           </div>
         </article>
@@ -324,48 +325,44 @@ export function FeldKarte({
 }
 
 /** Die Zeile über dem Namen, wenn es kein Grundstück ist. */
-function feldArt(feld: BrettFeld): string {
+function feldArt(t: Texte, feld: BrettFeld): string {
+  const art = t.schuetzenopoly.karte.feldArt
   switch (feld.typ) {
     case 'start':
-      return 'Festplatz'
+      return art.start
     case 'strafbank':
     case 'zur_strafbank':
-      return 'Strafbank'
+      return art.strafbank
     case 'freies_fest':
-      return 'Freies Fest'
+      return art.freies_fest
     case 'ereignis':
-      return 'Ereigniskarte'
+      return art.ereignis
     case 'vereinskarte':
-      return 'Vereinskarte'
+      return art.vereinskarte
     case 'minispiel':
-      return 'Schießstand'
+      return art.minispiel
     case 'sonderfeld':
       // Die vier Umzüge stehen an der Stelle, an der klassische Bretter
       // Bahnhöfe haben. "Feld" stand hier vorher, und das sagt nichts.
-      return 'Umzug'
+      return art.sonderfeld
     case 'verband':
-      return 'Verband'
+      return art.verband
     default:
-      return 'Feld'
+      return art.feld
   }
 }
 
-function beschreibeSonderfeld(feld: BrettFeld): string {
+function beschreibeSonderfeld(t: Texte, feld: BrettFeld): string {
+  const text = t.schuetzenopoly.karte.beschreibung
   switch (feld.typ) {
     case 'start':
-      return 'Wer hier vorbeikommt, bekommt die Standgebühren des Festplatzes ausgezahlt.'
     case 'strafbank':
-      return 'Nur zu Besuch – solange man nicht selbst hier sitzt. Ein Pasch, eine Zahlung oder die Fürsprache-Karte holen einen wieder heraus.'
     case 'freies_fest':
-      return 'Eintritt frei, und der Wirt gibt etwas dazu. Eine Runde zum Durchatmen.'
     case 'zur_strafbank':
-      return 'Von hier geht es sofort auf die Strafbank – ohne über START zu kommen.'
     case 'ereignis':
-      return 'Zieh eine Ereigniskarte. Meist geht es dabei ums Geld.'
     case 'vereinskarte':
-      return 'Zieh eine Vereinskarte. Die wirken auf spätere Züge und auf die Mitspieler.'
     case 'minispiel':
-      return 'Am Schießstand geht es um Bronze, Silber oder Gold.'
+      return text[feld.typ]
     default:
       return ''
   }

@@ -14,16 +14,30 @@
  *    des Familienplaners zu übernehmen wäre bequem gewesen und falsch: Sie
  *    beschreibt Firebase, WebUntis und Push -- nichts davon kommt hier vor.
  */
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import 'fake-indexeddb/auto'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { HomePage } from '@/pages/HomePage'
+import { SprachProvider } from '@/i18n/SprachProvider'
 import { ImpressumPage } from '@/pages/recht/ImpressumPage'
 import { DatenschutzPage } from '@/pages/recht/DatenschutzPage'
 
+/*
+ * Die Sprache ausdruecklich setzen. jsdom meldet en-US, die App waehlt
+ * dann Englisch -- und diese Tests pruefen deutschen Text. Ohne diese
+ * Zeilen haengt ihr Ergebnis an der Spracheinstellung der Testumgebung.
+ */
+beforeEach(() => {
+  localStorage.setItem('te-sprache', 'de')
+})
+
 const zeige = (seite: React.ReactElement) =>
-  render(<MemoryRouter>{seite}</MemoryRouter>)
+  render(
+    <SprachProvider>
+      <MemoryRouter>{seite}</MemoryRouter>
+    </SprachProvider>,
+  )
 
 describe('Impressum', () => {
   it('nennt Anbieter, Anschrift und Kontakt', () => {
@@ -35,8 +49,9 @@ describe('Impressum', () => {
     for (const angabe of ['TE-Digital', 'Thomas Elsen', 'Holbeinstraße 6', '41470 Neuss']) {
       expect(text, `${angabe} fehlt`).toContain(angabe)
     }
-    expect(screen.getByRole('link', { name: /te-alltagshelfer@outlook\.de/ }).getAttribute('href'))
-      .toBe('mailto:te-alltagshelfer@outlook.de')
+    expect(
+      screen.getByRole('link', { name: /te-alltagshelfer@outlook\.de/ }).getAttribute('href'),
+    ).toBe('mailto:te-alltagshelfer@outlook.de')
   })
 
   it('nennt die Pflichtangaben nach DDG und MStV', () => {
@@ -99,18 +114,52 @@ describe('Datenschutzerklärung', () => {
 describe('Erreichbarkeit von der Startseite', () => {
   it('verlinkt beide Seiten im Fuß', () => {
     render(
-      <MemoryRouter>
-        <HomePage />
-      </MemoryRouter>,
+      <SprachProvider>
+        <MemoryRouter>
+          <HomePage />
+        </MemoryRouter>
+      </SprachProvider>,
     )
     expect(screen.getByRole('link', { name: 'Impressum' }).getAttribute('href')).toBe('/impressum')
-    expect(screen.getByRole('link', { name: 'Datenschutz' }).getAttribute('href')).toBe('/datenschutz')
+    expect(screen.getByRole('link', { name: 'Datenschutz' }).getAttribute('href')).toBe(
+      '/datenschutz',
+    )
   })
 
   it('die beiden Seiten verlinken einander', () => {
     zeige(<ImpressumPage />)
-    expect(screen.getByRole('link', { name: 'Datenschutzerklärung' }).getAttribute('href'))
-      .toBe('/datenschutz')
+    expect(screen.getByRole('link', { name: 'Datenschutzerklärung' }).getAttribute('href')).toBe(
+      '/datenschutz',
+    )
     screen.getByRole('link', { name: '← Zurück' })
+  })
+})
+
+describe('Auf Englisch', () => {
+  beforeEach(() => {
+    localStorage.setItem('te-sprache', 'en')
+  })
+
+  it('zeigt die Datenschutzerklärung englisch, mit denselben Diensten und Zusagen', () => {
+    const { container } = zeige(<DatenschutzPage />)
+    const text = container.textContent ?? ''
+    expect(screen.getByRole('heading', { level: 1, name: 'Privacy policy' })).toBeTruthy()
+    for (const dienst of ['Supabase', 'Cloudflare', 'PayPal']) expect(text).toContain(dienst)
+    expect(text).toContain('Without an account, everything stays on your device')
+    expect(text).toContain('We do not set cookies')
+    expect(text).toContain('the German version applies')
+    expect(text).not.toContain('Ohne Konto')
+  })
+
+  it('zeigt das Impressum englisch, die Pflichtangaben bleiben', () => {
+    const { container } = zeige(<ImpressumPage />)
+    const text = container.textContent ?? ''
+    expect(screen.getByRole('heading', { level: 1, name: 'Legal notice' })).toBeTruthy()
+    for (const angabe of ['Holbeinstraße 6', '§ 5 DDG', '§ 19 UStG', '§ 18 Abs. 2 MStV']) {
+      expect(text).toContain(angabe)
+    }
+    expect(screen.getByRole('link', { name: 'Privacy policy' }).getAttribute('href')).toBe(
+      '/datenschutz',
+    )
   })
 })

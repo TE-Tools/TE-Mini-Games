@@ -26,6 +26,8 @@ export type GameId =
   | 'texas-holdem'
   | 'maumau'
   | 'letzte-karte'
+  | 'rueckwaerts'
+  | 'schach'
 
 export interface GameLevelConfig {
   level: number
@@ -43,6 +45,12 @@ export interface GameResult {
   isPersonalRecord?: boolean
   resultData: Record<string, unknown>
   timestamp?: number
+  /**
+   * Ein Belohnungsvideo hat in dieser Runde geholfen (Wiederbeleben, noch
+   * ein Versuch …). Dann gilt `wertungMitWerbehilfe`: keine Punkte, keine
+   * XP, höchstens ein Stern, kein Rekord.
+   */
+  mitWerbehilfe?: boolean
 }
 
 export interface GameDefinition {
