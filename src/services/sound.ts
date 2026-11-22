@@ -181,13 +181,31 @@ export function pausiereTon(wert: boolean): void {
 
 /** Einen Klang abspielen. Fehler bleiben stumm -- Ton ist Beiwerk. */
 export function spiele(klang: Klang): void {
+  abspielen(KLAENGE[klang])
+}
+
+/**
+ * Eine Note der Leiter für Spiele, in denen jedes Feld seinen eigenen Ton hat
+ * (Reihenfolge merken). Pentatonisch: Welche Felder auch nacheinander kommen,
+ * es klingt nie schief.
+ */
+const LEITER = [392, 440, 523.25, 587.33, 659.25, 784, 880, 1046.5, 1174.66]
+export function spieleNote(stufe: number): void {
+  const frequenz = LEITER[((stufe % LEITER.length) + LEITER.length) % LEITER.length]!
+  abspielen([
+    { frequenz, dauer: 0.32, typ: 'triangle', lautstaerke: 0.16 },
+    { frequenz: frequenz * 2, dauer: 0.18, typ: 'sine', lautstaerke: 0.05 },
+  ])
+}
+
+function abspielen(toene: readonly Ton[]): void {
   if (!an || pausiert || laut <= 0) return
   const ctx = holeKontext()
   if (!ctx) return
   try {
     if (ctx.state === 'suspended') void ctx.resume()
     const start = ctx.currentTime
-    for (const ton of KLAENGE[klang]) {
+    for (const ton of toene) {
       const beginn = start + (ton.ab ?? 0)
       const osz = ctx.createOscillator()
       const verstaerker = ctx.createGain()
