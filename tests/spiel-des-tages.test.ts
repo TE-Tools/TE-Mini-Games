@@ -19,3 +19,12 @@ describe('Spiel des Tages', () => {
     expect(gesehen.size).toBe(SPIELE_KACHELN.length)
   })
 })
+
+describe('Startseite: Zuletzt gespielt', () => {
+  it('Serie auf Deutsch und Englisch mit richtiger Einzahl', async () => {
+    const { de } = await import('@/i18n/texte/de')
+    const { en } = await import('@/i18n/texte/en')
+    expect([de.start.serieTage(1), de.start.serieTage(3)]).toEqual(['1 Tag', '3 Tage'])
+    expect([en.start.serieTage(1), en.start.serieTage(3)]).toEqual(['1 day', '3 days'])
+  })
+})

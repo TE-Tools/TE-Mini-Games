@@ -491,85 +491,85 @@
   white-space: nowrap;
 }
 
-:is(.kachel, .held)[data-game='perfect-second'] {
+:is(.kachel, .held, .ersterSchritt)[data-game='perfect-second'] {
   --kachel-ton: color-mix(in srgb, #6d4ae8 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #6d4ae8 30%, transparent);
   --kachel-farbe: #6d4ae8;
 }
 
-:is(.kachel, .held)[data-game='what-is-missing'] {
+:is(.kachel, .held, .ersterSchritt)[data-game='what-is-missing'] {
   --kachel-ton: color-mix(in srgb, #0d7a72 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #0d7a72 30%, transparent);
   --kachel-farbe: #0d7a72;
 }
 
-:is(.kachel, .held)[data-game='schuetzenrunde'] {
+:is(.kachel, .held, .ersterSchritt)[data-game='schuetzenrunde'] {
   --kachel-ton: color-mix(in srgb, #15803d 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #15803d 30%, transparent);
   --kachel-farbe: #15803d;
 }
 
-:is(.kachel, .held)[data-game='finde-den-imposter'] {
+:is(.kachel, .held, .ersterSchritt)[data-game='finde-den-imposter'] {
   --kachel-ton: color-mix(in srgb, #be123c 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #be123c 30%, transparent);
   --kachel-farbe: #be123c;
 }
 
-:is(.kachel, .held)[data-game='reihenfolge'] {
+:is(.kachel, .held, .ersterSchritt)[data-game='reihenfolge'] {
   --kachel-ton: color-mix(in srgb, #1d4ed8 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #1d4ed8 30%, transparent);
   --kachel-farbe: #1d4ed8;
 }
 
-:is(.kachel, .held)[data-game='kopfrechnen'] {
+:is(.kachel, .held, .ersterSchritt)[data-game='kopfrechnen'] {
   --kachel-ton: color-mix(in srgb, #c2410c 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #c2410c 30%, transparent);
   --kachel-farbe: #c2410c;
 }
 
-:is(.kachel, .held)[data-game='wer-bin-ich'] {
+:is(.kachel, .held, .ersterSchritt)[data-game='wer-bin-ich'] {
   --kachel-ton: color-mix(in srgb, #7e22ce 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #7e22ce 30%, transparent);
   --kachel-farbe: #7e22ce;
 }
 
-:is(.kachel, .held)[data-game='stadt-land-fluss'] {
+:is(.kachel, .held, .ersterSchritt)[data-game='stadt-land-fluss'] {
   --kachel-ton: color-mix(in srgb, #047857 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #047857 30%, transparent);
   --kachel-farbe: #047857;
 }
 
-:is(.kachel, .held)[data-game='scharade'] {
+:is(.kachel, .held, .ersterSchritt)[data-game='scharade'] {
   --kachel-ton: color-mix(in srgb, #be185d 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #be185d 30%, transparent);
   --kachel-farbe: #be185d;
 }
 
-:is(.kachel, .held)[data-game='wortbombe'] {
+:is(.kachel, .held, .ersterSchritt)[data-game='wortbombe'] {
   --kachel-ton: color-mix(in srgb, #b45309 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #b45309 30%, transparent);
   --kachel-farbe: #b45309;
 }
 
-:is(.kachel, .held)[data-game='wer-wuerde-eher'] {
+:is(.kachel, .held, .ersterSchritt)[data-game='wer-wuerde-eher'] {
   --kachel-ton: color-mix(in srgb, #4338ca 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #4338ca 30%, transparent);
   --kachel-farbe: #4338ca;
 }
 
-:is(.kachel, .held)[data-game='rueckwaerts'] {
+:is(.kachel, .held, .ersterSchritt)[data-game='rueckwaerts'] {
   --kachel-ton: color-mix(in srgb, #0e7490 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #0e7490 30%, transparent);
   --kachel-farbe: #0e7490;
 }
 
-:is(.kachel, .held)[data-game='schach'] {
+:is(.kachel, .held, .ersterSchritt)[data-game='schach'] {
   --kachel-ton: color-mix(in srgb, #44403c 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #44403c 30%, transparent);
   --kachel-farbe: #44403c;
 }
 
-:is(.kachel, .held)[data-game='schuetzenopoly'] {
+:is(.kachel, .held, .ersterSchritt)[data-game='schuetzenopoly'] {
   /* Olivgruen. Das Brett selbst ist dunkles Flaschengruen mit Gold, aber
      beides ist hier schon vergeben: Gruen bei der Schuetzenrunde und bei
      Stadt-Land-Fluss, Gold bei der Rangliste. Als 13-Prozent-Ton im
@@ -580,21 +580,21 @@
   --kachel-farbe: #4d7c0f;
 }
 
-:is(.kachel, .held)[data-game='maumau'] {
+:is(.kachel, .held, .ersterSchritt)[data-game='maumau'] {
   /* Warmes Rot -- die Karte, die man am Kuechentisch umdreht. */
   --kachel-ton: color-mix(in srgb, #b3302c 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #b3302c 30%, transparent);
   --kachel-farbe: #b3302c;
 }
 
-:is(.kachel, .held)[data-game='letzte-karte'] {
+:is(.kachel, .held, .ersterSchritt)[data-game='letzte-karte'] {
   /* Kraeftiges Orange: bunt, aber im Raster noch nicht vergeben. */
   --kachel-ton: color-mix(in srgb, #c96a12 13%, #ffffff);
   --kachel-rahmen: color-mix(in srgb, #c96a12 30%, transparent);
   --kachel-farbe: #c96a12;
 }
 
-:is(.kachel, .held)[data-game='texas-holdem'] {
+:is(.kachel, .held, .ersterSchritt)[data-game='texas-holdem'] {
   /* Tischgruen -- die einzige Kachel in dieser Richtung, und beim Poker
      die Farbe, an die jeder denkt. */
   --kachel-ton: color-mix(in srgb, #15603f 13%, #ffffff);
@@ -602,7 +602,7 @@
   --kachel-farbe: #15603f;
 }
 
-:is(.kachel, .held)[data-game='kniffel'] {
+:is(.kachel, .held, .ersterSchritt)[data-game='kniffel'] {
   /* Tiefes Blau -- die Wuerfel sind weiss, das passt, und Blau ist im
      Raster nur einmal vergeben (Reihenfolge merken, deutlich heller). */
   --kachel-ton: color-mix(in srgb, #1e3a8a 13%, #ffffff);
@@ -1328,27 +1328,27 @@
 }
 
 /* Spielfarben, die noch fehlten. */
-:is(.kachel, .held)[data-game='sudoku'] {
+:is(.kachel, .held, .ersterSchritt)[data-game='sudoku'] {
   --kachel-ton: color-mix(in srgb, #334155 13%, #ffffff);
   --kachel-farbe: #334155;
 }
 
-:is(.kachel, .held)[data-game='bienen-flow'] {
+:is(.kachel, .held, .ersterSchritt)[data-game='bienen-flow'] {
   --kachel-ton: color-mix(in srgb, #ca8a04 13%, #ffffff);
   --kachel-farbe: #ca8a04;
 }
 
-:is(.kachel, .held)[data-game='squishy-dumplings'] {
+:is(.kachel, .held, .ersterSchritt)[data-game='squishy-dumplings'] {
   --kachel-ton: color-mix(in srgb, #db2777 13%, #ffffff);
   --kachel-farbe: #db2777;
 }
 
-:is(.kachel, .held)[data-game='trapbound'] {
+:is(.kachel, .held, .ersterSchritt)[data-game='trapbound'] {
   --kachel-ton: color-mix(in srgb, #0f766e 13%, #ffffff);
   --kachel-farbe: #0e7490;
 }
 
-:is(.kachel, .held)[data-game='emberwake'] {
+:is(.kachel, .held, .ersterSchritt)[data-game='emberwake'] {
   --kachel-ton: color-mix(in srgb, #ea580c 13%, #ffffff);
   --kachel-farbe: #ea580c;
 }
@@ -1687,6 +1687,106 @@
   .heldGlanz,
   .heldIcon,
   .heldKnopf {
+    animation: none;
+  }
+}
+
+/* ===================== Dashboard (22.11.2026) =====================
+ * Zuletzt gespielt: mit Symbol und Sternen, jede Zeile führt zurück ins
+ * Spiel; ohne Verlauf ein Knopf, der gleich ein Spiel vorschlägt. */
+
+.listenZeile {
+  animation: zeileRein 360ms cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+.zeileLink {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 6px 8px;
+  margin: -6px -8px;
+  border-radius: 12px;
+  color: inherit;
+  text-decoration: none;
+  transition: background 150ms ease;
+}
+
+.zeileLink:hover,
+.zeileLink:focus-visible {
+  background: rgb(90 60 224 / 0.07);
+}
+
+.zeileLink .zeileName {
+  flex: 1;
+}
+
+.zeileIcon {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  flex: none;
+  border-radius: 10px;
+  background: linear-gradient(145deg, #ffffff, #ede9fe);
+  box-shadow:
+    inset 0 1px 0 #ffffff,
+    0 2px 6px -2px rgb(90 60 224 / 0.35);
+  font-size: 1.1rem;
+}
+
+.zeileSterne {
+  color: #f59e0b;
+  font-size: var(--text-xs);
+  letter-spacing: 0.05em;
+}
+
+.ersterSchritt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: 16px;
+  color: #ffffff;
+  font-weight: 800;
+  text-decoration: none;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--kachel-farbe, #5a3ce0) 88%, #ffffff),
+    color-mix(in srgb, var(--kachel-farbe, #5a3ce0) 70%, #0f172a)
+  );
+  box-shadow: 0 10px 22px -12px var(--kachel-farbe, #5a3ce0);
+}
+
+.ersterPfeil {
+  margin-left: auto;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #ffffff;
+  color: var(--kachel-farbe, #5a3ce0);
+  font-size: 0.8rem;
+  animation: heldPochen 2.4s ease-in-out infinite;
+}
+
+@keyframes zeileRein {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+}
+
+:global(:root[data-sparsam]) .listenZeile,
+:global(:root[data-sparsam]) .ersterPfeil {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .listenZeile,
+  .ersterPfeil {
     animation: none;
   }
 }

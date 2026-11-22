@@ -37,6 +37,8 @@ export const de = {
     reiterTagesziel: 'Tagesziel',
     zuletztGespielt: 'Zuletzt gespielt',
     zuletztGespieltText: 'Da warst du gerade unterwegs.',
+    serieTage: (n: number) => (n === 1 ? '1 Tag' : `${n} Tage`),
+    losMit: (spiel: string) => `Gleich loslegen: ${spiel}`,
     nochNichtsGespielt: 'Noch nichts gespielt – such dir unten etwas aus.',
     spieleEntdecken: 'Spiele entdecken',
     spielDesTages: 'Spiel des Tages',
