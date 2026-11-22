@@ -26,6 +26,7 @@ import { fehlerSatz, partyFehler } from './partyFehler'
 import { Zeitring } from '@/components/zeitring/Zeitring'
 import shell from './PartyShell.module.css'
 import styles from './ScharadePage.module.css'
+import { Spielerbild } from './party/Spielerbild'
 
 const DEFAULT_NAMES = 'Thomas\nMarina\nPhillip\nSonja'
 
@@ -174,6 +175,7 @@ export function ScharadePage() {
           {s.runde(state.roundIndex + 1)} · {state.categoryLabel}
         </p>
         <div className={`${shell.card} ${shell.cover}`}>
+          <Spielerbild name={ap.name} />
           <p className={shell.subtitle}>{g.weitergebenAn}</p>
           <p className={shell.coverName}>{ap.name}</p>
           <p className={shell.hint}>{s.anleitung(state.seconds)}</p>

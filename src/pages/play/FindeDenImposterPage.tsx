@@ -30,6 +30,7 @@ import { ImposterCategoriesEditor } from './ImposterCategoriesEditor'
 import { gueltigeKategorie } from './imposter/kategorien'
 import { chaosRegel, meldungText, modusName, modusText, phasenName } from './imposter/imposterText'
 import styles from './FindeDenImposterPage.module.css'
+import { Spielerbild } from './party/Spielerbild'
 
 const DEFAULT_NAMES = 'Thomas\nMarina\nPhillip\nSonja'
 
@@ -269,6 +270,7 @@ export function FindeDenImposterPage() {
           {kategorieZusatz}
         </p>
         <div className={`${styles.card} ${styles.cover}`}>
+          <Spielerbild name={ap.name} />
           <p className={styles.subtitle}>{tx.weitergebenAn}</p>
           <p className={styles.coverName}>{ap.name}</p>
           <p className={styles.meta}>{tx.wegschauen}</p>
