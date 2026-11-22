@@ -204,7 +204,7 @@ export function HomePage() {
             <span>
               <span className={styles.standLabel}>{t.start.serie}</span>
               <span className={styles.standWert}>
-                {loading ? '…' : streakDays > 0 ? `${streakDays} Tage` : '—'}
+                {loading ? '…' : streakDays > 0 ? t.start.serieTage(streakDays) : '—'}
               </span>
             </span>
           </div>
@@ -542,9 +542,9 @@ function ZuletztGespielt() {
   const { sprache, t } = useSprache()
   // Die Kennung merken, nicht den Namen: Sonst behalten die Zeilen beim
   // Sprachwechsel die Sprache, in der sie geladen wurden.
-  const [zeilen, setZeilen] = useState<{ id: string; gameId: string; punkte: number }[] | null>(
-    null,
-  )
+  const [zeilen, setZeilen] = useState<
+    { id: string; gameId: string; punkte: number; sterne: number }[] | null
+  >(null)
 
   useEffect(() => {
     let abbruch = false
@@ -556,6 +556,7 @@ function ZuletztGespielt() {
             id: e.id,
             gameId: e.gameId,
             punkte: e.score,
+            sterne: e.stars,
           })),
         )
       })
@@ -565,20 +566,55 @@ function ZuletztGespielt() {
     }
   }, [])
 
+  // Noch nichts gespielt: Statt nur eines Satzes gleich ein Spiel zum Antippen --
+  // das erste der Liste, außer es ist schon das Spiel des Tages darunter.
+  const heute = spielDesTages()
+  const vorschlag = SPIELE_KACHELN.find((k) => k.id !== heute.id)!
+
   return (
     <Tafel titel={t.start.zuletztGespielt} hinweis={t.start.zuletztGespieltText}>
       {zeilen === null && <p className={styles.leiseZeile}>{t.allgemein.laden}</p>}
-      {zeilen?.length === 0 && <p className={styles.leiseZeile}>{t.start.nochNichtsGespielt}</p>}
+      {zeilen?.length === 0 && (
+        <Link to={vorschlag.pfad} className={styles.ersterSchritt} data-game={vorschlag.id}>
+          <span aria-hidden="true">{vorschlag.icon}</span>
+          {t.start.losMit(t.spiele[vorschlag.id])}
+          <span className={styles.ersterPfeil} aria-hidden="true">
+            ▶
+          </span>
+        </Link>
+      )}
       {zeilen && zeilen.length > 0 && (
         <ul className={styles.liste}>
-          {zeilen.map((z) => (
-            <li key={z.id} className={styles.listenZeile}>
-              <span className={styles.zeileName}>
-                {spielName(t, z.gameId, gameLabel(z.gameId))}
-              </span>
-              <span className={styles.zeileWert}>{z.punkte.toLocaleString(sprache)}</span>
-            </li>
-          ))}
+          {zeilen.map((z, i) => {
+            const kachel = kachelFuer(z.gameId)
+            const name = spielName(t, z.gameId, gameLabel(z.gameId))
+            const inhalt = (
+              <>
+                <span className={styles.zeileIcon} aria-hidden="true">
+                  {kachel?.icon ?? '🎮'}
+                </span>
+                <span className={styles.zeileName}>{name}</span>
+                {z.sterne > 0 && (
+                  <span className={styles.zeileSterne} aria-label={t.levelSpiele.sterne(z.sterne)}>
+                    {'★'.repeat(Math.min(5, z.sterne))}
+                  </span>
+                )}
+                <span className={styles.zeileWert}>{z.punkte.toLocaleString(sprache)}</span>
+              </>
+            )
+            return (
+              <li key={z.id} className={styles.listenZeile} style={{ '--i': i } as CSSProperties}>
+                {/* Jede Zeile führt zurück ins Spiel -- „nur noch eine Runde". */}
+                {kachel ? (
+                  <Link to={kachel.pfad} className={styles.zeileLink}>
+                    {inhalt}
+                  </Link>
+                ) : (
+                  inhalt
+                )}
+              </li>
+            )
+          })}
         </ul>
       )}
     </Tafel>

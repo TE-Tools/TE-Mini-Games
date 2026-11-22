@@ -37,6 +37,8 @@ export const en: Texte = {
     reiterTagesziel: 'Daily goal',
     zuletztGespielt: 'Recently played',
     zuletztGespieltText: 'Where you left off.',
+    serieTage: (n: number) => (n === 1 ? '1 day' : `${n} days`),
+    losMit: (spiel: string) => `Jump right in: ${spiel}`,
     nochNichtsGespielt: 'Nothing played yet – pick something below.',
     spieleEntdecken: 'Discover games',
     spielDesTages: 'Game of the day',
