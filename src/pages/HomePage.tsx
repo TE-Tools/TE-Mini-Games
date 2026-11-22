@@ -42,6 +42,7 @@ import { StartBuehne } from '@/components/drei/StartBuehne'
 import { werbungAktiv } from '@/services/werbung'
 import {
   SPIELE_KACHELN,
+  spielDesTages,
   SPIEL_GRUPPEN,
   gruppeVon,
   kachelFuer,
@@ -244,6 +245,8 @@ export function HomePage() {
         <h2 className={styles.abschnittTitel}>{t.start.spieleEntdecken}</h2>
         <p className={styles.abschnittText}>{t.start.spieleEntdeckenText}</p>
 
+        <SpielDesTages />
+
         {/* Wer mitspielen will, statt selbst zu eröffnen: alle öffentlichen
             Räume aller Online-Spiele auf einer Seite (12.09.2026, Thomas). */}
         <Link to="/offene-spiele" className={styles.offeneSpiele}>
@@ -283,7 +286,13 @@ export function HomePage() {
                 </span>
               </div>
               <span className={styles.kachelArt}>{t.spielarten[k.art]}</span>
-              <h3 className={styles.kachelName}>{t.spiele[k.id]}</h3>
+              <h3
+                className={`${styles.kachelName} ${
+                  langesWort(t.spiele[k.id]) ? styles.kachelNameLang : ''
+                }`}
+              >
+                {t.spiele[k.id]}
+              </h3>
               <Link to={k.pfad} className={styles.kachelKnopf}>
                 <span className={styles.kachelPfeil} aria-hidden="true">
                   ▶
@@ -686,4 +695,34 @@ function TageszielKurz() {
       </p>
     </Tafel>
   )
+}
+
+/**
+ * Die große Karte oben über den Kacheln: Heute empfohlen. Sie gibt der Seite
+ * einen Mittelpunkt -- statt 23 gleich großer Kacheln ein Spiel, das ruft.
+ */
+function SpielDesTages() {
+  const { t } = useSprache()
+  const k = spielDesTages()
+  return (
+    <Link to={k.pfad} className={styles.held} data-game={k.id}>
+      <span className={styles.heldGlanz} aria-hidden="true" />
+      <span className={styles.heldIcon} aria-hidden="true">
+        {k.icon}
+      </span>
+      <span className={styles.heldText}>
+        <span className={styles.heldMarke}>✨ {t.start.spielDesTages}</span>
+        <strong className={styles.heldName}>{t.spiele[k.id]}</strong>
+        <span className={styles.heldArt}>{t.spielarten[k.art]}</span>
+      </span>
+      <span className={styles.heldKnopf} aria-hidden="true">
+        ▶
+      </span>
+    </Link>
+  )
+}
+
+/** Hat der Name ein Wort, das neben dem Knopf keinen Platz hat? */
+function langesWort(name: string): boolean {
+  return name.split(/[\s-]+/).some((w) => w.length >= 12)
 }
