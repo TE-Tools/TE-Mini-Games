@@ -125,3 +125,28 @@
     transform: translateX(6px);
   }
 }
+
+/* ============ Nachtrunde (21.11.2026): Aufgabe als Karte, Serie ============ */
+
+/* Die Aufgabe steht auf einer Karte -- das Auge weiß sofort, wohin. */
+.task {
+  min-width: 12rem;
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius-2xl);
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 14px 30px -14px rgb(90 60 224 / 0.45);
+}
+
+/* Drei und mehr in Folge richtig: ein Abzeichen, das bei jedem Treffer aufploppt. */
+.serie {
+  margin: 0;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, #f97316, #db2777);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: var(--text-sm);
+  box-shadow: 0 6px 16px -6px rgb(219 39 119 / 0.6);
+  animation: richtigPlopp 400ms cubic-bezier(0.3, 1.6, 0.5, 1) backwards;
+}

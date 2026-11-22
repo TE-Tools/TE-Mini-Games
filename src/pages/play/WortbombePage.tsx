@@ -13,6 +13,8 @@ import {
 } from '@/games/wortbombe'
 import type { SilbenStufe } from '@/games/wortbombe'
 import { useSprache } from '@/i18n/sprache'
+import { spiele, vibriere } from '@/services/sound'
+import { Bombe, Knall } from './wortbombe/Bombe'
 import { fehlerSatz, partyFehler } from './partyFehler'
 import shell from './PartyShell.module.css'
 import styles from './WortbombePage.module.css'
@@ -45,11 +47,24 @@ export function WortbombePage() {
       if (Date.now() >= zuender) {
         window.clearInterval(uhr)
         setZuender(null)
+        spiele('knall')
+        vibriere([90, 40, 220])
         setState((s) => (s && s.phase === 'handoff' ? explode(s) : s))
       }
     }, 120)
     return () => window.clearInterval(uhr)
   }, [zuender])
+
+  /*
+   * Das Ticken: gleichmäßig im Sekundentakt, solange die Bombe scharf ist.
+   * Es wird nie schneller -- sonst verriete es, wann sie hochgeht.
+   */
+  const scharf = state?.phase === 'handoff'
+  useEffect(() => {
+    if (!scharf) return
+    const uhr = window.setInterval(() => spiele('tick'), 1000)
+    return () => window.clearInterval(uhr)
+  }, [scharf])
 
   const start = useCallback(() => {
     setError(null)
@@ -140,7 +155,14 @@ export function WortbombePage() {
     <div className={shell.card}>
       <ul className={shell.list}>
         {state.players.map((p) => (
-          <li key={p.id} className={p.out ? styles.raus : undefined}>
+          <li
+            key={p.id}
+            className={
+              [p.out && styles.raus, state.phase === 'boom' && p.id === ap.id && styles.getroffen]
+                .filter(Boolean)
+                .join(' ') || undefined
+            }
+          >
             <span>{p.name}</span>
             <strong>{p.out ? w.raus : '❤️'.repeat(p.lives)}</strong>
           </li>
@@ -153,6 +175,7 @@ export function WortbombePage() {
     return (
       <main className={`${shell.page} ${styles.farbe}`}>
         <p className={shell.meta}>{w.runde(state.roundIndex + 1)}</p>
+        <Bombe wurf={state.roundIndex * 1000 + state.passes} />
         <div className={`${shell.card} ${styles.silbeBox}`}>
           <p className={shell.subtitle}>{w.sagEinWort}</p>
           <p key={state.silbe} className={styles.silbe}>
@@ -160,7 +183,14 @@ export function WortbombePage() {
           </p>
           <p className={shell.coverName}>{ap.name}</p>
         </div>
-        <button type="button" className={shell.btn} onClick={() => setState(passBomb(state))}>
+        <button
+          type="button"
+          className={shell.btn}
+          onClick={() => {
+            spiele('knopf')
+            setState(passBomb(state))
+          }}
+        >
           {w.gesagt}
         </button>
         {lebenAnzeige}
@@ -172,7 +202,7 @@ export function WortbombePage() {
     return (
       <main className={`${shell.page} ${styles.farbe}`}>
         <div className={`${shell.card} ${styles.boomBox}`}>
-          <p className={styles.boom}>💥</p>
+          <Knall />
           <h1 className={shell.title}>{w.hatteSie(ap.name)}</h1>
           <p className={shell.subtitle}>{ap.out ? w.istRaus(ap.name) : w.nochLeben(ap.lives)}</p>
         </div>

@@ -23,8 +23,10 @@ import {
 import { useSprache } from '@/i18n/sprache'
 import { gueltigeKategorie } from './imposter/kategorien'
 import { fehlerSatz, partyFehler } from './partyFehler'
+import { Zeitring } from '@/components/zeitring/Zeitring'
 import shell from './PartyShell.module.css'
 import styles from './ScharadePage.module.css'
+import { Spielerbild } from './party/Spielerbild'
 
 const DEFAULT_NAMES = 'Thomas\nMarina\nPhillip\nSonja'
 
@@ -173,6 +175,7 @@ export function ScharadePage() {
           {s.runde(state.roundIndex + 1)} · {state.categoryLabel}
         </p>
         <div className={`${shell.card} ${shell.cover}`}>
+          <Spielerbild name={ap.name} />
           <p className={shell.subtitle}>{g.weitergebenAn}</p>
           <p className={shell.coverName}>{ap.name}</p>
           <p className={shell.hint}>{s.anleitung(state.seconds)}</p>
@@ -198,9 +201,7 @@ export function ScharadePage() {
         <p className={shell.meta}>
           {ap.name} · {s.treffer(state.roundCorrect.length)}
         </p>
-        <p className={`${shell.timer} ${rest !== null && rest <= 10 ? shell.timerLow : ''}`}>
-          {rest ?? state.seconds} s
-        </p>
+        <Zeitring rest={rest ?? state.seconds} gesamt={state.seconds} />
         <div key={currentWord(state)} className={`${shell.card} ${styles.wordBox}`}>
           <p className={styles.word}>{currentWord(state)}</p>
         </div>

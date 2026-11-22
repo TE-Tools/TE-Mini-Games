@@ -2958,6 +2958,7 @@ export const de = {
     ergebnis: (richtig: number, von: number) => `${richtig} von ${von} richtig`,
     davonZeit: (n: number) => ` (davon ${n} für die Zeit)`,
     abRichtigen: (n: number) => `Ab ${n} Richtigen gibt es XP und das nächste Level.`,
+    serie: (n: number) => `${n} richtig in Folge`,
     zweiteChance: 'zweite Chance – falsche Aufgaben nachholen',
     nachholen: (neu: number) =>
       `Nachholen: ${neu} neue ${neu === 1 ? 'Aufgabe' : 'Aufgaben'}, die richtigen bleiben stehen.`,
