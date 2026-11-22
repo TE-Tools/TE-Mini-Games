@@ -39,6 +39,7 @@ export const en: Texte = {
     zuletztGespieltText: 'Where you left off.',
     nochNichtsGespielt: 'Nothing played yet – pick something below.',
     spieleEntdecken: 'Discover games',
+    spielDesTages: 'Game of the day',
     spieleEntdeckenText: 'Choose a challenge.',
     offeneSpiele: 'Open games – who is waiting',
     spendeText: 'TE-Mini Games is free and ad-free. If you enjoy it, you can buy me a coffee.',

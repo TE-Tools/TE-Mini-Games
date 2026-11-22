@@ -39,6 +39,7 @@ export const de = {
     zuletztGespieltText: 'Da warst du gerade unterwegs.',
     nochNichtsGespielt: 'Noch nichts gespielt – such dir unten etwas aus.',
     spieleEntdecken: 'Spiele entdecken',
+    spielDesTages: 'Spiel des Tages',
     spieleEntdeckenText: 'Wähle eine Herausforderung.',
     offeneSpiele: 'Offene Spiele – wer gerade wartet',
     spendeText:

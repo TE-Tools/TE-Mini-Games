@@ -169,3 +169,15 @@ const GRUPPE: Partial<Record<GameId, SpielGruppe>> = {
 export function gruppeVon(id: GameId): SpielGruppe {
   return GRUPPE[id] ?? 'knobeln'
 }
+
+/**
+ * Das Spiel des Tages: jeden Tag ein anderes, der Reihe nach durch alle
+ * Kacheln. Fest am Kalendertag (Ortszeit), nicht zufällig -- wer am selben
+ * Tag zweimal hineinschaut, sieht dasselbe, und morgen etwas Neues.
+ */
+export function spielDesTages(datum: Date = new Date()): KachelEintrag {
+  const tag = Math.floor(
+    Date.UTC(datum.getFullYear(), datum.getMonth(), datum.getDate()) / 86_400_000,
+  )
+  return SPIELE_KACHELN[tag % SPIELE_KACHELN.length]!
+}
