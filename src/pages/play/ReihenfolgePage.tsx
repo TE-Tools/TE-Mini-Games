@@ -27,6 +27,7 @@ import { LevelMap } from '@/components/level-map/LevelMap'
 import { spielName, useSprache } from '@/i18n/sprache'
 import shell from './PlayShell.module.css'
 import styles from './ReihenfolgePage.module.css'
+import { Sterne } from '@/components/sterne/Sterne'
 
 type Phase = 'map' | 'ready' | 'watch' | 'repeat' | 'result'
 
@@ -399,10 +400,7 @@ export function ReihenfolgePage() {
           <p className={scoreResult.complete ? shell.correct : shell.wrong}>
             {scoreResult.complete ? r.ganzeFolge : r.daneben}
           </p>
-          <p className={shell.stars} aria-label={t.levelSpiele.sterne(scoreResult.stars)}>
-            {'★'.repeat(scoreResult.stars)}
-            {'☆'.repeat(5 - scoreResult.stars)}
-          </p>
+          <Sterne anzahl={scoreResult.stars} label={t.levelSpiele.sterne(scoreResult.stars)} />
           <p className={shell.scoreLine}>
             <strong>{scoreResult.score}</strong> {t.levelSpiele.punkte}
             {scoreResult.xp > 0 && <> · {scoreResult.xp} XP</>}

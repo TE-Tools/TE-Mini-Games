@@ -30,6 +30,7 @@ import { milestoneBonusXp } from '@/games/milestones'
 import { LevelMap } from '@/components/level-map/LevelMap'
 import styles from './PerfectSecondPage.module.css'
 import { useSprache } from '@/i18n/sprache'
+import { Sterne } from '@/components/sterne/Sterne'
 
 type Phase = 'map' | 'ready' | 'running' | 'result'
 
@@ -383,7 +384,7 @@ export function PerfectSecondPage() {
               {hitTimes.map((zeit) => `${formatTime(zeit)} s`).join(' · ')}
             </p>
           )}
-          <p className={styles.stars}>{'⭐'.repeat(scoreResult.stars) || '—'}</p>
+          <Sterne anzahl={scoreResult.stars} label={t.levelSpiele.sterne(scoreResult.stars)} />
           <p className={styles.scoreLine}>
             <strong>{scoreResult.score}</strong> {t.spiel.punkteUndXp}{' '}
             <strong>+{scoreResult.xp}</strong> XP

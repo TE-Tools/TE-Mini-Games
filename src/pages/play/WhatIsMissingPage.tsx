@@ -26,6 +26,7 @@ import { LevelMap } from '@/components/level-map/LevelMap'
 import { BelohnungsKnopf } from '@/components/werbung/BelohnungsKnopf'
 import { spielName, useSprache } from '@/i18n/sprache'
 import styles from './WhatIsMissingPage.module.css'
+import { Sterne } from '@/components/sterne/Sterne'
 
 type Phase = 'map' | 'ready' | 'memorize' | 'choose' | 'result'
 
@@ -376,9 +377,7 @@ export function WhatIsMissingPage() {
           )}
           {scoreResult.correct && (
             <>
-              <p className={styles.stars} aria-label={t.levelSpiele.sterne(scoreResult.stars)}>
-                {'⭐'.repeat(scoreResult.stars)}
-              </p>
+              <Sterne anzahl={scoreResult.stars} label={t.levelSpiele.sterne(scoreResult.stars)} />
               {!hilfe && (
                 <p className={styles.scoreLine}>
                   <strong>+{scoreResult.score}</strong> {t.levelSpiele.punkte} ·{' '}

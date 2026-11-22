@@ -31,6 +31,7 @@ import { Zeitring } from '@/components/zeitring/Zeitring'
 import { spiele, vibriere } from '@/services/sound'
 import shell from './PlayShell.module.css'
 import styles from './KopfrechnenPage.module.css'
+import { Sterne } from '@/components/sterne/Sterne'
 
 type Phase = 'map' | 'ready' | 'play' | 'result'
 
@@ -439,10 +440,7 @@ export function KopfrechnenPage() {
           <p className={scoreResult.passed ? shell.correct : shell.wrong}>
             {k.ergebnis(treffer.filter(Boolean).length, config.tasks.length)}
           </p>
-          <p className={shell.stars} aria-label={t.levelSpiele.sterne(scoreResult.stars)}>
-            {'★'.repeat(scoreResult.stars)}
-            {'☆'.repeat(5 - scoreResult.stars)}
-          </p>
+          <Sterne anzahl={scoreResult.stars} label={t.levelSpiele.sterne(scoreResult.stars)} />
           <p className={shell.scoreLine}>
             <strong>{scoreResult.score}</strong> {t.levelSpiele.punkte}
             {scoreResult.timeBonus > 0 && <>{k.davonZeit(scoreResult.timeBonus)}</>}
