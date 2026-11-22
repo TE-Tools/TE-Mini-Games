@@ -27,6 +27,7 @@ import { BelohnungsKnopf } from '@/components/werbung/BelohnungsKnopf'
 import { spielName, useSprache } from '@/i18n/sprache'
 import styles from './WhatIsMissingPage.module.css'
 import { Sterne } from '@/components/sterne/Sterne'
+import { spiele, vibriere } from '@/services/sound'
 
 type Phase = 'map' | 'ready' | 'memorize' | 'choose' | 'result'
 
@@ -161,6 +162,11 @@ export function WhatIsMissingPage() {
       abgerechnet.current = true
       setPickedId(objectId)
       const correct = objectId === config.missingObject.id
+      if (correct) spiele('erfolg')
+      else {
+        spiele('fehlschuss')
+        vibriere(60)
+      }
       // Mit zweitem Blick: keine Punkte, keine XP, kein Rekord, höchstens ein
       // Stern -- das Level zählt trotzdem (src/games/hilfe.ts).
       const result = hilfe
@@ -251,6 +257,9 @@ export function WhatIsMissingPage() {
   /** Kennung behalten, Namen beim Rendern nachschlagen -- sonst steht er im Level fest. */
   const objektName = (obj: { id: string; label: string }) =>
     (w.objekte as Record<string, string | undefined>)[obj.id] ?? obj.label
+
+  /** Was gewählt wurde -- bei falscher Wahl steht es neben dem Gesuchten. */
+  const gewaehlt = config?.choiceObjects.find((o) => o.id === pickedId)
 
   return (
     <main className={styles.page}>
@@ -368,6 +377,28 @@ export function WhatIsMissingPage() {
           <p className={scoreResult.correct ? styles.correct : styles.wrong}>
             {scoreResult.correct ? w.richtig : w.falsch}
           </p>
+          {/* Die Auflösung als Bühne: Das Gesuchte springt groß herein -- richtig
+              mit grünem Leuchten, falsch neben dem gewählten, das rot wackelt. */}
+          <div
+            className={`${styles.buehne} ${scoreResult.correct ? styles.buehneRichtig : styles.buehneFalsch}`}
+          >
+            {!scoreResult.correct && gewaehlt && (
+              <>
+                <span
+                  className={`${styles.buehneEmoji} ${styles.buehneGewaehlt}`}
+                  aria-hidden="true"
+                >
+                  {gewaehlt.emoji}
+                </span>
+                <span className={styles.buehnePfeil} aria-hidden="true">
+                  →
+                </span>
+              </>
+            )}
+            <span className={`${styles.buehneEmoji} ${styles.buehneGesucht}`} aria-hidden="true">
+              {config.missingObject.emoji}
+            </span>
+          </div>
           <p className={styles.missingReveal}>
             {w.esFehlte} <span className={styles.emoji}>{config.missingObject.emoji}</span>{' '}
             {objektName(config.missingObject)}
