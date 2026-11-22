@@ -31,6 +31,7 @@ import { LevelMap } from '@/components/level-map/LevelMap'
 import styles from './PerfectSecondPage.module.css'
 import { useSprache } from '@/i18n/sprache'
 import { Sterne } from '@/components/sterne/Sterne'
+import { TrefferSkala } from './sekunde/TrefferSkala'
 
 type Phase = 'map' | 'ready' | 'running' | 'result'
 
@@ -375,6 +376,13 @@ export function PerfectSecondPage() {
             {' · '}
             {t.perfekteSekunde.ziel} {formatTime(config.targetTime)} s
           </p>
+          <TrefferSkala
+            zeit={hitTimes.at(-1) ?? 0}
+            ziel={config.targetTime}
+            toleranz={config.tolerance}
+            zuFrueh={t.perfekteSekunde.zuFrueh}
+            zuSpaet={t.perfekteSekunde.zuSpaet}
+          />
           <p className={styles.tolerance}>
             {t.perfekteSekunde.abweichung} {formatTime(scoreResult.absoluteDeviation)} s
           </p>

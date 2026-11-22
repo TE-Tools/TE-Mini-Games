@@ -551,6 +551,8 @@ export const en: Texte = {
     deineZeit: 'Your time:',
     daneben: 'Missed – try again',
     ziel: 'Target',
+    zuFrueh: 'too early',
+    zuSpaet: 'too late',
     abweichung: 'Deviation',
     alleTreffer: 'All hits:',
     meilenstein: (xp: number) => `🎉 Milestone bonus +${xp} XP!`,
