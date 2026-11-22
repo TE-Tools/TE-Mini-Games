@@ -28,6 +28,7 @@ import { spielName, useSprache } from '@/i18n/sprache'
 import shell from './PlayShell.module.css'
 import styles from './ReihenfolgePage.module.css'
 import { Sterne } from '@/components/sterne/Sterne'
+import { spiele, spieleNote, vibriere } from '@/services/sound'
 
 type Phase = 'map' | 'ready' | 'watch' | 'repeat' | 'result'
 
@@ -129,7 +130,10 @@ export function ReihenfolgePage() {
     config.sequence.forEach((pad, i) => {
       timers.push(
         window.setTimeout(() => {
-          if (!abbruch) setLeuchtet(pad)
+          if (abbruch) return
+          setLeuchtet(pad)
+          // Jedes Feld hat seinen Ton: Man kann sich die Folge auch anhören.
+          spieleNote(pad)
         }, i * takt),
       )
       timers.push(
@@ -267,10 +271,13 @@ export function ReihenfolgePage() {
       const neu = [...eingabe, pad]
 
       if (pad !== erwartet) {
+        spiele('fehlschuss')
+        vibriere(60)
         setEingabe(neu)
         void beenden(index, config)
         return
       }
+      spieleNote(pad)
       setEingabe(neu)
       if (neu.length >= config.sequenceLength) void beenden(config.sequenceLength, config)
     },
