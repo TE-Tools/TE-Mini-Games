@@ -558,6 +558,8 @@ export const de = {
     deineZeit: 'Deine Zeit:',
     daneben: 'Daneben – versuch’s nochmal',
     ziel: 'Ziel',
+    zuFrueh: 'zu früh',
+    zuSpaet: 'zu spät',
     abweichung: 'Abweichung',
     alleTreffer: 'Alle Treffer:',
     meilenstein: (xp: number) => `🎉 Meilenstein-Bonus +${xp} XP!`,
