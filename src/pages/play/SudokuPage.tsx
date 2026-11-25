@@ -49,6 +49,9 @@ import {
   hilfeAnbieten,
   entferneFalsche,
   falscheZiffern,
+  sterneFuer,
+  maximalePunkte,
+  ABSCHNITT,
   type Schwierigkeit,
   type Stand,
   type SudokuWertung,
@@ -60,6 +63,13 @@ import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
 import { LevelMap } from '@/components/level-map/LevelMap'
 import { BelohnungsKnopf } from '@/components/werbung/BelohnungsKnopf'
+import { LevelZiel } from '@/components/levelziel/LevelZiel'
+import { AKZENT } from '@/components/levelziel/zielText'
+import {
+  naechstesZiel,
+  punkteBisNaechsterStern,
+  type LevelZiel as Ziel,
+} from '@/components/levelziel/naechstesZiel'
 import shell from './PlayShell.module.css'
 import { useSprache } from '@/i18n/sprache'
 import styles from './SudokuPage.module.css'
@@ -78,6 +88,8 @@ interface Ende {
   tipps: number
   neu: boolean
   mitHilfe: boolean
+  /** Die Zeile "nächstes Ziel" -- gerechnet gegen den Stand von vor dieser Lösung. */
+  ziel: Ziel
 }
 
 /** So oft wird die laufende Partie weggeschrieben. */
@@ -289,7 +301,22 @@ export function SudokuPage() {
         mitHilfe,
       })
       setStand(neuerStand)
-      setEnde({ wertung, sekunden: sek, fehler, tipps, neu: !vorher.fertig, mitHilfe })
+      // Jede Stufe ist eine eigene Strecke: Level und Tore zählen innerhalb der Stufe.
+      const ziel = naechstesZiel({
+        level: stufeVon(nr),
+        maxLevel: LEVEL_PRO_STUFE,
+        abschnitt: ABSCHNITT,
+        geschafft: true,
+        punkte: wertung.punkte,
+        bisherBest: vorher.fertig ? vorher.bestePunkte : null,
+        naechsterStern: punkteBisNaechsterStern(
+          (p) => sterneFuer(nr, p),
+          wertung.punkte,
+          maximalePunkte(nr),
+        ),
+        mitHilfe,
+      })
+      setEnde({ wertung, sekunden: sek, fehler, tipps, neu: !vorher.fertig, mitHilfe, ziel })
       setAuswahl(null)
       setTipp(null)
       ton('geschafft')
@@ -914,6 +941,7 @@ export function SudokuPage() {
               <p className={styles.leise}>
                 {t.sudoku.schwersterSchritt} <b>{t.sudoku.techniken[r.technik]}</b>
               </p>
+              <LevelZiel ziel={ende.ziel} akzent={AKZENT.sudoku} />
               <div className={styles.dialogKnoepfe}>
                 <button type="button" onClick={() => setAnsicht('karte')}>
                   {t.sudoku.karte}

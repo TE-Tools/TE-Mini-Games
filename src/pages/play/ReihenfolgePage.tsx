@@ -17,7 +17,11 @@ import {
   saveGameResult,
   addXp,
   getOrCreateGuestProfile,
+  getPersonalRecord,
 } from '@/offline'
+import { LevelZiel } from '@/components/levelziel/LevelZiel'
+import { AKZENT } from '@/components/levelziel/zielText'
+import { naechstesZiel, type LevelZiel as Ziel } from '@/components/levelziel/naechstesZiel'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
 import { DATA_PULLED_EVENT } from '@/services/remotePull'
@@ -64,6 +68,8 @@ export function ReihenfolgePage() {
   /** Zweite Chance per Video in diesem Versuch genutzt? Höchstens einmal je Versuch. */
   const [hilfe, setHilfe] = useState(false)
   const [loading, setLoading] = useState(true)
+  /** Die Zeile "nächstes Ziel" auf dem Ergebnis. */
+  const [ziel, setZiel] = useState<Ziel | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -224,6 +230,19 @@ export function ReihenfolgePage() {
       const bonus = result.complete && firstClear && !hilfe ? milestoneBonusXp(cfg.level) : 0
       setMilestoneXp(bonus)
       const xpTotal = result.xp + bonus
+
+      // Der Rekord von VOR dieser Runde -- danach steht womöglich schon die neue Zahl.
+      const vorher = await getPersonalRecord('reihenfolge', cfg.level)
+      setZiel(
+        naechstesZiel({
+          level: cfg.level,
+          maxLevel: MAX_GAME_LEVEL,
+          geschafft: result.complete,
+          punkte: result.score,
+          bisherBest: vorher?.bestScore ?? null,
+          mitHilfe: hilfe,
+        }),
+      )
 
       await saveGameResult({
         gameId: 'reihenfolge',
@@ -431,13 +450,18 @@ export function ReihenfolgePage() {
             belohnung={r.zweiteChance}
             onBelohnt={zweiteChance}
           />
+          <LevelZiel ziel={ziel} akzent={AKZENT.reihenfolge} />
           <div className={shell.resultActions}>
             {scoreResult.complete && completedLevel !== null && completedLevel < MAX_GAME_LEVEL && (
               <button type="button" className={shell.primaryBtn} onClick={goToNextLevel}>
                 {t.levelSpiele.level(completedLevel + 1)}
               </button>
             )}
-            <button type="button" className={shell.secondaryBtn} onClick={playAgain}>
+            <button
+              type="button"
+              className={scoreResult.complete ? shell.secondaryBtn : shell.primaryBtn}
+              onClick={playAgain}
+            >
               {t.levelSpiele.nochMal}
             </button>
             <button type="button" className={shell.secondaryBtn} onClick={() => setPhase('map')}>

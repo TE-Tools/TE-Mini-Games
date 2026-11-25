@@ -16,7 +16,11 @@ import {
   saveGameResult,
   addXp,
   getOrCreateGuestProfile,
+  getPersonalRecord,
 } from '@/offline'
+import { LevelZiel } from '@/components/levelziel/LevelZiel'
+import { AKZENT } from '@/components/levelziel/zielText'
+import { naechstesZiel, type LevelZiel as Ziel } from '@/components/levelziel/naechstesZiel'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
 import { DATA_PULLED_EVENT } from '@/services/remotePull'
@@ -57,6 +61,8 @@ export function WhatIsMissingPage() {
   /** Zweiter Blick per Video in diesem Versuch genutzt? Höchstens einmal je Versuch. */
   const [hilfe, setHilfe] = useState(false)
   const [loading, setLoading] = useState(true)
+  /** Die Zeile "nächstes Ziel" auf dem Ergebnis. */
+  const [ziel, setZiel] = useState<Ziel | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -181,6 +187,19 @@ export function WhatIsMissingPage() {
       const bonus = correct && firstClear && !hilfe ? milestoneBonusXp(config.level) : 0
       setMilestoneXp(bonus)
       const xpTotal = result.xp + bonus
+
+      // Der Rekord von VOR dieser Runde -- danach steht womöglich schon die neue Zahl.
+      const vorher = await getPersonalRecord('what-is-missing', config.level)
+      setZiel(
+        naechstesZiel({
+          level: config.level,
+          maxLevel: MAX_GAME_LEVEL,
+          geschafft: correct,
+          punkte: result.score,
+          bisherBest: vorher?.bestScore ?? null,
+          mitHilfe: hilfe,
+        }),
+      )
 
       await saveGameResult({
         gameId: 'what-is-missing',
@@ -424,6 +443,7 @@ export function WhatIsMissingPage() {
               {scoreResult.correct && <> {t.levelSpiele.mitHilfeGeschafft}</>}
             </p>
           )}
+          <LevelZiel ziel={ziel} akzent={AKZENT['what-is-missing']} />
           <div className={styles.resultActions}>
             {completedLevel != null && (
               <button type="button" className={styles.primaryBtn} onClick={goToNextLevel}>

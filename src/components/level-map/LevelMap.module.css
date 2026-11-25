@@ -804,3 +804,31 @@
 :global(:root[data-sparsam]) .decor {
   animation: none;
 }
+
+/* --------------------------------- Wie nah das Tor ist (25.11.2026) */
+
+/* Unter dem Torschild: "noch 3 Level". Absolut, damit das Tor nicht wandert. */
+.gateTeaser {
+  position: absolute;
+  top: calc(100% + 0.2rem);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #ffffff;
+  background: linear-gradient(135deg, #7c5cf0, #5a3ce0);
+  padding: 0.12rem 0.55rem;
+  border-radius: var(--radius-full);
+  box-shadow: 0 4px 10px rgb(90 60 224 / 0.35);
+}
+
+/* Wer keine Bewegung will, bekommt auch keinen pulsierenden Ring und keine schwebende Figur. */
+@media (prefers-reduced-motion: reduce) {
+  .nodeCurrent,
+  .avatar,
+  .decor {
+    animation: none;
+  }
+}
