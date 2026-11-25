@@ -1,0 +1,138 @@
+/* Die Feierschicht liegt über allem, fängt aber keine Tipps ab -- nur die
+   Karte selbst. Der Ergebnisbildschirm darunter bleibt bedienbar. */
+
+.schicht {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  padding: 0 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+  pointer-events: none;
+}
+
+.karte {
+  position: relative;
+  pointer-events: auto;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.85rem;
+  width: min(100%, 26rem);
+  padding: 0.9rem 0.9rem 0.9rem 1rem;
+  border-radius: var(--radius-xl);
+  background: var(--grad-surface);
+  border: 1px solid var(--hairline-strong);
+  box-shadow:
+    0 18px 40px rgb(90 60 224 / 0.22),
+    0 2px 6px rgb(31 34 51 / 0.12);
+  color: var(--color-text);
+  animation: herein 420ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+.karte[data-art='aufstieg'],
+.karte[data-art='alleAufgaben'] {
+  border-color: var(--color-gold-light);
+  box-shadow:
+    0 18px 40px rgb(212 160 23 / 0.3),
+    0 2px 6px rgb(31 34 51 / 0.12);
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-full);
+  background: var(--grad-primary-soft);
+  border: 1px solid var(--hairline);
+  font-size: 1.6rem;
+  animation: plopp 560ms 120ms cubic-bezier(0.3, 1.8, 0.5, 1) both;
+}
+
+.karte[data-art='aufstieg'] .icon,
+.karte[data-art='alleAufgaben'] .icon {
+  background: var(--grad-gold);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.titel {
+  font-size: var(--text-base);
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.zeile {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.weiter {
+  min-height: 2.5rem;
+  padding: 0 0.95rem;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-navy);
+  color: #fff;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.weiter:hover {
+  background: var(--color-navy-hover);
+}
+
+.weiter:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+@keyframes herein {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes plopp {
+  from {
+    transform: scale(0.4);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .karte,
+  .icon {
+    animation: none;
+  }
+}
+
+:global(:root[data-sparsam]) .karte,
+:global(:root[data-sparsam]) .icon {
+  animation: none;
+}
+
+/* Das Konfetti fliegt hinter Symbol, Text und Knopf vorbei, nicht darüber. */
+.icon,
+.text,
+.weiter {
+  position: relative;
+  z-index: 21;
+}
