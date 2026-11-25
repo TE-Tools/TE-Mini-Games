@@ -234,7 +234,19 @@ export function HomePage() {
             <span>
               <span className={styles.standLabel}>{t.start.serie}</span>
               <span className={styles.standWert}>
-                {loading ? '…' : streakDays > 0 ? t.start.serieTage(streakDays) : '—'}
+                {loading ? (
+                  '…'
+                ) : streakDays > 0 ? (
+                  <span aria-label={t.start.serieTage(streakDays)}>
+                    {streakDays}
+                    <span className={styles.einheit} aria-hidden="true">
+                      {' '}
+                      {t.start.serieEinheit(streakDays)}
+                    </span>
+                  </span>
+                ) : (
+                  '—'
+                )}
               </span>
             </span>
           </div>

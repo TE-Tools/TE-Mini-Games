@@ -176,6 +176,7 @@
   font-size: 1.0625rem;
   font-weight: 800;
   line-height: 1.2;
+  text-wrap: balance;
 }
 
 .modusText small {

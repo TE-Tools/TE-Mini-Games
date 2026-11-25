@@ -1472,6 +1472,12 @@
   text-overflow: ellipsis;
 }
 
+.einheit {
+  font-size: 0.72em;
+  font-weight: 700;
+  opacity: 0.75;
+}
+
 .chipIcon {
   display: grid;
   place-items: center;
@@ -1983,5 +1989,20 @@ a.aufgabe:focus-visible {
   .aufgabe,
   .aufgabeFuellung {
     transition: none;
+  }
+}
+
+/* Schmale Handys: Die Serie wurde zu „4 T…" abgeschnitten. */
+@media (max-width: 420px) {
+  .standTeil {
+    padding: var(--space-2);
+    gap: 6px;
+  }
+
+  .chipIcon {
+    width: 26px;
+    height: 26px;
+    border-radius: 9px;
+    font-size: 0.85rem;
   }
 }

@@ -38,6 +38,8 @@ export const de = {
     zuletztGespielt: 'Zuletzt gespielt',
     zuletztGespieltText: 'Da warst du gerade unterwegs.',
     serieTage: (n: number) => (n === 1 ? '1 Tag' : `${n} Tage`),
+    /** Nur die Einheit, für den schmalen Chip: Zahl groß, Einheit klein. */
+    serieEinheit: (n: number): string => (n === 1 ? 'Tag' : 'Tage'),
     losMit: (spiel: string) => `Gleich loslegen: ${spiel}`,
     nochNichtsGespielt: 'Noch nichts gespielt – such dir unten etwas aus.',
     spieleEntdecken: 'Spiele entdecken',

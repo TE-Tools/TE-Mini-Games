@@ -38,6 +38,7 @@ export const en: Texte = {
     zuletztGespielt: 'Recently played',
     zuletztGespieltText: 'Where you left off.',
     serieTage: (n: number) => (n === 1 ? '1 day' : `${n} days`),
+    serieEinheit: (n: number) => (n === 1 ? 'day' : 'days'),
     losMit: (spiel: string) => `Jump right in: ${spiel}`,
     nochNichtsGespielt: 'Nothing played yet – pick something below.',
     spieleEntdecken: 'Discover games',
