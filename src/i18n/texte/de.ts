@@ -570,6 +570,12 @@ export const de = {
       `Noch ein Versuch – ${treffer === 1 ? 'dein Treffer bleibt' : `deine ${treffer} Treffer bleiben`}`,
     mitWerbehilfe:
       'Mit Hilfe eines Werbevideos geschafft: keine Punkte, kein Rekord, höchstens ein Stern.',
+    treffer: (hab: number, von: number) => `Treffer ${hab}/${von}`,
+    brauchst: (n: number) => `Du brauchst ${n} Treffer hintereinander in der Toleranz.`,
+    trefferGeschafft: (n: number) => `✓ Treffer ${n} geschafft – weiter so!`,
+    bisher: 'Bisher:',
+    naechsterTreffer: 'Nächster Treffer',
+    weiterZuLevel: (nr: number) => `Weiter zu Level ${nr}`,
   },
 
   levelkarte: {
@@ -2027,6 +2033,11 @@ export const de = {
     level: (nr: number) => `Level ${nr}`,
     regeln:
       'Schieb einen Block auf einen freien Platz – von dort holen die Bienen Pixel seiner Farbe aus dem Bild. Sie kommen nur an das heran, was von außen zugänglich ist. Der Block ist voll, wenn seine Zahl bei null ist; passt seine Farbe gerade nirgends, wartet er und belegt den Platz. Fünf wartende Plätze, und die Kolonie steht. Ab Level 21 wird es Stück für Stück schwerer, dazwischen liegen leichtere Runden; alle zwanzig Level steht ein Tor, das sich nur über eine bestimmte Reihenfolge öffnet. Wer an einem Level zehnmal scheitert, bekommt dort einen sechsten Platz.',
+    soGehts: [
+      'Tipp einen Block – er setzt sich auf einen freien Platz.',
+      'Die Bienen holen Pixel seiner Farbe – nur von außen.',
+      'Halte Plätze frei: Sind alle belegt, steht die Kolonie.',
+    ],
     plaetze: (belegt: number, von: number) => `Plätze ${belegt}/${von}`,
     bild: (motiv: string) => `Bild: ${motiv}`,
     nochPixel: (n: number) => `Noch ${n} Pixel`,
@@ -2689,6 +2700,11 @@ export const de = {
     level: (nr: number) => `Level ${nr}`,
     regeln:
       'Zieh einen Knödel auf seinen Nachbarn – oder tipp beide an. Stehen dadurch drei gleiche in einer Reihe, verschwinden sie und von oben fallen neue nach. Sammle das Ziel, bevor die Zeit um ist. Wer vier in eine Reihe bringt, bekommt einen diagonalen Knödel, wer fünf schafft, einen goldenen in dieser Farbe. Beide bleiben liegen und zählen ganz normal mit: Bringst du sie noch einmal in eine Reihe, fegt der Diagonale beide Schrägen leer und der Goldene lässt alle Knödel seiner Farbe platzen. Später kommen Käfige dazu: Ein Knödel im Käfig lässt sich nicht schieben und zerreißt jede Reihe – er springt auf, wenn direkt daneben etwas verschwindet.',
+    soGehts: [
+      'Zieh einen Knödel auf seinen Nachbarn.',
+      'Drei gleiche in einer Reihe platzen.',
+      'Sammle das Ziel, bevor die Zeit um ist.',
+    ],
     sammlung: 'Deine Sammlung',
     sammlungStand: (hab: number, von: number) => `${hab} von ${von} Knödeln`,
     naechsterAb: (level: number) => ` · nächster ab Level ${level}`,
@@ -3019,6 +3035,24 @@ export const de = {
     iosMitte: ' tippen und dann ',
     iosHome: '„Zum Home-Bildschirm“',
     iosNach: ' wählen.',
+  },
+
+  levelZiel: {
+    titel: 'Nächstes Ziel',
+    neuerRekord: (um: number) => `🏆 Neuer Rekord – ${um} Punkte mehr als bisher!`,
+    rekordVerpasst: (fehlend: number) =>
+      `Persönlicher Rekord um ${fehlend} ${fehlend === 1 ? 'Punkt' : 'Punkte'} verpasst – gleich nochmal?`,
+    sterne: (fehlend: number, sterne: number) =>
+      `Noch ${fehlend} ${fehlend === 1 ? 'Punkt' : 'Punkte'} bis ${'⭐'.repeat(sterne)}`,
+    torOffen: '🚪 Tor offen – der nächste Abschnitt wartet!',
+    bisZumTor: (level: number) =>
+      level === 1 ? 'Noch 1 Level bis zum Tor 🚪' : `Noch ${level} Level bis zum Tor 🚪`,
+    allesGeschafft: (max: number) => `👑 Alle ${max} Level geschafft!`,
+    knapp: (sekunden: string) => `Nur ${sekunden} s außerhalb der Toleranz – fast!`,
+    torNoch: (level: number) => (level === 1 ? 'noch 1 Level' : `noch ${level} Level`),
+    soGehts: 'So geht’s',
+    mehrErklaeren: 'Mehr erklären',
+    wenigerErklaeren: 'Weniger erklären',
   },
 
   trapbound: {

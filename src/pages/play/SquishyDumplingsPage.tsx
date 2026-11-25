@@ -21,6 +21,7 @@ import {
   wertungFuer,
   FARB_HEX,
   DUMPLING_MAX_LEVEL,
+  squishyDumplingsGame,
   type DumplingLevel,
   type DumplingState,
   type Zelle,
@@ -32,15 +33,34 @@ import {
   saveGameResult,
   addXp,
   getOrCreateGuestProfile,
+  getPersonalRecord,
 } from '@/offline'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
 import { LevelMap } from '@/components/level-map/LevelMap'
 import { Knoedel } from '@/components/knoedel/Knoedel'
 import { BelohnungsKnopf } from '@/components/werbung/BelohnungsKnopf'
+import { LevelZiel } from '@/components/levelziel/LevelZiel'
+import { SoGehts } from '@/components/levelziel/SoGehts'
+import { merkeSoGehtsGesehen } from '@/components/levelziel/soGehtsSpeicher'
+import { AKZENT } from '@/components/levelziel/zielText'
+import {
+  naechstesZiel,
+  punkteBisNaechsterStern,
+  type LevelZiel as Ziel,
+} from '@/components/levelziel/naechstesZiel'
 import { werbungAktiv } from '@/services/werbung'
 import { useSprache } from '@/i18n/sprache'
+import shell from './PlayShell.module.css'
 import styles from './SquishyDumplingsPage.module.css'
+
+const SO_GEHTS_BILDER = ['👉', '✨', '⏱️'] as const
+/**
+ * Squishy deckelt die Punkte nicht (Kette und Restzeit zählen mit). Für die
+ * Frage "wie viele Punkte bis zum nächsten Stern" reicht ein großzügiger
+ * Rahmen über der eigenen Zahl.
+ */
+const STERN_SUCHRAHMEN = 5000
 
 type Phase = 'map' | 'play' | 'won' | 'lost'
 
@@ -107,6 +127,8 @@ export function SquishyDumplingsPage() {
   /** Der Sternschnuppen-Bao -- nur per Video, einmal frei, für immer frei. */
   const [videoFrei, setVideoFrei] = useState(() => videoKnoedelFrei())
   const [loading, setLoading] = useState(true)
+  /** Die Zeile "nächstes Ziel" auf dem Ergebnis. */
+  const [ziel, setZiel] = useState<Ziel | null>(null)
 
   /** Zählt bei jedem neuen Level hoch; ältere Animationen brechen daran ab. */
   const lauf = useRef(0)
@@ -158,6 +180,8 @@ export function SquishyDumplingsPage() {
     lauf.current += 1
     const levelCfg = createDumplingLevel(L)
     const match = createDumplingMatch(levelCfg)
+    merkeSoGehtsGesehen('squishy-dumplings')
+    setZiel(null)
     setCfg(levelCfg)
     setLevel(L)
     setState(match)
@@ -200,6 +224,23 @@ export function SquishyDumplingsPage() {
     setNeuerKnoedel(belohnungFuer(fertig.level))
     setPhase('won')
     try {
+      // Der Rekord von VOR dieser Runde -- danach steht womöglich schon die neue Zahl.
+      const vorher = await getPersonalRecord('squishy-dumplings', fertig.level)
+      setZiel(
+        naechstesZiel({
+          level: fertig.level,
+          maxLevel: DUMPLING_MAX_LEVEL,
+          geschafft: true,
+          punkte: sc,
+          bisherBest: vorher?.bestScore ?? null,
+          naechsterStern: punkteBisNaechsterStern(
+            (p) => squishyDumplingsGame.calculateStars?.(fertig.level, p) ?? 0,
+            sc,
+            sc + STERN_SUCHRAHMEN,
+          ),
+          mitHilfe,
+        }),
+      )
       await saveGameResult({
         gameId: 'squishy-dumplings',
         level: fertig.level,
@@ -242,6 +283,7 @@ export function SquishyDumplingsPage() {
       window.clearInterval(uhr)
       setRestzeit(0)
       setState((alt) => (alt ? zeitAbgelaufen(alt) : alt))
+      setZiel(naechstesZiel({ level: state.level, maxLevel: DUMPLING_MAX_LEVEL, geschafft: false }))
       setPhase('lost')
     }, TAKT_MS)
     return () => window.clearInterval(uhr)
@@ -440,15 +482,21 @@ export function SquishyDumplingsPage() {
     const naechste = naechsteBelohnung(geschafft)
     return (
       <main className={styles.page}>
-        <header className={styles.top}>
-          <Link to="/" className={styles.back}>
-            {'←'} {d.zurueck}
+        <header className={shell.header}>
+          <Link to="/" className={shell.back} aria-label={d.zurueck}>
+            ←
           </Link>
-          <h1 className={styles.title}>
+          <h1 className={shell.title}>
             <span aria-hidden="true">🥟</span> {t.spiele['squishy-dumplings']}
           </h1>
+          <span className={shell.levelBadge}>L{level}</span>
         </header>
-        <p className={styles.hint}>{d.regeln}</p>
+        <SoGehts
+          spiel="squishy-dumplings"
+          schritte={d.soGehts.map((text, i) => ({ bild: SO_GEHTS_BILDER[i] ?? '🥟', text }))}
+          mehr={d.regeln}
+          akzent={AKZENT['squishy-dumplings']}
+        />
 
         <section className={styles.sammlung}>
           <button
@@ -593,11 +641,16 @@ export function SquishyDumplingsPage() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.top}>
-        <button type="button" className={styles.back} onClick={() => setPhase('map')}>
-          {'←'} {d.karte}
+      <header className={shell.header}>
+        <button
+          type="button"
+          className={shell.back}
+          onClick={() => setPhase('map')}
+          aria-label={d.karte}
+        >
+          ←
         </button>
-        <h1 className={styles.title}>{d.level(state.level)}</h1>
+        <h1 className={shell.title}>{d.level(state.level)}</h1>
         <button type="button" className={styles.retry} onClick={() => startLevel(state.level)}>
           {d.neu}
         </button>
@@ -715,6 +768,7 @@ export function SquishyDumplingsPage() {
                 </span>
               </div>
             )}
+            <LevelZiel ziel={ziel} akzent={AKZENT['squishy-dumplings']} />
             <div className={styles.actions}>
               <button type="button" onClick={() => setPhase('map')}>
                 {d.karte}
@@ -745,6 +799,7 @@ export function SquishyDumplingsPage() {
               belohnung={d.zusatzZeit(ZUSATZ_SEKUNDEN)}
               onBelohnt={weiterspielen}
             />
+            <LevelZiel ziel={ziel} akzent={AKZENT['squishy-dumplings']} />
             <div className={styles.actions}>
               <button type="button" onClick={() => setPhase('map')}>
                 {d.karte}

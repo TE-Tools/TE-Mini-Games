@@ -316,6 +316,10 @@ export function LevelMap({
                 </span>
               </button>
               <span className={styles.gateCaption}>{segment.gateName}</span>
+              {!gateOpen && (
+                // Wie nah das Tor ist -- der Grund, gleich noch eine Runde zu spielen.
+                <span className={styles.gateTeaser}>{t.levelZiel.torNoch(to - unlocked + 1)}</span>
+              )}
             </div>
           )}
 

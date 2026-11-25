@@ -22,6 +22,13 @@ import {
   getPersonalRecord,
   getOrCreateGuestProfile,
 } from '@/offline'
+import { LevelZiel } from '@/components/levelziel/LevelZiel'
+import { AKZENT } from '@/components/levelziel/zielText'
+import {
+  naechstesZiel,
+  punkteBisNaechsterStern,
+  type LevelZiel as Ziel,
+} from '@/components/levelziel/naechstesZiel'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
 import { DATA_PULLED_EVENT } from '@/services/remotePull'
@@ -55,6 +62,8 @@ export function PerfectSecondPage() {
   const [completedLevel, setCompletedLevel] = useState<number | null>(null)
   const [hadPerfectHit, setHadPerfectHit] = useState(false)
   const [loading, setLoading] = useState(true)
+  /** Die Zeile "nächstes Ziel" auf dem Ergebnis. */
+  const [ziel, setZiel] = useState<Ziel | null>(null)
   /**
    * Belohnungsvideo „Noch ein Versuch“: die Treffer, die der letzte
    * Fehlversuch gekostet hat, und ob in diesem Anlauf schon geholfen wurde.
@@ -167,6 +176,15 @@ export function PerfectSecondPage() {
       setIsRecord(false)
       setCompletedLevel(null)
       setHadPerfectHit(false)
+      setZiel(
+        naechstesZiel({
+          level: config.level,
+          maxLevel: MAX_GAME_LEVEL,
+          geschafft: false,
+          daneben: result.absoluteDeviation - config.tolerance,
+          toleranz: config.tolerance,
+        }),
+      )
       setPhase('result')
       await saveGameResult({
         gameId: 'perfect-second',
@@ -220,6 +238,26 @@ export function PerfectSecondPage() {
     const prev = await getPersonalRecord('perfect-second', config.level)
     const record = !mitHilfe && finalScore > 0 && (!prev || finalScore > prev.bestScore)
     setIsRecord(record)
+    setZiel(
+      naechstesZiel({
+        level: config.level,
+        maxLevel: MAX_GAME_LEVEL,
+        geschafft: true,
+        punkte: finalScore,
+        bisherBest: prev?.bestScore ?? null,
+        // Bei mehreren Treffern zählt der schwächste für die Sterne, nicht der
+        // Schnitt -- dann lässt sich kein Punkteabstand ehrlich angeben.
+        naechsterStern:
+          nextHits.length === 1
+            ? punkteBisNaechsterStern(
+                (p) => perfectSecondGame.calculateStars?.(config.level, p) ?? 0,
+                finalScore,
+                1000,
+              )
+            : null,
+        mitHilfe,
+      }),
+    )
     setMilestoneXp(mitHilfe ? 0 : bonus)
     setScoreResult({ ...result, score: wertung.score, xp: wertung.xp, stars: wertung.stars })
 
@@ -329,23 +367,23 @@ export function PerfectSecondPage() {
           <p className={styles.targetLabel}>{t.perfekteSekunde.zielzeit}</p>
           <p className={styles.targetValue}>{formatTime(config.targetTime)} s</p>
           <p className={styles.tolerance}>
-            ±{formatTime(config.tolerance)} s · Treffer {hitsDone}/{config.hitsRequired}
+            ±{formatTime(config.tolerance)} s ·{' '}
+            {t.perfekteSekunde.treffer(hitsDone, config.hitsRequired)}
           </p>
           {config.hitsRequired > 1 && (
-            <p className={styles.hint}>
-              Du brauchst {config.hitsRequired} Treffer hintereinander in der Toleranz.
-            </p>
+            <p className={styles.hint}>{t.perfekteSekunde.brauchst(config.hitsRequired)}</p>
           )}
           {hitsDone > 0 && (
             <>
-              <p className={styles.record}>✓ Treffer {hitsDone} geschafft – weiter so!</p>
+              <p className={styles.record}>{t.perfekteSekunde.trefferGeschafft(hitsDone)}</p>
               <p className={styles.tolerance}>
-                Bisher: {hitTimes.map((t) => `${formatTime(t)} s`).join(' · ')}
+                {t.perfekteSekunde.bisher}{' '}
+                {hitTimes.map((zeit) => `${formatTime(zeit)} s`).join(' · ')}
               </p>
             </>
           )}
           <button type="button" className={styles.primaryBtn} onClick={startTimer}>
-            {hitsDone > 0 ? 'Nächster Treffer' : 'Start'}
+            {hitsDone > 0 ? t.perfekteSekunde.naechsterTreffer : t.levelSpiele.start}
           </button>
           <button type="button" className={styles.secondaryBtn} onClick={() => setPhase('map')}>
             {t.spiel.zurUebersicht}
@@ -356,7 +394,9 @@ export function PerfectSecondPage() {
       {phase === 'running' && (
         <section className={styles.running}>
           <p className={styles.runningHint}>{t.perfekteSekunde.jetzt}</p>
-          <p className={styles.targetDuring}>Ziel: {formatTime(config.targetTime)} s</p>
+          <p className={styles.targetDuring}>
+            {t.perfekteSekunde.ziel}: {formatTime(config.targetTime)} s
+          </p>
           <button type="button" className={styles.stopBtn} onClick={() => void stopTimer()}>
             STOP
           </button>
@@ -412,6 +452,7 @@ export function PerfectSecondPage() {
               onBelohnt={versuchGeschenkt}
             />
           )}
+          <LevelZiel ziel={ziel} akzent={AKZENT['perfect-second']} />
           <div className={styles.resultActions}>
             {completedLevel != null && (scoreResult.score > 0 || mitHilfe) && (
               <button
@@ -433,12 +474,12 @@ export function PerfectSecondPage() {
                   setPhase('ready')
                 }}
               >
-                Weiter zu Level {Math.min(MAX_GAME_LEVEL, completedLevel + 1)}
+                {t.perfekteSekunde.weiterZuLevel(Math.min(MAX_GAME_LEVEL, completedLevel + 1))}
               </button>
             )}
             <button
               type="button"
-              className={styles.secondaryBtn}
+              className={completedLevel != null ? styles.secondaryBtn : styles.primaryBtn}
               onClick={() => {
                 const L = completedLevel ?? level
                 setLevel(L)

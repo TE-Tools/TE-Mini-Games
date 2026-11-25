@@ -563,6 +563,12 @@ export const en: Texte = {
     versuchBelohnung: (treffer: number) =>
       `One more try – keep your ${treffer} ${treffer === 1 ? 'hit' : 'hits'}`,
     mitWerbehilfe: 'Cleared with help from an ad video: no points, no record, one star at most.',
+    treffer: (hab: number, von: number) => `Hits ${hab}/${von}`,
+    brauchst: (n: number) => `You need ${n} hits in a row within the tolerance.`,
+    trefferGeschafft: (n: number) => `✓ Hit ${n} done – keep going!`,
+    bisher: 'So far:',
+    naechsterTreffer: 'Next hit',
+    weiterZuLevel: (nr: number) => `On to level ${nr}`,
   },
 
   levelkarte: {
@@ -1998,6 +2004,11 @@ export const en: Texte = {
     level: (nr: number) => `Level ${nr}`,
     regeln:
       'Move a block onto a free slot – from there the bees fetch pixels of its colour from the picture. They can only reach what is open to the outside. A block is done when its number reaches zero; if its colour fits nowhere right now, it waits and takes up the slot. Five waiting slots, and the colony is stuck. From level 21 it gets harder bit by bit, with easier rounds in between; every twenty levels there is a gate that only opens in a certain order. Fail a level ten times and you get a sixth slot there.',
+    soGehts: [
+      'Tap a block – it moves to a free slot.',
+      'The bees collect pixels of its colour – only from the outside.',
+      'Keep slots free: once they are all taken, the colony stops.',
+    ],
     plaetze: (belegt: number, von: number) => `Slots ${belegt}/${von}`,
     bild: (motiv: string) => `Picture: ${motiv}`,
     nochPixel: (n: number) => `${n} pixels left`,
@@ -2626,6 +2637,11 @@ export const en: Texte = {
     level: (nr: number) => `Level ${nr}`,
     regeln:
       'Drag a dumpling onto its neighbour – or tap both. If that lines up three alike, they vanish and new ones drop from above. Collect the target before time runs out. Line up four and you get a diagonal dumpling, five and you get a golden one in that colour. Both stay on the board and count as normal: line them up again and the diagonal one sweeps both diagonals clear, while the golden one pops every dumpling of its colour. Later, cages appear: a caged dumpling cannot be moved and breaks any line – it springs open when something right next to it disappears.',
+    soGehts: [
+      'Drag a dumpling onto its neighbour.',
+      'Three of a kind in a row pop.',
+      'Collect the goal before time runs out.',
+    ],
     sammlung: 'Your collection',
     sammlungStand: (hab: number, von: number) => `${hab} of ${von} dumplings`,
     naechsterAb: (level: number) => ` · next one from level ${level}`,
@@ -2951,6 +2967,24 @@ export const en: Texte = {
     iosMitte: ' at the bottom, then choose ',
     iosHome: '“Add to Home Screen”',
     iosNach: '.',
+  },
+
+  levelZiel: {
+    titel: 'Next goal',
+    neuerRekord: (um: number) => `🏆 New record – ${um} points more than before!`,
+    rekordVerpasst: (fehlend: number) =>
+      `Missed your record by ${fehlend} ${fehlend === 1 ? 'point' : 'points'} – one more go?`,
+    sterne: (fehlend: number, sterne: number) =>
+      `${fehlend} more ${fehlend === 1 ? 'point' : 'points'} for ${'⭐'.repeat(sterne)}`,
+    torOffen: '🚪 Gate open – the next section is waiting!',
+    bisZumTor: (level: number) =>
+      level === 1 ? '1 more level to the gate 🚪' : `${level} more levels to the gate 🚪`,
+    allesGeschafft: (max: number) => `👑 All ${max} levels cleared!`,
+    knapp: (sekunden: string) => `Only ${sekunden} s outside the tolerance – so close!`,
+    torNoch: (level: number) => (level === 1 ? '1 level to go' : `${level} levels to go`),
+    soGehts: 'How to play',
+    mehrErklaeren: 'Explain more',
+    wenigerErklaeren: 'Explain less',
   },
 
   trapbound: {

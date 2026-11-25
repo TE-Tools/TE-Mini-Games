@@ -23,6 +23,7 @@ import {
   COLOR_HEX,
   BIENEN_MAX_LEVEL,
   SICHTBARE_REIHEN,
+  bienenFlowGame,
   type BienenState,
   type BienenLevel,
 } from '@/games/bienen-flow'
@@ -32,13 +33,26 @@ import {
   saveGameResult,
   addXp,
   getOrCreateGuestProfile,
+  getPersonalRecord,
 } from '@/offline'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
 import { LevelMap } from '@/components/level-map/LevelMap'
 import { BelohnungsKnopf } from '@/components/werbung/BelohnungsKnopf'
+import { LevelZiel } from '@/components/levelziel/LevelZiel'
+import { SoGehts } from '@/components/levelziel/SoGehts'
+import { merkeSoGehtsGesehen } from '@/components/levelziel/soGehtsSpeicher'
+import { AKZENT } from '@/components/levelziel/zielText'
+import {
+  naechstesZiel,
+  punkteBisNaechsterStern,
+  type LevelZiel as Ziel,
+} from '@/components/levelziel/naechstesZiel'
 import { useSprache } from '@/i18n/sprache'
+import shell from './PlayShell.module.css'
 import styles from './BienenFlowPage.module.css'
+
+const SO_GEHTS_BILDER = ['👆', '🐝', '⬡'] as const
 
 type Phase = 'map' | 'play' | 'won' | 'lost'
 
@@ -114,6 +128,8 @@ export function BienenFlowPage() {
    * Colony-Flow-Video: dort sieht man dem Block an, wie weit er ist).
    */
   const [startMenge, setStartMenge] = useState<Map<string, number>>(new Map())
+  /** Die Zeile "nächstes Ziel" auf dem Ergebnis. */
+  const [ziel, setZiel] = useState<Ziel | null>(null)
 
   const bildRef = useRef<HTMLDivElement>(null)
   const slotsRef = useRef<HTMLDivElement>(null)
@@ -151,6 +167,8 @@ export function BienenFlowPage() {
     // Wer hier schon zehnmal hängengeblieben ist, bekommt den sechsten Platz.
     const match = createMatch(levelCfg, plaetzeFuer(L) - levelCfg.slotCount)
     setPleiten(fehlversuche(L))
+    merkeSoGehtsGesehen('bienen-flow')
+    setZiel(null)
     setCfg(levelCfg)
     setLevel(L)
     setState(match)
@@ -184,6 +202,29 @@ export function BienenFlowPage() {
     setSterne(st)
     setPhase('won')
     try {
+      // Der Rekord von VOR dieser Runde -- danach steht womöglich schon die neue Zahl.
+      const vorher = await getPersonalRecord('bienen-flow', final.level)
+      // Höchstens so viel geht: eine Runde ohne einen einzigen toten Block.
+      const hoechstens = bienenFlowGame.calculateScore(final.level, {
+        won: true,
+        tote: 0,
+        slotCount: SLOT_COUNT,
+      })
+      setZiel(
+        naechstesZiel({
+          level: final.level,
+          maxLevel: BIENEN_MAX_LEVEL,
+          geschafft: true,
+          punkte: sc,
+          bisherBest: vorher?.bestScore ?? null,
+          naechsterStern: punkteBisNaechsterStern(
+            (p) => bienenFlowGame.calculateStars?.(final.level, p) ?? 0,
+            sc,
+            hoechstens,
+          ),
+          mitHilfe,
+        }),
+      )
       await saveGameResult({
         gameId: 'bienen-flow',
         level: final.level,
@@ -281,6 +322,7 @@ export function BienenFlowPage() {
       if (state.phase === 'won') void finishWon(state)
       else {
         setPleiten(zaehleFehlversuch(state.level))
+        setZiel(naechstesZiel({ level: state.level, maxLevel: BIENEN_MAX_LEVEL, geschafft: false }))
         setPhase('lost')
       }
     }, ENDE_MS)
@@ -317,15 +359,21 @@ export function BienenFlowPage() {
   if (phase === 'map') {
     return (
       <main className={styles.page}>
-        <header className={styles.top}>
-          <Link to="/" className={styles.back}>
-            {'←'} {b.zurueck}
+        <header className={shell.header}>
+          <Link to="/" className={shell.back} aria-label={b.zurueck}>
+            ←
           </Link>
-          <h1 className={styles.title}>
+          <h1 className={shell.title}>
             <span aria-hidden="true">🐝</span> {t.spiele['bienen-flow']}
           </h1>
+          <span className={shell.levelBadge}>L{level}</span>
         </header>
-        <p className={styles.hint}>{b.regeln}</p>
+        <SoGehts
+          spiel="bienen-flow"
+          schritte={b.soGehts.map((text, i) => ({ bild: SO_GEHTS_BILDER[i] ?? '🐝', text }))}
+          mehr={b.regeln}
+          akzent={AKZENT['bienen-flow']}
+        />
         <LevelMap
           currentLevel={level}
           highestLevel={Math.min(highest, BIENEN_MAX_LEVEL)}
@@ -353,11 +401,16 @@ export function BienenFlowPage() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.top}>
-        <button type="button" className={styles.back} onClick={() => setPhase('map')}>
-          {'←'} {b.karte}
+      <header className={shell.header}>
+        <button
+          type="button"
+          className={shell.back}
+          onClick={() => setPhase('map')}
+          aria-label={b.karte}
+        >
+          ←
         </button>
-        <h1 className={styles.title}>{b.level(state.level)}</h1>
+        <h1 className={shell.title}>{b.level(state.level)}</h1>
         <button type="button" className={styles.retry} onClick={() => startLevel(state.level)}>
           {b.neu}
         </button>
@@ -535,6 +588,7 @@ export function BienenFlowPage() {
               {state.tote === 0 ? b.genauAufgegangen : b.liegenGeblieben(state.tote)}
             </p>
             {state.mitHilfe && <p className={styles.muted}>{b.mitHilfe}</p>}
+            <LevelZiel ziel={ziel} akzent={AKZENT['bienen-flow']} />
             <div className={styles.actions}>
               <button type="button" onClick={() => setPhase('map')}>
                 {b.karte}
@@ -571,6 +625,7 @@ export function BienenFlowPage() {
               belohnung={b.platzFrei}
               onBelohnt={platzFreiraeumen}
             />
+            <LevelZiel ziel={ziel} akzent={AKZENT['bienen-flow']} />
             <div className={styles.actions}>
               <button type="button" onClick={() => setPhase('map')}>
                 {b.karte}

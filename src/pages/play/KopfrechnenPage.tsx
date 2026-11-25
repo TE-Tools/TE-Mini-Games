@@ -19,7 +19,15 @@ import {
   saveGameResult,
   addXp,
   getOrCreateGuestProfile,
+  getPersonalRecord,
 } from '@/offline'
+import { LevelZiel } from '@/components/levelziel/LevelZiel'
+import { AKZENT } from '@/components/levelziel/zielText'
+import {
+  naechstesZiel,
+  punkteBisNaechsterStern,
+  type LevelZiel as Ziel,
+} from '@/components/levelziel/naechstesZiel'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
 import { DATA_PULLED_EVENT } from '@/services/remotePull'
@@ -63,6 +71,8 @@ export function KopfrechnenPage() {
   /** Wie viele neue Aufgaben das Nachholen gebracht hat -- null, solange nicht nachgeholt wird. */
   const [nachholNeu, setNachholNeu] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
+  /** Die Zeile "nächstes Ziel" auf dem Ergebnis. */
+  const [ziel, setZiel] = useState<Ziel | null>(null)
   const eingabeRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -148,6 +158,29 @@ export function KopfrechnenPage() {
       const bonus = result.passed && firstClear && !hilfe ? milestoneBonusXp(cfg.level) : 0
       setMilestoneXp(bonus)
       const xpTotal = result.xp + bonus
+
+      // Der Rekord von VOR dieser Runde -- danach steht womöglich schon die neue Zahl.
+      const vorher = await getPersonalRecord('kopfrechnen', cfg.level)
+      setZiel(
+        naechstesZiel({
+          level: cfg.level,
+          maxLevel: MAX_GAME_LEVEL,
+          geschafft: result.passed,
+          punkte: result.score,
+          bisherBest: vorher?.bestScore ?? null,
+          naechsterStern: punkteBisNaechsterStern(
+            (p) => kopfrechnenGame.calculateStars?.(cfg.level, p) ?? 0,
+            result.score,
+            // Alle richtig: Danach bringt nur noch die Zeit Punkte, keine Sterne.
+            calculateKopfrechnenScore({
+              correct: AUFGABEN_JE_RUNDE,
+              secondsLeft: 0,
+              level: cfg.level,
+            }).score,
+          ),
+          mitHilfe: hilfe,
+        }),
+      )
 
       await saveGameResult({
         gameId: 'kopfrechnen',
@@ -462,13 +495,18 @@ export function KopfrechnenPage() {
             belohnung={k.zweiteChance}
             onBelohnt={zweiteChance}
           />
+          <LevelZiel ziel={ziel} akzent={AKZENT.kopfrechnen} />
           <div className={shell.resultActions}>
             {scoreResult.passed && completedLevel !== null && completedLevel < MAX_GAME_LEVEL && (
               <button type="button" className={shell.primaryBtn} onClick={goToNextLevel}>
                 {t.levelSpiele.level(completedLevel + 1)}
               </button>
             )}
-            <button type="button" className={shell.secondaryBtn} onClick={playAgain}>
+            <button
+              type="button"
+              className={scoreResult.passed ? shell.secondaryBtn : shell.primaryBtn}
+              onClick={playAgain}
+            >
               {t.levelSpiele.nochMal}
             </button>
             <button type="button" className={shell.secondaryBtn} onClick={() => setPhase('map')}>
