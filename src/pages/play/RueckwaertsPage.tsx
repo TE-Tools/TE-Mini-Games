@@ -73,6 +73,8 @@ export function RueckwaertsPage() {
 
   const anlage = useRef<Tonanlage | null>(null)
   const laufend = useRef<LaufendeAufnahme | null>(null)
+  /** Ein Start ist unterwegs: Mikrofon angefragt, aber noch nicht offen. */
+  const startet = useRef(false)
   const wiedergabe = useRef<Wiedergabe | null>(null)
   const lebt = useRef(true)
   /** Der Zustand, wie ihn Rückrufe aus dem Tonfaden und der Abbau sehen. */
@@ -163,7 +165,11 @@ export function RueckwaertsPage() {
   }, [])
 
   const starteAufnahme = useCallback(async () => {
-    if (laufend.current) return
+    // Sofort sperren, nicht erst, wenn das Mikrofon offen ist: Ein schneller
+    // Doppeltipp öffnete sonst zwei Mikrofone, das erste blieb belegt, und
+    // die nächsten Aufnahmen kamen stumm an (14.11.2026).
+    if (laufend.current || startet.current) return
+    startet.current = true
     haltAn()
     setMangel(null)
     setMessung(null)
@@ -192,6 +198,8 @@ export function RueckwaertsPage() {
       setTechnik(
         e instanceof TonFehler ? (e.einzelheit ?? null) : e instanceof Error ? e.name : null,
       )
+    } finally {
+      startet.current = false
     }
   }, [haltAn, stoppeAufnahme])
 
