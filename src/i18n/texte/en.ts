@@ -3205,6 +3205,45 @@ export const en: Texte = {
     },
   },
 
+  bindung: {
+    heute: 'Today',
+    heuteHinweis: 'Three small missions – new ones every day.',
+    aufgabenBereich: 'Daily missions',
+    aufgabe: {
+      rundenSpiel: (n: number, spiel: string) =>
+        n === 1 ? `Play a round of ${spiel}` : `Play ${n} rounds of ${spiel}`,
+      sterne: (sterne: number) => `Get ${sterne} stars in a level game`,
+      neuesLevel: (n: number) => (n === 1 ? 'Clear a new level' : `Clear ${n} new levels`),
+      verschiedene: (n: number) => `Play ${n} different games`,
+      gruppe: (n: number, gruppe: string) =>
+        n === 1 ? `Play a round from “${gruppe}”` : `Play ${n} rounds from “${gruppe}”`,
+      runden: (n: number) => `Play ${n} rounds today`,
+    },
+    stand: (ist: number, ziel: number) => `${ist} of ${ziel}`,
+    geschafft: 'Done',
+    belohnung: (xp: number) => `+${xp} XP`,
+    alleBonus: (xp: number) => `All three done: +${xp} bonus XP`,
+    alleFertig: 'All done for today – new missions tomorrow.',
+    spielen: (spiel: string) => `Continue with ${spiel}`,
+    serieHeute: (n: number) =>
+      n === 1 ? '1 day – played today ✓' : `${n} days in a row – played today ✓`,
+    serieHalten: (n: number) =>
+      n === 1
+        ? '1 day – one round today keeps your streak going'
+        : `${n} days in a row – one round today keeps your streak going`,
+    serieStarten: 'Play one round today to start a streak.',
+    feier: {
+      bereich: 'Celebration',
+      aufstiegTitel: 'Level up!',
+      aufstiegText: (level: number) => `You are now level ${level}.`,
+      abzeichenTitel: 'New badge',
+      aufgabeTitel: 'Daily mission done',
+      alleTitel: 'All daily missions done',
+      alleText: (xp: number) => `Great! +${xp} bonus XP. New ones tomorrow.`,
+      weiter: 'Continue',
+    },
+  },
+
   allgemein: {
     zurueck: 'Back',
     weiter: 'Next',

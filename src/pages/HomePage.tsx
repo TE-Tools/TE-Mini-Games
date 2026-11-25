@@ -29,7 +29,25 @@ import { Link } from 'react-router-dom'
 import styles from './HomePage.module.css'
 import { getOrCreateGuestProfile, getRecentResults, type LocalProfile } from '@/offline'
 import { getUnlockedAchievements } from '@/offline/achievements'
-import { xpProgressInLevel, ACHIEVEMENTS, getDailyChallenge } from '@/progression'
+import {
+  xpProgressInLevel,
+  levelFromTotalXp,
+  ACHIEVEMENTS,
+  getDailyChallenge,
+  todayKey,
+  aufgabenFuerTag,
+  fortschritt,
+  standFuer,
+  vorschlagFuer,
+  leseTagesstand,
+  leseGefeiertesLevel,
+  schreibeGefeiertesLevel,
+  aufFeiern,
+  AUFGABE_XP,
+  ALLE_AUFGABEN_XP,
+  type Tagesstand,
+} from '@/progression'
+import { aufgabenText } from '@/components/feier/aufgabenText'
 import type { AchievementId } from '@/progression/achievements'
 import { InstallButton } from '@/components/install/InstallButton'
 import { SprachKnopf } from '@/i18n/SprachKnopf'
@@ -108,6 +126,18 @@ export function HomePage() {
     window.addEventListener(DATA_PULLED_EVENT, onPulled)
     return () => window.removeEventListener(DATA_PULLED_EVENT, onPulled)
   }, [ladeProfil])
+
+  // Und wenn eine Tagesaufgabe XP gebracht hat.
+  useEffect(() => aufFeiern(() => void ladeProfil().then(setProfile)), [ladeProfil])
+
+  // Das Level, ab dem gefeiert wird, beim ersten Besuch festhalten -- sonst
+  // feierte die erste Runde nach dem Einbau ein längst erreichtes Level.
+  useEffect(() => {
+    if (!profile) return
+    if (leseGefeiertesLevel(profile.id) === null) {
+      schreibeGefeiertesLevel(profile.id, levelFromTotalXp(profile.totalXp))
+    }
+  }, [profile])
 
   const totalXp = profile?.totalXp ?? 0
   const streakDays = profile?.streakDays ?? 0
@@ -229,6 +259,8 @@ export function HomePage() {
         )}
       </section>
 
+      <HeuteKarte profile={loading ? null : profile} />
+
       <ReiterLeiste aktiv={reiter} onWahl={setReiter} />
 
       {/* Der Schlüssel lässt den Inhalt bei jedem Wechsel neu hereingleiten. */}
@@ -335,6 +367,133 @@ export function HomePage() {
 
       {menueOffen && <Menue onSchliessen={() => setMenueOffen(false)} />}
     </main>
+  )
+}
+
+/* --------------------------------------------------------------- Heute */
+
+/** Der Kalendertag vor `datum`, als YYYY-MM-DD (über den Tag, nicht 24 h: Zeitumstellung). */
+function gesternKey(datum: Date = new Date()): string {
+  return todayKey(new Date(datum.getFullYear(), datum.getMonth(), datum.getDate() - 1))
+}
+
+/**
+ * „Heute" (25.11.2026, Thomas: „dass man mehr gebunden wird an die Spiele"):
+ * die drei Tagesaufgaben mit Fortschritt und eine freundliche Zeile zur
+ * Serie. Jede Aufgabe führt in ein Spiel, das sie voranbringt.
+ *
+ * Bewusst ohne Druck: keine Uhr bis Mitternacht, kein „sonst verfällt",
+ * nichts zu kaufen. Was erledigt ist, bleibt erledigt. Regeln und Zahlen in
+ * docs/design/bindung/README.md.
+ */
+function HeuteKarte({ profile }: { profile: LocalProfile | null }) {
+  const { t } = useSprache()
+  const userId = profile?.id ?? 'guest'
+  const [stand, setStand] = useState<Tagesstand | null>(null)
+  const datum = stand?.datum ?? todayKey()
+
+  useEffect(() => {
+    const lade = () => setStand(standFuer(leseTagesstand(userId), todayKey()))
+    lade()
+    // Wer die App über Mitternacht offen lässt, sieht beim Zurückkommen die neuen.
+    window.addEventListener('focus', lade)
+    const ab = aufFeiern(lade)
+    return () => {
+      window.removeEventListener('focus', lade)
+      ab()
+    }
+  }, [userId])
+
+  const aufgaben = aufgabenFuerTag(datum)
+  const zuege = stand?.zuege ?? []
+  const erledigt = stand?.erledigt ?? []
+
+  const streakDays = profile?.streakDays ?? 0
+  const serienTag = profile?.streakDate ?? null
+  const serie =
+    profile === null
+      ? null
+      : streakDays > 0 && serienTag === todayKey()
+        ? { text: t.bindung.serieHeute(streakDays), an: true }
+        : streakDays > 0 && serienTag === gesternKey()
+          ? { text: t.bindung.serieHalten(streakDays), an: false }
+          : { text: t.bindung.serieStarten, an: false }
+
+  return (
+    <section className={styles.heute} aria-label={t.bindung.aufgabenBereich}>
+      <div className={styles.heuteKopf}>
+        <h2 className={styles.heuteTitel}>{t.bindung.heute}</h2>
+        <p className={styles.heuteHinweis}>{t.bindung.heuteHinweis}</p>
+      </div>
+
+      {serie && (
+        <p className={`${styles.heuteSerie} ${serie.an ? styles.heuteSerieAn : ''}`}>
+          <span aria-hidden="true">🔥</span> {serie.text}
+        </p>
+      )}
+
+      <ul className={styles.aufgaben}>
+        {aufgaben.map((a, i) => {
+          const ist = fortschritt(a, zuege)
+          const fertig = erledigt.includes(a.id) || ist >= a.ziel
+          const kachel = kachelFuer(vorschlagFuer(a, zuege, datum))
+          const satz = aufgabenText(a, t)
+          const inhalt = (
+            <>
+              <span className={styles.aufgabeIcon} aria-hidden="true">
+                {fertig ? '✓' : (kachel?.icon ?? '🎮')}
+              </span>
+              <span className={styles.aufgabeMitte}>
+                <span className={styles.aufgabeText}>{satz}</span>
+                <span
+                  className={styles.aufgabeSpur}
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={a.ziel}
+                  aria-valuenow={ist}
+                  aria-label={satz}
+                >
+                  <span
+                    className={styles.aufgabeFuellung}
+                    style={{ width: `${Math.max(fertig ? 100 : 4, (ist / a.ziel) * 100)}%` }}
+                  />
+                </span>
+              </span>
+              <span className={styles.aufgabeStand}>
+                <span className={styles.aufgabeZahl}>
+                  {fertig ? t.bindung.geschafft : t.bindung.stand(ist, a.ziel)}
+                </span>
+                <span className={styles.aufgabeXp}>{t.bindung.belohnung(AUFGABE_XP)}</span>
+              </span>
+            </>
+          )
+          return (
+            <li
+              key={a.id}
+              className={styles.aufgabeZeile}
+              data-fertig={fertig ? '' : undefined}
+              style={{ '--i': i } as CSSProperties}
+            >
+              {kachel ? (
+                <Link
+                  to={kachel.pfad}
+                  className={styles.aufgabe}
+                  title={t.bindung.spielen(t.spiele[kachel.id])}
+                >
+                  {inhalt}
+                </Link>
+              ) : (
+                <span className={styles.aufgabe}>{inhalt}</span>
+              )}
+            </li>
+          )
+        })}
+      </ul>
+
+      <p className={styles.heuteFuss}>
+        {stand?.alleBelohnt ? t.bindung.alleFertig : t.bindung.alleBonus(ALLE_AUFGABEN_XP)}
+      </p>
+    </section>
   )
 }
 

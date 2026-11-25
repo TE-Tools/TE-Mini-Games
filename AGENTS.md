@@ -128,3 +128,4 @@ corresponding feature; do not invent a competing design.
   `scripts/build-sudoku-levels.mjs` neu erzeugt; wer eine Technik oder ein Gewicht in
   `techniken.ts` ändert, erzeugt die Daten neu, sonst fällt `tests/sudoku.test.ts`.
   Die Stufen sind eigene Strecken -- Schwer darf nie hinter Leicht verschlossen werden.
+- **Bindung (Tagesaufgaben, Feiern, Serie):** `docs/design/bindung/` – drei Aufgaben pro Tag aus dem Datum, XP-Zahlen in `src/progression/tagesaufgaben.ts`, Feiern zentral aus `processAfterResult`; keine falsche Eile, nichts Verdientes verfällt, Werbehilfe zählt für keine Aufgabe.

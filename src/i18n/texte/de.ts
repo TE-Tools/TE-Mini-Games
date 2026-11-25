@@ -3289,6 +3289,45 @@ export const de = {
     },
   },
 
+  bindung: {
+    heute: 'Heute',
+    heuteHinweis: 'Drei kleine Aufgaben – jeden Tag neue.',
+    aufgabenBereich: 'Tagesaufgaben',
+    aufgabe: {
+      rundenSpiel: (n: number, spiel: string) =>
+        n === 1 ? `Spiel eine Runde ${spiel}` : `Spiel ${n} Runden ${spiel}`,
+      sterne: (sterne: number) => `Hol in einem Levelspiel ${sterne} Sterne`,
+      neuesLevel: (n: number) => (n === 1 ? 'Schaff ein neues Level' : `Schaff ${n} neue Level`),
+      verschiedene: (n: number) => `Spiel ${n} verschiedene Spiele`,
+      gruppe: (n: number, gruppe: string) =>
+        n === 1 ? `Spiel eine Runde aus „${gruppe}“` : `Spiel ${n} Runden aus „${gruppe}“`,
+      runden: (n: number) => `Spiel heute ${n} Runden`,
+    },
+    stand: (ist: number, ziel: number) => `${ist} von ${ziel}`,
+    geschafft: 'Geschafft',
+    belohnung: (xp: number) => `+${xp} XP`,
+    alleBonus: (xp: number) => `Alle drei geschafft: +${xp} XP extra`,
+    alleFertig: 'Alles geschafft für heute – morgen gibt es neue Aufgaben.',
+    spielen: (spiel: string) => `Weiter mit ${spiel}`,
+    serieHeute: (n: number) =>
+      n === 1 ? '1 Tag – heute schon gespielt ✓' : `${n} Tage in Folge – heute schon gespielt ✓`,
+    serieHalten: (n: number) =>
+      n === 1
+        ? '1 Tag – heute noch eine Runde, dann hält deine Serie'
+        : `${n} Tage in Folge – heute noch eine Runde, dann hält deine Serie`,
+    serieStarten: 'Eine Runde heute, und deine Serie beginnt.',
+    feier: {
+      bereich: 'Feier',
+      aufstiegTitel: 'Level aufgestiegen!',
+      aufstiegText: (level: number) => `Du bist jetzt Level ${level}.`,
+      abzeichenTitel: 'Neues Abzeichen',
+      aufgabeTitel: 'Tagesaufgabe geschafft',
+      alleTitel: 'Alle Tagesaufgaben geschafft',
+      alleText: (xp: number) => `Stark! +${xp} XP Bonus. Morgen gibt es neue.`,
+      weiter: 'Weiter',
+    },
+  },
+
   allgemein: {
     zurueck: 'Zurück',
     weiter: 'Weiter',

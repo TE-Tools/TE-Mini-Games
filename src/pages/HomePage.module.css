@@ -1790,3 +1790,198 @@
     animation: none;
   }
 }
+
+/* ------------------------------------------------------------- Heute */
+
+/* Die Karte mit den drei Tagesaufgaben (25.11.2026). Gleiche Fläche wie die
+   Spielerkarte darüber, damit beides als ein Block „dein Stand" liest. */
+.heute {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-2xl);
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgb(255 236 214 / 0.7), transparent 55%),
+    var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  animation: hochkommen 520ms 150ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+.heuteKopf {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+}
+
+.heuteTitel {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.heuteHinweis {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.heuteSerie {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.heuteSerieAn {
+  background: linear-gradient(90deg, #fff1e6, #ffe3cf);
+  color: var(--color-streak);
+}
+
+.aufgaben {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.aufgabeZeile {
+  animation: zeileRein 420ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(200ms + var(--i, 0) * 70ms);
+}
+
+.aufgabe {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  background: rgb(255 255 255 / 0.8);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  text-decoration: none;
+  transition:
+    transform var(--transition-fast, 150ms),
+    border-color var(--transition-fast, 150ms);
+}
+
+a.aufgabe:hover {
+  border-color: var(--color-border-strong);
+  transform: translateY(-1px);
+}
+
+a.aufgabe:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.aufgabeIcon {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 12px;
+  background: var(--grad-primary-soft);
+  border: 1px solid var(--hairline);
+  font-size: 1.1rem;
+}
+
+.aufgabeZeile[data-fertig] .aufgabeIcon {
+  background: linear-gradient(135deg, #d8f5e7, #8fdcb5);
+  color: var(--color-success);
+  font-weight: 900;
+}
+
+.aufgabeMitte {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.aufgabeText {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.aufgabeSpur {
+  display: block;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: rgb(120 110 170 / 0.14);
+  overflow: hidden;
+}
+
+.aufgabeFuellung {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, #8b6cf0, var(--color-primary));
+  transition: width 600ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.aufgabeZeile[data-fertig] .aufgabeFuellung {
+  background: linear-gradient(90deg, #3cc68a, var(--color-success));
+}
+
+.aufgabeStand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.aufgabeZahl {
+  font-size: var(--text-sm);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.aufgabeZeile[data-fertig] .aufgabeZahl {
+  color: var(--color-success);
+}
+
+.aufgabeXp {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--color-gold-deep);
+}
+
+.heuteFuss {
+  margin: 0;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+:global(:root[data-sparsam]) .heute,
+:global(:root[data-sparsam]) .aufgabeZeile {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heute,
+  .aufgabeZeile {
+    animation: none;
+  }
+
+  .aufgabe,
+  .aufgabeFuellung {
+    transition: none;
+  }
+}

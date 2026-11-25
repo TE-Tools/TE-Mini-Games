@@ -45,6 +45,7 @@ import { ermittleSpielerName } from '@/services/spielername'
 import { onAuthStateChange, getSession, sitzungNurUnerreichbar } from '@/auth/authService'
 import { getPlayMode, setPlayMode, type PlayMode } from '@/auth/sessionMode'
 import { SprachProvider } from '@/i18n/SprachProvider'
+import { FeierSchicht } from '@/components/feier/FeierSchicht'
 
 type GateState = { status: 'loading' } | { status: 'gate' } | { status: 'ready'; mode: PlayMode }
 
@@ -250,6 +251,8 @@ export function App() {
           </Routes>
         </AuthGate>
       </BrowserRouter>
+      {/* Einmal für alle Spiele: Aufstieg, Abzeichen, Tagesaufgabe (docs/design/bindung/). */}
+      <FeierSchicht />
     </SprachProvider>
   )
 }
