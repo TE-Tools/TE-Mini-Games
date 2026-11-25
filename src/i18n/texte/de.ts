@@ -699,9 +699,11 @@ export const de = {
     du: 'Du',
     willkommen:
       'Kauf dir die schönsten Schützenfeste Deutschlands, bau Festzelte und Königshäuser, kassier Standgeld – und schieß am Stand um Gold.',
-    fortsetzen: (runde: number) => `▶ Partie fortsetzen (Runde ${runde})`,
-    neuePartie: '🎲 Neue Partie',
-    onlineSpielen: '🌐 Online spielen',
+    fortsetzen: (runde: number) => `Partie fortsetzen · Runde ${runde}`,
+    neuePartie: 'Neue Partie',
+    neuePartieText: 'Gegen den Rechner oder mit Freunden an einem Gerät',
+    onlineSpielen: 'Online spielen',
+    onlineSpielenText: 'Tisch aufmachen, Code weitergeben – oder beitreten',
     gewonnen: '🏆 Du hast gewonnen!',
     gewinnt: (name: string) => `${name} gewinnt.`,
     ausgeschieden: 'ausgeschieden',
@@ -3103,6 +3105,34 @@ export const de = {
       kupfer: 'Kupfer',
       sternennacht: 'Sternennacht',
     },
+  },
+
+  /**
+   * Die Startbildschirme der Würfel-, Karten- und Brettspiele
+   * (src/components/spielmenue): Kopfbild, Bilanz, Moduskarten.
+   */
+  spielMenue: {
+    slogan: {
+      kniffel: 'Fünf Würfel, drei Würfe – und jedes Mal eine neue Chance.',
+      maumau: 'Der Klassiker vom Küchentisch: schnell gemischt, schnell gespielt.',
+      'letzte-karte': 'Bunte Karten, freche Wendungen – wer wird sie zuerst los?',
+      'texas-holdem': 'Lesen, bluffen, alles setzen – um Spielgeld.',
+      schach: 'Ein Zug nach dem anderen – denk einen weiter als der Computer.',
+      schuetzenopoly: 'Festwiese, Festzelt, Königshaus – das Brett gehört dir.',
+    },
+    bilanz: 'Deine Bilanz',
+    partien: (n: number) => (n === 1 ? '1 Partie' : `${n.toLocaleString('de-DE')} Partien`),
+    siege: (n: number) => (n === 1 ? '1 Sieg' : `${n.toLocaleString('de-DE')} Siege`),
+    bestwert: (n: number) => `Bestwert ${n.toLocaleString('de-DE')}`,
+    serie: (n: number) => `${n} Siege in Folge`,
+    zuletztHeute: 'Zuletzt heute',
+    zuletztGestern: 'Zuletzt gestern',
+    zuletztVor: (tage: number) => `Zuletzt vor ${tage} Tagen`,
+    ersteRunde: 'Noch keine Partie hier – deine erste Runde wartet.',
+    waehleModus: 'Wie willst du spielen?',
+    weiterspielen: 'Weiterspielen',
+    spielen: 'Spielen',
+    zumTisch: 'Zum Tisch',
   },
 
   werbung: {

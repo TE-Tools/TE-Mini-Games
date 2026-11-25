@@ -693,9 +693,11 @@ export const en: Texte = {
     du: 'You',
     willkommen:
       "Buy Germany's finest Schützenfeste, build festival tents and king's houses, collect rent – and shoot for gold at the range.",
-    fortsetzen: (runde: number) => `▶ Continue game (round ${runde})`,
-    neuePartie: '🎲 New game',
-    onlineSpielen: '🌐 Play online',
+    fortsetzen: (runde: number) => `Continue game · round ${runde}`,
+    neuePartie: 'New game',
+    neuePartieText: 'Against the computer or with friends on one device',
+    onlineSpielen: 'Play online',
+    onlineSpielenText: 'Open a table, share the code – or join one',
     gewonnen: '🏆 You won!',
     gewinnt: (name: string) => `${name} wins.`,
     ausgeschieden: 'out',
@@ -3034,6 +3036,34 @@ export const en: Texte = {
       kupfer: 'Copper',
       sternennacht: 'Starry night',
     },
+  },
+
+  /**
+   * Start screens of the dice, card and board games
+   * (src/components/spielmenue): hero, record, mode cards.
+   */
+  spielMenue: {
+    slogan: {
+      kniffel: 'Five dice, three rolls – and a fresh chance every time.',
+      maumau: 'The kitchen-table classic: quick to shuffle, quick to play.',
+      'letzte-karte': 'Colourful cards, cheeky twists – who gets rid of them first?',
+      'texas-holdem': 'Read, bluff, go all in – for play money.',
+      schach: 'One move at a time – think one ahead of the computer.',
+      schuetzenopoly: "Fairground, festival tent, king's house – the board is yours.",
+    },
+    bilanz: 'Your record',
+    partien: (n: number) => (n === 1 ? '1 game' : `${n.toLocaleString('en-GB')} games`),
+    siege: (n: number) => (n === 1 ? '1 win' : `${n.toLocaleString('en-GB')} wins`),
+    bestwert: (n: number) => `Best ${n.toLocaleString('en-GB')}`,
+    serie: (n: number) => `${n} wins in a row`,
+    zuletztHeute: 'Last played today',
+    zuletztGestern: 'Last played yesterday',
+    zuletztVor: (tage: number) => `Last played ${tage} days ago`,
+    ersteRunde: 'No games here yet – your first round is waiting.',
+    waehleModus: 'How do you want to play?',
+    weiterspielen: 'Continue',
+    spielen: 'Play',
+    zumTisch: 'To the table',
   },
 
   werbung: {

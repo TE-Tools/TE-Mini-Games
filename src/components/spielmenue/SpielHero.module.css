@@ -1,0 +1,123 @@
+/*
+ * Das Kopfbild der Spielmenüs. Die Farben (--akzent, --akzent-tief,
+ * --akzent-hell) setzt der Rahmen in SpielMenue.module.css.
+ */
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  border-radius: var(--radius-2xl);
+  color: #ffffff;
+  text-align: center;
+  background:
+    radial-gradient(circle at 18% 12%, rgb(255 255 255 / 0.24), transparent 42%),
+    radial-gradient(circle at 92% 88%, rgb(255 255 255 / 0.1), transparent 45%),
+    linear-gradient(
+      150deg,
+      var(--akzent-hell, #6d4ae8),
+      var(--akzent, #4f46e5) 50%,
+      var(--akzent-tief, #312e81)
+    );
+  box-shadow: 0 14px 32px color-mix(in srgb, var(--akzent, #4f46e5) 35%, transparent);
+}
+
+/* Ein feines Punktraster -- Filz, Tischtuch, Festwiese, je nach Farbe. */
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgb(255 255 255 / 0.1) 1px, transparent 1.4px);
+  background-size: 14px 14px;
+}
+
+.bild {
+  position: relative;
+  width: 100%;
+  max-width: 15.5rem;
+  aspect-ratio: 240 / 140;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.slogan {
+  position: relative;
+  margin: 0;
+  max-width: 24rem;
+  font-size: var(--text-xl);
+  font-weight: 900;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  text-shadow: 0 2px 10px rgb(0 0 0 / 0.18);
+}
+
+.text {
+  position: relative;
+  max-width: 26rem;
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: rgb(255 255 255 / 0.88);
+}
+
+.text p {
+  margin: 0;
+}
+
+/* ---------------------------------------------------------- Bewegung */
+
+.schwebt {
+  animation: schweben 3.4s ease-in-out infinite alternate;
+  animation-delay: calc(var(--verzug, 0s) * -1);
+}
+
+@keyframes schweben {
+  from {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(-5px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .schwebt {
+    animation: none;
+  }
+}
+
+/* In einem breiten Rahmen: Bild links, Text rechts. */
+@container spielmenue (min-width: 600px) {
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(12rem, 16rem) 1fr;
+    grid-template-rows: auto auto;
+    align-items: center;
+    column-gap: var(--space-4);
+    text-align: left;
+    padding: var(--space-4) var(--space-5);
+  }
+
+  .bild {
+    grid-row: 1 / span 2;
+  }
+
+  .slogan {
+    align-self: end;
+  }
+
+  .text {
+    align-self: start;
+  }
+}

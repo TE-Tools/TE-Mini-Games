@@ -34,6 +34,7 @@ import { setzeEffektWahl, webglMoeglich } from '@/services/effekte'
 import { useEffekte3d } from '@/components/drei/useEffekte3d'
 import { Konfetti } from '@/components/konfetti/Konfetti'
 import { DesignWahl } from '@/components/designs/DesignWahl'
+import { ModusKarte, ModusTitel, SpielHero, SpielMenue, StatsLeiste } from '@/components/spielmenue'
 import { Wuerfelreihe } from './kniffel/Wuerfelreihe'
 import { Kniffelblock, type BlockSpalte } from './kniffel/Kniffelblock'
 import { Bestenliste } from './kniffel/Bestenliste'
@@ -171,39 +172,29 @@ export function KniffelPage() {
     return (
       <main className={`${shell.page} ${styles.breiteSeite}`}>
         <Kopf onZurueck={() => navigate('/')} ton={ton} onTon={tonUmschalten} />
-        <section className={styles.menue}>
-          <p className={styles.einleitung}>{t.kniffel.einleitung(ZUSATZ_KNIFFEL_PUNKTE)}</p>
+        <SpielMenue spiel="kniffel">
+          <SpielHero spiel="kniffel">
+            <p>{t.kniffel.einleitung(ZUSATZ_KNIFFEL_PUNKTE)}</p>
+          </SpielHero>
+          <StatsLeiste spiel="kniffel" />
 
-          <button
-            type="button"
-            className={styles.grosserKnopf}
+          <ModusTitel />
+          <ModusKarte
+            art="haupt"
+            icon="🤖"
+            titel={t.kniffel.gegenRechner}
+            hinweis={t.kniffel.gegenRechnerText}
+            aktion={t.spielMenue.spielen}
             onClick={() => setAnsicht('aufbau')}
-          >
-            <span className={styles.knopfIcon} aria-hidden="true">
-              🤖
-            </span>
-            <span>
-              <strong>{t.kniffel.gegenRechner}</strong>
-              <small>{t.kniffel.gegenRechnerText}</small>
-            </span>
-          </button>
-
-          <button
-            type="button"
-            className={styles.grosserKnopf}
+          />
+          <ModusKarte
+            icon="👥"
+            titel={t.kniffel.online}
+            hinweis={isKniffelOnlineAvailable ? t.kniffel.onlineText : t.kniffel.onlineOhneKonto}
+            aktion={t.spielMenue.zumTisch}
             onClick={() => setAnsicht('online')}
             disabled={!isKniffelOnlineAvailable}
-          >
-            <span className={styles.knopfIcon} aria-hidden="true">
-              👥
-            </span>
-            <span>
-              <strong>{t.kniffel.online}</strong>
-              <small>
-                {isKniffelOnlineAvailable ? t.kniffel.onlineText : t.kniffel.onlineOhneKonto}
-              </small>
-            </span>
-          </button>
+          />
 
           <DesignWahl art="wuerfel" name="kniffel-wuerfel" titel={t.kniffel.wuerfelDesign} />
 
@@ -217,7 +208,7 @@ export function KniffelPage() {
           <Link to="/" className={shell.homeLink}>
             {t.allgemein.zumMenue}
           </Link>
-        </section>
+        </SpielMenue>
       </main>
     )
   }

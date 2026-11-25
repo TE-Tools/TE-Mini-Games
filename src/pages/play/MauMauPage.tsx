@@ -34,6 +34,7 @@ import { RAUM_PARAM } from '@/services/raeume'
 import { spielerNameOderDu } from '@/services/spielername'
 import { spiele, setzeTon, tonAn, vibriere } from '@/services/sound'
 import { DesignWahl } from '@/components/designs/DesignWahl'
+import { ModusKarte, ModusTitel, SpielHero, SpielMenue, StatsLeiste } from '@/components/spielmenue'
 import { Hausregelwahl, Spielartwahl } from './maumau/Hausregeln'
 import { MauTisch } from './maumau/MauTisch'
 import { MauMauOnline } from './MauMauOnline'
@@ -209,36 +210,27 @@ export function MauMauPage({ spiel }: Props) {
     return (
       <main className={shell.page}>
         <Kopf titel={titel} onZurueck={() => navigate('/')} ton={ton} onTon={tonUmschalten} />
-        <section className={styles.menue}>
-          <p className={styles.einleitung}>
-            {klassisch ? t.maumau.einleitungKlassisch : t.maumau.einleitungBunt}
-          </p>
-          <button
-            type="button"
-            className={styles.grosserKnopf}
+        <SpielMenue spiel={spiel}>
+          <SpielHero spiel={spiel}>
+            <p>{klassisch ? t.maumau.einleitungKlassisch : t.maumau.einleitungBunt}</p>
+          </SpielHero>
+          <StatsLeiste spiel={spiel} />
+          <ModusTitel />
+          <ModusKarte
+            art="haupt"
+            icon={klassisch ? '🂡' : '🎴'}
+            titel={t.allgemein.gegenRechner}
+            hinweis={t.maumau.bisDreiMitspieler}
+            aktion={t.spielMenue.spielen}
             onClick={() => setAnsicht('aufbau')}
-          >
-            <span className={styles.knopfIcon} aria-hidden="true">
-              {klassisch ? '🂡' : '🎴'}
-            </span>
-            <span>
-              <strong>{t.allgemein.gegenRechner}</strong>
-              <small>{t.maumau.bisDreiMitspieler}</small>
-            </span>
-          </button>
-          <button
-            type="button"
-            className={styles.grosserKnopf}
+          />
+          <ModusKarte
+            icon="🌐"
+            titel={t.maumau.onlineMitAnderen}
+            hinweis={t.maumau.onlineMitAnderenText}
+            aktion={t.spielMenue.zumTisch}
             onClick={() => setAnsicht('online')}
-          >
-            <span className={styles.knopfIcon} aria-hidden="true">
-              🌐
-            </span>
-            <span>
-              <strong>{t.maumau.onlineMitAnderen}</strong>
-              <small>{t.maumau.onlineMitAnderenText}</small>
-            </span>
-          </button>
+          />
           <DesignWahl
             art="kartenruecken"
             name="karten-ruecken"
@@ -248,7 +240,7 @@ export function MauMauPage({ spiel }: Props) {
           <Link to="/" className={shell.homeLink}>
             {t.allgemein.zumMenue}
           </Link>
-        </section>
+        </SpielMenue>
       </main>
     )
   }

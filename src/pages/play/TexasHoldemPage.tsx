@@ -34,6 +34,7 @@ import { spiele, setzeTon, tonAn } from '@/services/sound'
 import { useSprache } from '@/i18n/sprache'
 
 import { DesignWahl } from '@/components/designs/DesignWahl'
+import { ModusKarte, ModusTitel, SpielHero, SpielMenue, StatsLeiste } from '@/components/spielmenue'
 import { Einsatzleiste } from './texas/Einsatzleiste'
 import { PokerTisch } from './texas/PokerTisch'
 import { protokollZeile } from './texas/texasText'
@@ -156,40 +157,37 @@ export function TexasHoldemPage() {
     return (
       <main className={shell.page}>
         <Kopf onZurueck={() => navigate('/')} ton={ton} onTon={tonUmschalten} />
-        <section className={styles.menue}>
-          <p className={styles.einleitung}>{t.texas.einleitung}</p>
-          <button
-            type="button"
-            className={styles.grosserKnopf}
+        <SpielMenue spiel="texas-holdem">
+          <SpielHero spiel="texas-holdem">
+            <p>{t.texas.einleitung}</p>
+          </SpielHero>
+          <StatsLeiste spiel="texas-holdem" />
+          <ModusTitel />
+          <ModusKarte
+            art="haupt"
+            icon="🃏"
+            titel={t.texas.turnier}
+            hinweis={t.texas.turnierText(START_CHIPS)}
+            aktion={t.spielMenue.spielen}
             onClick={() => setAnsicht('aufbau')}
-          >
-            <span className={styles.knopfIcon} aria-hidden="true">
-              🃏
-            </span>
-            <span>
-              <strong>{t.texas.turnier}</strong>
-              <small>{t.texas.turnierText(START_CHIPS)}</small>
-            </span>
-          </button>
-          <button
-            type="button"
-            className={styles.grosserKnopf}
+          />
+          <ModusKarte
+            icon="🌐"
+            titel={t.texas.mitAnderen}
+            hinweis={t.texas.onlineText}
+            aktion={t.spielMenue.zumTisch}
             onClick={() => setAnsicht('online')}
-          >
-            <span className={styles.knopfIcon} aria-hidden="true">
-              🌐
-            </span>
-            <span>
-              <strong>{t.texas.mitAnderen}</strong>
-              <small>{t.texas.onlineText}</small>
-            </span>
-          </button>
+          />
+          {/* Der Satz zum Spielgeld bleibt sichtbar (AGENTS.md). */}
+          <p className={styles.spielgeld}>
+            <span aria-hidden="true">🪙 </span>
+            {t.texas.spielgeld}
+          </p>
           <DesignWahl art="kartenruecken" name="karten-ruecken" titel={t.texas.kartenruecken} />
-          <p className={styles.spielgeld}>{t.texas.spielgeld}</p>
           <Link to="/" className={shell.homeLink}>
             {t.texas.zumMenue}
           </Link>
-        </section>
+        </SpielMenue>
       </main>
     )
   }

@@ -34,6 +34,15 @@ import { isSchachOnlineAvailable } from '@/services/schachOnline'
 import { spiele } from '@/services/sound'
 import { useSprache } from '@/i18n/sprache'
 import { Konfetti } from '@/components/konfetti/Konfetti'
+import {
+  AkzentKnopf,
+  ModusFlaeche,
+  ModusKarte,
+  ModusTitel,
+  SpielHero,
+  SpielMenue,
+  StatsLeiste,
+} from '@/components/spielmenue'
 import { Brett } from './schach/Brett'
 import { Kopf, SpielerZeile, Umwandlung, Zugliste } from './schach/Tafel'
 import { vorsprungVon } from './schach/figuren'
@@ -290,65 +299,73 @@ export function SchachPage() {
     return (
       <main className={`${shell.page} ${styles.seite}`}>
         <Kopf titel={t.spiele.schach} onZurueck={() => navigate('/')} />
-        <p className={styles.erklaerung}>{t.schach.untertitel}</p>
+        <SpielMenue spiel="schach">
+          <SpielHero spiel="schach">
+            <p>{t.schach.untertitel}</p>
+          </SpielHero>
 
-        {gespeichert && (
-          <button type="button" className={shell.primaryBtn} onClick={() => starten(gespeichert)}>
-            {t.schach.fortsetzen(t.schach.stufen[gespeichert.stufe], gespeichert.zuege.length)}
-          </button>
-        )}
+          {gespeichert && (
+            <ModusKarte
+              art="weiter"
+              icon="♞"
+              titel={t.spielMenue.weiterspielen}
+              hinweis={t.schach.fortsetzen(
+                t.schach.stufen[gespeichert.stufe],
+                gespeichert.zuege.length,
+              )}
+              aktion={t.spielMenue.spielen}
+              onClick={() => starten(gespeichert)}
+            />
+          )}
+          {/* Die Punkte hängen an der Stufe des Gegners -- ein Bestwert sagt hier nichts. */}
+          <StatsLeiste spiel="schach" mitBestwert={false} />
 
-        <section className={styles.abschnitt}>
-          <h2>{t.schach.gegenComputer}</h2>
-          <div className={styles.wahl} role="group" aria-label={t.schach.staerke}>
-            {STUFEN.map((s) => (
-              <button
-                key={s}
-                type="button"
-                className={stufe === s ? styles.chipAktiv : styles.chip}
-                aria-pressed={stufe === s}
-                onClick={() => setStufe(s)}
-              >
-                {t.schach.stufen[s]}
-              </button>
-            ))}
-          </div>
-          <p className={styles.erklaerung}>{t.schach.stufenText[stufe]}</p>
-          <div className={styles.wahl} role="group" aria-label={t.schach.deineFarbe}>
-            {(['w', 'b', 'zufall'] as const).map((f) => (
-              <button
-                key={f}
-                type="button"
-                className={farbWahl === f ? styles.chipAktiv : styles.chip}
-                aria-pressed={farbWahl === f}
-                onClick={() => setFarbWahl(f)}
-              >
-                {t.schach.farben[f]}
-              </button>
-            ))}
-          </div>
-          <button type="button" className={shell.primaryBtn} onClick={() => starten()}>
-            {t.schach.starten}
-          </button>
-        </section>
+          <ModusTitel />
+          <ModusFlaeche icon="🤖" titel={t.schach.gegenComputer}>
+            <div className={styles.wahl} role="group" aria-label={t.schach.staerke}>
+              {STUFEN.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className={stufe === s ? styles.chipAktiv : styles.chip}
+                  aria-pressed={stufe === s}
+                  onClick={() => setStufe(s)}
+                >
+                  {t.schach.stufen[s]}
+                </button>
+              ))}
+            </div>
+            <p className={styles.erklaerung}>{t.schach.stufenText[stufe]}</p>
+            <div className={styles.wahl} role="group" aria-label={t.schach.deineFarbe}>
+              {(['w', 'b', 'zufall'] as const).map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  className={farbWahl === f ? styles.chipAktiv : styles.chip}
+                  aria-pressed={farbWahl === f}
+                  onClick={() => setFarbWahl(f)}
+                >
+                  {t.schach.farben[f]}
+                </button>
+              ))}
+            </div>
+            <AkzentKnopf onClick={() => starten()}>{t.schach.starten}</AkzentKnopf>
+          </ModusFlaeche>
 
-        {isSchachOnlineAvailable && (
-          <section className={styles.abschnitt}>
-            <h2>{t.schach.onlineTitel}</h2>
-            <p className={styles.erklaerung}>{t.schach.onlineText}</p>
-            <button
-              type="button"
-              className={shell.secondaryBtn}
+          {isSchachOnlineAvailable && (
+            <ModusKarte
+              icon="🌐"
+              titel={t.schach.onlineTitel}
+              hinweis={t.schach.onlineText}
+              aktion={t.schach.zumTisch}
               onClick={() => setAnsicht('online')}
-            >
-              {t.schach.zumTisch}
-            </button>
-          </section>
-        )}
+            />
+          )}
 
-        <Link to="/" className={shell.homeLink}>
-          {t.allgemein.zumMenue}
-        </Link>
+          <Link to="/" className={shell.homeLink}>
+            {t.allgemein.zumMenue}
+          </Link>
+        </SpielMenue>
       </main>
     )
   }

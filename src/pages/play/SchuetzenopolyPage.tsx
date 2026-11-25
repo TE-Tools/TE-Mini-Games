@@ -47,6 +47,7 @@ import {
   type SpielerEinrichtung,
 } from '@/games/schuetzenopoly'
 import { useSprache } from '@/i18n/sprache'
+import { ModusKarte, ModusTitel, SpielHero, SpielMenue, StatsLeiste } from '@/components/spielmenue'
 import { addXp, saveGameResult } from '@/offline'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
@@ -479,27 +480,41 @@ export function SchuetzenopolyPage() {
     return (
       <main className={shell.page}>
         <Kopf onZurueck={() => navigate('/')} ton={ton} onTon={tonUmschalten} />
-        <section className={shell.section}>
-          <p className={styles.willkommen}>{ts.willkommen}</p>
+        <SpielMenue spiel="schuetzenopoly">
+          <SpielHero spiel="schuetzenopoly">
+            <p>{ts.willkommen}</p>
+          </SpielHero>
           {fortsetzbar && (
-            <button type="button" className={shell.primaryBtn} onClick={fortsetzen}>
-              {ts.fortsetzen(fortsetzbar.runde)}
-            </button>
+            <ModusKarte
+              art="weiter"
+              icon="🎪"
+              titel={t.spielMenue.weiterspielen}
+              hinweis={ts.fortsetzen(fortsetzbar.runde)}
+              aktion={t.spielMenue.spielen}
+              onClick={fortsetzen}
+            />
           )}
-          <button
-            type="button"
-            className={fortsetzbar ? shell.secondaryBtn : shell.primaryBtn}
+          <StatsLeiste spiel="schuetzenopoly" />
+          <ModusTitel />
+          <ModusKarte
+            art={fortsetzbar ? 'neben' : 'haupt'}
+            icon="🎲"
+            titel={ts.neuePartie}
+            hinweis={ts.neuePartieText}
+            aktion={t.spielMenue.spielen}
             onClick={neuAnfangen}
-          >
-            {ts.neuePartie}
-          </button>
-          <button type="button" className={shell.secondaryBtn} onClick={() => setAnsicht('online')}>
-            {ts.onlineSpielen}
-          </button>
+          />
+          <ModusKarte
+            icon="🌐"
+            titel={ts.onlineSpielen}
+            hinweis={ts.onlineSpielenText}
+            aktion={t.spielMenue.zumTisch}
+            onClick={() => setAnsicht('online')}
+          />
           <Link to="/" className={shell.homeLink}>
             {t.allgemein.zumMenue}
           </Link>
-        </section>
+        </SpielMenue>
       </main>
     )
   }
