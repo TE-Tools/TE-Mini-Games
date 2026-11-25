@@ -6,6 +6,8 @@ import {
   explode,
   nextWortbombeRound,
   activeWortbombePlayer,
+  MIN_SPIELER,
+  MAX_SPIELER,
   wortbombeSieger,
   zuendzeitMs,
   STANDARD_LEBEN,
@@ -13,13 +15,25 @@ import {
 } from '@/games/wortbombe'
 import type { SilbenStufe } from '@/games/wortbombe'
 import { useSprache } from '@/i18n/sprache'
+import { akzentStil } from '@/components/party/akzent'
+import { ChipSchalter } from '@/components/party/Chips'
+import { useSpielerGruppe } from '@/components/party/gruppe'
+import {
+  PartyHeld,
+  PartyKarte,
+  PartyKopf,
+  PartyRegler,
+  StartKnopf,
+} from '@/components/party/PartySetup'
+import setup from '@/components/party/PartySetup.module.css'
+import { SpielerKaertchen, SpielerZahl } from '@/components/party/SpielerKaertchen'
 import { spiele, vibriere } from '@/services/sound'
 import { Bombe, Knall } from './wortbombe/Bombe'
 import { fehlerSatz, partyFehler } from './partyFehler'
 import shell from './PartyShell.module.css'
 import styles from './WortbombePage.module.css'
 
-const DEFAULT_NAMES = 'Thomas\nMarina\nPhillip\nSonja'
+const DEFAULT_NAMES = ['Thomas', 'Marina', 'Phillip', 'Sonja']
 
 /** Die Stufen -- die Namen stehen im Wörterbuch, die Silben kommen in der Sprache der App. */
 const STUFEN: SilbenStufe[] = ['leicht', 'mittel', 'schwer']
@@ -29,7 +43,7 @@ export function WortbombePage() {
   const w = t.wortbombe
   const g = t.partyGemeinsam
   const [state, setState] = useState<WortbombeState | null>(null)
-  const [namesText, setNamesText] = useState(DEFAULT_NAMES)
+  const { namen: names, setNamen: setNames, gemerkt, merken } = useSpielerGruppe(DEFAULT_NAMES)
   const [stufen, setStufen] = useState<SilbenStufe[]>(['leicht', 'mittel'])
   const [leben, setLeben] = useState(STANDARD_LEBEN)
   /** Der Satz der Engine, deutsch -- übersetzt wird beim Rendern. */
@@ -69,81 +83,60 @@ export function WortbombePage() {
   const start = useCallback(() => {
     setError(null)
     try {
-      const names = namesText
-        .split(/[\n,;]+/)
-        .map((n) => n.trim())
-        .filter(Boolean)
       const match = createWortbombeMatch({ names, stufen, lives: leben, sprache })
       setState(match)
+      merken(names)
       setZuender(Date.now() + zuendzeitMs(match))
     } catch (e) {
       setError(fehlerSatz(e))
     }
-  }, [namesText, stufen, leben, sprache])
+  }, [names, stufen, leben, sprache, merken])
 
   if (!state) {
     return (
-      <main className={`${shell.page} ${styles.farbe}`}>
-        <Link to="/" className={shell.back}>
-          {'←'} {t.allgemein.zurueck}
-        </Link>
-        <h1 className={shell.title}>💣 {t.spiele.wortbombe}</h1>
-        <p className={shell.subtitle}>{w.untertitel}</p>
+      <main className={setup.seite} style={akzentStil('wortbombe')}>
+        <PartyKopf titel={t.spiele.wortbombe} />
+        <PartyHeld icon="💣">{w.untertitel}</PartyHeld>
 
-        <div className={shell.card}>
-          <h2 className={shell.cardTitle}>{g.spielerAnzahl(2, 12)}</h2>
-          <label className={shell.label}>
-            {g.namenLabel}
-            <textarea
-              className={shell.textarea}
-              value={namesText}
-              onChange={(e) => setNamesText(e.target.value)}
-              autoComplete="off"
-            />
-          </label>
-        </div>
+        <PartyKarte
+          titel={g.spielerAnzahl(MIN_SPIELER, MAX_SPIELER)}
+          zusatz={<SpielerZahl anzahl={names.length} max={MAX_SPIELER} />}
+        >
+          <SpielerKaertchen
+            namen={names}
+            onNamen={setNames}
+            min={MIN_SPIELER}
+            max={MAX_SPIELER}
+            gemerkt={gemerkt}
+          />
+        </PartyKarte>
 
-        <div className={shell.card}>
-          <h2 className={shell.cardTitle}>{w.silben}</h2>
-          <div className={shell.grid}>
-            {STUFEN.map((id) => {
-              const an = stufen.includes(id)
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  aria-pressed={an}
-                  className={an ? styles.chipAktiv : shell.pickBtn}
-                  onClick={() =>
-                    setStufen((alt) =>
-                      alt.includes(id) ? alt.filter((x) => x !== id) : [...alt, id],
-                    )
-                  }
-                >
-                  {w.stufen[id]}
-                </button>
-              )
-            })}
-          </div>
-          <label className={shell.label}>
-            {w.lebenJePerson(leben)}
-            <input
-              type="range"
-              min={1}
-              max={5}
-              value={leben}
-              onChange={(e) => setLeben(Number(e.target.value))}
-            />
-          </label>
+        <PartyKarte titel={w.silben}>
+          <ChipSchalter
+            beschriftung={w.silben}
+            anordnung={3}
+            gewaehlt={stufen}
+            onUmschalten={(id) =>
+              setStufen((alt) => (alt.includes(id) ? alt.filter((x) => x !== id) : [...alt, id]))
+            }
+            optionen={STUFEN.map((id) => ({ wert: id, text: w.stufen[id] }))}
+          />
+          <PartyRegler
+            beschriftung={w.lebenJePerson(leben)}
+            wert={leben}
+            min={1}
+            max={5}
+            onWert={setLeben}
+          />
           <p className={shell.meta}>{w.rundeEntscheidet}</p>
-        </div>
+        </PartyKarte>
 
         {error && <p className={shell.error}>{partyFehler(t, error)}</p>}
         {stufen.length === 0 && <p className={shell.error}>{w.mindestensEineStufe}</p>}
 
-        <button type="button" className={shell.btn} disabled={stufen.length === 0} onClick={start}>
+        <StartKnopf disabled={stufen.length === 0} onClick={start}>
           {w.zuenden}
-        </button>
+        </StartKnopf>
       </main>
     )
   }

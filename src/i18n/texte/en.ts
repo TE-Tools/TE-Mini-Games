@@ -3014,6 +3014,25 @@ export const en: Texte = {
     figurNurOptik: 'Looks only – nothing about the game changes.',
   },
 
+  partyGruppe: {
+    mitspieler: 'Players',
+    neuerName: 'New name',
+    nameEingeben: 'Enter a name …',
+    hinzufuegen: 'Add',
+    entfernen: (name: string) => `Remove ${name}`,
+    anzahl: (n: number, max: number) => `${n} of ${max}`,
+    nochFehlen: (fehlend: number, min: number) =>
+      fehlend === 1
+        ? `One more person – you need ${min} to start`
+        : `${fehlend} more people – you need ${min} to start`,
+    voll: (max: number) => `Full – no more than ${max} fit in one game`,
+    schonDabei: (name: string) => `${name} is already in`,
+    letzteRunde: (namen: string) => `Last round: ${namen}`,
+    uebernehmen: 'use again',
+    gemerkt: 'This device remembers the group – for every party game.',
+    fertig: 'Done',
+  },
+
   designs: {
     hinweis: 'Looks only – no advantage. Only you see your choice.',
     perVideo: 'unlock with a video',

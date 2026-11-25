@@ -1,0 +1,198 @@
+/* Kategorie-Knopf und das Blatt, das von unten kommt. */
+
+.ausloeser {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
+  background: #ffffff;
+  color: var(--color-text);
+  text-align: left;
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform 200ms cubic-bezier(0.3, 1.5, 0.5, 1),
+    border-color 150ms ease;
+}
+
+.ausloeser:hover {
+  border-color: color-mix(in srgb, var(--akzent, #5a3ce0) 40%, transparent);
+}
+
+.ausloeser:active {
+  transform: scale(0.98);
+}
+
+.bild {
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-md);
+  font-size: 1.45rem;
+  background: color-mix(in srgb, var(--akzent, #5a3ce0) 12%, #ffffff);
+}
+
+.texte {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.was {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.wert {
+  font-size: var(--text-base);
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pfeil {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  transform: rotate(90deg);
+}
+
+/* ------------------------------------------------------------- Blatt */
+
+.huelle {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(22 18 48 / 0.38);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  animation: abdunkeln 200ms ease both;
+}
+
+.blatt {
+  position: relative;
+  width: min(100%, 34rem);
+  max-height: 82dvh;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-2) var(--space-4) calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
+  border-radius: 1.75rem 1.75rem 0 0;
+  background: #ffffff;
+  box-shadow: 0 -12px 40px rgb(22 18 48 / 0.2);
+  animation: hochfahren 300ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
+}
+
+.griff {
+  align-self: center;
+  width: 2.75rem;
+  height: 0.3rem;
+  margin-bottom: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-border-strong);
+}
+
+.kopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+}
+
+.titel {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 800;
+}
+
+.fertig {
+  min-height: 2.5rem;
+  padding: 0 var(--space-4);
+  border: none;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--akzent, #5a3ce0) 12%, #ffffff);
+  color: var(--akzent, #5a3ce0);
+  font-weight: 800;
+}
+
+.inhalt {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 2px 2px var(--space-2);
+}
+
+.gruppe {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-xs);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.inhalt [role='radio'] {
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 3rem;
+  border-radius: var(--radius-lg);
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+}
+
+@keyframes abdunkeln {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes hochfahren {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+/* Breit genug: das Blatt schwebt in der Mitte statt am Rand zu kleben. */
+@media (min-width: 40rem) and (min-height: 32rem) {
+  .huelle {
+    align-items: center;
+  }
+
+  .blatt {
+    border-radius: 1.75rem;
+    padding-bottom: var(--space-5);
+  }
+}
+
+:global(:root[data-sparsam]) .huelle,
+:global(:root[data-sparsam]) .blatt {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .huelle,
+  .blatt {
+    animation: none;
+  }
+
+  .ausloeser {
+    transition: none;
+  }
+}

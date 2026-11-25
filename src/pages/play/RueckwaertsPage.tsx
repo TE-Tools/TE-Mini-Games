@@ -27,11 +27,16 @@ import {
   type Wiedergabe,
 } from '@/games/rueckwaerts'
 import { useSprache } from '@/i18n/sprache'
+import { akzentStil } from '@/components/party/akzent'
+import { useSpielerGruppe } from '@/components/party/gruppe'
+import { PartyHeld, PartyKarte, PartyKopf, StartKnopf } from '@/components/party/PartySetup'
+import setup from '@/components/party/PartySetup.module.css'
+import { SpielerKaertchen, SpielerZahl } from '@/components/party/SpielerKaertchen'
 import { fehlerSatz, partyFehler } from './partyFehler'
 import shell from './PartyShell.module.css'
 import styles from './RueckwaertsPage.module.css'
 
-const DEFAULT_NAMES = 'Thomas\nMarina\nPhillip'
+const DEFAULT_NAMES = ['Thomas', 'Marina', 'Phillip']
 
 type AufnahmeLage = 'aus' | 'wartet' | 'laeuft'
 
@@ -54,7 +59,7 @@ export function RueckwaertsPage() {
   const g = t.partyGemeinsam
 
   const [zustand, setZustand] = useState<RueckZustand | null>(null)
-  const [namesText, setNamesText] = useState(DEFAULT_NAMES)
+  const { namen: names, setNamen: setNames, gemerkt, merken } = useSpielerGruppe(DEFAULT_NAMES)
   /** Startfehler: der Satz der Engine, deutsch -- übersetzt wird beim Rendern. */
   const [error, setError] = useState<string | null>(null)
   const [mangel, setMangel] = useState<AufnahmeMangel | TonMangel | null>(null)
@@ -120,15 +125,12 @@ export function RueckwaertsPage() {
   const start = useCallback(() => {
     setError(null)
     try {
-      const names = namesText
-        .split(/[\n,;]+/)
-        .map((n) => n.trim())
-        .filter(Boolean)
       wechsle(createRueckwaertsMatch({ names }))
+      merken(names)
     } catch (e) {
       setError(fehlerSatz(e))
     }
-  }, [namesText, wechsle])
+  }, [names, wechsle, merken])
 
   const stoppeAufnahme = useCallback(() => {
     const a = laufend.current
@@ -229,45 +231,39 @@ export function RueckwaertsPage() {
 
   if (!zustand) {
     return (
-      <main className={`${shell.page} ${styles.farbe}`}>
-        <Link to="/" className={shell.back}>
-          {'←'} {t.allgemein.zurueck}
-        </Link>
-        <h1 className={shell.title}>⏪ {t.spiele.rueckwaerts}</h1>
-        <p className={shell.subtitle}>{r.untertitel}</p>
+      <main className={setup.seite} style={akzentStil('rueckwaerts')}>
+        <PartyKopf titel={t.spiele.rueckwaerts} />
+        <PartyHeld icon="⏪">{r.untertitel}</PartyHeld>
 
-        <div className={shell.card}>
-          <h2 className={shell.cardTitle}>{r.soGehts}</h2>
+        <PartyKarte titel={r.soGehts}>
           <ol className={styles.schritte}>
             <li>{r.schritt1}</li>
             <li>{r.schritt2}</li>
             <li>{r.schritt3}</li>
           </ol>
           <p className={shell.meta}>{r.zuZweit}</p>
-        </div>
+        </PartyKarte>
 
-        <div className={shell.card}>
-          <h2 className={shell.cardTitle}>
-            {g.spielerAnzahl(RUECKWAERTS.minSpieler, RUECKWAERTS.maxSpieler)}
-          </h2>
-          <label className={shell.label}>
-            {g.namenLabel}
-            <textarea
-              className={shell.textarea}
-              value={namesText}
-              onChange={(e) => setNamesText(e.target.value)}
-              autoComplete="off"
-            />
-          </label>
-        </div>
+        <PartyKarte
+          titel={g.spielerAnzahl(RUECKWAERTS.minSpieler, RUECKWAERTS.maxSpieler)}
+          zusatz={<SpielerZahl anzahl={names.length} max={RUECKWAERTS.maxSpieler} />}
+        >
+          <SpielerKaertchen
+            namen={names}
+            onNamen={setNames}
+            min={RUECKWAERTS.minSpieler}
+            max={RUECKWAERTS.maxSpieler}
+            gemerkt={gemerkt}
+          />
+        </PartyKarte>
 
-        <p className={shell.hint}>🎙️ {r.mikrofonHinweis}</p>
+        <p className={styles.datenschutz}>
+          <span aria-hidden="true">🎙️</span> {r.mikrofonHinweis}
+        </p>
 
         {error && <p className={shell.error}>{partyFehler(t, error)}</p>}
 
-        <button type="button" className={shell.btn} onClick={start}>
-          {g.losspielen}
-        </button>
+        <StartKnopf onClick={start}>{g.losspielen}</StartKnopf>
       </main>
     )
   }

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { renderAufDeutsch } from './aufDeutsch'
+import { spielerSetzen } from './partyHelfer'
 import type * as Ton from '@/services/sound'
 
 const ton = vi.hoisted(() => ({ spiele: vi.fn(), vibriere: vi.fn() }))
@@ -65,7 +66,7 @@ describe('Wer würde eher?: Ergebnis auf der Seite', () => {
         <WerWuerdeEherPage />
       </MemoryRouter>,
     )
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Anna\nBen\nCarla' } })
+    spielerSetzen(['Anna', 'Ben', 'Carla'])
     // Nur Personenfragen -- dann wird für Mitspieler gestimmt.
     fireEvent.click(screen.getByRole('button', { name: /Was wäre dir lieber/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Losspielen' }))

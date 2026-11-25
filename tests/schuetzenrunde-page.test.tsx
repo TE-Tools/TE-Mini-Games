@@ -22,7 +22,7 @@ describe('Schützenrunde – Seite', () => {
     expect(screen.getByRole('heading', { name: 'Schützenrunde' })).toBeDefined()
     expect(screen.getByDisplayValue('Du')).toBeDefined()
     expect(screen.getByText(/Zwei Saboteure · 8–16 Mitglieder möglich/)).toBeDefined()
-    expect(screen.getByRole('button', { name: /Jäger/ })).toBeDefined()
+    expect(screen.getByRole('radio', { name: /Jäger/ })).toBeDefined()
     await userEvent.click(screen.getByRole('button', { name: 'Runde starten' }))
     expect(await screen.findByText('Nacht 1')).toBeDefined()
     expect(screen.getByText(/Die Bruderschaft trifft sich – 8 Mitglieder/)).toBeDefined()
@@ -34,7 +34,7 @@ describe('Schützenrunde – Seite', () => {
     expect(screen.getByRole('heading', { name: 'Marksmen Round' })).toBeDefined()
     expect(screen.getByDisplayValue('You')).toBeDefined()
     expect(screen.getByText(/Two saboteurs · 8–16 members possible/)).toBeDefined()
-    expect(screen.getByRole('button', { name: /Rifles/ })).toBeDefined()
+    expect(screen.getByRole('radio', { name: /Rifles/ })).toBeDefined()
     await userEvent.click(screen.getByRole('button', { name: 'Start round' }))
     expect(await screen.findByText('Night 1')).toBeDefined()
     expect(

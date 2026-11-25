@@ -24,7 +24,20 @@ import {
   type ImposterMatchState,
   type ImposterModeId,
 } from '@/games/finde-den-imposter'
-import { useSprache } from '@/i18n/sprache'
+import { spielName, useSprache } from '@/i18n/sprache'
+import { akzentStil } from '@/components/party/akzent'
+import { ChipAuswahl } from '@/components/party/Chips'
+import { useSpielerGruppe } from '@/components/party/gruppe'
+import { KategorieWahl } from '@/components/party/KategorieWahl'
+import {
+  PartyHeld,
+  PartyKarte,
+  PartyKopf,
+  StartKnopf,
+  ZweiterKnopf,
+} from '@/components/party/PartySetup'
+import setup from '@/components/party/PartySetup.module.css'
+import { SpielerKaertchen, SpielerZahl } from '@/components/party/SpielerKaertchen'
 import { FindeDenImposterOnline } from './FindeDenImposterOnline'
 import { ImposterCategoriesEditor } from './ImposterCategoriesEditor'
 import { gueltigeKategorie } from './imposter/kategorien'
@@ -32,13 +45,16 @@ import { chaosRegel, meldungText, modusName, modusText, phasenName } from './imp
 import styles from './FindeDenImposterPage.module.css'
 import { Spielerbild } from './party/Spielerbild'
 
-const DEFAULT_NAMES = 'Thomas\nMarina\nPhillip\nSonja'
+const DEFAULT_NAMES = ['Thomas', 'Marina', 'Phillip', 'Sonja']
+/** Wie in der Engine (createMatch): 3 bis 12 Mitspielende. */
+const MIN_SPIELER = 3
+const MAX_SPIELER = 12
 
 export function FindeDenImposterPage() {
   const { t, sprache } = useSprache()
   const tx = t.imposter
   const [state, setState] = useState<ImposterMatchState | null>(null)
-  const [namesText, setNamesText] = useState(DEFAULT_NAMES)
+  const { namen: names, setNamen: setNames, gemerkt, merken } = useSpielerGruppe(DEFAULT_NAMES)
   const kategorien = useMemo(() => categoriesFor(sprache), [sprache])
   const [wahl, setCategoryId] = useState('')
   const categoryId = useMemo(
@@ -62,14 +78,7 @@ export function FindeDenImposterPage() {
   const [ablauf, setAblauf] = useState<number | null>(null)
   const [restSekunden, setRestSekunden] = useState<number | null>(null)
 
-  const playerCount = useMemo(
-    () =>
-      namesText
-        .split(/[\n,;]+/)
-        .map((n) => n.trim())
-        .filter(Boolean).length,
-    [namesText],
-  )
+  const playerCount = names.length
   const modusDef = modeOf(mode)
   const autoImposters = defaultImposterCount(Math.max(3, playerCount), mode)
   const zuWenige = playerCount < modusDef.minPlayers
@@ -100,10 +109,6 @@ export function FindeDenImposterPage() {
   const start = useCallback(() => {
     setError(null)
     try {
-      const names = namesText
-        .split(/[\n,;]+/)
-        .map((n) => n.trim())
-        .filter(Boolean)
       const eigeneKategorie = isCustomCategory(categoryId)
         ? customCategoryById(categoryId)
         : undefined
@@ -117,6 +122,7 @@ export function FindeDenImposterPage() {
         customWords: eigeneKategorie?.words,
         customCategoryLabel: eigeneKategorie?.label,
       })
+      merken(names)
       setAblauf(null)
       setRestSekunden(null)
       setState(match)
@@ -124,7 +130,7 @@ export function FindeDenImposterPage() {
     } catch (e) {
       setError(e instanceof Error ? e.message : tx.startFehlgeschlagen)
     }
-  }, [namesText, categoryId, mode, tx])
+  }, [names, categoryId, mode, tx, merken])
 
   if (online) {
     return (
@@ -155,82 +161,53 @@ export function FindeDenImposterPage() {
 
   if (!state) {
     return (
-      <main className={styles.page}>
-        <Link to="/" className={styles.back}>
-          {'←'} {tx.zurueck}
-        </Link>
-        <h1 className={styles.title}>{tx.titel}</h1>
-        <p className={styles.subtitle}>{tx.untertitel}</p>
+      <main className={setup.seite} style={akzentStil('finde-den-imposter')}>
+        <PartyKopf titel={spielName(t, 'finde-den-imposter', 'Finde den Imposter')} />
+        <PartyHeld icon="😈">{tx.untertitel}</PartyHeld>
 
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>{tx.spielerTitel}</h2>
-          <label className={styles.label}>
-            {tx.namen}
-            <textarea
-              className={styles.textarea}
-              value={namesText}
-              onChange={(e) => setNamesText(e.target.value)}
-              autoComplete="off"
-            />
-          </label>
+        <PartyKarte
+          titel={tx.spielerTitel}
+          zusatz={<SpielerZahl anzahl={playerCount} max={MAX_SPIELER} />}
+        >
+          <SpielerKaertchen
+            namen={names}
+            onNamen={setNames}
+            min={MIN_SPIELER}
+            max={MAX_SPIELER}
+            gemerkt={gemerkt}
+          />
           <p className={styles.meta}>{tx.spielerZahl(playerCount, autoImposters)}</p>
-        </div>
+        </PartyKarte>
 
-        <div className={styles.card}>
-          <label className={styles.label}>
-            {tx.kategorie}
-            <select
-              className={styles.select}
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-            >
-              {/* Nur die Kategorien der Oberflächensprache -- die Wörter gibt
-                  es je Sprache (words.ts, words.en.ts). */}
-              <optgroup label={tx.eingebaut}>
-                {kategorien.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.label}
-                  </option>
-                ))}
-              </optgroup>
-              {eigene.length > 0 && (
-                <optgroup label={tx.eigene}>
-                  {eigene.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.label} ({c.words.length})
-                    </option>
-                  ))}
-                </optgroup>
-              )}
-            </select>
-          </label>
-          <button
-            type="button"
-            className={styles.btnSecondary}
-            onClick={() => setZeigeEditor(true)}
-          >
-            {tx.eigeneVerwalten}
-          </button>
-        </div>
+        <PartyKarte>
+          {/* Nur die Kategorien der Oberflächensprache -- die Wörter gibt es
+              je Sprache (words.ts, words.en.ts). */}
+          <KategorieWahl
+            beschriftung={tx.kategorie}
+            eingebaut={kategorien}
+            eigene={eigene.map((c) => ({ id: c.id, label: c.label, anzahl: c.words.length }))}
+            titelEingebaut={tx.eingebaut}
+            titelEigene={tx.eigene}
+            wert={categoryId}
+            onWahl={setCategoryId}
+          />
+          <ZweiterKnopf onClick={() => setZeigeEditor(true)}>{tx.eigeneVerwalten}</ZweiterKnopf>
+        </PartyKarte>
 
-        <div className={styles.card}>
-          <label className={styles.label}>
-            {tx.modus}
-            <select
-              className={styles.select}
-              value={mode}
-              onChange={(e) => setMode(e.target.value as ImposterModeId)}
-            >
-              {MODES.filter((m) => m.available).map((m) => (
-                <option key={m.id} value={m.id}>
-                  {modusName(t, m.id)}
-                  {m.minPlayers > 3 ? tx.abSpielern(m.minPlayers) : ''}
-                </option>
-              ))}
-            </select>
-          </label>
+        <PartyKarte titel={tx.modus}>
+          <ChipAuswahl
+            beschriftung={tx.modus}
+            anordnung={2}
+            wert={mode}
+            onWahl={setMode}
+            optionen={MODES.filter((m) => m.available).map((m) => ({
+              wert: m.id,
+              text: modusName(t, m.id),
+              zusatz: m.minPlayers > MIN_SPIELER ? tx.abSpielern(m.minPlayers) : undefined,
+            }))}
+          />
           <p className={styles.subtitle}>{modusText(t, mode)}</p>
-        </div>
+        </PartyKarte>
 
         {error && <p className={styles.error}>{meldungText(t, error)}</p>}
         {zuWenige && (
@@ -239,12 +216,10 @@ export function FindeDenImposterPage() {
           </p>
         )}
 
-        <button type="button" className={styles.btn} disabled={zuWenige} onClick={start}>
+        <StartKnopf disabled={zuWenige} onClick={start}>
           {tx.amEinenGeraet}
-        </button>
-        <button type="button" className={styles.btnSecondary} onClick={() => setOnline(true)}>
-          {tx.onlineMitHandys}
-        </button>
+        </StartKnopf>
+        <ZweiterKnopf onClick={() => setOnline(true)}>{tx.onlineMitHandys}</ZweiterKnopf>
       </main>
     )
   }

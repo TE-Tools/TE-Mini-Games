@@ -148,3 +148,18 @@
     animation: none;
   }
 }
+
+/* ============ Einstellungen modern (25.11.2026) ============ */
+
+/* Die Zusage zum Mikrofon steht sichtbar als eigener Kasten, nicht als Fußnote. */
+.datenschutz {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-xl);
+  border: 1px solid color-mix(in srgb, var(--akzent, #0e7490) 25%, transparent);
+  background: color-mix(in srgb, var(--akzent, #0e7490) 7%, #ffffff);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--color-text);
+}

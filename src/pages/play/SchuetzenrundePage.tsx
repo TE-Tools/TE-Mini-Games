@@ -38,6 +38,17 @@ import { saveGameResult, addXp, getOrCreateGuestProfile, getRecentResults } from
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
 import styles from './SchuetzenrundePage.module.css'
+import shell from './PlayShell.module.css'
+import { akzentStil } from '@/components/party/akzent'
+import { ChipAuswahl } from '@/components/party/Chips'
+import {
+  PartyHeld,
+  PartyKarte,
+  PartyKopf,
+  StartKnopf,
+  ZweiterKnopf,
+} from '@/components/party/PartySetup'
+import setup from '@/components/party/PartySetup.module.css'
 
 /** How long the sum of past matches counts towards the Zug balance. */
 const ZUG_HISTORY = 60
@@ -249,16 +260,16 @@ export function SchuetzenrundePage() {
   if (online) {
     return (
       <main className={styles.page}>
-        <header className={styles.header}>
+        <header className={shell.header}>
           <button
             type="button"
-            className={styles.back}
+            className={shell.back}
             onClick={() => navigate('/')}
             aria-label={t.allgemein.zurueck}
           >
             ←
           </button>
-          <h1 className={styles.title}>{s.titel}</h1>
+          <h1 className={shell.title}>{s.titel}</h1>
           <span className={styles.roundBadge}>{s.online}</span>
         </header>
         <SchuetzenrundeOnline onBack={() => setOnline(false)} />
@@ -270,78 +281,65 @@ export function SchuetzenrundePage() {
 
   if (!match || !me) {
     return (
-      <main className={styles.page}>
-        <header className={styles.header}>
-          <button
-            type="button"
-            className={styles.back}
-            onClick={() => navigate('/')}
-            aria-label={t.allgemein.zurueck}
-          >
-            ←
-          </button>
-          <h1 className={styles.title}>{s.titel}</h1>
-          <span />
-        </header>
-        <p className={styles.lead}>{s.einleitung}</p>
+      <main className={setup.seite} style={akzentStil('schuetzenrunde')}>
+        <PartyKopf titel={s.titel} onZurueck={() => navigate('/')} />
+        <PartyHeld icon="🎯">{s.einleitung}</PartyHeld>
 
-        <label className={styles.label}>
-          {s.deinName}
-          <input
-            className={styles.input}
-            value={name ?? s.duName}
-            onChange={(e) => setName(e.target.value)}
-            maxLength={20}
+        <PartyKarte>
+          <label className={styles.label}>
+            {s.deinName}
+            <input
+              className={styles.input}
+              value={name ?? s.duName}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={20}
+            />
+          </label>
+        </PartyKarte>
+
+        <PartyKarte titel={s.wieVieleMitglieder}>
+          <ChipAuswahl
+            beschriftung={s.wieVieleMitglieder}
+            anordnung={4}
+            wert={size}
+            onWahl={setSize}
+            optionen={[8, 10, 12, 16].map((option) => ({ wert: option, text: option }))}
           />
-        </label>
+          <p className={styles.muted}>
+            {s.saboteureAnzahl(saboteurCount(size))} ·{' '}
+            {s.groessenHinweis(MIN_MATCH_SIZE, MAX_MATCH_SIZE)}
+          </p>
+        </PartyKarte>
 
-        <fieldset className={styles.sizes}>
-          <legend className={styles.sizesLegend}>{s.wieVieleMitglieder}</legend>
-          {[8, 10, 12, 16].map((option) => (
-            <button
-              key={option}
-              type="button"
-              className={option === size ? styles.sizeActive : styles.size}
-              onClick={() => setSize(option)}
-            >
-              {option}
-            </button>
-          ))}
-        </fieldset>
-        <p className={styles.muted}>
-          {s.saboteureAnzahl(saboteurCount(size))} ·{' '}
-          {s.groessenHinweis(MIN_MATCH_SIZE, MAX_MATCH_SIZE)}
-        </p>
+        <PartyKarte titel={s.deinZug}>
+          <ChipAuswahl
+            beschriftung={s.deinZug}
+            anordnung={2}
+            wert={zugId}
+            onWahl={setZugId}
+            optionen={ZUEGE.slice(0, zugCount(size)).map((zug) => ({
+              wert: zug.id,
+              icon: zug.badge,
+              text: zugKurz(t, zug.id),
+            }))}
+          />
+        </PartyKarte>
 
-        <fieldset className={styles.sizes}>
-          <legend className={styles.sizesLegend}>{s.deinZug}</legend>
-          {ZUEGE.slice(0, zugCount(size)).map((zug) => (
-            <button
-              key={zug.id}
-              type="button"
-              className={zug.id === zugId ? styles.sizeActive : styles.size}
-              onClick={() => setZugId(zug.id)}
-            >
-              {zug.badge} {zugKurz(t, zug.id)}
-            </button>
-          ))}
-        </fieldset>
+        <PartyKarte>
+          <label className={styles.schalter}>
+            <input type="checkbox" checked={event} onChange={(e) => setEvent(e.target.checked)} />
+            <span>{s.schuetzenfestWahl}</span>
+          </label>
+          <label className={styles.schalter}>
+            <input type="checkbox" checked={timed} onChange={(e) => setTimed(e.target.checked)} />
+            <span>
+              {s.zeitdruck(DEFAULT_TIMERS.night, DEFAULT_TIMERS.day, DEFAULT_TIMERS.vote)}
+            </span>
+          </label>
+        </PartyKarte>
 
-        <label className={styles.checkbox}>
-          <input type="checkbox" checked={event} onChange={(e) => setEvent(e.target.checked)} />
-          {s.schuetzenfestWahl}
-        </label>
-        <label className={styles.checkbox}>
-          <input type="checkbox" checked={timed} onChange={(e) => setTimed(e.target.checked)} />
-          {s.zeitdruck(DEFAULT_TIMERS.night, DEFAULT_TIMERS.day, DEFAULT_TIMERS.vote)}
-        </label>
-
-        <button type="button" className={styles.primaryBtn} onClick={() => void start()}>
-          {s.starten}
-        </button>
-        <button type="button" className={styles.secondaryBtn} onClick={() => setOnline(true)}>
-          {s.onlineMitFreunden}
-        </button>
+        <StartKnopf onClick={() => void start()}>{s.starten}</StartKnopf>
+        <ZweiterKnopf onClick={() => setOnline(true)}>{s.onlineMitFreunden}</ZweiterKnopf>
 
         {zugBoard.length > 0 && (
           <section className={styles.board} aria-label={s.zugBilanz}>
@@ -386,16 +384,16 @@ export function SchuetzenrundePage() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
+      <header className={shell.header}>
         <button
           type="button"
-          className={styles.back}
+          className={shell.back}
           onClick={() => navigate('/')}
           aria-label={t.allgemein.zurueck}
         >
           ←
         </button>
-        <h1 className={styles.title}>{s.titel}</h1>
+        <h1 className={shell.title}>{s.titel}</h1>
         <span className={styles.roundBadge}>R{match.round}</span>
       </header>
 

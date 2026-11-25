@@ -20,6 +20,7 @@ import { WortbombePage } from '@/pages/play/WortbombePage'
 import { ScharadePage } from '@/pages/play/ScharadePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { partyFehler } from '@/pages/play/partyFehler'
+import { spielerSetzen } from './partyHelfer'
 
 function inSprache(sprache: 'de' | 'en', ui: ReactElement) {
   localStorage.setItem('te-sprache', sprache)
@@ -43,8 +44,8 @@ describe('Kleine Spiele auf Englisch', () => {
     expect(screen.queryByText(/Wer würde am ehesten/)).toBeNull()
 
     // Zwei Namen sind zu wenig -- die Engine wirft deutsch, angezeigt wird Englisch.
-    await userEvent.clear(screen.getByRole('textbox'))
-    await userEvent.type(screen.getByRole('textbox'), 'Anna{enter}Ben')
+    spielerSetzen(['Anna', 'Ben'])
+    expect(screen.getByText('One more person – you need 3 to start')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Start playing' }))
     expect(screen.getByText('At least 3 players needed')).toBeInTheDocument()
     expect(screen.queryByText(/Mindestens/)).toBeNull()
