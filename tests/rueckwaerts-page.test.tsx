@@ -62,6 +62,10 @@ const anlage = vi.hoisted(() => ({
   einzelheit: undefined as undefined | string,
   /** Wie lange die Aufnahme nach der Uhr lief; ohne Angabe so lange, wie Werte ankamen. */
   uhr: null as null | number,
+  /** Wie oft ein Mikrofon angefragt wurde. */
+  geoeffnet: 0,
+  /** Hält das Öffnen an, bis die Probe es freigibt. */
+  warte: null as null | Promise<void>,
 }))
 
 vi.mock('@/games/rueckwaerts/ton', () => {
@@ -78,6 +82,8 @@ vi.mock('@/games/rueckwaerts/ton', () => {
     TonFehler,
     erstelleTonanlage: () => ({
       nimmAuf: async (o: { beiVoll: () => void; beiPegel?: (rms: number) => void }) => {
+        anlage.geoeffnet++
+        if (anlage.warte) await anlage.warte
         if (anlage.fehler) throw new TonFehler(anlage.fehler, anlage.einzelheit)
         anlage.beiVoll = o.beiVoll
         anlage.beiPegel = o.beiPegel ?? null
@@ -162,6 +168,8 @@ beforeEach(() => {
   anlage.fehler = null
   anlage.einzelheit = undefined
   anlage.uhr = null
+  anlage.geoeffnet = 0
+  anlage.warte = null
 })
 
 describe('Rückwärts: eine Runde', () => {
@@ -480,5 +488,25 @@ describe('Rückwärts auf Englisch', () => {
     expect(screen.getByText('Time to guess: Phillip')).toBeInTheDocument()
     await user.click(knopf('Reveal'))
     expect(knopf('▶ The copy backwards')).toBeInTheDocument()
+  })
+})
+
+describe('Rückwärts: Doppeltipp auf Aufnehmen', () => {
+  it('öffnet nur ein Mikrofon, auch wenn zweimal getippt wird, bevor es offen ist', async () => {
+    const user = userEvent.setup()
+    let freigeben: () => void = () => {}
+    anlage.warte = new Promise<void>((r) => {
+      freigeben = r
+    })
+    zeige()
+    await user.click(knopf('Losspielen'))
+    const start = knopf(/Aufnahme starten/)
+    act(() => {
+      start.click()
+      start.click()
+    })
+    await act(async () => freigeben())
+    expect(await screen.findByRole('button', { name: /Stopp/ })).toBeInTheDocument()
+    expect(anlage.geoeffnet).toBe(1)
   })
 })
