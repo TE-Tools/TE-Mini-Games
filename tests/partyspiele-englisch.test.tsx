@@ -13,6 +13,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import type { ReactElement } from 'react'
 import { SprachProvider } from '@/i18n/SprachProvider'
+import { kaertchen, namensFeld, spielerSetzen } from './partyHelfer'
 import type { WbiOnlineState } from '@/services/werBinIchOnline'
 import type { SlfOnlineState } from '@/services/stadtLandFlussOnline'
 
@@ -72,10 +73,10 @@ function inSprache(sprache: 'de' | 'en', ui: ReactElement) {
   )
 }
 
-async function namenEintragen(namen: string) {
-  const feld = screen.getByRole('textbox')
-  await userEvent.clear(feld)
-  await userEvent.type(feld, namen)
+/** Setzt die Runde über die Kärtchen: alle heraus, dann diese Namen eintippen (Enter). */
+async function namenEintragen(namen: readonly string[]) {
+  spielerSetzen([])
+  for (const name of namen) await userEvent.type(namensFeld(), `${name}{enter}`)
 }
 
 beforeEach(() => {
@@ -101,8 +102,18 @@ describe('Wer bin ich? am einen Gerät', () => {
   })
 
   it('meldet doppelte Namen auf Englisch', async () => {
+    // Das Feld nimmt den zweiten „lena“ gar nicht erst an ...
     inSprache('en', <WerBinIchPage />)
-    await namenEintragen('Lena{enter}lena')
+    await namenEintragen(['Lena', 'lena'])
+    expect(screen.getByText('lena is already in')).toBeInTheDocument()
+    expect(kaertchen()).toEqual(['Lena'])
+  })
+
+  it('meldet doppelte Namen aus einer alten gemerkten Runde beim Start', async () => {
+    // ... eine gemerkte Runde aus einer älteren Fassung kann aber einen
+    // enthalten -- dann prüft die Seite wie bisher und meldet auf Englisch.
+    localStorage.setItem('te-party-gruppe', JSON.stringify(['Lena', 'lena']))
+    inSprache('en', <WerBinIchPage />)
     await userEvent.click(screen.getByRole('button', { name: 'Play on one device' }))
     expect(screen.getByText('Name used twice: lena')).toBeInTheDocument()
   })
@@ -110,7 +121,8 @@ describe('Wer bin ich? am einen Gerät', () => {
   it('bleibt auf Deutsch, wie es war', async () => {
     inSprache('de', <WerBinIchPage />)
     expect(screen.getByText('Spieler (2–12)')).toBeInTheDocument()
-    await namenEintragen('Lena')
+    await namenEintragen(['Lena'])
+    expect(screen.getByText('Noch eine Person – ab 2 geht’s los')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Am einen Gerät spielen' }))
     expect(screen.getByText('Mindestens 2 Spieler nötig')).toBeInTheDocument()
   })
@@ -125,7 +137,7 @@ describe('Stadt-Land-Fluss am einen Gerät', () => {
     }
     expect(screen.queryByRole('button', { name: 'Stadt' })).toBeNull()
 
-    await namenEintragen('Lena{enter}Ida')
+    spielerSetzen(['Lena', 'Ida'])
     await userEvent.click(screen.getByRole('button', { name: 'Play on one device' }))
     expect(screen.getByText(/90 seconds for 5 categories/)).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: "Let's go" }))

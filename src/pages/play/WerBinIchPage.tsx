@@ -23,12 +23,24 @@ import {
   type CustomCategory,
 } from '@/games/finde-den-imposter'
 import { spielName, useSprache, type Texte } from '@/i18n/sprache'
+import { akzentStil } from '@/components/party/akzent'
+import { useSpielerGruppe } from '@/components/party/gruppe'
+import { KategorieWahl } from '@/components/party/KategorieWahl'
+import {
+  PartyHeld,
+  PartyKarte,
+  PartyKopf,
+  StartKnopf,
+  ZweiterKnopf,
+} from '@/components/party/PartySetup'
+import setup from '@/components/party/PartySetup.module.css'
+import { SpielerKaertchen, SpielerZahl } from '@/components/party/SpielerKaertchen'
 import { gueltigeKategorie } from './imposter/kategorien'
 import { WerBinIchOnline } from './WerBinIchOnline'
 import styles from './WerBinIchPage.module.css'
 import { Spielerbild } from './party/Spielerbild'
 
-const DEFAULT_NAMES = 'Thomas\nMarina\nPhillip\nSonja'
+const DEFAULT_NAMES = ['Thomas', 'Marina', 'Phillip', 'Sonja']
 
 /**
  * Dieselben Prüfungen wie in der Engine, nur mit Text aus dem Wörterbuch --
@@ -51,7 +63,7 @@ export function WerBinIchPage() {
   const w = t.werBinIch
   const titel = spielName(t, 'wer-bin-ich', 'Wer bin ich?')
   const [state, setState] = useState<WbiState | null>(null)
-  const [namesText, setNamesText] = useState(DEFAULT_NAMES)
+  const { namen: names, setNamen: setNames, gemerkt, merken } = useSpielerGruppe(DEFAULT_NAMES)
   const kategorien = useMemo(() => categoriesFor(sprache), [sprache])
   const [wahl, setCategoryId] = useState('')
   const categoryId = useMemo(
@@ -66,22 +78,9 @@ export function WerBinIchPage() {
   )
   const [eigene] = useState<CustomCategory[]>(() => loadCustomCategories())
 
-  const playerCount = useMemo(
-    () =>
-      namesText
-        .split(/[\n,;]+/)
-        .map((n) => n.trim())
-        .filter(Boolean).length,
-    [namesText],
-  )
-
   const start = useCallback(() => {
     setError(null)
     try {
-      const names = namesText
-        .split(/[\n,;]+/)
-        .map((n) => n.trim())
-        .filter(Boolean)
       const fehler = namenFehler(names, w)
       if (fehler) {
         setError(fehler)
@@ -98,11 +97,12 @@ export function WerBinIchPage() {
           customCategoryLabel: eigeneKategorie?.label,
         }),
       )
+      merken(names)
       setGuessText('')
     } catch (e) {
       setError(e instanceof Error ? e.message : w.startFehlgeschlagen)
     }
-  }, [namesText, categoryId, w])
+  }, [names, categoryId, w, merken])
 
   if (online) {
     return (
@@ -117,68 +117,45 @@ export function WerBinIchPage() {
 
   if (!state) {
     return (
-      <main className={styles.page}>
-        <Link to="/" className={styles.back}>
-          {'←'} {t.allgemein.zurueck}
-        </Link>
-        <h1 className={styles.title}>🤔 {titel}</h1>
-        <p className={styles.subtitle}>{w.einleitung}</p>
+      <main className={setup.seite} style={akzentStil('wer-bin-ich')}>
+        <PartyKopf titel={titel} />
+        <PartyHeld icon="🤔">{w.einleitung}</PartyHeld>
 
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>{w.spielerTitel(MIN_SPIELER, MAX_SPIELER)}</h2>
-          <label className={styles.label}>
-            {w.namenLabel}
-            <textarea
-              className={styles.textarea}
-              value={namesText}
-              onChange={(e) => setNamesText(e.target.value)}
-              autoComplete="off"
-            />
-          </label>
-          <p className={styles.meta}>{w.anzahlSpieler(playerCount)}</p>
-        </div>
+        <PartyKarte
+          titel={w.spielerTitel(MIN_SPIELER, MAX_SPIELER)}
+          zusatz={<SpielerZahl anzahl={names.length} max={MAX_SPIELER} />}
+        >
+          <SpielerKaertchen
+            namen={names}
+            onNamen={setNames}
+            min={MIN_SPIELER}
+            max={MAX_SPIELER}
+            gemerkt={gemerkt}
+          />
+          <p className={styles.meta}>{w.anzahlSpieler(names.length)}</p>
+        </PartyKarte>
 
-        <div className={styles.card}>
-          <label className={styles.label}>
-            {w.kategorie}
-            <select
-              className={styles.select}
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-            >
-              {/* Nur die Kategorien der Oberflächensprache -- die Wörter
-                  gibt es je Sprache (words.ts, words.en.ts). */}
-              <optgroup label={w.eingebaut}>
-                {kategorien.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.label}
-                  </option>
-                ))}
-              </optgroup>
-              {eigene.length > 0 && (
-                <optgroup label={w.eigene}>
-                  {eigene.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.label} ({c.words.length})
-                    </option>
-                  ))}
-                </optgroup>
-              )}
-            </select>
-          </label>
+        <PartyKarte>
+          {/* Nur die Kategorien der Oberflächensprache -- die Wörter gibt es
+              je Sprache (words.ts, words.en.ts). */}
+          <KategorieWahl
+            beschriftung={w.kategorie}
+            eingebaut={kategorien}
+            eigene={eigene.map((c) => ({ id: c.id, label: c.label, anzahl: c.words.length }))}
+            titelEingebaut={w.eingebaut}
+            titelEigene={w.eigene}
+            wert={categoryId}
+            onWahl={setCategoryId}
+          />
           <p className={styles.meta}>
             {w.kategorienHinweis(spielName(t, 'finde-den-imposter', 'Finde den Imposter'))}
           </p>
-        </div>
+        </PartyKarte>
 
         {error && <p className={styles.error}>{error}</p>}
 
-        <button type="button" className={styles.btn} onClick={start}>
-          {w.amEinenGeraet}
-        </button>
-        <button type="button" className={styles.btnSecondary} onClick={() => setOnline(true)}>
-          {w.onlineHandys}
-        </button>
+        <StartKnopf onClick={start}>{w.amEinenGeraet}</StartKnopf>
+        <ZweiterKnopf onClick={() => setOnline(true)}>{w.onlineHandys}</ZweiterKnopf>
       </main>
     )
   }

@@ -1,0 +1,166 @@
+/* Chips statt <select> -- Farbe des Spiels als --akzent von der Seite. */
+
+.fluss {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.raster {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.spalten1 {
+  grid-template-columns: 1fr;
+}
+
+.spalten2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.spalten3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.spalten4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.chip {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background: #ffffff;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1.25;
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform 200ms cubic-bezier(0.3, 1.5, 0.5, 1),
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.chip:hover {
+  border-color: color-mix(in srgb, var(--akzent, #5a3ce0) 40%, transparent);
+}
+
+.chip:active {
+  transform: scale(0.95);
+}
+
+.chip:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--akzent, #5a3ce0) 35%, transparent);
+  outline-offset: 2px;
+}
+
+.an {
+  border-color: transparent;
+  color: #ffffff;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--akzent, #5a3ce0) 78%, #ffffff),
+    var(--akzent, #5a3ce0)
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.3),
+    0 8px 18px -8px var(--akzent, #5a3ce0);
+}
+
+.an:hover {
+  border-color: transparent;
+}
+
+.zeile {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 100%;
+}
+
+.icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.text {
+  min-width: 0;
+}
+
+.zusatz {
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+/* Mit Beschreibung wird der Chip eine kleine Karte. */
+.karte {
+  align-items: flex-start;
+  text-align: left;
+  border-radius: var(--radius-xl);
+  padding: var(--space-3) var(--space-4);
+}
+
+.beschreibung {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+/* Schalter: ein Haken erscheint, wenn er an ist. */
+.schalter {
+  padding-left: calc(var(--space-2) + 1.6rem);
+}
+
+.haken {
+  position: absolute;
+  left: var(--space-2);
+  top: 50%;
+  width: 1.1rem;
+  height: 1.1rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-border-strong);
+  font-size: 0.65rem;
+  font-weight: 900;
+  color: transparent;
+  transform: translateY(-50%);
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
+}
+
+.schalter.karte .haken {
+  top: var(--space-3);
+  left: var(--space-3);
+  transform: none;
+}
+
+.schalter.karte {
+  padding-left: calc(var(--space-3) + 1.6rem);
+}
+
+.an .haken {
+  border-color: transparent;
+  background: rgb(255 255 255 / 0.95);
+  color: var(--akzent, #5a3ce0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chip,
+  .haken {
+    transition: none;
+  }
+}

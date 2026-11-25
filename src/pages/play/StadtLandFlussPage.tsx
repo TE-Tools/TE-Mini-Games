@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   createSlfMatch,
@@ -15,12 +15,25 @@ import {
   type SlfState,
 } from '@/games/stadt-land-fluss'
 import { spielName, useSprache, type Texte } from '@/i18n/sprache'
+import { akzentStil } from '@/components/party/akzent'
+import { ChipSchalter } from '@/components/party/Chips'
+import { useSpielerGruppe } from '@/components/party/gruppe'
+import {
+  PartyHeld,
+  PartyKarte,
+  PartyKopf,
+  PartyRegler,
+  StartKnopf,
+  ZweiterKnopf,
+} from '@/components/party/PartySetup'
+import setup from '@/components/party/PartySetup.module.css'
+import { SpielerKaertchen, SpielerZahl } from '@/components/party/SpielerKaertchen'
 import { StadtLandFlussOnline } from './StadtLandFlussOnline'
 import { Zeitring } from '@/components/zeitring/Zeitring'
 import styles from './StadtLandFlussPage.module.css'
 import { Spielerbild } from './party/Spielerbild'
 
-const DEFAULT_NAMES = 'Thomas\nMarina\nPhillip\nSonja'
+const DEFAULT_NAMES = ['Thomas', 'Marina', 'Phillip', 'Sonja']
 
 /** Spaltenname nach Kennung -- im Zustand steht nur die Kennung. */
 function spalteName(s: Texte['stadtLandFluss'], id: string): string {
@@ -48,7 +61,7 @@ export function StadtLandFlussPage() {
   const s = t.stadtLandFluss
   const titel = spielName(t, 'stadt-land-fluss', 'Stadt-Land-Fluss')
   const [state, setState] = useState<SlfState | null>(null)
-  const [namesText, setNamesText] = useState(DEFAULT_NAMES)
+  const { namen: names, setNamen: setNames, gemerkt, merken } = useSpielerGruppe(DEFAULT_NAMES)
   const [spalten, setSpalten] = useState<string[]>(STANDARD_SPALTEN)
   const [sekunden, setSekunden] = useState(90)
   const [felder, setFelder] = useState<Record<string, string>>({})
@@ -63,14 +76,7 @@ export function StadtLandFlussPage() {
   const [ablauf, setAblauf] = useState<number | null>(null)
   const [rest, setRest] = useState<number | null>(null)
 
-  const playerCount = useMemo(
-    () =>
-      namesText
-        .split(/[\n,;]+/)
-        .map((n) => n.trim())
-        .filter(Boolean).length,
-    [namesText],
-  )
+  const playerCount = names.length
 
   const abgeben = useCallback((st: SlfState, antworten: Record<string, string>) => {
     setAblauf(null)
@@ -99,23 +105,20 @@ export function StadtLandFlussPage() {
   const start = useCallback(() => {
     setError(null)
     try {
-      const names = namesText
-        .split(/[\n,;]+/)
-        .map((n) => n.trim())
-        .filter(Boolean)
       const fehler = namenFehler(names, s)
       if (fehler) {
         setError(fehler)
         return
       }
       setState(createSlfMatch({ names, spalten, seconds: sekunden }))
+      merken(names)
       setFelder({})
       setAblauf(null)
       setRest(null)
     } catch (e) {
       setError(e instanceof Error ? e.message : s.startFehlgeschlagen)
     }
-  }, [namesText, spalten, sekunden, s])
+  }, [names, spalten, sekunden, s, merken])
 
   if (online) {
     return (
@@ -130,76 +133,50 @@ export function StadtLandFlussPage() {
 
   if (!state) {
     return (
-      <main className={styles.page}>
-        <Link to="/" className={styles.back}>
-          {'←'} {t.allgemein.zurueck}
-        </Link>
-        <h1 className={styles.title}>✏️ {titel}</h1>
-        <p className={styles.subtitle}>{s.einleitung}</p>
+      <main className={setup.seite} style={akzentStil('stadt-land-fluss')}>
+        <PartyKopf titel={titel} />
+        <PartyHeld icon="✏️">{s.einleitung}</PartyHeld>
 
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>{s.spielerTitel(MIN_SPIELER, MAX_SPIELER)}</h2>
-          <label className={styles.label}>
-            {s.namenLabel}
-            <textarea
-              className={styles.textarea}
-              value={namesText}
-              onChange={(e) => setNamesText(e.target.value)}
-              autoComplete="off"
-            />
-          </label>
+        <PartyKarte
+          titel={s.spielerTitel(MIN_SPIELER, MAX_SPIELER)}
+          zusatz={<SpielerZahl anzahl={playerCount} max={MAX_SPIELER} />}
+        >
+          <SpielerKaertchen
+            namen={names}
+            onNamen={setNames}
+            min={MIN_SPIELER}
+            max={MAX_SPIELER}
+            gemerkt={gemerkt}
+          />
           <p className={styles.meta}>{s.anzahlSpieler(playerCount)}</p>
-        </div>
+        </PartyKarte>
 
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>{s.spalten}</h2>
-          <div className={styles.spaltenWahl}>
-            {SPALTEN.map((sp) => {
-              const an = spalten.includes(sp.id)
-              return (
-                <button
-                  key={sp.id}
-                  type="button"
-                  className={an ? styles.chipAktiv : styles.chip}
-                  aria-pressed={an}
-                  onClick={() =>
-                    setSpalten((alt) =>
-                      alt.includes(sp.id) ? alt.filter((x) => x !== sp.id) : [...alt, sp.id],
-                    )
-                  }
-                >
-                  {spalteName(s, sp.id)}
-                </button>
-              )
-            })}
-          </div>
-          <label className={styles.label}>
-            {s.zeitJePerson(sekunden)}
-            <input
-              type="range"
-              min={30}
-              max={180}
-              step={15}
-              value={sekunden}
-              onChange={(e) => setSekunden(Number(e.target.value))}
-            />
-          </label>
-        </div>
+        <PartyKarte titel={s.spalten}>
+          <ChipSchalter
+            beschriftung={s.spalten}
+            gewaehlt={spalten}
+            onUmschalten={(id) =>
+              setSpalten((alt) => (alt.includes(id) ? alt.filter((x) => x !== id) : [...alt, id]))
+            }
+            optionen={SPALTEN.map((sp) => ({ wert: sp.id, text: spalteName(s, sp.id) }))}
+          />
+          <PartyRegler
+            beschriftung={s.zeitJePerson(sekunden)}
+            wert={sekunden}
+            min={30}
+            max={180}
+            schritt={15}
+            onWert={setSekunden}
+          />
+        </PartyKarte>
 
         {error && <p className={styles.error}>{error}</p>}
         {spalten.length === 0 && <p className={styles.error}>{s.mindestensEineSpalte}</p>}
 
-        <button
-          type="button"
-          className={styles.btn}
-          disabled={spalten.length === 0}
-          onClick={start}
-        >
+        <StartKnopf disabled={spalten.length === 0} onClick={start}>
           {s.amEinenGeraet}
-        </button>
-        <button type="button" className={styles.btnSecondary} onClick={() => setOnline(true)}>
-          {s.onlineHandys}
-        </button>
+        </StartKnopf>
+        <ZweiterKnopf onClick={() => setOnline(true)}>{s.onlineHandys}</ZweiterKnopf>
       </main>
     )
   }

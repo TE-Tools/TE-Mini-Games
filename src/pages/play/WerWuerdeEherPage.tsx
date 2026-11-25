@@ -8,19 +8,33 @@ import {
   nextFrage,
   auszaehlen,
   activeWweePlayer,
+  MIN_SPIELER,
+  MAX_SPIELER,
   nameOf,
   STANDARD_RUNDEN,
   type WweeState,
 } from '@/games/wer-wuerde-eher'
 import type { FrageModus } from '@/games/wer-wuerde-eher'
 import { useSprache } from '@/i18n/sprache'
+import { akzentStil } from '@/components/party/akzent'
+import { ChipSchalter } from '@/components/party/Chips'
+import { useSpielerGruppe } from '@/components/party/gruppe'
+import {
+  PartyHeld,
+  PartyKarte,
+  PartyKopf,
+  PartyRegler,
+  StartKnopf,
+} from '@/components/party/PartySetup'
+import setup from '@/components/party/PartySetup.module.css'
+import { SpielerKaertchen, SpielerZahl } from '@/components/party/SpielerKaertchen'
 import { fehlerSatz, partyFehler } from './partyFehler'
 import shell from './PartyShell.module.css'
 import styles from './WerWuerdeEherPage.module.css'
 import { Spielerbild } from './party/Spielerbild'
 import { Auszaehlung } from './party/Auszaehlung'
 
-const DEFAULT_NAMES = 'Thomas\nMarina\nPhillip\nSonja'
+const DEFAULT_NAMES = ['Thomas', 'Marina', 'Phillip', 'Sonja']
 
 /** Die Fragensorten -- die Namen stehen im Wörterbuch. */
 const MODI: FrageModus[] = ['personen', 'entweder']
@@ -30,7 +44,7 @@ export function WerWuerdeEherPage() {
   const w = t.werWuerdeEher
   const g = t.partyGemeinsam
   const [state, setState] = useState<WweeState | null>(null)
-  const [namesText, setNamesText] = useState(DEFAULT_NAMES)
+  const { namen: names, setNamen: setNames, gemerkt, merken } = useSpielerGruppe(DEFAULT_NAMES)
   const [modi, setModi] = useState<FrageModus[]>(['personen', 'entweder'])
   const [runden, setRunden] = useState(STANDARD_RUNDEN)
   /** Der Satz der Engine, deutsch -- übersetzt wird beim Rendern. */
@@ -39,15 +53,12 @@ export function WerWuerdeEherPage() {
   const start = useCallback(() => {
     setError(null)
     try {
-      const names = namesText
-        .split(/[\n,;]+/)
-        .map((n) => n.trim())
-        .filter(Boolean)
       setState(createWweeMatch({ names, modi, rounds: runden, sprache }))
+      merken(names)
     } catch (e) {
       setError(fehlerSatz(e))
     }
-  }, [namesText, modi, runden, sprache])
+  }, [names, modi, runden, sprache, merken])
 
   if (!state) {
     const modusText: Record<FrageModus, { label: string; erklaerung: string }> = {
@@ -55,56 +66,45 @@ export function WerWuerdeEherPage() {
       entweder: { label: w.modusEntweder, erklaerung: w.modusEntwederText },
     }
     return (
-      <main className={`${shell.page} ${styles.farbe}`}>
-        <Link to="/" className={shell.back}>
-          {'←'} {t.allgemein.zurueck}
-        </Link>
-        <h1 className={shell.title}>🗳️ {t.spiele['wer-wuerde-eher']}</h1>
-        <p className={shell.subtitle}>{w.untertitel}</p>
+      <main className={setup.seite} style={akzentStil('wer-wuerde-eher')}>
+        <PartyKopf titel={t.spiele['wer-wuerde-eher']} />
+        <PartyHeld icon="🗳️">{w.untertitel}</PartyHeld>
 
-        <div className={shell.card}>
-          <h2 className={shell.cardTitle}>{g.spielerAnzahl(3, 12)}</h2>
-          <label className={shell.label}>
-            {g.namenLabel}
-            <textarea
-              className={shell.textarea}
-              value={namesText}
-              onChange={(e) => setNamesText(e.target.value)}
-              autoComplete="off"
-            />
-          </label>
-        </div>
+        <PartyKarte
+          titel={g.spielerAnzahl(MIN_SPIELER, MAX_SPIELER)}
+          zusatz={<SpielerZahl anzahl={names.length} max={MAX_SPIELER} />}
+        >
+          <SpielerKaertchen
+            namen={names}
+            onNamen={setNames}
+            min={MIN_SPIELER}
+            max={MAX_SPIELER}
+            gemerkt={gemerkt}
+          />
+        </PartyKarte>
 
-        <div className={shell.card}>
-          <h2 className={shell.cardTitle}>{w.fragen}</h2>
-          {MODI.map((id) => {
-            const an = modi.includes(id)
-            return (
-              <button
-                key={id}
-                type="button"
-                aria-pressed={an}
-                className={an ? styles.modusAktiv : styles.modus}
-                onClick={() =>
-                  setModi((alt) => (alt.includes(id) ? alt.filter((x) => x !== id) : [...alt, id]))
-                }
-              >
-                <span className={styles.modusName}>{modusText[id].label}</span>
-                <span className={styles.modusText}>{modusText[id].erklaerung}</span>
-              </button>
-            )
-          })}
-          <label className={shell.label}>
-            {w.fragenInPartie(runden)}
-            <input
-              type="range"
-              min={3}
-              max={25}
-              value={runden}
-              onChange={(e) => setRunden(Number(e.target.value))}
-            />
-          </label>
-        </div>
+        <PartyKarte titel={w.fragen}>
+          <ChipSchalter
+            beschriftung={w.fragen}
+            anordnung={1}
+            gewaehlt={modi}
+            onUmschalten={(id) =>
+              setModi((alt) => (alt.includes(id) ? alt.filter((x) => x !== id) : [...alt, id]))
+            }
+            optionen={MODI.map((id) => ({
+              wert: id,
+              text: modusText[id].label,
+              beschreibung: modusText[id].erklaerung,
+            }))}
+          />
+          <PartyRegler
+            beschriftung={w.fragenInPartie(runden)}
+            wert={runden}
+            min={3}
+            max={25}
+            onWert={setRunden}
+          />
+        </PartyKarte>
 
         {error && (
           <p className={shell.error}>
@@ -113,9 +113,9 @@ export function WerWuerdeEherPage() {
         )}
         {modi.length === 0 && <p className={shell.error}>{w.mindestensEineSorte}</p>}
 
-        <button type="button" className={shell.btn} disabled={modi.length === 0} onClick={start}>
+        <StartKnopf disabled={modi.length === 0} onClick={start}>
           {g.losspielen}
-        </button>
+        </StartKnopf>
       </main>
     )
   }

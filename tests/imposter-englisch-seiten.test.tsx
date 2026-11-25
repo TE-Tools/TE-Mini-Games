@@ -16,6 +16,7 @@ import { SprachProvider } from '@/i18n/SprachProvider'
 import { SprachKnopf } from '@/i18n/SprachKnopf'
 import type * as KategorienModul from '@/services/imposterKategorien'
 import { wordsForCategory } from '@/games/finde-den-imposter'
+import { angeboteneKategorien, kategorieWert, waehleKategorie } from './partyHelfer'
 
 const server = vi.hoisted(() => ({ englisch: new Set<string>() as ReadonlySet<string> }))
 
@@ -114,13 +115,18 @@ beforeEach(() => {
 })
 
 describe('Am einen Gerät', () => {
+  // Am einen Gerät steht die Kategorie als Blatt mit Chips (KategorieWahl),
+  // online noch als <select> -- dafür bleiben die Helfer oben.
+  const ids = () => angeboteneKategorien().map((k) => k.id)
+
   it('Imposter auf Englisch: englische Kategorien, englisches Wort', async () => {
     inSprache('en', <FindeDenImposterPage />)
-    expect(angeboten()[0]).toBe('en-tiere')
-    expect(angeboten().filter((id) => !id.startsWith('en-'))).toEqual([])
-    expect(kategorieAuswahl().value).toBe('en-tiere')
-    expect(screen.getByRole('option', { name: 'Animals' })).toBeInTheDocument()
-    expect(screen.queryByRole('option', { name: 'Tiere' })).toBeNull()
+    const angeboten = angeboteneKategorien()
+    expect(angeboten[0]?.id).toBe('en-tiere')
+    expect(angeboten.filter((k) => !k.id.startsWith('en-'))).toEqual([])
+    expect(kategorieWert()).toBe('en-tiere')
+    expect(angeboten.map((k) => k.name)).toContain('Animals')
+    expect(angeboten.map((k) => k.name)).not.toContain('Tiere')
 
     await userEvent.click(screen.getByRole('button', { name: 'Play on one device' }))
     await userEvent.click(screen.getByRole('button', { name: /show my secret/ }))
@@ -129,9 +135,10 @@ describe('Am einen Gerät', () => {
 
   it('Imposter auf Deutsch: deutsche Kategorien wie bisher', async () => {
     inSprache('de', <FindeDenImposterPage />)
-    expect(angeboten()[0]).toBe('tiere')
-    expect(angeboten().some((id) => id.startsWith('en-'))).toBe(false)
-    expect(screen.getByRole('option', { name: 'Tiere' })).toBeInTheDocument()
+    const angeboten = angeboteneKategorien()
+    expect(angeboten[0]?.id).toBe('tiere')
+    expect(angeboten.some((k) => k.id.startsWith('en-'))).toBe(false)
+    expect(angeboten.map((k) => k.name)).toContain('Tiere')
 
     await userEvent.click(screen.getByRole('button', { name: 'Am einen Gerät spielen' }))
     await userEvent.click(screen.getByRole('button', { name: /Geheimnis/ }))
@@ -140,31 +147,32 @@ describe('Am einen Gerät', () => {
 
   it('Scharade auf Englisch und auf Deutsch', async () => {
     const { unmount } = inSprache('en', <ScharadePage />)
-    expect(kategorieAuswahl().value).toBe('en-tiere')
-    expect(angeboten().every((id) => id.startsWith('en-'))).toBe(true)
-    await userEvent.selectOptions(kategorieAuswahl(), 'en-essen')
+    expect(kategorieWert()).toBe('en-tiere')
+    expect(ids().every((id) => id.startsWith('en-'))).toBe(true)
+    waehleKategorie('en-essen')
+    expect(kategorieWert()).toBe('en-essen')
     await userEvent.click(screen.getByRole('button', { name: 'Start playing' }))
     await userEvent.click(screen.getByRole('button', { name: 'Let’s go' }))
     expect(zeigtWortAus('en-essen')).toBe(true)
     unmount()
 
     inSprache('de', <ScharadePage />)
-    expect(kategorieAuswahl().value).toBe('tiere')
-    expect(angeboten().some((id) => id.startsWith('en-'))).toBe(false)
+    expect(kategorieWert()).toBe('tiere')
+    expect(ids().some((id) => id.startsWith('en-'))).toBe(false)
   })
 
   it('Wer bin ich? auf Englisch und auf Deutsch', async () => {
     const { unmount } = inSprache('en', <WerBinIchPage />)
-    expect(kategorieAuswahl().value).toBe('en-tiere')
-    expect(angeboten().every((id) => id.startsWith('en-'))).toBe(true)
+    expect(kategorieWert()).toBe('en-tiere')
+    expect(ids().every((id) => id.startsWith('en-'))).toBe(true)
     await userEvent.click(screen.getByRole('button', { name: 'Play on one device' }))
     await userEvent.click(screen.getByRole('button', { name: "I'm Thomas – show me" }))
     expect(zeigtWortAus('en-tiere')).toBe(true)
     unmount()
 
     inSprache('de', <WerBinIchPage />)
-    expect(kategorieAuswahl().value).toBe('tiere')
-    expect(angeboten().some((id) => id.startsWith('en-'))).toBe(false)
+    expect(kategorieWert()).toBe('tiere')
+    expect(ids().some((id) => id.startsWith('en-'))).toBe(false)
   })
 
   it('wechselt beim Sprachwechsel auf die erste Kategorie der neuen Sprache', async () => {
@@ -175,11 +183,11 @@ describe('Am einen Gerät', () => {
         <FindeDenImposterPage />
       </>,
     )
-    await userEvent.selectOptions(kategorieAuswahl(), 'musik')
-    expect(kategorieAuswahl().value).toBe('musik')
+    waehleKategorie('musik')
+    expect(kategorieWert()).toBe('musik')
     await userEvent.click(screen.getByRole('button', { name: 'Switch to English' }))
-    expect(kategorieAuswahl().value).toBe('en-tiere')
-    expect(angeboten().every((id) => id.startsWith('en-'))).toBe(true)
+    expect(kategorieWert()).toBe('en-tiere')
+    expect(ids().every((id) => id.startsWith('en-'))).toBe(true)
   })
 })
 

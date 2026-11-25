@@ -3120,6 +3120,26 @@ export const de = {
     figurNurOptik: 'Nur Optik – am Spiel ändert sich nichts.',
   },
 
+  /** Die gemerkte Runde und die Bausteine der Partyspiel-Einstellungen (src/components/party). */
+  partyGruppe: {
+    mitspieler: 'Mitspieler',
+    neuerName: 'Neuer Name',
+    nameEingeben: 'Name eingeben …',
+    hinzufuegen: 'Hinzufügen',
+    entfernen: (name: string) => `${name} entfernen`,
+    anzahl: (n: number, max: number) => `${n} von ${max}`,
+    nochFehlen: (fehlend: number, min: number) =>
+      fehlend === 1
+        ? `Noch eine Person – ab ${min} geht’s los`
+        : `Noch ${fehlend} Personen – ab ${min} geht’s los`,
+    voll: (max: number) => `Voll besetzt – mehr als ${max} passen nicht in eine Runde`,
+    schonDabei: (name: string) => `${name} ist schon dabei`,
+    letzteRunde: (namen: string) => `Letzte Runde: ${namen}`,
+    uebernehmen: 'übernehmen',
+    gemerkt: 'Die Runde merkt sich dieses Gerät – für alle Partyspiele.',
+    fertig: 'Fertig',
+  },
+
   /** Belohnungsvideos -- siehe src/services/werbung.ts. */
   designs: {
     hinweis: 'Nur das Aussehen – kein Vorteil. Deine Wahl siehst nur du.',

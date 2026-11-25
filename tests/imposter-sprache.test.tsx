@@ -69,8 +69,8 @@ describe('Finde den Imposter auf dem Bildschirm', () => {
     inSprache('en', <FindeDenImposterPage />)
     expect(screen.getByRole('heading', { name: /Find the Imposter/ })).toBeInTheDocument()
     expect(screen.getByText('4 players · 1 imposter by default')).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'Classic' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'Duel (6+)' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Classic' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Duel (6+)' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Play on one device' })).toBeInTheDocument()
     expect(screen.queryByText(/Am einen Gerät/)).toBeNull()
   })
@@ -90,8 +90,11 @@ describe('Finde den Imposter auf dem Bildschirm', () => {
   })
 
   it('übersetzt Fehler der Engine beim Start', () => {
+    // Das Eingabefeld nimmt keinen doppelten Namen an (tests/party-gruppe.test.tsx);
+    // eine gemerkte Runde aus einer älteren Fassung kann aber einen enthalten --
+    // dann meldet ihn die Engine, und die Seite übersetzt.
+    localStorage.setItem('te-party-gruppe', JSON.stringify(['Lena', 'Lena', 'Tom']))
     inSprache('en', <FindeDenImposterPage />)
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Lena\nLena\nTom' } })
     fireEvent.click(screen.getByRole('button', { name: 'Play on one device' }))
     expect(screen.getByText('Duplicate name: Lena')).toBeInTheDocument()
   })
@@ -99,7 +102,7 @@ describe('Finde den Imposter auf dem Bildschirm', () => {
   it('bleibt auf Deutsch deutsch', () => {
     inSprache('de', <FindeDenImposterPage />)
     expect(screen.getByText('4 Spieler · standardmäßig 1 Imposter')).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'Klassisch' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Klassisch' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Am einen Gerät spielen' })).toBeInTheDocument()
   })
 

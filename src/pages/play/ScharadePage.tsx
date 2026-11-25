@@ -10,6 +10,8 @@ import {
   nextTurn,
   nextScharadeRound,
   activeScharadePlayer,
+  MIN_SPIELER,
+  MAX_SPIELER,
   scharadeRangliste,
   type ScharadeState,
 } from '@/games/scharade'
@@ -21,6 +23,18 @@ import {
   type CustomCategory,
 } from '@/games/finde-den-imposter'
 import { useSprache } from '@/i18n/sprache'
+import { akzentStil } from '@/components/party/akzent'
+import { useSpielerGruppe } from '@/components/party/gruppe'
+import { KategorieWahl } from '@/components/party/KategorieWahl'
+import {
+  PartyHeld,
+  PartyKarte,
+  PartyKopf,
+  PartyRegler,
+  StartKnopf,
+} from '@/components/party/PartySetup'
+import setup from '@/components/party/PartySetup.module.css'
+import { SpielerKaertchen, SpielerZahl } from '@/components/party/SpielerKaertchen'
 import { gueltigeKategorie } from './imposter/kategorien'
 import { fehlerSatz, partyFehler } from './partyFehler'
 import { Zeitring } from '@/components/zeitring/Zeitring'
@@ -29,14 +43,14 @@ import styles from './ScharadePage.module.css'
 import { Spielerbild } from './party/Spielerbild'
 import { spiele, vibriere } from '@/services/sound'
 
-const DEFAULT_NAMES = 'Thomas\nMarina\nPhillip\nSonja'
+const DEFAULT_NAMES = ['Thomas', 'Marina', 'Phillip', 'Sonja']
 
 export function ScharadePage() {
   const { t, sprache } = useSprache()
   const s = t.scharade
   const g = t.partyGemeinsam
   const [state, setState] = useState<ScharadeState | null>(null)
-  const [namesText, setNamesText] = useState(DEFAULT_NAMES)
+  const { namen: names, setNamen: setNames, gemerkt, merken } = useSpielerGruppe(DEFAULT_NAMES)
   const kategorien = useMemo(() => categoriesFor(sprache), [sprache])
   const [wahl, setCategoryId] = useState('')
   const categoryId = useMemo(
@@ -75,10 +89,6 @@ export function ScharadePage() {
   const start = useCallback(() => {
     setError(null)
     try {
-      const names = namesText
-        .split(/[\n,;]+/)
-        .map((n) => n.trim())
-        .filter(Boolean)
       const eigeneKategorie = isCustomCategory(categoryId)
         ? customCategoryById(categoryId)
         : undefined
@@ -91,75 +101,54 @@ export function ScharadePage() {
           customCategoryLabel: eigeneKategorie?.label,
         }),
       )
+      merken(names)
       setAblauf(null)
       setRest(null)
     } catch (e) {
       setError(fehlerSatz(e))
     }
-  }, [namesText, categoryId, sekunden])
+  }, [names, categoryId, sekunden, merken])
 
   if (!state) {
     return (
-      <main className={`${shell.page} ${styles.farbe}`}>
-        <Link to="/" className={shell.back}>
-          {'←'} {t.allgemein.zurueck}
-        </Link>
-        <h1 className={shell.title}>🎭 {t.spiele.scharade}</h1>
-        <p className={shell.subtitle}>{s.untertitel}</p>
+      <main className={setup.seite} style={akzentStil('scharade')}>
+        <PartyKopf titel={t.spiele.scharade} />
+        <PartyHeld icon="🎭">{s.untertitel}</PartyHeld>
 
-        <div className={shell.card}>
-          <h2 className={shell.cardTitle}>{g.spielerAnzahl(2, 12)}</h2>
-          <label className={shell.label}>
-            {g.namenLabel}
-            <textarea
-              className={shell.textarea}
-              value={namesText}
-              onChange={(e) => setNamesText(e.target.value)}
-              autoComplete="off"
-            />
-          </label>
-        </div>
+        <PartyKarte
+          titel={g.spielerAnzahl(MIN_SPIELER, MAX_SPIELER)}
+          zusatz={<SpielerZahl anzahl={names.length} max={MAX_SPIELER} />}
+        >
+          <SpielerKaertchen
+            namen={names}
+            onNamen={setNames}
+            min={MIN_SPIELER}
+            max={MAX_SPIELER}
+            gemerkt={gemerkt}
+          />
+        </PartyKarte>
 
-        <div className={shell.card}>
-          <label className={shell.label}>
-            {s.kategorie}
-            <select
-              className={shell.select}
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-            >
-              <optgroup label={s.eingebaut}>
-                {/* Nur die Kategorien der Oberflächensprache -- die Wörter gibt es je Sprache. */}
-                {kategorien.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.label}
-                  </option>
-                ))}
-              </optgroup>
-              {eigene.length > 0 && (
-                <optgroup label={s.eigene}>
-                  {eigene.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.label} ({c.words.length})
-                    </option>
-                  ))}
-                </optgroup>
-              )}
-            </select>
-          </label>
-          <label className={shell.label}>
-            {s.zeitJePerson(sekunden)}
-            <input
-              type="range"
-              min={30}
-              max={180}
-              step={15}
-              value={sekunden}
-              onChange={(e) => setSekunden(Number(e.target.value))}
-            />
-          </label>
+        <PartyKarte>
+          {/* Nur die Kategorien der Oberflächensprache -- die Wörter gibt es je Sprache. */}
+          <KategorieWahl
+            beschriftung={s.kategorie}
+            eingebaut={kategorien}
+            eigene={eigene.map((c) => ({ id: c.id, label: c.label, anzahl: c.words.length }))}
+            titelEingebaut={s.eingebaut}
+            titelEigene={s.eigene}
+            wert={categoryId}
+            onWahl={setCategoryId}
+          />
+          <PartyRegler
+            beschriftung={s.zeitJePerson(sekunden)}
+            wert={sekunden}
+            min={30}
+            max={180}
+            schritt={15}
+            onWert={setSekunden}
+          />
           <p className={shell.meta}>{s.geteilt(t.spiele['finde-den-imposter'])}</p>
-        </div>
+        </PartyKarte>
 
         {error && (
           <p className={shell.error}>
@@ -167,9 +156,7 @@ export function ScharadePage() {
           </p>
         )}
 
-        <button type="button" className={shell.btn} onClick={start}>
-          {g.losspielen}
-        </button>
+        <StartKnopf onClick={start}>{g.losspielen}</StartKnopf>
       </main>
     )
   }
