@@ -17,7 +17,7 @@ import type { Texte } from '@/i18n/sprache'
 /** Die Spiele mit einem Startbildschirm aus diesem Baukasten. */
 export type MenueSpiel = Extract<
   GameId,
-  'kniffel' | 'maumau' | 'letzte-karte' | 'texas-holdem' | 'schach' | 'schuetzenopoly'
+  'kniffel' | 'maumau' | 'letzte-karte' | 'texas-holdem' | 'schach' | 'dame' | 'schuetzenopoly'
 >
 
 export interface MenueStatistik {
@@ -41,7 +41,7 @@ export const LEERE_STATISTIK: MenueStatistik = {
 
 /**
  * Gewonnen? Die Spiele schreiben das verschieden auf: die meisten als
- * `gewonnen`, Schach als `ausgang: 'sieg'` (ein Remis ist kein Sieg).
+ * `gewonnen`, Schach und Dame als `ausgang: 'sieg'` (ein Remis ist kein Sieg).
  */
 export function istSieg(r: Pick<LocalGameResult, 'resultData'>): boolean {
   const d = r.resultData

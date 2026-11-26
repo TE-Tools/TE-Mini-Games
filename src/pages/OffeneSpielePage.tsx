@@ -26,6 +26,7 @@ import {
 } from '@/services/maumauOnline'
 import { fetchOeffentlicheTexasRaeume } from '@/services/texasOnline'
 import { fetchOeffentlicheSchachRaeume } from '@/services/schachOnline'
+import { fetchOeffentlicheDameRaeume } from '@/services/dameOnline'
 import { OEFFENTLICH_ERNEUERN_MS, RAUM_PARAM, type OeffentlicherRaum } from '@/services/raeume'
 import { kachelFuer } from './spiele-katalog'
 import { spielName, useSprache } from '@/i18n/sprache'
@@ -37,6 +38,7 @@ import styles from './OffeneSpielePage.module.css'
 const ONLINE_SPIELE: { id: GameId; laden: () => Promise<OeffentlicherRaum[]> }[] = [
   { id: 'schuetzenopoly', laden: fetchOeffentlicheSchopolyRaeume },
   { id: 'schach', laden: fetchOeffentlicheSchachRaeume },
+  { id: 'dame', laden: fetchOeffentlicheDameRaeume },
   { id: 'kniffel', laden: fetchOeffentlicheKniffelRaeume },
   { id: 'texas-holdem', laden: fetchOeffentlicheTexasRaeume },
   { id: 'maumau', laden: fetchOeffentlicheMauMauRaeume },

@@ -13,6 +13,7 @@ Verbindliche Gestaltungs- und Umsetzungsvorgaben.
 | **Kartenspiele online**            | umgesetzt                  | [kartenspiele-online/](./kartenspiele-online/) |
 | **Rückwärts**                      | umgesetzt                  | [rueckwaerts/](./rueckwaerts/)                 |
 | **Schach**                         | umgesetzt                  | [schach/](./schach/)                           |
+| **Dame**                           | umgesetzt                  | [dame/](./dame/)                               |
 
 ## Levelkarte 1–500 (Kurz)
 
@@ -55,6 +56,15 @@ Details: [`kartenspiele-online/README.md`](./kartenspiele-online/README.md)
 - Figuren und Notation als Schriftzeichen: offline, scharf, ohne Übersetzung
 
 Details: [`schach/README.md`](./schach/README.md)
+
+## Dame (Kurz)
+
+- Deutsche Dame gegen den Computer (drei Stufen), zu zweit an einem Gerät oder online
+- Hausregeln (Schlagzwang, fliegende Dame, Rückwärtsschlagen, Mehrheitsschlag) als Daten;
+  eine Partie trägt ihre Regeln mit
+- Online wie Schach: nur ein Zugbuch auf dem Server (Migration 033), keine Damregel in SQL
+
+Details: [`dame/README.md`](./dame/README.md)
 
 ## Sudoku (Kurz)
 

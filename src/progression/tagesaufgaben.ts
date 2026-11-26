@@ -98,7 +98,7 @@ export const LEVEL_SPIELE: readonly GameId[] = [
 /**
  * „Spiele N Runden X": jedes Spiel, das ein Ergebnis meldet, mit einer Zahl,
  * die in 5 bis 15 Minuten zu schaffen ist. Lange Partien (Kniffel, Schach,
- * Texas) zählen einfach, schnelle Runden dreifach. Schützenopoly fehlt mit
+ * Dame, Texas) zählen einfach, schnelle Runden dreifach. Schützenopoly fehlt mit
  * Absicht: Eine Partie dauert länger als eine Tagesaufgabe.
  */
 const RUNDEN_JE_SPIEL: readonly { gameId: GameId; ziel: number }[] = [
@@ -116,6 +116,7 @@ const RUNDEN_JE_SPIEL: readonly { gameId: GameId; ziel: number }[] = [
   { gameId: 'letzte-karte', ziel: 2 },
   { gameId: 'texas-holdem', ziel: 1 },
   { gameId: 'schach', ziel: 1 },
+  { gameId: 'dame', ziel: 1 },
   { gameId: 'schuetzenrunde', ziel: 1 },
 ]
 
@@ -182,7 +183,7 @@ function tagNummer(datum: string): number {
 }
 
 /**
- * Schrittweite durch die Spieleliste. Teilerfremd zu ihrer Länge (15), damit
+ * Schrittweite durch die Spieleliste. Teilerfremd zu ihrer Länge (16), damit
  * jedes Spiel drankommt; kein Vielfaches davon, damit der Folgetag ein
  * anderes Spiel hat. `tests/bindung.test.ts` prüft beides.
  */

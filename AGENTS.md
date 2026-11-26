@@ -92,6 +92,15 @@ corresponding feature; do not invent a competing design.
   Schützenopoly nur ein Zugbuch: wer sitzt, wer Weiß hat, wer am Zug ist. Es
   steht dort **keine** Schachregel, und es kommt auch keine hinein – jeder
   Mitspieler spielt das Buch durch dieselbe Engine nach.
+- **Dame:** `docs/design/dame/` – Regeln gehören ausschließlich nach
+  `src/games/dame/`, Stellwerte (Stufen, Bewertung, Punkte, Remis-Grenzen)
+  ausschließlich in dessen `config.ts`. Die Hausregeln (Schlagzwang, fliegende
+  Dame, Rückwärtsschlagen, Mehrheitsschlag) stehen dort als Daten, nicht als
+  Sonderfälle im Ablauf, und eine laufende Partie trägt ihre Regeln mit. Wer an
+  der Zugerzeugung etwas ändert, lässt `tests/dame-regeln.test.ts` laufen (Perft
+  gegen die englischen Zahlen). Online (Migration `033_dame_online.sql`) führt
+  der Server wie beim Schach nur ein Zugbuch samt den Hausregeln des Tisches; es
+  steht dort **keine** Damregel, und es kommt auch keine hinein.
 - **Rückwärts:** `docs/design/rueckwaerts/` – das einzige Spiel mit Mikrofon.
   Regeln (wer wann was hören darf, Stutzen, Löschen) gehören nach
   `src/games/rueckwaerts/engine.ts`, Stellwerte nach `config.ts`, und nur

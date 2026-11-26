@@ -1,0 +1,211 @@
+/* Dame – Menü, Partie gegen den Computer, zu zweit und am Online-Tisch. */
+
+.seite {
+  max-width: 34rem;
+}
+
+.abschnitt {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-2xl);
+  background: rgb(255 255 255 / 0.86);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.abschnitt h2 {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 800;
+}
+
+.wahl {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+}
+
+.chip,
+.chipAktiv {
+  min-height: var(--touch-min);
+  padding: var(--space-2);
+  border-radius: var(--radius-lg);
+  font-weight: 800;
+  font-size: var(--text-sm);
+  border: 1px solid var(--color-border-strong);
+  background: #ffffff;
+  color: var(--color-text);
+}
+
+.chipAktiv {
+  border-color: #7a4419;
+  background: #7a4419;
+  color: #ffffff;
+}
+
+.erklaerung {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.status {
+  min-height: 1.6em;
+  margin: 0;
+  font-weight: 800;
+  text-align: center;
+}
+
+.statusPflicht {
+  color: #c2410c;
+}
+
+.spieler {
+  width: calc(min(100vw - 2rem, 30rem));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-weight: 700;
+  font-size: var(--text-sm);
+}
+
+.amZug::before {
+  content: '';
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  margin-right: 0.4rem;
+  border-radius: 50%;
+  background: #16a34a;
+  vertical-align: middle;
+}
+
+.knoepfe {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.ende {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-2xl);
+  background: #ffffff;
+  border: 2px solid #7a4419;
+  box-shadow: var(--shadow-md);
+  text-align: center;
+}
+
+.ende h2 {
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: 800;
+}
+
+.ende p {
+  margin: 0;
+}
+
+.hinweis {
+  width: 100%;
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, #7a4419 8%, #ffffff);
+  border: 1px solid color-mix(in srgb, #7a4419 30%, transparent);
+  font-weight: 700;
+  text-align: center;
+}
+
+.fehler {
+  color: var(--color-danger);
+  font-weight: 700;
+  text-align: center;
+}
+
+.code {
+  margin: 0;
+  font-size: 2.4rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-align: center;
+}
+
+.codeEingabe {
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-strong);
+  font-size: var(--text-lg);
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.liste {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.liste li,
+.liste button {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: #ffffff;
+  font: inherit;
+  text-align: left;
+}
+
+/* Die Knöpfe der Spielseiten wollen 12rem breit sein -- zwei nebeneinander
+   sprengen dann ein 390 Pixel breites Handy. Im Raster bestimmt die Spalte. */
+.knoepfe > button {
+  min-width: 0;
+  padding-inline: var(--space-2);
+}
+
+.hinweis p {
+  margin: 0 0 var(--space-2);
+}
+
+.tipp {
+  width: 100%;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, #16a34a 10%, #ffffff);
+  border: 1px solid color-mix(in srgb, #16a34a 35%, transparent);
+  color: #14532d;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Ohne „Zug zurück“ (ab mittel) steht „Aufgeben“ allein und über die ganze Breite. */
+.einKnopf {
+  grid-template-columns: 1fr;
+}
+
+/* Zu zweit: Zug zurück und Remis nebeneinander, Aufgeben darunter über die ganze Breite. */
+.dreiKnoepfe > :last-child {
+  grid-column: 1 / -1;
+}

@@ -28,6 +28,7 @@ export type GameId =
   | 'letzte-karte'
   | 'rueckwaerts'
   | 'schach'
+  | 'dame'
 
 export interface GameLevelConfig {
   level: number

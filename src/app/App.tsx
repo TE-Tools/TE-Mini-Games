@@ -19,6 +19,7 @@ import { WerWuerdeEherPage } from '@/pages/play/WerWuerdeEherPage'
 import { RueckwaertsPage } from '@/pages/play/RueckwaertsPage'
 import { SchuetzenopolyPage } from '@/pages/play/SchuetzenopolyPage'
 import { SchachPage } from '@/pages/play/SchachPage'
+import { DamePage } from '@/pages/play/DamePage'
 import { KniffelPage } from '@/pages/play/KniffelPage'
 import { BienenFlowPage } from '@/pages/play/BienenFlowPage'
 import { SquishyDumplingsPage } from '@/pages/play/SquishyDumplingsPage'
@@ -203,6 +204,7 @@ export function App() {
             <Route path="/play/wer-wuerde-eher" element={<WerWuerdeEherPage />} />
             <Route path="/play/rueckwaerts" element={<RueckwaertsPage />} />
             <Route path="/play/schach" element={<SchachPage />} />
+            <Route path="/play/dame" element={<DamePage />} />
             <Route path="/play/schuetzenopoly" element={<SchuetzenopolyPage />} />
             <Route path="/play/kniffel" element={<KniffelPage />} />
             <Route path="/play/texas-holdem" element={<TexasHoldemPage />} />
