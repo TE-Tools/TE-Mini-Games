@@ -39,8 +39,10 @@ src/pages/play/EmberwakePage.tsx   Startet App in einem Wurzelelement,
   dem Bot durch.
 - Niemals `Math.random()` in der Simulation — nur `core/Rng.ts` (Determinismus).
 - Level, Gegner, Rezepte, Gebäude sind Daten in `data/`.
-- Die Oberfläche liegt komplett unter `.ew-root` (dunkle Insel im hellen
-  Design) und rührt keine App-Tokens an. `tests/helles-design.test.ts`
+- Die Oberfläche liegt komplett unter `.ew-root` und rührt keine App-Tokens an.
+  Seit 26.11.2026 sind die Menükarten und der Grund der Menübildschirme hell
+  wie die App; die Spielwelt und die Anzeige im Spiel bleiben Nacht, weil das
+  Spiel von Licht in der Finsternis handelt. `tests/helles-design.test.ts`
   bleibt dadurch grün.
 - Der Spielstand des Spiels (Lager, Sterne, Leben) ist spielintern;
   Punkte/XP/Erfolge laufen über `saveGameResult`/`addXp` wie bei jedem Spiel.

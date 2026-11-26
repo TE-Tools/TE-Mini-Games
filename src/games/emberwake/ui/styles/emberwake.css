@@ -977,3 +977,96 @@
     rgba(4, 6, 12, 0.42) 100%
   );
 }
+
+/*
+ * Helle Menüs (26.11.2026, Thomas: „heller machen, dass alles gleich ist").
+ * Die Spielwelt bleibt Nacht -- das Spiel handelt von Licht in der Finsternis,
+ * ein heller Wald nähme ihm die Mechanik. Hell werden alle Karten (Start,
+ * Levelwahl, Lager, Pause, Ergebnis) und der Grund der Menübildschirme, im
+ * warmen Papierton der App mit dem Glutorange als Akzent. Die Anzeige im
+ * Spiel (HUD) bleibt dunkles Glas, damit sie über dem Wald lesbar ist.
+ * Alles weiter unter .ew-root, eigene Werte statt App-Tokens.
+ */
+.ew-root .screen.is-solid {
+  background:
+    radial-gradient(ellipse 90% 55% at 50% 0%, rgba(255, 170, 110, 0.32), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 100% 100%, rgba(255, 210, 160, 0.35), transparent 70%),
+    linear-gradient(180deg, #fff8f0 0%, #fbefe3 100%);
+}
+
+.ew-root .screen.is-dim {
+  background: rgba(40, 24, 14, 0.45);
+}
+
+.ew-root .card {
+  --panel: rgba(255, 255, 255, 0.97);
+  --panel-2: #fff6ec;
+  --line: rgba(140, 80, 30, 0.16);
+  --ink: #2b1d14;
+  --ink-dim: #6e5c4f;
+  --ink-faint: #9a887a;
+  --ember: #e0601f;
+  --ember-soft: #b8501a;
+  --cold: #2f6aa8;
+  --ok: #23824f;
+  --warn: #a8700c;
+  --bad: #c03c2c;
+
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 24px;
+  padding: 22px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 24px 48px -24px rgba(120, 60, 20, 0.45);
+  color: var(--ink);
+}
+
+.ew-root .card .title {
+  background: linear-gradient(180deg, #3a2416, #1f140d);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.ew-root .card .btn {
+  border-radius: 16px;
+  font-weight: 700;
+  box-shadow: 0 2px 6px -3px rgba(120, 60, 20, 0.3);
+}
+
+.ew-root .card .btn.is-primary {
+  background: linear-gradient(180deg, #ff8a3d, #e0601f);
+  border-color: transparent;
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 10px 20px -10px #e0601f;
+}
+
+.ew-root .card .btn.is-ghost {
+  box-shadow: none;
+}
+
+.ew-root .card .level-item,
+.ew-root .card .row,
+.ew-root .card .stock .item {
+  border-radius: 16px;
+  box-shadow: 0 2px 6px -4px rgba(120, 60, 20, 0.3);
+}
+
+.ew-root .card .stars .off,
+.ew-root .card .level-item .st .off {
+  color: rgba(80, 40, 10, 0.16);
+}
+
+.ew-root .card .toggle {
+  background: rgba(80, 40, 10, 0.1);
+}
+
+.ew-root .card .toggle.is-on {
+  background: rgba(224, 96, 31, 0.25);
+}
+
+:root[data-sparsam] .ew-root .screen.is-dim {
+  background: rgba(40, 24, 14, 0.7);
+}

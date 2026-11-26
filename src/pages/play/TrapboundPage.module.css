@@ -1,5 +1,6 @@
 /*
- * TRAPBOUND – dunkel, kontrastreich, ohne Schnörkel.
+ * TRAPBOUND – kontrastreich, ohne Schnörkel. Seit 26.11.2026 hell wie die
+ * übrige App (siehe „Hell“ am Ende); nur die Spielwelt bleibt dunkel.
  *
  * Das Spielfeld ist die Hauptsache: Alles andere hält sich zurück. Die
  * Steuerknöpfe sind bewusst groß (mindestens 64 px), weil sie mit dem Daumen
@@ -533,7 +534,7 @@
   animation: dialogPlopp 380ms cubic-bezier(0.3, 1.4, 0.5, 1) backwards;
 }
 
-/* ============ Feinschliff (30.10.2026) -- Trapbound bleibt dunkel ============ */
+/* ============ Feinschliff (30.10.2026) ============ */
 
 /* Keine Unschärfe über der laufenden Leinwand -- das kostet jedes Bild. */
 .overlay {
@@ -643,4 +644,168 @@
 .menueHaupt:active,
 .menueKnopf:active {
   transform: scale(0.97);
+}
+
+/*
+ * ================================ Hell (26.11.2026) ================================
+ * Thomas: „heller machen, dass alles gleich ist". Menü, Levelkarte, Sammlung,
+ * Einstellungen, Dialoge, die Leiste oben und die Steuerknöpfe tragen jetzt
+ * das helle Gewand der App, mit Trapbounds Mint als Akzent. Die Spielwelt auf
+ * der Leinwand bleibt dunkel: Die helle Figur und die Fallen sind auf dunklem
+ * Grund gezeichnet, und dort entscheidet sich, ob man stirbt.
+ */
+
+.page,
+.spielSeite {
+  --tb-akzent: #0f9e7e;
+  --tb-akzent-hell: #7ce7c8;
+  --tb-akzent-weich: #e3f8f1;
+  color: var(--color-text);
+  background:
+    radial-gradient(110% 60% at 50% 0%, rgb(124 231 200 / 0.28), transparent 70%),
+    radial-gradient(80% 50% at 100% 100%, rgb(143 124 196 / 0.16), transparent 70%), var(--color-bg);
+}
+
+.titel {
+  color: #2a2350;
+  text-shadow:
+    0 2px 0 #ffffff,
+    0 10px 24px rgb(90 60 224 / 0.18);
+}
+
+.untertitel {
+  color: var(--tb-akzent);
+}
+
+.menueKnopf,
+.back,
+.hudKnopf,
+.werkzeug,
+.dialogKnoepfe button,
+.figurKnopf {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+}
+
+.menueKnopf {
+  font-weight: 700;
+}
+
+.menueHaupt,
+.dialogKnoepfe .primaer {
+  background: linear-gradient(145deg, #34d1a8, var(--tb-akzent));
+  border-color: transparent;
+  color: #ffffff;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.3),
+    0 10px 22px -10px var(--tb-akzent);
+}
+
+.fussnote,
+.hinweis,
+.kopfWert {
+  color: var(--color-text-muted);
+  opacity: 1;
+}
+
+.karte2 {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+}
+
+.reihe input[type='range'],
+.reihe input[type='checkbox'] {
+  accent-color: var(--tb-akzent);
+}
+
+.gefahrKnopf {
+  background: #fff1f3;
+  border-color: rgb(192 43 72 / 0.35);
+  color: var(--color-danger);
+}
+
+.kristallPlatz {
+  background: var(--color-surface);
+}
+
+.kristallDa {
+  color: var(--tb-akzent);
+}
+
+.kristallWeg {
+  color: var(--color-border-strong);
+}
+
+.figurKnopf[aria-pressed='true'] {
+  border-color: var(--tb-akzent);
+  background: var(--tb-akzent-weich);
+}
+
+/* Spiel: helle Leiste oben, dunkle Bühne, helle Knöpfe darunter. */
+.hud {
+  background: rgb(255 255 255 / 0.85);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.hudKlein,
+.hudWert {
+  color: var(--color-text-muted);
+}
+
+/* Die Bühne selbst ist hell; die Leinwand lässt den Rand um die Welt frei. */
+.buehne {
+  background: transparent;
+}
+
+.padKnopf {
+  background: var(--color-bg-elevated);
+  border: 2px solid var(--color-border-strong);
+  color: var(--color-text);
+  box-shadow: var(--shadow-md);
+}
+
+.padSprung {
+  border-color: var(--tb-akzent);
+  color: var(--tb-akzent);
+}
+
+.padKnopf:active {
+  background: var(--tb-akzent-weich);
+  border-color: var(--tb-akzent);
+  box-shadow: 0 0 18px rgb(15 158 126 / 0.35);
+}
+
+/* Dialoge: helle Karte über einem weichen Schleier. */
+.overlay {
+  background: rgb(31 34 51 / 0.45);
+}
+
+.dialog {
+  background: var(--color-bg-elevated);
+  border: 1px solid rgb(255 255 255 / 0.9);
+  color: var(--color-text);
+}
+
+.dialog.dialogSieg {
+  border-color: var(--tb-akzent-hell);
+  box-shadow:
+    0 0 0 4px rgb(124 231 200 / 0.35),
+    var(--shadow-lg);
+}
+
+.sterne {
+  color: #e0a40c;
+}
+
+/* Der Hinweis über der Welt steht jetzt auf hellem Grund. */
+.tipp {
+  background: rgb(255 255 255 / 0.92);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
 }

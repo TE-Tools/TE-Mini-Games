@@ -314,8 +314,9 @@ export function TrapboundPage() {
       }
       const skala = Math.min(c.width / BILD_BREITE, c.height / BILD_HOEHE)
       ctx.setTransform(1, 0, 0, 1, 0, 0)
-      ctx.fillStyle = '#0b0916'
-      ctx.fillRect(0, 0, c.width, c.height)
+      // Der Rand um die Welt bleibt durchsichtig: Dort scheint die helle
+      // Seite durch, die Welt selbst steht als abgerundete Tafel darin.
+      ctx.clearRect(0, 0, c.width, c.height)
 
       /*
        * Die Kamera.
@@ -363,7 +364,11 @@ export function TrapboundPage() {
       // Sperre malte das Spiel in den schwarzen Rand hinein.
       ctx.save()
       ctx.beginPath()
-      ctx.rect(randX, randY, BILD_BREITE * skala, BILD_HOEHE * skala)
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(randX, randY, BILD_BREITE * skala, BILD_HOEHE * skala, 14 * dpr)
+      } else {
+        ctx.rect(randX, randY, BILD_BREITE * skala, BILD_HOEHE * skala)
+      }
       ctx.clip()
 
       ctx.setTransform(skala, 0, 0, skala, randX - kamera * skala, randY - kameraY * skala)
