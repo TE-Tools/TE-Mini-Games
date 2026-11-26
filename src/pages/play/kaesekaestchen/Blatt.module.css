@@ -1,0 +1,166 @@
+/*
+ * Käsekästchen – das Blatt. Hell wie Karopapier, die Linien in der Farbe
+ * dessen, der sie gezogen hat (--farbe), freie Linien zeigen beim Darüber-
+ * fahren die Farbe dessen, der dran ist (--farbe-dran).
+ */
+
+.blatt {
+  --dicke: clamp(4px, 1.3vmin, 7px);
+  --punkt: clamp(9px, 2.4vmin, 13px);
+
+  position: relative;
+  width: min(100%, 30rem);
+  margin: 0 auto;
+  border-radius: var(--radius-2xl);
+  background-color: #fdfcff;
+  background-image:
+    linear-gradient(#e7eefc 1px, transparent 1px),
+    linear-gradient(90deg, #e7eefc 1px, transparent 1px);
+  background-size: 14px 14px;
+  border: 1px solid color-mix(in srgb, #a21caf 22%, var(--color-border));
+  box-shadow: var(--shadow-md);
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ------------------------------------------------------------ Punkte */
+
+.punkt {
+  position: absolute;
+  z-index: 3;
+  width: var(--punkt);
+  height: var(--punkt);
+  border-radius: 50%;
+  background: #3b0764;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------ Linien */
+
+.linie {
+  position: absolute;
+  z-index: 2;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.linie:disabled {
+  cursor: default;
+}
+
+.strich {
+  position: absolute;
+  border-radius: 999px;
+  background: color-mix(in srgb, #64748b 16%, transparent);
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+/* Der Strich reicht von Punkt zu Punkt, der Knopf ist an den Enden kürzer. */
+.waagrecht .strich {
+  left: -21.43%;
+  right: -21.43%;
+  top: 50%;
+  height: var(--dicke);
+  transform: translateY(-50%);
+}
+
+.senkrecht .strich {
+  top: -21.43%;
+  bottom: -21.43%;
+  left: 50%;
+  width: var(--dicke);
+  transform: translateX(-50%);
+}
+
+.linie:not(:disabled):hover .strich,
+.linie:not(:disabled):focus-visible .strich {
+  background: color-mix(in srgb, var(--farbe-dran) 55%, transparent);
+}
+
+.linie:focus-visible {
+  outline: none;
+}
+
+.linie:focus-visible .strich {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--farbe-dran) 35%, transparent);
+}
+
+.gezogen .strich {
+  background: var(--farbe);
+}
+
+/* Die jüngste Linie leuchtet -- erst kräftig, dann als feiner Schein. */
+.frisch .strich {
+  box-shadow:
+    0 0 0 3px #fde047,
+    0 0 14px 2px color-mix(in srgb, var(--farbe) 60%, transparent);
+  animation: leuchten 0.7s ease-out;
+}
+
+@keyframes leuchten {
+  from {
+    transform: var(--wo, translateY(-50%)) scale(1.25);
+    box-shadow:
+      0 0 0 6px #fde047,
+      0 0 22px 6px color-mix(in srgb, var(--farbe) 75%, transparent);
+  }
+}
+
+.senkrecht.frisch .strich {
+  --wo: translateX(-50%);
+}
+
+/* --------------------------------------------------------- Kästchen */
+
+.kaestchen {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  padding: 12%;
+  pointer-events: none;
+}
+
+.kaestchen > span {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 18%;
+  background: color-mix(in srgb, var(--farbe) 28%, #ffffff);
+  color: color-mix(in srgb, var(--farbe) 85%, #000000);
+  font-weight: 900;
+  font-size: clamp(0.85rem, 4vmin, 1.6rem);
+  line-height: 1;
+}
+
+.neu > span {
+  animation: aufspringen 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes aufspringen {
+  from {
+    transform: scale(0.2);
+    opacity: 0;
+    background: var(--farbe);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frisch .strich,
+  .neu > span {
+    animation: none;
+  }
+
+  .strich {
+    transition: none;
+  }
+}

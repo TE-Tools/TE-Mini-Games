@@ -46,9 +46,12 @@ allein aus dem Kalendertag (Ortszeit): Am selben Tag hat jeder dieselben drei,
 auch ohne Netz. Drei Fächer, aus jedem eine:
 
 1. **Ein bestimmtes Spiel** („Spiel N Runden X"). Das Spiel läuft in
-   Siebenerschritten durch die Liste der 15 meldenden Spiele: jedes kommt in
-   15 Tagen einmal dran, nie zweimal hintereinander. Die Rundenzahl passt zum
-   Spiel (schnelle Runden 2–3, Kniffel/Schach/Texas/Sudoku 1).
+   Siebenerschritten durch die Liste der 16 meldenden Spiele: jedes kommt in
+   16 Tagen einmal dran, nie zweimal hintereinander. Die Rundenzahl passt zum
+   Spiel (schnelle Runden 2–3, Kniffel/Schach/Texas/Sudoku 1, Käsekästchen 2).
+   Käsekästchen meldet gegen den Computer und online über
+   `processAfterResult`, am Gerät zu mehreren über `meldePartyRunde` (am Ende
+   der Partie, nicht beim Start).
 2. **Etwas Breites** (2 oder 3 verschiedene Spiele, 3 oder 4 Runden insgesamt,
    Runden aus einer Gruppe), per Zufall aus dem Datum. Keine Gruppe, in der das
    Spiel aus Fach 1 steht -- sonst erledigte eine Runde zwei Aufgaben.

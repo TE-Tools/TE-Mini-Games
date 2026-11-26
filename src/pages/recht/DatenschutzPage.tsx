@@ -149,13 +149,13 @@ function TextDe() {
       <h3>d) Online-Runden mit Freunden (freiwillig)</h3>
       <p>
         Für gemeinsame Runden (Schützenrunde, Finde den Imposter, Wer bin ich?, Stadt-Land-Fluss,
-        Kniffel, Mau-Mau, Letzte Karte, Texas Hold&apos;em, Schützenopoly, Schach) speichern wir für
-        die Dauer der Runde: den Namen, den du für diese Runde eintippst, deinen Platz am Tisch und
-        was du in der Runde tust – je nach Spiel deine Rolle, deine Stimme bei Abstimmungen, deine
-        Antworten, Würfe, Karten oder Züge. Sichtbar ist das nur für die Mitspielenden derselben
-        Runde; deine Karten auf der Hand siehst nur du. Machst du einen Tisch öffentlich, sehen
-        angemeldete Nutzer in der Liste „Offene Spiele“ den Spielcode und die Namen derer, die schon
-        am Tisch sitzen. Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO.
+        Kniffel, Mau-Mau, Letzte Karte, Texas Hold&apos;em, Schützenopoly, Schach, Käsekästchen)
+        speichern wir für die Dauer der Runde: den Namen, den du für diese Runde eintippst, deinen
+        Platz am Tisch und was du in der Runde tust – je nach Spiel deine Rolle, deine Stimme bei
+        Abstimmungen, deine Antworten, Würfe, Karten oder Züge. Sichtbar ist das nur für die
+        Mitspielenden derselben Runde; deine Karten auf der Hand siehst nur du. Machst du einen
+        Tisch öffentlich, sehen angemeldete Nutzer in der Liste „Offene Spiele“ den Spielcode und
+        die Namen derer, die schon am Tisch sitzen. Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO.
       </p>
 
       <h3>e) Technische Daten</h3>
@@ -382,13 +382,13 @@ function TextEn() {
       <h3>d) Online rounds with friends (optional)</h3>
       <p>
         For shared rounds (Marksmen Round, Find the Imposter, Who am I?, Categories, Yahtzee-style
-        Dice, Mau-Mau, Last Card, Texas Hold&apos;em, Schützenopoly, Chess) we store for the
-        duration of the round: the name you type in for this round, your seat at the table and what
-        you do in the round – depending on the game your role, your vote in polls, your answers,
-        rolls, cards or moves. Only the other players in the same round can see this; the cards in
-        your hand are visible only to you. If you make a table public, signed-in users see the game
-        code and the names of those already seated in the &quot;Open games&quot; list. Legal basis:
-        Art. 6(1)(b) GDPR.
+        Dice, Mau-Mau, Last Card, Texas Hold&apos;em, Schützenopoly, Chess, Dots and Boxes) we store
+        for the duration of the round: the name you type in for this round, your seat at the table
+        and what you do in the round – depending on the game your role, your vote in polls, your
+        answers, rolls, cards or moves. Only the other players in the same round can see this; the
+        cards in your hand are visible only to you. If you make a table public, signed-in users see
+        the game code and the names of those already seated in the &quot;Open games&quot; list.
+        Legal basis: Art. 6(1)(b) GDPR.
       </p>
 
       <h3>e) Technical data</h3>

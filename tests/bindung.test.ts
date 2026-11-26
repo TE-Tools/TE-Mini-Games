@@ -98,7 +98,7 @@ describe('Tagesaufgaben: Erzeugung', () => {
     const spiele = new Set(jahr.map((x) => x[0]!.gameId))
     const zweite = new Set(jahr.map((x) => x[1]!.id))
     const dritte = new Set(jahr.map((x) => x[2]!.id))
-    expect(spiele.size).toBe(15)
+    expect(spiele.size).toBe(16)
     expect(zweite.size).toBeGreaterThanOrEqual(5)
     expect(dritte.size).toBe(4)
     const wiederholt = jahr.filter((x, i) => i > 0 && x[0]!.gameId === jahr[i - 1]![0]!.gameId)

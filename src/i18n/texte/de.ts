@@ -86,6 +86,7 @@ export const de = {
     Wortspiel: 'Wortspiel',
     Partyspiel: 'Partyspiel',
     Hören: 'Hören',
+    'Stift & Papier': 'Stift & Papier',
   },
 
   spiele: {
@@ -112,6 +113,7 @@ export const de = {
     'wer-wuerde-eher': 'Wer würde eher?',
     rueckwaerts: 'Rückwärts',
     schach: 'Schach',
+    kaesekaestchen: 'Käsekästchen',
   },
 
   reiter: {
@@ -3306,6 +3308,7 @@ export const de = {
       'letzte-karte': 'Bunte Karten, freche Wendungen – wer wird sie zuerst los?',
       'texas-holdem': 'Lesen, bluffen, alles setzen – um Spielgeld.',
       schach: 'Ein Zug nach dem anderen – denk einen weiter als der Computer.',
+      kaesekaestchen: 'Eine Linie nach der anderen – wer das Kästchen schließt, zieht noch mal.',
       schuetzenopoly: 'Festwiese, Festzelt, Königshaus – das Brett gehört dir.',
     },
     bilanz: 'Deine Bilanz',
@@ -3502,6 +3505,113 @@ export const de = {
       verlassen: 'Tisch verlassen',
       ladeFehler: 'Der Stand ließ sich nicht laden.',
       zugFehler: 'Der Zug kam nicht an – der Stand wird neu geladen.',
+      fehler: 'Das hat nicht geklappt.',
+    },
+  },
+
+  /**
+   * Käsekästchen. Die Namen der Mitspieler am Gerät tippt man selbst ein,
+   * online kommen sie vom Server -- beide stehen nicht hier.
+   */
+  kaesekaestchen: {
+    untertitel:
+      'Linien ziehen, Kästchen schließen – gegen den Computer, zu mehreren an einem Gerät oder online.',
+    soGehts: [
+      { bild: '✏️', text: 'Wer dran ist, zieht eine Linie zwischen zwei Nachbarpunkten.' },
+      {
+        bild: '🟪',
+        text: 'Wer die vierte Seite eines Kästchens zieht, bekommt es – und zieht gleich noch einmal.',
+      },
+      { bild: '🏆', text: 'Sind alle Kästchen vergeben, gewinnt, wer die meisten hat.' },
+    ],
+    soGehtsMehr:
+      'Gib keinem Kästchen die dritte Seite, solange es geht – sonst holt es sich der Nächste. Gegen Ende bleiben nur Linien, die etwas hergeben: Dann opfere die kürzeste Kette. Und wer eine lange Kette geschenkt bekommt, kann die letzten zwei Kästchen liegen lassen – dann muss der andere sie nehmen und die nächste Kette öffnen.',
+    gegenComputer: 'Gegen den Computer',
+    staerke: 'Stärke',
+    stufen: { leicht: 'Leicht', mittel: 'Mittel', schwer: 'Schwer' },
+    stufenText: {
+      leicht:
+        'Zieht oft irgendeine Linie und lässt auch mal ein Kästchen liegen – gut zum Reinkommen.',
+      mittel: 'Nimmt jedes freie Kästchen und gibt keine dritte Seite her, solange es geht.',
+      schwer: 'Zählt am Ende die Ketten und opfert gezielt. Schlag ihn, wenn du kannst.',
+    },
+    groesse: 'Blattgröße',
+    groessen: { klein: 'Klein', mittel: 'Mittel', gross: 'Groß', riesig: 'Riesig' },
+    groesseText: (breite: number, hoehe: number) => `${breite} × ${hoehe} Kästchen`,
+    starten: 'Partie starten',
+    amGeraet: 'Zu mehreren an einem Gerät',
+    amGeraetText: 'Reihum am selben Handy – zu zweit bis zu viert.',
+    mitspieler: 'Mitspieler',
+    amGeraetStarten: 'Los geht’s',
+    onlineTitel: 'Online mit anderen',
+    onlineText: 'Blatt aufmachen, Code weitergeben – oder an ein offenes Blatt setzen.',
+    zumTisch: 'Zum Blatt',
+    du: 'Du',
+    computer: 'Computer',
+    duBistDran: 'Du bist dran',
+    duNochmal: 'Kästchen! Du bist noch einmal dran.',
+    computerDenkt: 'Der Computer überlegt …',
+    istDran: (name: string) => `${name} ist dran`,
+    istNochmalDran: (name: string) => `Kästchen für ${name} – noch einmal!`,
+    blatt: 'Spielfeld',
+    linieWaagrecht: (zeile: number, spalte: number) =>
+      `Waagrechte Linie, Reihe ${zeile}, zwischen Punkt ${spalte} und ${spalte + 1}`,
+    linieSenkrecht: (zeile: number, spalte: number) =>
+      `Senkrechte Linie, Spalte ${spalte}, zwischen Punkt ${zeile} und ${zeile + 1}`,
+    gezogenVon: (name: string) => `gezogen von ${name}`,
+    kaestchenVon: (name: string) => `Kästchen von ${name}`,
+    kaestchen: (n: number) => (n === 1 ? '1 Kästchen' : `${n} Kästchen`),
+    stand: 'Stand',
+    amZug: 'am Zug',
+    ergebnis: { sieg: 'Gewonnen!', remis: 'Gleichstand', niederlage: 'Verloren' },
+    siegVon: (name: string) => `${name} gewinnt!`,
+    gleichstandZwischen: (namen: string) => `Gleichstand: ${namen}`,
+    endeGrund: {
+      fertig: 'Alle Kästchen sind vergeben.',
+      duAufgegeben: 'Du hast aufgegeben.',
+      aufgabe: (name: string) => `${name} hat aufgegeben.`,
+      ungueltig: (name: string) =>
+        `Von ${name} kam ein Zug, den es so nicht geben kann – er zählt als Aufgabe.`,
+    },
+    punkte: (punkte: number, xp: number) => `+${punkte} Punkte · +${xp} XP`,
+    nochEine: 'Noch eine Partie',
+    aufgeben: 'Aufgeben',
+    aufgebenFrage: 'Wirklich aufgeben?',
+    jaAufgeben: 'Ja, aufgeben',
+    nein: 'Nein',
+    online: {
+      titel: 'Käsekästchen online',
+      einenMoment: 'Einen Moment …',
+      kontoNoetig: 'Online spielen geht nur mit Konto – so wissen die anderen, wer am Blatt sitzt.',
+      anmelden: 'Anmelden',
+      lieberAmGeraet: 'Lieber hier am Gerät',
+      einleitung:
+        'Mach ein Blatt auf und gib den Code weiter – oder setz dich an ein offenes Blatt. Zu zweit bis zu viert.',
+      oeffentlich: 'Öffentlich',
+      oeffentlichText: 'Das Blatt steht unter „Offene Spiele“, und jeder kann sich dazusetzen.',
+      blattAufmachen: 'Blatt aufmachen',
+      spielcode: 'Spielcode',
+      beitreten: 'Beitreten',
+      offenePartien: 'Deine offenen Partien',
+      wartet: 'wartet',
+      laeuft: 'läuft',
+      spieler: (n: number) => `${n} von 4`,
+      warteraum: 'Am Blatt',
+      blattGroesse: (breite: number, hoehe: number) => `Blatt: ${breite} × ${hoehe} Kästchen`,
+      codeWeitergeben: (host: boolean): string =>
+        host
+          ? 'Gib den Code weiter. Sobald jemand sitzt, kannst du starten – wer anfängt, wird ausgelost.'
+          : 'Gleich startet die Partie. Wer anfängt, wird ausgelost.',
+      starten: 'Partie starten',
+      fehltNoch: 'Es fehlt noch jemand',
+      wartenAufStart: 'Warten, bis die Partie startet …',
+      revanche: 'Revanche – der Nächste fängt an',
+      wartetAufRevanche: 'Warten, ob es eine Revanche gibt …',
+      wegGegangen: (name: string) => `${name} hat das Blatt verlassen.`,
+      abgebrochen: 'Die Partie wurde abgebrochen.',
+      verlassen: 'Blatt verlassen',
+      ladeFehler: 'Der Stand ließ sich nicht laden.',
+      zugFehler: 'Die Linie kam nicht an – der Stand wird neu geladen.',
       fehler: 'Das hat nicht geklappt.',
     },
   },

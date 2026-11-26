@@ -1,0 +1,85 @@
+.leiste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: min(100%, 30rem);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  gap: var(--space-2);
+}
+
+.spieler {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-xl);
+  background: #ffffff;
+  border: 2px solid color-mix(in srgb, var(--farbe) 22%, transparent);
+  box-shadow: var(--shadow-sm);
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.spieler[data-dran] {
+  border-color: var(--farbe);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--farbe) 30%, transparent);
+  transform: translateY(-2px);
+}
+
+.spieler[data-weg] {
+  opacity: 0.45;
+}
+
+.bild {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: var(--farbe);
+  color: #ffffff;
+  font-weight: 900;
+  font-size: var(--text-sm);
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: var(--text-sm);
+}
+
+.zahl {
+  flex: none;
+  font-weight: 900;
+  font-size: var(--text-lg);
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--farbe) 85%, #000000);
+}
+
+.unsichtbar {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spieler {
+    transition: none;
+  }
+
+  .spieler[data-dran] {
+    transform: none;
+  }
+}

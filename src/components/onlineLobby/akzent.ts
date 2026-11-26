@@ -8,7 +8,13 @@
 import type { CSSProperties } from 'react'
 
 export type BrettSpiel =
-  'kniffel' | 'maumau' | 'letzte-karte' | 'texas-holdem' | 'schach' | 'schuetzenopoly'
+  | 'kniffel'
+  | 'maumau'
+  | 'letzte-karte'
+  | 'texas-holdem'
+  | 'schach'
+  | 'kaesekaestchen'
+  | 'schuetzenopoly'
 
 const AKZENT: Record<BrettSpiel, string> = {
   kniffel: '#1e3a8a',
@@ -16,6 +22,7 @@ const AKZENT: Record<BrettSpiel, string> = {
   'letzte-karte': '#c96a12',
   'texas-holdem': '#15603f',
   schach: '#44403c',
+  kaesekaestchen: '#a21caf',
   schuetzenopoly: '#4d7c0f',
 }
 
