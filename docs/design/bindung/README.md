@@ -54,10 +54,16 @@ auch ohne Netz. Drei Fächer, aus jedem eine:
    Spiel aus Fach 1 steht -- sonst erledigte eine Runde zwei Aufgaben.
 3. **Etwas Können** (3 oder 4 Sterne in einem Levelspiel, 1 oder 2 neue Level).
 
-Es zählen nur Spiele, die ihr Ergebnis über `processAfterResult` melden. Die
-Partyspiele am Tisch (Imposter, Wer bin ich?, Scharade, Wortbombe, …) melden
-keins, deshalb gibt es keine Party-Aufgabe; Schützenopoly fehlt, weil eine
-Partie länger dauert als eine Tagesaufgabe.
+Es zählen die Spiele, die ihr Ergebnis über `processAfterResult` melden, und
+die Partyspiele am Tisch (Imposter, Wer bin ich?, Scharade, Wortbombe, …) über
+`meldePartyRunde` in `src/progression/partyRunde.ts`. Die speichern kein
+Ergebnis, aber eine gestartete Partie hält die Serie und zählt als Runde --
+für „Runden insgesamt", „verschiedene Spiele" und die Party-Aufgabe in Fach 2
+(eine Runde aus „Party"). Gezählt wird beim Start, weil die Spiele kein
+gemeinsames Ende haben. Ein bestimmtes Partyspiel verlangt keine Aufgabe, und
+für „verschiedene Spiele" schlägt die App keins vor: Dafür braucht es Leute.
+Die Party-Aufgabe führt nach Schützenrunde, das geht allein. Schützenopoly
+fehlt, weil eine Partie länger dauert als eine Tagesaufgabe.
 
 ## XP -- die Zahlen an einer Stelle
 

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { meldePartyRunde } from '@/progression/partyRunde'
 import { Link } from 'react-router-dom'
 import {
   createScharadeMatch,
@@ -102,6 +103,7 @@ export function ScharadePage() {
         }),
       )
       merken(names)
+      void meldePartyRunde('scharade')
       setAblauf(null)
       setRest(null)
     } catch (e) {

@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react'
+import { meldePartyRunde } from '@/progression/partyRunde'
 import { Link } from 'react-router-dom'
 import {
   createWweeMatch,
@@ -55,6 +56,7 @@ export function WerWuerdeEherPage() {
     try {
       setState(createWweeMatch({ names, modi, rounds: runden, sprache }))
       merken(names)
+      void meldePartyRunde('wer-wuerde-eher')
     } catch (e) {
       setError(fehlerSatz(e))
     }

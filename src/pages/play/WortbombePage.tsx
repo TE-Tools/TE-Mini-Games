@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { meldePartyRunde } from '@/progression/partyRunde'
 import { Link } from 'react-router-dom'
 import {
   createWortbombeMatch,
@@ -86,6 +87,7 @@ export function WortbombePage() {
       const match = createWortbombeMatch({ names, stufen, lives: leben, sprache })
       setState(match)
       merken(names)
+      void meldePartyRunde('wortbombe')
       setZuender(Date.now() + zuendzeitMs(match))
     } catch (e) {
       setError(fehlerSatz(e))

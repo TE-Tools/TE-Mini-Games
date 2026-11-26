@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
+import { meldePartyRunde } from '@/progression/partyRunde'
 import { Link } from 'react-router-dom'
 import {
   createWbiMatch,
@@ -98,6 +99,7 @@ export function WerBinIchPage() {
         }),
       )
       merken(names)
+      void meldePartyRunde('wer-bin-ich')
       setGuessText('')
     } catch (e) {
       setError(e instanceof Error ? e.message : w.startFehlgeschlagen)

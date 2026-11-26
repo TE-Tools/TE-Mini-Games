@@ -12,9 +12,11 @@
  * - Was erledigt ist, bleibt erledigt. Um Mitternacht kommen neue Aufgaben,
  *   die alten verfallen ohne Strafe -- es geht nichts verloren, was schon
  *   verdient war.
- * - Es zählen nur Spiele, die ihr Ergebnis über `processAfterResult`
- *   melden. Die Partyspiele am Tisch melden keins; eine Aufgabe, die sie
- *   verlangt, wäre nicht zu schaffen.
+ * - Es zählen Spiele, die ihr Ergebnis über `processAfterResult` melden,
+ *   und die Partyspiele am Tisch über `meldePartyRunde` (partyRunde.ts):
+ *   Die speichern kein Ergebnis, zählen aber als Runde. Eine eigene Aufgabe
+ *   „Spiele N Runden <Partyspiel>" gibt es nicht -- dafür braucht es eine
+ *   Runde Leute, und die hat man nicht jeden Tag.
  */
 
 import type { GameId } from '@/games/types'
@@ -117,15 +119,31 @@ const RUNDEN_JE_SPIEL: readonly { gameId: GameId; ziel: number }[] = [
   { gameId: 'schuetzenrunde', ziel: 1 },
 ]
 
-/** Gruppen, in denen jedes Spiel ein Ergebnis meldet. Party nicht (siehe oben). */
+/** Gruppen für „Spiel N Runden aus …". Party mit einer Runde: Schützenrunde geht allein. */
 const AUFGABEN_GRUPPEN: readonly { gruppe: SpielGruppe; ziel: number }[] = [
   { gruppe: 'knobeln', ziel: 2 },
   { gruppe: 'geschick', ziel: 2 },
   { gruppe: 'tisch', ziel: 1 },
+  { gruppe: 'party', ziel: 1 },
 ]
 
 /** Spiele, die ein Ergebnis melden und deshalb als Vorschlag taugen. */
 const MELDENDE_SPIELE: readonly GameId[] = RUNDEN_JE_SPIEL.map((r) => r.gameId)
+
+/**
+ * Partyspiele, die über `meldePartyRunde` zählen. Vorgeschlagen werden sie
+ * nur für die Party-Aufgabe, nie für „verschiedene Spiele" -- wer allein
+ * auf dem Sofa sitzt, soll nicht zu Scharade geschickt werden.
+ */
+export const PARTY_SPIELE: readonly GameId[] = [
+  'finde-den-imposter',
+  'wer-bin-ich',
+  'stadt-land-fluss',
+  'scharade',
+  'wortbombe',
+  'wer-wuerde-eher',
+  'rueckwaerts',
+]
 
 /* ------------------------------------------------------------ Zufall */
 
@@ -338,7 +356,11 @@ export function vorschlagFuer(
       return (zuletzt?.gameId as GameId | undefined) ?? waehle(LEVEL_SPIELE, r)
     }
     case 'gruppe': {
-      const passend = MELDENDE_SPIELE.filter((g) => gruppeVon(g) === aufgabe.gruppe)
+      // Für Party zuerst Schützenrunde: Die geht auch allein.
+      const passend = [...MELDENDE_SPIELE, ...PARTY_SPIELE].filter(
+        (g) => gruppeVon(g) === aufgabe.gruppe,
+      )
+      if (aufgabe.gruppe === 'party') return passend[0] ?? 'schuetzenrunde'
       return waehle(passend.length > 0 ? passend : MELDENDE_SPIELE, r)
     }
     case 'verschiedene':

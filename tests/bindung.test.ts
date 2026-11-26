@@ -4,10 +4,11 @@
  */
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { db } from '@/offline/db'
+import { db, GUEST_USER_ID } from '@/offline/db'
 import { addXp, getOrCreateGuestProfile, getProfile } from '@/offline/profile'
 import { saveGameResult } from '@/offline/results'
 import { processAfterResult } from '@/progression/afterResult'
+import { meldePartyRunde } from '@/progression/partyRunde'
 import { todayKey } from '@/progression/daily'
 import { aufFeiern, type Feier } from '@/progression/feier'
 import {
@@ -20,6 +21,7 @@ import {
   ALLE_AUFGABEN_XP,
   AUFGABEN_XP_PRO_TAG_MAX,
   LEVEL_SPIELE,
+  PARTY_SPIELE,
   type Spielzug,
   type Tagesaufgabe,
 } from '@/progression/tagesaufgaben'
@@ -64,7 +66,7 @@ function zuegeFuer(a: Tagesaufgabe): Spielzug[] {
       return Array.from({ length: a.ziel }, (_, i) => zug(spiele[i]!))
     }
     case 'gruppe': {
-      const g = (['kopfrechnen', 'trapbound', 'kniffel'] as GameId[]).find(
+      const g = (['kopfrechnen', 'trapbound', 'kniffel', 'scharade'] as GameId[]).find(
         (id) => gruppeVon(id) === a.gruppe,
       )!
       return Array.from({ length: a.ziel }, () => zug(g))
@@ -103,12 +105,21 @@ describe('Tagesaufgaben: Erzeugung', () => {
     expect(wiederholt).toEqual([])
   })
 
-  it('verlangt kein Partyspiel, das kein Ergebnis meldet', () => {
-    const ohneMeldung = ['finde-den-imposter', 'wer-bin-ich', 'scharade', 'wortbombe']
-    for (const datum of tage('2026-01-01', 365)) {
-      const [a, b] = aufgabenFuerTag(datum)
-      expect(ohneMeldung).not.toContain(a!.gameId)
-      expect(b!.gruppe).not.toBe('party')
+  it('verlangt nie ein bestimmtes Partyspiel, aber manchmal eine Runde Party', () => {
+    const jahr = tage('2026-01-01', 365).map(aufgabenFuerTag)
+    for (const [a] of jahr) expect(PARTY_SPIELE).not.toContain(a!.gameId)
+    expect(jahr.some(([, b]) => b!.gruppe === 'party')).toBe(true)
+  })
+
+  it('schickt für die Party-Aufgabe in Schützenrunde, die allein geht', () => {
+    const a: Tagesaufgabe = { id: 'gruppe:party:1', art: 'gruppe', ziel: 1, gruppe: 'party' }
+    expect(vorschlagFuer(a, [], '2026-11-25')).toBe('schuetzenrunde')
+  })
+
+  it('schickt für „verschiedene Spiele" nie in ein Partyspiel', () => {
+    const a: Tagesaufgabe = { id: 'verschiedene:3', art: 'verschiedene', ziel: 3 }
+    for (const datum of tage('2026-01-01', 60)) {
+      expect(PARTY_SPIELE).not.toContain(vorschlagFuer(a, [], datum))
     }
   })
 })
@@ -336,5 +347,53 @@ describe('processAfterResult: Aufgaben und Feiern', () => {
     feiern = []
     await processAfterResult({ gameId: 'kniffel', level: 1 })
     expect(feiern).toEqual([])
+  })
+})
+
+describe('Partyspiele am Tisch', () => {
+  let feiern: Feier[][] = []
+  let ab: () => void = () => {}
+
+  beforeEach(async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 10, 25, 15, 0, 0))
+    await db.delete()
+    await db.open()
+    localStorage.clear()
+    await getOrCreateGuestProfile()
+    feiern = []
+    ab = aufFeiern((f) => feiern.push(f))
+  })
+
+  afterEach(() => {
+    ab()
+    vi.useRealTimers()
+  })
+
+  it('zählt eine gestartete Partie als Runde und hält die Serie', async () => {
+    await meldePartyRunde('scharade')
+    await meldePartyRunde('wortbombe')
+    const zuege = leseTagesstand(GUEST_USER_ID)?.zuege ?? []
+    expect(zuege.map((z) => z.gameId)).toEqual(['scharade', 'wortbombe'])
+    expect(fortschritt({ id: 'verschiedene:3', art: 'verschiedene', ziel: 3 }, zuege)).toBe(2)
+    expect(
+      fortschritt({ id: 'gruppe:party:1', art: 'gruppe', ziel: 1, gruppe: 'party' }, zuege),
+    ).toBe(1)
+    expect((await getProfile())!.streakDays).toBe(1)
+  })
+
+  it('bucht die XP einer fertigen Aufgabe und feiert sie, ohne Punkte für die Partie', async () => {
+    const vorher = (await getProfile())!.totalXp
+    for (let i = 0; i < 4; i++) await meldePartyRunde('scharade')
+    const aufgaben = aufgabenFuerTag(todayKey())
+    const fertig = aufgaben.filter(
+      (a) =>
+        ['runden', 'verschiedene', 'gruppe'].includes(a.art) &&
+        fortschritt(a, leseTagesstand(GUEST_USER_ID)!.zuege) >= a.ziel,
+    )
+    expect(fertig.length).toBeGreaterThan(0)
+    const nachher = (await getProfile())!.totalXp
+    expect(nachher - vorher).toBe(fertig.length * AUFGABE_XP)
+    expect(feiern.flat().filter((f) => f.art === 'aufgabe')).toHaveLength(fertig.length)
   })
 })

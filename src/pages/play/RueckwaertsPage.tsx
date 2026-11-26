@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { meldePartyRunde } from '@/progression/partyRunde'
 import { Link } from 'react-router-dom'
 import {
   RUECKWAERTS,
@@ -127,6 +128,7 @@ export function RueckwaertsPage() {
     try {
       wechsle(createRueckwaertsMatch({ names }))
       merken(names)
+      void meldePartyRunde('rueckwaerts')
     } catch (e) {
       setError(fehlerSatz(e))
     }

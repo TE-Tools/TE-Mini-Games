@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { meldePartyRunde } from '@/progression/partyRunde'
 import { Link } from 'react-router-dom'
 import {
   createMatch,
@@ -123,6 +124,7 @@ export function FindeDenImposterPage() {
         customCategoryLabel: eigeneKategorie?.label,
       })
       merken(names)
+      void meldePartyRunde('finde-den-imposter')
       setAblauf(null)
       setRestSekunden(null)
       setState(match)

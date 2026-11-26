@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { meldePartyRunde } from '@/progression/partyRunde'
 import { Link } from 'react-router-dom'
 import {
   createSlfMatch,
@@ -112,6 +113,7 @@ export function StadtLandFlussPage() {
       }
       setState(createSlfMatch({ names, spalten, seconds: sekunden }))
       merken(names)
+      void meldePartyRunde('stadt-land-fluss')
       setFelder({})
       setAblauf(null)
       setRest(null)
