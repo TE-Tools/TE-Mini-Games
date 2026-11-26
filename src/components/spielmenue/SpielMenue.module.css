@@ -57,6 +57,12 @@
   --akzent-hell: #d046dc;
 }
 
+.menue[data-spiel='dame'] {
+  --akzent: #7a4419;
+  --akzent-tief: #4a280c;
+  --akzent-hell: #a8662c;
+}
+
 .menue[data-spiel='schuetzenopoly'] {
   --akzent: #4d7c0f;
   --akzent-tief: #2c4a06;

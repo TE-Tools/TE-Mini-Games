@@ -22,6 +22,7 @@ export type MenueSpiel = Extract<
   | 'letzte-karte'
   | 'texas-holdem'
   | 'schach'
+  | 'dame'
   | 'kaesekaestchen'
   | 'schuetzenopoly'
 >
@@ -47,7 +48,7 @@ export const LEERE_STATISTIK: MenueStatistik = {
 
 /**
  * Gewonnen? Die Spiele schreiben das verschieden auf: die meisten als
- * `gewonnen`, Schach als `ausgang: 'sieg'` (ein Remis ist kein Sieg).
+ * `gewonnen`, Schach und Dame als `ausgang: 'sieg'` (ein Remis ist kein Sieg).
  */
 export function istSieg(r: Pick<LocalGameResult, 'resultData'>): boolean {
   const d = r.resultData

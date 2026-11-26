@@ -149,7 +149,7 @@ function TextDe() {
       <h3>d) Online-Runden mit Freunden (freiwillig)</h3>
       <p>
         Für gemeinsame Runden (Schützenrunde, Finde den Imposter, Wer bin ich?, Stadt-Land-Fluss,
-        Kniffel, Mau-Mau, Letzte Karte, Texas Hold&apos;em, Schützenopoly, Schach, Käsekästchen)
+        Kniffel, Mau-Mau, Letzte Karte, Texas Hold&apos;em, Schützenopoly, Schach, Käsekästchen, Dame)
         speichern wir für die Dauer der Runde: den Namen, den du für diese Runde eintippst, deinen
         Platz am Tisch und was du in der Runde tust – je nach Spiel deine Rolle, deine Stimme bei
         Abstimmungen, deine Antworten, Würfe, Karten oder Züge. Sichtbar ist das nur für die
@@ -382,7 +382,7 @@ function TextEn() {
       <h3>d) Online rounds with friends (optional)</h3>
       <p>
         For shared rounds (Marksmen Round, Find the Imposter, Who am I?, Categories, Yahtzee-style
-        Dice, Mau-Mau, Last Card, Texas Hold&apos;em, Schützenopoly, Chess, Dots and Boxes) we store
+        Dice, Mau-Mau, Last Card, Texas Hold&apos;em, Schützenopoly, Chess, Dots and Boxes, Checkers) we store
         for the duration of the round: the name you type in for this round, your seat at the table
         and what you do in the round – depending on the game your role, your vote in polls, your
         answers, rolls, cards or moves. Only the other players in the same round can see this; the

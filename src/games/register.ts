@@ -22,6 +22,7 @@ import { letzteKarteGame, mauMauGame } from './maumau'
 import { rueckwaertsGame } from './rueckwaerts'
 import { schachGame } from './schach'
 import { kaesekaestchenGame } from './kaesekaestchen'
+import { dameGame } from './dame'
 
 /** Register all built-in games. Call once at app startup. */
 export function registerAllGames(): void {
@@ -49,4 +50,5 @@ export function registerAllGames(): void {
   registerGame(rueckwaertsGame)
   registerGame(schachGame)
   registerGame(kaesekaestchenGame)
+  registerGame(dameGame)
 }

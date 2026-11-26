@@ -578,6 +578,15 @@
   --kachel-farbe: #a21caf;
 }
 
+:is(.kachel, .held, .ersterSchritt)[data-game='dame'] {
+  /* Nussbaum: das Holz eines Damebretts. Frei, weil Schach Steingrau ist
+     und die Orange- und Rottöne (Kopfrechnen, Wortbombe, Mau-Mau) heller
+     und röter sind. */
+  --kachel-ton: color-mix(in srgb, #7a4419 13%, #ffffff);
+  --kachel-rahmen: color-mix(in srgb, #7a4419 30%, transparent);
+  --kachel-farbe: #7a4419;
+}
+
 :is(.kachel, .held, .ersterSchritt)[data-game='schuetzenopoly'] {
   /* Olivgruen. Das Brett selbst ist dunkles Flaschengruen mit Gold, aber
      beides ist hier schon vergeben: Gruen bei der Schuetzenrunde und bei

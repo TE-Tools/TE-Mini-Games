@@ -28,6 +28,101 @@ function Schwebt({ verzug = 0, children }: { verzug?: number; children: ReactNod
   )
 }
 
+/* ---------------------------------------------------------------- Dame */
+
+/** Ein Damestein von schräg vorn: Rand, Oberseite, eine Rille; die Dame mit Krone. */
+function DameStein({
+  x,
+  y,
+  hell,
+  krone = false,
+}: {
+  x: number
+  y: number
+  hell: boolean
+  krone?: boolean
+}) {
+  const oben = hell ? '#fffaf0' : '#3b322d'
+  const rand = hell ? '#d8c4a3' : '#141010'
+  const rille = hell ? '#cdb592' : '#5a4d46'
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      <path d="M -12 0 v4 a12 7.5 0 0 0 24 0 v-4 z" fill={rand} />
+      <ellipse rx={12} ry={7.5} fill={oben} stroke={rand} strokeWidth={0.8} />
+      <ellipse rx={7.5} ry={4.6} fill="none" stroke={rille} strokeWidth={1.2} />
+      {krone && (
+        <path
+          d="M -6 2 l-1.5 -8 l4.5 3.5 l3 -5.5 l3 5.5 l4.5 -3.5 l-1.5 8 z"
+          fill="#facc15"
+          stroke="#a16207"
+          strokeWidth={0.9}
+          strokeLinejoin="round"
+        />
+      )}
+    </g>
+  )
+}
+
+function BildDame() {
+  const feld = 28
+  const links = 50
+  const oben = 48
+  const felder: ReactNode[] = []
+  for (let reihe = 0; reihe < 3; reihe++) {
+    for (let spalte = 0; spalte < 5; spalte++) {
+      felder.push(
+        <rect
+          key={`${reihe}-${spalte}`}
+          x={links + spalte * feld}
+          y={oben + reihe * feld}
+          width={feld}
+          height={feld}
+          fill={(reihe + spalte) % 2 === 0 ? '#f6ecdc' : '#a87650'}
+        />,
+      )
+    }
+  }
+  const mitte = (spalte: number, reihe: number) => ({
+    x: links + spalte * feld + feld / 2,
+    y: oben + reihe * feld + feld / 2,
+  })
+  const a = mitte(0, 2)
+  const b = mitte(2, 0)
+  return (
+    <>
+      <rect
+        x={links - 4}
+        y={oben - 4}
+        width={feld * 5 + 8}
+        height={feld * 3 + 8}
+        rx={6}
+        fill="#4a280c"
+      />
+      {felder}
+      <DameStein {...mitte(3, 1)} hell={false} />
+      <DameStein {...mitte(1, 1)} hell={false} />
+      {/* Der Sprung: über den schwarzen Stein hinweg */}
+      <path
+        d={`M ${a.x} ${a.y - 8} Q ${a.x + feld / 2} ${b.y - 30} ${b.x} ${b.y - 10}`}
+        fill="none"
+        stroke="#fde68a"
+        strokeWidth={2.5}
+        strokeDasharray="4 4"
+        strokeLinecap="round"
+      />
+      <Schwebt verzug={0}>
+        <DameStein {...b} hell />
+      </Schwebt>
+      <Schwebt verzug={0.8}>
+        <DameStein x={mitte(4, 2).x} y={mitte(4, 2).y - 4} hell krone />
+      </Schwebt>
+      <Schwebt verzug={1.3}>
+        <DameStein x={28} y={44} hell={false} krone />
+      </Schwebt>
+    </>
+  )
+}
+
 /* ------------------------------------------------------------- Würfel */
 
 const AUGEN: Record<number, [number, number][]> = {
@@ -591,6 +686,7 @@ const BILDER: Record<MenueSpiel, () => ReactNode> = {
   'letzte-karte': BildLetzteKarte,
   'texas-holdem': BildTexas,
   schach: BildSchach,
+  dame: BildDame,
   kaesekaestchen: BildKaesekaestchen,
   schuetzenopoly: BildSchuetzenopoly,
 }

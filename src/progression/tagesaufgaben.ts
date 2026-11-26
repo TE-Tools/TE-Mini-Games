@@ -98,7 +98,7 @@ export const LEVEL_SPIELE: readonly GameId[] = [
 /**
  * „Spiele N Runden X": jedes Spiel, das ein Ergebnis meldet, mit einer Zahl,
  * die in 5 bis 15 Minuten zu schaffen ist. Lange Partien (Kniffel, Schach,
- * Texas) zählen einfach, schnelle Runden dreifach. Schützenopoly fehlt mit
+ * Dame, Texas) zählen einfach, schnelle Runden dreifach. Schützenopoly fehlt mit
  * Absicht: Eine Partie dauert länger als eine Tagesaufgabe.
  */
 const RUNDEN_JE_SPIEL: readonly { gameId: GameId; ziel: number }[] = [
@@ -118,6 +118,7 @@ const RUNDEN_JE_SPIEL: readonly { gameId: GameId; ziel: number }[] = [
   { gameId: 'schach', ziel: 1 },
   // Eine Partie auf dem mittleren Blatt dauert drei, vier Minuten.
   { gameId: 'kaesekaestchen', ziel: 2 },
+  { gameId: 'dame', ziel: 1 },
   { gameId: 'schuetzenrunde', ziel: 1 },
 ]
 
