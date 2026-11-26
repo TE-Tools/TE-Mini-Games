@@ -24,6 +24,8 @@ import {
 } from '@/offline'
 import { LevelZiel } from '@/components/levelziel/LevelZiel'
 import { AKZENT } from '@/components/levelziel/zielText'
+import { SoGehts } from '@/components/levelziel/SoGehts'
+import { merkeSoGehtsGesehen } from '@/components/levelziel/soGehtsSpeicher'
 import {
   naechstesZiel,
   punkteBisNaechsterStern,
@@ -43,6 +45,10 @@ import { TrefferSkala } from './sekunde/TrefferSkala'
 type Phase = 'map' | 'ready' | 'running' | 'result'
 
 const MAX_GAME_LEVEL = perfectSecondGame.maxLevel
+
+/** Die Bilder zu den drei Schritten von "So geht's". */
+const SO_GEHTS_BILDER = ['🎯', '🤫', '✋'] as const
+const soGehtsBild = (i: number) => SO_GEHTS_BILDER[i] ?? '⏱️'
 
 export function PerfectSecondPage() {
   const { t } = useSprache()
@@ -145,6 +151,7 @@ export function PerfectSecondPage() {
   }, [])
 
   const startTimer = useCallback(() => {
+    merkeSoGehtsGesehen('perfect-second')
     timerRef.current = createTimer()
     timerRef.current.start()
     setScoreResult(null)
@@ -344,6 +351,12 @@ export function PerfectSecondPage() {
 
       {phase === 'map' && (
         <section className={styles.mapScreen}>
+          <SoGehts
+            spiel="perfect-second"
+            schritte={t.perfekteSekunde.soGehts.map((text, i) => ({ bild: soGehtsBild(i), text }))}
+            mehr={t.perfekteSekunde.regeln}
+            akzent={AKZENT['perfect-second']}
+          />
           <LevelMap
             currentLevel={level}
             highestLevel={highest}

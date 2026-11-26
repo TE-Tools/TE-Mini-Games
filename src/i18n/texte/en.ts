@@ -569,6 +569,13 @@ export const en: Texte = {
     trefferGeschafft: (n: number) => `✓ Hit ${n} done – keep going!`,
     bisher: 'So far:',
     naechsterTreffer: 'Next hit',
+    soGehts: [
+      'Note the target time and tap Start.',
+      'Count in your head – there is no clock to watch.',
+      'Tap STOP right on the target time. Inside the tolerance, the level is cleared.',
+    ],
+    regeln:
+      'Stop the timer as close to the target time as you can – the closer, the more points. The time runs out of sight. If your stop is inside the tolerance (±), the level is cleared. The level in front of a gate needs several hits in a row, and further along the map every level does. Stop it to the millisecond and you earn bonus XP.',
     weiterZuLevel: (nr: number) => `On to level ${nr}`,
   },
 
@@ -604,6 +611,11 @@ export const en: Texte = {
     titel: 'Sudoku',
     einleitung: (proStufe: number) =>
       `Three levels of ${proStufe} puzzles each. Each one is its own track – you do not have to clear the easy ones first.`,
+    soGehts: [
+      'Every row, every column and every 3×3 box gets the digits 1 to 9.',
+      'Not sure? With notes on you enter candidates.',
+      'Easy, Medium and Hard are separate tracks – start wherever you like.',
+    ],
     stufen: {
       leicht: 'Easy',
       mittel: 'Medium',
@@ -2808,6 +2820,13 @@ export const en: Texte = {
     zweiterBlick: 'second chance – look at everything again',
     info: (objekte: number, sekunden: number) => `${objekte} objects · ${sekunden} s`,
     anleitung: 'Memorise all the objects. Then one disappears – tap the missing one.',
+    soGehts: [
+      'Memorise every object while the time runs.',
+      'Then you see them again – one is missing.',
+      'Tap the missing object among the choices.',
+    ],
+    steigerung:
+      'The higher the level, the more objects, the less time and the more choices – later with look-alikes such as a red and a green apple.',
     merken: 'Memorise',
     auswahl: 'Choose',
     schauGenau: 'Look closely – one is missing:',
@@ -2906,6 +2925,13 @@ export const en: Texte = {
     info: (aufgaben: number, sekunden: number) => `${aufgaben} sums · ${sekunden} s`,
     anleitung: (noetig: number, von: number) =>
       `Work it out in your head and type the number. Get ${noetig} of ${von} right to clear the level – get them all and the time you have left earns extra points.`,
+    soGehts: (von: number, noetig: number) => [
+      `${von} sums, one clock – work them out in your head.`,
+      'Type the number, then it is on to the next sum.',
+      `Get ${noetig} of ${von} right to clear the level.`,
+    ],
+    steigerung:
+      'First plus and minus up to 20, then times tables, even division, bigger numbers and sums with several steps – and the higher the level, the less time.',
     aufgabe: (nr: number, von: number) => `Sum ${nr} of ${von}`,
     deineAntwort: 'Your answer',
     weiter: 'Next',
@@ -2924,6 +2950,13 @@ export const en: Texte = {
     info: (schritte: number, felder: number) => `${schritte} steps · ${felder} pads`,
     anleitung:
       'Watch the pads light up – then tap the same order back. One mistake ends the round.',
+    soGehts: [
+      'Watch the pads light up one after another.',
+      'Tap the same order back.',
+      'One mistake ends the round – XP only comes for the whole sequence.',
+    ],
+    steigerung:
+      'As the levels rise, the sequence gets longer, the board grows from 4 to 6 to 9 pads, and the pads flash faster.',
     farbfelder: 'Colour pads',
     feld: (nr: number) => `Pad ${nr}`,
     schauZu: 'Watch …',
@@ -3157,7 +3190,6 @@ export const en: Texte = {
   rueckwaerts: {
     untertitel:
       'Record a word, hear it backwards, copy what you hear – and at the end, guess what it was.',
-    soGehts: 'How it works',
     schritt1: 'One person secretly records a word.',
     schritt2: 'The next one hears it backwards and copies what they hear.',
     schritt3: 'The copy is played backwards again – and the others guess the word.',

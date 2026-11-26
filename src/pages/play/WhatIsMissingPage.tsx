@@ -20,6 +20,8 @@ import {
 } from '@/offline'
 import { LevelZiel } from '@/components/levelziel/LevelZiel'
 import { AKZENT } from '@/components/levelziel/zielText'
+import { SoGehts } from '@/components/levelziel/SoGehts'
+import { merkeSoGehtsGesehen } from '@/components/levelziel/soGehtsSpeicher'
 import { naechstesZiel, type LevelZiel as Ziel } from '@/components/levelziel/naechstesZiel'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
@@ -43,6 +45,10 @@ function gridStyle(count: number): CSSProperties {
 }
 
 const MAX_GAME_LEVEL = whatIsMissingGame.maxLevel
+
+/** Die Bilder zu den drei Schritten von "So geht's". */
+const SO_GEHTS_BILDER = ['👀', '❓', '👆'] as const
+const soGehtsBild = (i: number) => SO_GEHTS_BILDER[i] ?? '👁️'
 
 export function WhatIsMissingPage() {
   const navigate = useNavigate()
@@ -135,6 +141,7 @@ export function WhatIsMissingPage() {
 
   const startRound = useCallback(() => {
     if (!config) return
+    merkeSoGehtsGesehen('what-is-missing')
     abgerechnet.current = false
     setHilfe(false)
     setScoreResult(null)
@@ -297,6 +304,12 @@ export function WhatIsMissingPage() {
 
       {phase === 'map' && (
         <section className={styles.ready}>
+          <SoGehts
+            spiel="what-is-missing"
+            schritte={w.soGehts.map((text, i) => ({ bild: soGehtsBild(i), text }))}
+            mehr={`${w.anleitung} ${w.steigerung}`}
+            akzent={AKZENT['what-is-missing']}
+          />
           <LevelMap
             currentLevel={level}
             highestLevel={highest}

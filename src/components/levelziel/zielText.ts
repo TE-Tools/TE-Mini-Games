@@ -37,4 +37,5 @@ export const AKZENT = {
   sudoku: '#334155',
   'bienen-flow': '#ca8a04',
   'squishy-dumplings': '#db2777',
+  rueckwaerts: '#0e7490',
 } as const

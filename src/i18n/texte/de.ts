@@ -577,6 +577,13 @@ export const de = {
     trefferGeschafft: (n: number) => `✓ Treffer ${n} geschafft – weiter so!`,
     bisher: 'Bisher:',
     naechsterTreffer: 'Nächster Treffer',
+    soGehts: [
+      'Merk dir die Zielzeit und tippe auf Start.',
+      'Zähl im Kopf mit – eine Uhr siehst du nicht.',
+      'Tippe STOP genau zur Zielzeit. Innerhalb der Toleranz ist das Level geschafft.',
+    ],
+    regeln:
+      'Stoppe den Timer möglichst genau zur Zielzeit – je näher, desto mehr Punkte. Die Zeit läuft unsichtbar. Liegt dein Stopp innerhalb der Toleranz (±), ist das Level geschafft. Das Level vor einem Tor verlangt mehrere Treffer hintereinander, weiter hinten auf der Karte jedes Level. Wer auf die Millisekunde genau stoppt, bekommt Sonder-XP.',
     weiterZuLevel: (nr: number) => `Weiter zu Level ${nr}`,
   },
 
@@ -612,6 +619,11 @@ export const de = {
     titel: 'Sudoku',
     einleitung: (proStufe: number) =>
       `Drei Stufen zu je ${proStufe} Rätseln. Jede Stufe ist eine eigene Strecke -- du musst nicht erst alle leichten lösen.`,
+    soGehts: [
+      'Jede Zeile, jede Spalte und jeder 3×3-Kasten bekommt die Ziffern 1 bis 9.',
+      'Unsicher? Mit Notizen an trägst du Kandidaten ein.',
+      'Leicht, Mittel und Schwer sind eigene Strecken – fang an, wo du willst.',
+    ],
     stufen: {
       leicht: 'Leicht',
       mittel: 'Mittel',
@@ -2876,6 +2888,13 @@ export const de = {
     zweiterBlick: 'zweite Chance – alles noch einmal ansehen',
     info: (objekte: number, sekunden: number) => `${objekte} Objekte · ${sekunden} s Zeit`,
     anleitung: 'Merke dir alle Objekte. Danach fehlt eines – tippe auf das fehlende.',
+    soGehts: [
+      'Merke dir alle Objekte, solange die Zeit läuft.',
+      'Danach siehst du sie wieder – eines fehlt.',
+      'Tippe in der Auswahl auf das fehlende Objekt.',
+    ],
+    steigerung:
+      'Je höher das Level, desto mehr Objekte, desto kürzer die Zeit und desto größer die Auswahl – später auch mit Doppelgängern wie rotem und grünem Apfel.',
     merken: 'Merken',
     auswahl: 'Auswahl',
     schauGenau: 'Schau genau hin – eines fehlt:',
@@ -2975,6 +2994,13 @@ export const de = {
     info: (aufgaben: number, sekunden: number) => `${aufgaben} Aufgaben · ${sekunden} s`,
     anleitung: (noetig: number, von: number) =>
       `Rechne im Kopf und tippe die Zahl ein. ${noetig} von ${von} richtig, dann ist das Level geschafft – wer alle hat, bekommt für die übrige Zeit noch Punkte dazu.`,
+    soGehts: (von: number, noetig: number) => [
+      `${von} Aufgaben, eine Uhr – rechne im Kopf.`,
+      'Tippe die Zahl ein, dann geht es zur nächsten Aufgabe.',
+      `${noetig} von ${von} richtig, und das Level ist geschafft.`,
+    ],
+    steigerung:
+      'Erst Plus und Minus bis 20, dann kommen das Einmaleins, glattes Teilen, größere Zahlen und Aufgaben mit mehreren Schritten dazu – und je höher das Level, desto weniger Zeit.',
     aufgabe: (nr: number, von: number) => `Aufgabe ${nr} von ${von}`,
     deineAntwort: 'Deine Antwort',
     weiter: 'Weiter',
@@ -2993,6 +3019,13 @@ export const de = {
     info: (schritte: number, felder: number) => `${schritte} Schritte · ${felder} Felder`,
     anleitung:
       'Schau zu, wie die Felder aufleuchten – danach tippst du dieselbe Reihenfolge nach. Ein Fehler beendet die Runde.',
+    soGehts: [
+      'Schau zu, wie die Felder nacheinander aufleuchten.',
+      'Tippe dieselbe Reihenfolge nach.',
+      'Ein Fehler beendet die Runde – XP gibt es für die ganze Folge.',
+    ],
+    steigerung:
+      'Mit dem Level wird die Folge länger, das Brett wächst von 4 über 6 auf 9 Felder, und die Felder leuchten schneller.',
     farbfelder: 'Farbfelder',
     feld: (nr: number) => `Feld ${nr}`,
     schauZu: 'Schau zu …',
@@ -3234,7 +3267,6 @@ export const de = {
   rueckwaerts: {
     untertitel:
       'Ein Wort einsprechen, rückwärts anhören, nachsprechen – und am Ende erraten, was es war.',
-    soGehts: 'So geht’s',
     schritt1: 'Eine Person spricht heimlich ein Wort ein.',
     schritt2: 'Die nächste hört es rückwärts und spricht nach, was sie hört.',
     schritt3: 'Die Nachahmung läuft wieder rückwärts – und die anderen raten das Wort.',

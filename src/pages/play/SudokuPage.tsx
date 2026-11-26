@@ -65,6 +65,8 @@ import { LevelMap } from '@/components/level-map/LevelMap'
 import { BelohnungsKnopf } from '@/components/werbung/BelohnungsKnopf'
 import { LevelZiel } from '@/components/levelziel/LevelZiel'
 import { AKZENT } from '@/components/levelziel/zielText'
+import { SoGehts } from '@/components/levelziel/SoGehts'
+import { merkeSoGehtsGesehen } from '@/components/levelziel/soGehtsSpeicher'
 import {
   naechstesZiel,
   punkteBisNaechsterStern,
@@ -94,6 +96,10 @@ interface Ende {
 
 /** So oft wird die laufende Partie weggeschrieben. */
 const SICHERN_ALLE_S = 10
+
+/** Die Bilder zu den drei Schritten von "So geht's". */
+const SO_GEHTS_BILDER = ['🔢', '✏️', '🧭'] as const
+const soGehtsBild = (i: number) => SO_GEHTS_BILDER[i] ?? '🔢'
 
 function zeitText(sek: number): string {
   const s = Math.max(0, Math.floor(sek))
@@ -248,6 +254,7 @@ export function SudokuPage() {
   // ----------------------------------------------------------- Start
 
   const starteLevel = useCallback((levelNr: number, neu = false) => {
+    merkeSoGehtsGesehen('sudoku')
     const ziel = Math.max(1, Math.min(SUDOKU_MAX_LEVEL, levelNr))
     const rr = raetsel(ziel)
     const partie = neu ? null : lesePartie(ziel)
@@ -590,7 +597,12 @@ export function SudokuPage() {
           </span>
         </header>
 
-        <p className={shell.hint}>{t.sudoku.einleitung(LEVEL_PRO_STUFE)}</p>
+        <SoGehts
+          spiel="sudoku"
+          schritte={t.sudoku.soGehts.map((text, i) => ({ bild: soGehtsBild(i), text }))}
+          mehr={`${t.sudoku.einleitung(LEVEL_PRO_STUFE)} ${t.sudoku.fussNormal}`}
+          akzent={AKZENT.sudoku}
+        />
 
         <div className={styles.stufen}>
           {SCHWIERIGKEITEN.map((s) => {

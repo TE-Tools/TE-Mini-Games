@@ -5,17 +5,6 @@
   --party-rand: #22d3ee;
 }
 
-.schritte {
-  margin: 0;
-  padding-left: 1.3rem;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  font-size: var(--text-sm);
-  line-height: 1.45;
-  text-align: left;
-}
-
 .zeichen {
   font-size: 3rem;
   line-height: 1;

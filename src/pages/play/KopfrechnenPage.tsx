@@ -23,6 +23,8 @@ import {
 } from '@/offline'
 import { LevelZiel } from '@/components/levelziel/LevelZiel'
 import { AKZENT } from '@/components/levelziel/zielText'
+import { SoGehts } from '@/components/levelziel/SoGehts'
+import { merkeSoGehtsGesehen } from '@/components/levelziel/soGehtsSpeicher'
 import {
   naechstesZiel,
   punkteBisNaechsterStern,
@@ -44,6 +46,10 @@ import { Sterne } from '@/components/sterne/Sterne'
 type Phase = 'map' | 'ready' | 'play' | 'result'
 
 const MAX_GAME_LEVEL = kopfrechnenGame.maxLevel
+
+/** Die Bilder zu den drei Schritten von "So geht's". */
+const SO_GEHTS_BILDER = ['🧮', '⌨️', '✅'] as const
+const soGehtsBild = (i: number) => SO_GEHTS_BILDER[i] ?? '➕'
 
 export function KopfrechnenPage() {
   const navigate = useNavigate()
@@ -246,6 +252,7 @@ export function KopfrechnenPage() {
 
   const startRound = useCallback(() => {
     if (!config) return
+    merkeSoGehtsGesehen('kopfrechnen')
     setScoreResult(null)
     setCompletedLevel(null)
     setIndex(0)
@@ -369,6 +376,14 @@ export function KopfrechnenPage() {
 
       {phase === 'map' && (
         <section className={shell.section}>
+          <SoGehts
+            spiel="kopfrechnen"
+            schritte={k
+              .soGehts(AUFGABEN_JE_RUNDE, NOETIG_ZUM_BESTEHEN)
+              .map((text, i) => ({ bild: soGehtsBild(i), text }))}
+            mehr={`${k.anleitung(NOETIG_ZUM_BESTEHEN, AUFGABEN_JE_RUNDE)} ${k.steigerung}`}
+            akzent={AKZENT.kopfrechnen}
+          />
           <LevelMap
             currentLevel={level}
             highestLevel={highest}

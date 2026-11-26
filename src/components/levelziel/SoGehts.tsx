@@ -18,12 +18,14 @@ interface Props {
   /** Kennung für den Speicher, meist die gameId. */
   spiel: string
   schritte: readonly SoGehtsSchritt[]
-  /** Die vollständige Erklärung hinter "Mehr erklären". */
-  mehr: string
+  /** Die vollständige Erklärung hinter "Mehr erklären"; ohne sie kein Knopf. */
+  mehr?: string
+  /** Ein kurzer Satz unter den Schritten, sichtbar, solange die Karte offen ist. */
+  fussnote?: string
   akzent?: string
 }
 
-export function SoGehts({ spiel, schritte, mehr, akzent }: Props) {
+export function SoGehts({ spiel, schritte, mehr, fussnote, akzent }: Props) {
   const { t } = useSprache()
   const z = t.levelZiel
   const [offen, setOffen] = useState(() => !soGehtsGesehen(spiel))
@@ -65,19 +67,26 @@ export function SoGehts({ spiel, schritte, mehr, akzent }: Props) {
               </li>
             ))}
           </ol>
-          <button
-            type="button"
-            className={styles.mehrKnopf}
-            onClick={() => setAusfuehrlich((a) => !a)}
-            aria-expanded={ausfuehrlich}
-            aria-controls={mehrId}
-          >
-            {ausfuehrlich ? z.wenigerErklaeren : z.mehrErklaeren}
-          </button>
-          {ausfuehrlich && (
-            <p id={mehrId} className={styles.mehr}>
-              {mehr}
-            </p>
+          {fussnote && <p className={styles.fussnote}>{fussnote}</p>}
+          {mehr ? (
+            <>
+              <button
+                type="button"
+                className={styles.mehrKnopf}
+                onClick={() => setAusfuehrlich((a) => !a)}
+                aria-expanded={ausfuehrlich}
+                aria-controls={mehrId}
+              >
+                {ausfuehrlich ? z.wenigerErklaeren : z.mehrErklaeren}
+              </button>
+              {ausfuehrlich && (
+                <p id={mehrId} className={styles.mehr}>
+                  {mehr}
+                </p>
+              )}
+            </>
+          ) : (
+            <div className={styles.abschluss} />
           )}
         </div>
       )}

@@ -28,6 +28,9 @@ import {
   type Wiedergabe,
 } from '@/games/rueckwaerts'
 import { useSprache } from '@/i18n/sprache'
+import { SoGehts } from '@/components/levelziel/SoGehts'
+import { merkeSoGehtsGesehen } from '@/components/levelziel/soGehtsSpeicher'
+import { AKZENT } from '@/components/levelziel/zielText'
 import { akzentStil } from '@/components/party/akzent'
 import { useSpielerGruppe } from '@/components/party/gruppe'
 import { PartyHeld, PartyKarte, PartyKopf, StartKnopf } from '@/components/party/PartySetup'
@@ -38,6 +41,10 @@ import shell from './PartyShell.module.css'
 import styles from './RueckwaertsPage.module.css'
 
 const DEFAULT_NAMES = ['Thomas', 'Marina', 'Phillip']
+
+/** Die Bilder zu den drei Schritten von "So geht's". */
+const SO_GEHTS_BILDER = ['🤫', '⏪', '🤔'] as const
+const soGehtsBild = (i: number) => SO_GEHTS_BILDER[i] ?? '⏪'
 
 type AufnahmeLage = 'aus' | 'wartet' | 'laeuft'
 
@@ -127,6 +134,7 @@ export function RueckwaertsPage() {
     setError(null)
     try {
       wechsle(createRueckwaertsMatch({ names }))
+      merkeSoGehtsGesehen('rueckwaerts')
       merken(names)
       void meldePartyRunde('rueckwaerts')
     } catch (e) {
@@ -237,14 +245,15 @@ export function RueckwaertsPage() {
         <PartyKopf titel={t.spiele.rueckwaerts} />
         <PartyHeld icon="⏪">{r.untertitel}</PartyHeld>
 
-        <PartyKarte titel={r.soGehts}>
-          <ol className={styles.schritte}>
-            <li>{r.schritt1}</li>
-            <li>{r.schritt2}</li>
-            <li>{r.schritt3}</li>
-          </ol>
-          <p className={shell.meta}>{r.zuZweit}</p>
-        </PartyKarte>
+        <SoGehts
+          spiel="rueckwaerts"
+          schritte={[r.schritt1, r.schritt2, r.schritt3].map((text, i) => ({
+            bild: soGehtsBild(i),
+            text,
+          }))}
+          fussnote={r.zuZweit}
+          akzent={AKZENT.rueckwaerts}
+        />
 
         <PartyKarte
           titel={g.spielerAnzahl(RUECKWAERTS.minSpieler, RUECKWAERTS.maxSpieler)}

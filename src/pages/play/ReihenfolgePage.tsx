@@ -21,6 +21,8 @@ import {
 } from '@/offline'
 import { LevelZiel } from '@/components/levelziel/LevelZiel'
 import { AKZENT } from '@/components/levelziel/zielText'
+import { SoGehts } from '@/components/levelziel/SoGehts'
+import { merkeSoGehtsGesehen } from '@/components/levelziel/soGehtsSpeicher'
 import { naechstesZiel, type LevelZiel as Ziel } from '@/components/levelziel/naechstesZiel'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
@@ -50,6 +52,10 @@ const PAD_FARBEN = [
 ]
 
 const MAX_GAME_LEVEL = reihenfolgeGame.maxLevel
+
+/** Die Bilder zu den drei Schritten von "So geht's". */
+const SO_GEHTS_BILDER = ['👀', '👆', '⚠️'] as const
+const soGehtsBild = (i: number) => SO_GEHTS_BILDER[i] ?? '🔢'
 
 export function ReihenfolgePage() {
   const navigate = useNavigate()
@@ -182,6 +188,7 @@ export function ReihenfolgePage() {
 
   const startRound = useCallback(() => {
     if (!config) return
+    merkeSoGehtsGesehen('reihenfolge')
     abgerechnet.current = false
     setHilfe(false)
     setScoreResult(null)
@@ -375,6 +382,12 @@ export function ReihenfolgePage() {
 
       {phase === 'map' && (
         <section className={shell.section}>
+          <SoGehts
+            spiel="reihenfolge"
+            schritte={r.soGehts.map((text, i) => ({ bild: soGehtsBild(i), text }))}
+            mehr={`${r.anleitung} ${r.steigerung}`}
+            akzent={AKZENT.reihenfolge}
+          />
           <LevelMap
             currentLevel={level}
             highestLevel={highest}
