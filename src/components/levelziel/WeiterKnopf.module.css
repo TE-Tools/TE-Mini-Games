@@ -1,0 +1,11 @@
+/*
+ * "Weiter spielen" unter der Levelkarte bleibt am unteren Rand stehen, bis
+ * die Karte zu Ende gescrollt ist. Sonst liegt der Knopf beim ersten Besuch
+ * (So geht's offen, Karte darunter) weit unter dem sichtbaren Bereich.
+ */
+/* Doppelt, damit es gegen `position: relative` der Knopfklassen gewinnt. */
+.klebend.klebend {
+  position: sticky;
+  bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  z-index: 5;
+}

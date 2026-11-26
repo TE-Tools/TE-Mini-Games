@@ -3,7 +3,7 @@
  * der Umwandlung und die Karte am Ende. Für die Partie gegen den Computer
  * und für die Online-Partie dieselben Bausteine.
  */
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { DAME, LAEUFER, SPRINGER, TURM, type Farbe } from '@/games/schach'
 import { useSprache } from '@/i18n/sprache'
 import { figurName } from './figuren'
@@ -167,7 +167,8 @@ export function Kopf({
 }: {
   titel: string
   onZurueck: () => void
-  rechts?: string
+  /** Text wird zur Marke (Raumcode), alles andere steht, wie es ist. */
+  rechts?: ReactNode
 }) {
   const { t } = useSprache()
   return (
@@ -181,7 +182,11 @@ export function Kopf({
         ←
       </button>
       <h1 className={shell.title}>{titel}</h1>
-      {rechts ? <span className={shell.levelBadge}>{rechts}</span> : <span aria-hidden="true" />}
+      {typeof rechts === 'string' ? (
+        <span className={shell.levelBadge}>{rechts}</span>
+      ) : (
+        (rechts ?? <span aria-hidden="true" />)
+      )}
     </header>
   )
 }

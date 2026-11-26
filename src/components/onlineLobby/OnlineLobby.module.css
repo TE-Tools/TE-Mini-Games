@@ -306,6 +306,11 @@
   color: #92400e;
 }
 
+.marke[data-art='zusatz'] {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 .marke[data-art='du'] {
   background: color-mix(in srgb, var(--akzent, #5a3ce0) 14%, #ffffff);
   color: color-mix(in srgb, var(--akzent, #5a3ce0) 85%, #000000);

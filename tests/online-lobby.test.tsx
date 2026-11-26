@@ -90,6 +90,12 @@ describe('WarteSpieler', () => {
     { seat: 2, name: 'Lena', is_you: false },
   ]
 
+  it('zeigt eine Zusatzmarke hinter dem Namen, etwa den Zug', () => {
+    const mitZug = [{ ...zwei[0]!, zusatz: '🌿 Jäger' }, zwei[1]!]
+    render(<WarteSpieler spieler={mitZug} gastgeberPlatz={1} min={2} ichBinGastgeber />)
+    expect(screen.getByText('🌿 Jäger')).toBeInTheDocument()
+  })
+
   it('zählt, auf wie viele noch gewartet wird', () => {
     render(<WarteSpieler spieler={zwei} gastgeberPlatz={1} min={4} ichBinGastgeber />)
     expect(screen.getByText('Thomas')).toBeInTheDocument()

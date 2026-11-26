@@ -25,6 +25,7 @@ import {
 import { LevelZiel } from '@/components/levelziel/LevelZiel'
 import { AKZENT } from '@/components/levelziel/zielText'
 import { SoGehts } from '@/components/levelziel/SoGehts'
+import weiter from '@/components/levelziel/WeiterKnopf.module.css'
 import { merkeSoGehtsGesehen } from '@/components/levelziel/soGehtsSpeicher'
 import {
   naechstesZiel,
@@ -366,7 +367,11 @@ export function PerfectSecondPage() {
             gameLabel={t.spiele['perfect-second']}
             mitspieler={mitspieler}
           />
-          <button type="button" className={styles.primaryBtn} onClick={() => selectLevel(level)}>
+          <button
+            type="button"
+            className={`${styles.primaryBtn} ${weiter.klebend}`}
+            onClick={() => selectLevel(level)}
+          >
             {t.spiel.weiterSpielen(level)}
           </button>
           <Link to="/profile" className={styles.homeLink}>

@@ -24,6 +24,7 @@ import {
 import { LevelZiel } from '@/components/levelziel/LevelZiel'
 import { AKZENT } from '@/components/levelziel/zielText'
 import { SoGehts } from '@/components/levelziel/SoGehts'
+import weiter from '@/components/levelziel/WeiterKnopf.module.css'
 import { merkeSoGehtsGesehen } from '@/components/levelziel/soGehtsSpeicher'
 import {
   naechstesZiel,
@@ -393,7 +394,11 @@ export function KopfrechnenPage() {
             gameLabel={titel}
             mitspieler={mitspieler}
           />
-          <button type="button" className={shell.primaryBtn} onClick={() => selectLevel(level)}>
+          <button
+            type="button"
+            className={`${shell.primaryBtn} ${weiter.klebend}`}
+            onClick={() => selectLevel(level)}
+          >
             {t.spiel.weiterSpielen(level)}
           </button>
           <p className={shell.hint}>{t.levelSpiele.freiesLevel}</p>

@@ -463,7 +463,11 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
 
       {m.phase === 'lobby' && (
         <WarteSpieler
-          spieler={state.players.map((p) => ({ ...p, is_you: p.seat === me.seat }))}
+          spieler={state.players.map((p) => ({
+            ...p,
+            is_you: p.seat === me.seat,
+            zusatz: `${zugById(p.zug_id).badge} ${zugKurz(t, p.zug_id)}`,
+          }))}
           gastgeberPlatz={GASTGEBER_PLATZ}
           min={1}
           ichBinGastgeber={m.is_host}

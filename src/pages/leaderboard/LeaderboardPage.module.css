@@ -29,9 +29,25 @@
   gap: var(--space-3);
 }
 
-/* Die drei Ansichten sollen auf ein schmales Handy in eine Zeile passen. */
-.filter > :global([role='radiogroup']) > :global([role='radio']) {
+/*
+ * Die drei Ansichten in einer Zeile und ohne Umbruch: Jede Spalte ist
+ * mindestens so breit wie ihr Text, der Rest verteilt sich gleich. Auf ganz
+ * schmalen Geräten (320 px) wird die Schrift eine Stufe kleiner.
+ */
+.filter > :global([role='radiogroup']):first-child {
+  grid-template-columns: repeat(3, minmax(max-content, 1fr));
+}
+
+.filter > :global([role='radiogroup']):first-child > :global([role='radio']) {
   padding-inline: var(--space-2);
+  white-space: nowrap;
+}
+
+@media (max-width: 359px) {
+  .filter > :global([role='radiogroup']):first-child > :global([role='radio']) {
+    padding-inline: var(--space-1);
+    font-size: var(--text-xs);
+  }
 }
 
 /*

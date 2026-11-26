@@ -140,6 +140,8 @@ export interface LobbySpieler {
   name: string
   is_you: boolean
   is_bot?: boolean
+  /** Eine kleine Marke hinter dem Namen, z. B. der Zug in der Schützenrunde. */
+  zusatz?: string
 }
 
 /**
@@ -195,6 +197,11 @@ export function WarteSpieler({
                 {p.is_bot ? '🤖' : anfang(p.name)}
               </span>
               <span className={styles.name}>{p.name}</span>
+              {p.zusatz && (
+                <span className={styles.marke} data-art="zusatz">
+                  {p.zusatz}
+                </span>
+              )}
               {gastgeber && (
                 <span className={styles.marke} data-art="gastgeber">
                   <span aria-hidden="true">★ </span>

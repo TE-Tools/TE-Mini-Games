@@ -9,7 +9,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getDailyChallenge, type DailyChallengeConfig } from '@/progression/daily'
+import { getDailyChallenge, todayKey, type DailyChallengeConfig } from '@/progression/daily'
 import { hasCompletedDaily, getDailyAttempt, saveDailyAttempt } from '@/offline/daily'
 import type { LocalDailyAttempt } from '@/offline/db'
 import {
@@ -54,6 +54,8 @@ export function DailyPage() {
   const [config, setConfig] = useState<DailyChallengeConfig | null>(null)
   const [attempt, setAttempt] = useState<LocalDailyAttempt | null>(null)
   const [jetzt, setJetzt] = useState(() => new Date())
+  /** Der Tag, für den geladen wird. Wechselt um Mitternacht, siehe unten. */
+  const [ladeTag, setLadeTag] = useState(() => todayKey())
 
   const [psPhase, setPsPhase] = useState<'ready' | 'running'>('ready')
   const timerRef = useRef<ReturnType<typeof createTimer> | null>(null)
@@ -68,6 +70,7 @@ export function DailyPage() {
     let cancelled = false
     ;(async () => {
       const c = getDailyChallenge()
+      setAttempt(null)
       if (cancelled) return
       setConfig(c)
       setPsConfig(createPerfectSecondLevel(c.level))
@@ -87,12 +90,30 @@ export function DailyPage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [ladeTag])
 
   useEffect(() => {
-    const id = window.setInterval(() => setJetzt(new Date()), TAKT_MS)
-    return () => window.clearInterval(id)
+    const ticken = () => setJetzt(new Date())
+    const id = window.setInterval(ticken, TAKT_MS)
+    // Ein schlafendes Handy hält den Takt an: beim Zurückkommen sofort neu.
+    const sichtbar = () => {
+      if (document.visibilityState === 'visible') ticken()
+    }
+    document.addEventListener('visibilitychange', sichtbar)
+    return () => {
+      window.clearInterval(id)
+      document.removeEventListener('visibilitychange', sichtbar)
+    }
   }, [])
+
+  // Bleibt die Seite über Mitternacht offen, kommt das neue Tagesziel von
+  // selbst -- aber nie mitten in einen Versuch hinein: Der läuft zu Ende und
+  // zählt für den Tag, an dem er begonnen hat.
+  const heute = todayKey(jetzt)
+  const ruhig = phase === 'ready' || phase === 'done' || phase === 'already'
+  if (ruhig && config !== null && heute !== config.dateKey && ladeTag !== heute) {
+    setLadeTag(heute)
+  }
 
   const start = useCallback(() => {
     if (!config) return

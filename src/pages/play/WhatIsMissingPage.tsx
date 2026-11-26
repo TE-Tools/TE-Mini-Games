@@ -21,6 +21,7 @@ import {
 import { LevelZiel } from '@/components/levelziel/LevelZiel'
 import { AKZENT } from '@/components/levelziel/zielText'
 import { SoGehts } from '@/components/levelziel/SoGehts'
+import weiter from '@/components/levelziel/WeiterKnopf.module.css'
 import { merkeSoGehtsGesehen } from '@/components/levelziel/soGehtsSpeicher'
 import { naechstesZiel, type LevelZiel as Ziel } from '@/components/levelziel/naechstesZiel'
 import { processAfterResult } from '@/progression'
@@ -319,7 +320,11 @@ export function WhatIsMissingPage() {
             gameLabel={titel}
             mitspieler={mitspieler}
           />
-          <button type="button" className={styles.primaryBtn} onClick={() => selectLevel(level)}>
+          <button
+            type="button"
+            className={`${styles.primaryBtn} ${weiter.klebend}`}
+            onClick={() => selectLevel(level)}
+          >
             {t.spiel.weiterSpielen(level)}
           </button>
           <p className={styles.hint}>{t.levelSpiele.freiesLevel}</p>

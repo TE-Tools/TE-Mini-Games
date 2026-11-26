@@ -12,7 +12,7 @@ import { Link } from 'react-router-dom'
 import { getCurrentUser } from '@/auth/authService'
 import { spielName, useSprache } from '@/i18n/sprache'
 import { brettAkzent } from '@/components/onlineLobby/akzent'
-import { CodeFeld, RaumCode, WarteSpieler } from '@/components/onlineLobby/OnlineLobby'
+import { CodeFeld, RaumCode, StatusPille, WarteSpieler } from '@/components/onlineLobby/OnlineLobby'
 import { ermittleSpielerName, istEchterName } from '@/services/spielername'
 import {
   amZug,
@@ -450,7 +450,11 @@ export function SchachOnline({ onZurueck }: Props) {
   if (match.phase === 'lobby') {
     return (
       <main className={`${shell.page} ${styles.seite}`} style={brettAkzent('schach')}>
-        <Kopf titel={to.warteraum} onZurueck={() => void verlassen()} />
+        <Kopf
+          titel={to.warteraum}
+          onZurueck={() => void verlassen()}
+          rechts={<StatusPille status="online" />}
+        />
         <section className={styles.abschnitt}>
           <RaumCode code={match.code} spiel={spielName(t, 'schach', 'Schach')} />
           <p className={styles.erklaerung}>{to.codeWeitergeben(match.is_host)}</p>
