@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
 import {
   ZUEGE,
   zugById,
@@ -9,6 +8,19 @@ import {
   type RoleId,
 } from '@/games/schuetzenrunde'
 import { useSprache } from '@/i18n/sprache'
+import { ChipAuswahl } from '@/components/party/Chips'
+import { PartyKarte, ZweiterKnopf } from '@/components/party/PartySetup'
+import {
+  CodeFeld,
+  LobbyHinweis,
+  LobbyKnopf,
+  LobbyKnopfLink,
+  LobbyMeldung,
+  LobbyZweitKnopf,
+  OderTrenner,
+  RaumCode,
+  WarteSpieler,
+} from '@/components/onlineLobby/OnlineLobby'
 import {
   aussageText,
   fraktionName,
@@ -54,6 +66,9 @@ import { trySyncNow } from '@/services/remoteSync'
 import { OeffentlicheRaeume } from './OeffentlicheRaeume'
 import raum from './OeffentlicheRaeume.module.css'
 import styles from './SchuetzenrundePage.module.css'
+
+/** Wer eröffnet, sitzt auf Platz 0 (`sr_create_match`, Migration 007). */
+const GASTGEBER_PLATZ = 0
 
 /** Wie oft wir beim Server nachfassen, falls Realtime nichts liefert. */
 const POLL_MS = 3000
@@ -245,12 +260,12 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
 
   if (!isOnlineAvailable) {
     return (
-      <section className={styles.actions}>
-        <p className={styles.hint}>{o.keinServer}</p>
-        <button type="button" className={styles.primaryBtn} onClick={onBack}>
-          {o.zurueckZuBots}
-        </button>
-      </section>
+      <LobbyHinweis
+        icon="📡"
+        aktionen={<LobbyKnopf onClick={onBack}>{o.zurueckZuBots}</LobbyKnopf>}
+      >
+        {o.keinServer}
+      </LobbyHinweis>
     )
   }
 
@@ -258,107 +273,92 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
 
   if (!signedIn) {
     return (
-      <section className={styles.actions}>
-        <p className={styles.hint}>{o.ohneKonto}</p>
-        <Link to="/auth" className={styles.primaryBtn} style={{ textAlign: 'center' }}>
-          {o.anmelden}
-        </Link>
-        <button type="button" className={styles.secondaryBtn} onClick={onBack}>
-          {o.lieberBots}
-        </button>
-      </section>
+      <LobbyHinweis
+        icon="🔑"
+        aktionen={
+          <>
+            <LobbyKnopfLink to="/auth">{o.anmelden}</LobbyKnopfLink>
+            <LobbyZweitKnopf onClick={onBack}>{o.lieberBots}</LobbyZweitKnopf>
+          </>
+        }
+      >
+        {o.ohneKonto}
+      </LobbyHinweis>
     )
   }
 
   if (!matchId || !state) {
+    const beitreten = () =>
+      void run(async () => {
+        const joined = await joinOnlineMatch(code)
+        setMatchId(joined.match_id)
+      })
     return (
       <>
-        {error && <p className={styles.errorLine}>{error}</p>}
+        {error && <LobbyMeldung>{error}</LobbyMeldung>}
 
-        <fieldset className={styles.sizes}>
-          <legend className={styles.sizesLegend}>{o.wieVielePlaetze}</legend>
-          {[8, 10, 12, 16].map((option) => (
-            <button
-              key={option}
-              type="button"
-              className={option === size ? styles.sizeActive : styles.size}
-              onClick={() => setSize(option)}
-            >
-              {option}
-            </button>
-          ))}
-        </fieldset>
-        <p className={styles.muted}>{o.freiePlaetze}</p>
-
-        <fieldset className={styles.sizes}>
-          <legend className={styles.sizesLegend}>{s.deinZug}</legend>
-          {ZUEGE.slice(0, zugCount(size)).map((zug) => (
-            <button
-              key={zug.id}
-              type="button"
-              className={zug.id === zugId ? styles.sizeActive : styles.size}
-              onClick={() => setZugId(zug.id)}
-            >
-              {zug.badge} {zugKurz(t, zug.id)}
-            </button>
-          ))}
-        </fieldset>
-
-        <label className={styles.checkbox}>
-          <input type="checkbox" checked={event} onChange={(e) => setEvent(e.target.checked)} />
-          {s.schuetzenfestWahl}
-        </label>
-
-        <label className={raum.oeffentlich}>
-          <input
-            type="checkbox"
-            checked={oeffentlich}
-            onChange={(e) => setOeffentlich(e.target.checked)}
+        <PartyKarte titel={o.wieVielePlaetze}>
+          <ChipAuswahl
+            beschriftung={o.wieVielePlaetze}
+            anordnung={4}
+            wert={size}
+            onWahl={setSize}
+            optionen={[8, 10, 12, 16].map((option) => ({ wert: option, text: String(option) }))}
           />
-          <span>
-            {o.oeffentlich}
-            <small>{o.oeffentlichText}</small>
-          </span>
-        </label>
+          <p className={styles.muted}>{o.freiePlaetze}</p>
+        </PartyKarte>
 
-        <button
-          type="button"
-          className={styles.primaryBtn}
-          disabled={busy}
-          onClick={() =>
-            void run(async () => {
-              const created = await createOnlineMatch({ size, event, zugId, oeffentlich })
-              setMatchId(created.match_id)
-            })
-          }
-        >
-          {o.eroeffnen}
-        </button>
-
-        <label className={styles.label}>
-          {o.mitCode}
-          <input
-            className={styles.input}
-            value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-            maxLength={5}
-            placeholder={o.codeBeispiel}
-            autoCapitalize="characters"
+        <PartyKarte titel={s.deinZug}>
+          <ChipAuswahl
+            beschriftung={s.deinZug}
+            anordnung={2}
+            wert={zugId}
+            onWahl={setZugId}
+            optionen={ZUEGE.slice(0, zugCount(size)).map((zug) => ({
+              wert: zug.id,
+              icon: zug.badge,
+              text: zugKurz(t, zug.id),
+            }))}
           />
-        </label>
-        <button
-          type="button"
-          className={styles.secondaryBtn}
-          disabled={busy || code.trim().length < 5}
-          onClick={() =>
-            void run(async () => {
-              const joined = await joinOnlineMatch(code)
-              setMatchId(joined.match_id)
-            })
-          }
-        >
-          {o.beitreten}
-        </button>
+
+          <label className={styles.checkbox}>
+            <input type="checkbox" checked={event} onChange={(e) => setEvent(e.target.checked)} />
+            {s.schuetzenfestWahl}
+          </label>
+
+          <label className={raum.oeffentlich}>
+            <input
+              type="checkbox"
+              checked={oeffentlich}
+              onChange={(e) => setOeffentlich(e.target.checked)}
+            />
+            <span>
+              {o.oeffentlich}
+              <small>{o.oeffentlichText}</small>
+            </span>
+          </label>
+
+          <LobbyKnopf
+            disabled={busy}
+            onClick={() =>
+              void run(async () => {
+                const created = await createOnlineMatch({ size, event, zugId, oeffentlich })
+                setMatchId(created.match_id)
+              })
+            }
+          >
+            {o.eroeffnen}
+          </LobbyKnopf>
+        </PartyKarte>
+
+        <OderTrenner />
+
+        <PartyKarte titel={o.mitCode}>
+          <CodeFeld wert={code} onWert={setCode} beschriftung={o.mitCode} onFertig={beitreten} />
+          <LobbyZweitKnopf disabled={busy || code.trim().length < 5} onClick={beitreten}>
+            {o.beitreten}
+          </LobbyZweitKnopf>
+        </PartyKarte>
 
         <OeffentlicheRaeume
           laden={fetchOeffentlicheSrRaeume}
@@ -392,9 +392,7 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
           </section>
         )}
 
-        <button type="button" className={styles.secondaryBtn} onClick={onBack}>
-          {o.zurueckZuBots}
-        </button>
+        <ZweiterKnopf onClick={onBack}>{o.zurueckZuBots}</ZweiterKnopf>
       </>
     )
   }
@@ -424,12 +422,16 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
 
   return (
     <>
-      {error && <p className={styles.errorLine}>{error}</p>}
+      {error && <LobbyMeldung>{error}</LobbyMeldung>}
 
-      <p className={styles.codeBox}>
-        {o.code} <strong>{m.code}</strong> · {o.plaetze(m.seats_taken, m.size)}
-        {m.event ? ` · ${s.schuetzenfest}` : ''}
-      </p>
+      {m.phase === 'lobby' ? (
+        <RaumCode code={m.code} spiel={s.titel} />
+      ) : (
+        <p className={styles.codeBox}>
+          {o.code} <strong>{m.code}</strong> · {o.plaetze(m.seats_taken, m.size)}
+          {m.event ? ` · ${s.schuetzenfest}` : ''}
+        </p>
+      )}
 
       {secondsLeft != null && (
         <p className={secondsLeft <= 10 ? styles.clockHot : styles.clock}>⏳ {secondsLeft} s</p>
@@ -459,68 +461,72 @@ export function SchuetzenrundeOnline({ onBack }: { onBack: () => void }) {
         </section>
       )}
 
-      <section className={styles.players} aria-label={s.mitspieler}>
-        {state.players.map((p) => {
-          const selectable =
-            p.alive &&
-            p.seat !== me.seat &&
-            me.alive &&
-            ((m.phase === 'night' && nightRole) || m.phase === 'vote')
-          return (
-            <button
-              key={p.seat}
-              type="button"
-              className={[
-                styles.player,
-                p.alive ? '' : styles.playerOut,
-                selected === p.seat ? styles.playerSelected : '',
-                p.seat === me.seat ? styles.playerMe : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-              disabled={!selectable}
-              onClick={() => setSelected(p.seat)}
-            >
-              <span className={styles.playerName}>
-                {p.seat === m.king_seat ? '👑 ' : ''}
-                {p.name}
-                {p.is_bot ? ' 🤖' : ''}
-              </span>
-              <span className={styles.playerState}>
-                {zugById(p.zug_id).badge}{' '}
-                {p.role
-                  ? rollenName(t, p.role)
-                  : m.phase === 'lobby'
-                    ? o.bereit
-                    : p.acted
-                      ? o.fertig
-                      : o.ueberlegt}
-              </span>
-            </button>
-          )
-        })}
-      </section>
+      {m.phase === 'lobby' && (
+        <WarteSpieler
+          spieler={state.players.map((p) => ({ ...p, is_you: p.seat === me.seat }))}
+          gastgeberPlatz={GASTGEBER_PLATZ}
+          min={1}
+          ichBinGastgeber={m.is_host}
+          hinweis={`${o.plaetze(m.seats_taken, m.size)}${m.event ? ` · ${s.schuetzenfest}` : ''} – ${o.freiePlaetze}`}
+        />
+      )}
+
+      {m.phase !== 'lobby' && (
+        <section className={styles.players} aria-label={s.mitspieler}>
+          {state.players.map((p) => {
+            const selectable =
+              p.alive &&
+              p.seat !== me.seat &&
+              me.alive &&
+              ((m.phase === 'night' && nightRole) || m.phase === 'vote')
+            return (
+              <button
+                key={p.seat}
+                type="button"
+                className={[
+                  styles.player,
+                  p.alive ? '' : styles.playerOut,
+                  selected === p.seat ? styles.playerSelected : '',
+                  p.seat === me.seat ? styles.playerMe : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                disabled={!selectable}
+                onClick={() => setSelected(p.seat)}
+              >
+                <span className={styles.playerName}>
+                  {p.seat === m.king_seat ? '👑 ' : ''}
+                  {p.name}
+                  {p.is_bot ? ' 🤖' : ''}
+                </span>
+                <span className={styles.playerState}>
+                  {zugById(p.zug_id).badge}{' '}
+                  {p.role
+                    ? rollenName(t, p.role)
+                    : m.phase === 'lobby'
+                      ? o.bereit
+                      : p.acted
+                        ? o.fertig
+                        : o.ueberlegt}
+                </span>
+              </button>
+            )
+          })}
+        </section>
+      )}
 
       {m.phase === 'lobby' && (
-        <section className={styles.actions}>
-          <p className={styles.phaseTitle}>{o.vorraum}</p>
+        <PartyKarte titel={o.vorraum}>
           <p className={styles.hint}>
             {o.codeWeitergeben} {m.is_host ? o.duStartest : o.gastgeberStartet}
           </p>
           {m.is_host && (
-            <button
-              type="button"
-              className={styles.primaryBtn}
-              disabled={busy}
-              onClick={() => void run(() => startOnlineMatch(m.id))}
-            >
+            <LobbyKnopf disabled={busy} onClick={() => void run(() => startOnlineMatch(m.id))}>
               {s.starten}
-            </button>
+            </LobbyKnopf>
           )}
-          <button type="button" className={styles.secondaryBtn} onClick={leave}>
-            {o.verlassen}
-          </button>
-        </section>
+          <LobbyZweitKnopf onClick={leave}>{o.verlassen}</LobbyZweitKnopf>
+        </PartyKarte>
       )}
 
       {m.phase === 'night' && (

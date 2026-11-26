@@ -29,6 +29,7 @@ import {
 } from '@/components/party/PartySetup'
 import setup from '@/components/party/PartySetup.module.css'
 import { SpielerKaertchen, SpielerZahl } from '@/components/party/SpielerKaertchen'
+import { StatusPille } from '@/components/onlineLobby/OnlineLobby'
 import { StadtLandFlussOnline } from './StadtLandFlussOnline'
 import { Zeitring } from '@/components/zeitring/Zeitring'
 import styles from './StadtLandFlussPage.module.css'
@@ -124,10 +125,12 @@ export function StadtLandFlussPage() {
 
   if (online) {
     return (
-      <main className={styles.page}>
-        <p className={styles.meta}>
-          {titel} · {s.online}
-        </p>
+      <main className={setup.seite} style={akzentStil('stadt-land-fluss')}>
+        <PartyKopf
+          titel={titel}
+          onZurueck={() => setOnline(false)}
+          rechts={<StatusPille status="online" />}
+        />
         <StadtLandFlussOnline onBack={() => setOnline(false)} />
       </main>
     )

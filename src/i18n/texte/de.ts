@@ -3120,6 +3120,34 @@ export const de = {
     figurNurOptik: 'Nur Optik – am Spiel ändert sich nichts.',
   },
 
+  /** Die Bausteine der Online-Vorräume (src/components/onlineLobby): Code, Warteliste, Codefeld. */
+  onlineLobby: {
+    online: 'Online',
+    wartet: 'Wartet',
+    laeuft: 'Läuft',
+    raumcode: 'Raumcode',
+    codeKopieren: (code: string) => `Code ${code} kopieren`,
+    antippen: 'Antippen zum Kopieren',
+    kopiert: 'Code kopiert',
+    kopierenGehtNicht: 'Kopieren ging nicht – lies den Code einfach vor.',
+    einladen: 'Einladen',
+    einladungTitel: (spiel: string) => `${spiel} – spiel mit!`,
+    einladungText: (spiel: string, code: string) =>
+      `Komm in meine Runde bei ${spiel} in TE-Mini Games! Der Code: ${code}`,
+    einladungKopiert: 'Einladung kopiert – füg sie in eine Nachricht ein.',
+    imRaum: 'Im Raum',
+    anzahl: (n: number) => (n === 1 ? '1 Person' : `${n} Personen`),
+    gastgeber: 'Gastgeber',
+    du: 'Du',
+    frei: 'frei',
+    nochFehlen: (n: number) =>
+      n === 1 ? 'Wartet auf eine weitere Person' : `Wartet auf ${n} weitere Personen`,
+    alleDaGastgeber: 'Alle da – du kannst starten.',
+    alleDaGast: 'Alle da – gleich startet der Gastgeber.',
+    codeFeld: 'Code eingeben',
+    oder: 'oder',
+  },
+
   /** Die gemerkte Runde und die Bausteine der Partyspiel-Einstellungen (src/components/party). */
   partyGruppe: {
     mitspieler: 'Mitspieler',

@@ -18,7 +18,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getCurrentUser } from '@/auth/authService'
-import { useSprache } from '@/i18n/sprache'
+import { spielName, useSprache } from '@/i18n/sprache'
+import { brettAkzent } from '@/components/onlineLobby/akzent'
+import { CodeFeld, RaumCode, StatusPille, WarteSpieler } from '@/components/onlineLobby/OnlineLobby'
 import { ermittleSpielerName, istEchterName } from '@/services/spielername'
 import {
   MAX_RUNDEN_LIMIT,
@@ -64,6 +66,9 @@ import { OeffentlicheRaeume } from './OeffentlicheRaeume'
 import raumStil from './OeffentlicheRaeume.module.css'
 import shell from './PlayShell.module.css'
 import styles from './SchuetzenopolyPage.module.css'
+
+/** Wer eröffnet, sitzt auf Platz 1 (`schopoly_create_match`, Migration 019). */
+const GASTGEBER_PLATZ = 1
 
 /** Wie lange die Figur je Feld läuft -- wie im Solomodus. */
 const SCHRITT_MS = 90
@@ -347,7 +352,7 @@ export function SchuetzenopolyOnline({ onZurueck }: Props) {
 
   if (!matchId || !stand) {
     return (
-      <main className={`${shell.page} ${styles.breiteSeite}`}>
+      <main className={`${shell.page} ${styles.breiteSeite}`} style={brettAkzent('schuetzenopoly')}>
         <header className={shell.header}>
           <button
             type="button"
@@ -400,19 +405,12 @@ export function SchuetzenopolyOnline({ onZurueck }: Props) {
               {to.tischAufmachen}
             </button>
 
-            <label className={styles.feldZeile}>
-              <span>{to.spielcode}</span>
-              <input
-                className={styles.codeEingabe}
-                value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
-                maxLength={5}
-                placeholder="A7K9P"
-                inputMode="text"
-                autoCapitalize="characters"
-                autoComplete="off"
-              />
-            </label>
+            <CodeFeld
+              wert={code}
+              onWert={setCode}
+              beschriftung={to.spielcode}
+              onFertig={() => void beitreten()}
+            />
             <button
               type="button"
               className={shell.secondaryBtn}
@@ -467,7 +465,7 @@ export function SchuetzenopolyOnline({ onZurueck }: Props) {
 
   if (match.phase === 'lobby') {
     return (
-      <main className={`${shell.page} ${styles.breiteSeite}`}>
+      <main className={`${shell.page} ${styles.breiteSeite}`} style={brettAkzent('schuetzenopoly')}>
         <header className={shell.header}>
           <button
             type="button"
@@ -478,23 +476,19 @@ export function SchuetzenopolyOnline({ onZurueck }: Props) {
             ←
           </button>
           <h1 className={shell.title}>{to.warteraum}</h1>
-          <span aria-hidden="true" />
+          <StatusPille status="online" />
         </header>
 
         <section className={styles.lobby}>
-          <p className={styles.codeLabel}>{to.spielcode}</p>
-          <p className={styles.code}>{match.code}</p>
+          <RaumCode code={match.code} spiel={spielName(t, 'schuetzenopoly', 'Schützenopoly')} />
           <p className={styles.willkommen}>{to.codeWeitergeben(match.is_host)}</p>
 
-          <ul className={styles.spielerListe}>
-            {players.map((p) => (
-              <li key={p.seat}>
-                <span className={styles.platz}>{p.seat}</span>
-                {p.name}
-                {p.is_you && <small> {to.du}</small>}
-              </li>
-            ))}
-          </ul>
+          <WarteSpieler
+            spieler={players}
+            gastgeberPlatz={GASTGEBER_PLATZ}
+            min={2}
+            ichBinGastgeber={match.is_host}
+          />
 
           {match.is_host && (
             <>

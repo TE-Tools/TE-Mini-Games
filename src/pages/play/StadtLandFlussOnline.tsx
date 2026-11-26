@@ -1,8 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { SPALTEN, STANDARD_SPALTEN, spalteLabel } from '@/games/stadt-land-fluss'
 import { getCurrentUser } from '@/auth/authService'
-import { useSprache, type Texte } from '@/i18n/sprache'
+import { spielName, useSprache, type Texte } from '@/i18n/sprache'
+import { ChipSchalter } from '@/components/party/Chips'
+import { PartyRegler } from '@/components/party/PartySetup'
+import {
+  CodeFeld,
+  LobbyHinweis,
+  LobbyKnopf,
+  LobbyKnopfLink,
+  LobbyMeldung,
+  LobbyZweitKnopf,
+  OderTrenner,
+  RaumCode,
+  WarteSpieler,
+} from '@/components/onlineLobby/OnlineLobby'
+import { PartyKarte, ZweiterKnopf } from '@/components/party/PartySetup'
 import {
   isSlfOnlineAvailable,
   createSlfMatchOnline,
@@ -25,6 +38,9 @@ import raum from './OeffentlicheRaeume.module.css'
 import styles from './StadtLandFlussPage.module.css'
 
 const POLL_MS = 2000
+
+/** Wer eröffnet, sitzt auf Platz 1 (`slf_create_match`, Migration 014). */
+const GASTGEBER_PLATZ = 1
 
 /** Spaltenname nach Kennung -- der Server kennt nur die Kennung. */
 function spalteName(s: Texte['stadtLandFluss'], id: string): string {
@@ -181,12 +197,12 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
 
   if (!isSlfOnlineAvailable) {
     return (
-      <div className={styles.card}>
-        <p className={styles.subtitle}>{s.keinServer}</p>
-        <button type="button" className={styles.btn} onClick={onBack}>
-          {s.zurueckEinGeraet}
-        </button>
-      </div>
+      <LobbyHinweis
+        icon="📡"
+        aktionen={<LobbyKnopf onClick={onBack}>{s.zurueckEinGeraet}</LobbyKnopf>}
+      >
+        {s.keinServer}
+      </LobbyHinweis>
     )
   }
 
@@ -194,25 +210,30 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
 
   if (!signedIn) {
     return (
-      <div className={styles.card}>
-        <p className={styles.subtitle}>{s.anmeldenGrund}</p>
-        <Link to="/auth" className={styles.btn} style={{ textAlign: 'center' }}>
-          {s.anmelden}
-        </Link>
-        <button type="button" className={styles.btnSecondary} onClick={onBack}>
-          {s.lieberEinGeraet}
-        </button>
-      </div>
+      <LobbyHinweis
+        icon="🔑"
+        aktionen={
+          <>
+            <LobbyKnopfLink to="/auth">{s.anmelden}</LobbyKnopfLink>
+            <LobbyZweitKnopf onClick={onBack}>{s.lieberEinGeraet}</LobbyZweitKnopf>
+          </>
+        }
+      >
+        {s.anmeldenGrund}
+      </LobbyHinweis>
     )
   }
 
   if (!matchId || !state) {
+    const beitreten = () =>
+      void run(async () => {
+        setMatchId(await joinSlfMatch(code, name))
+      })
     return (
       <>
-        {error && <p className={styles.error}>{error}</p>}
+        {error && <LobbyMeldung>{error}</LobbyMeldung>}
 
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>{s.neueRundeEroeffnen}</h2>
+        <PartyKarte titel={s.neueRundeEroeffnen}>
           <label className={styles.label}>
             {s.deinName}
             <input
@@ -223,37 +244,22 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
               placeholder={s.namePlatzhalter}
             />
           </label>
-          <div className={styles.spaltenWahl}>
-            {SPALTEN.map((sp) => {
-              const an = spalten.includes(sp.id)
-              return (
-                <button
-                  key={sp.id}
-                  type="button"
-                  className={an ? styles.chipAktiv : styles.chip}
-                  aria-pressed={an}
-                  onClick={() =>
-                    setSpalten((alt) =>
-                      alt.includes(sp.id) ? alt.filter((x) => x !== sp.id) : [...alt, sp.id],
-                    )
-                  }
-                >
-                  {spalteName(s, sp.id)}
-                </button>
-              )
-            })}
-          </div>
-          <label className={styles.label}>
-            {s.zeitJeRunde(sekunden)}
-            <input
-              type="range"
-              min={30}
-              max={300}
-              step={15}
-              value={sekunden}
-              onChange={(e) => setSekunden(Number(e.target.value))}
-            />
-          </label>
+          <ChipSchalter
+            beschriftung={s.spalten}
+            optionen={SPALTEN.map((sp) => ({ wert: sp.id, text: spalteName(s, sp.id) }))}
+            gewaehlt={spalten}
+            onUmschalten={(id) =>
+              setSpalten((alt) => (alt.includes(id) ? alt.filter((x) => x !== id) : [...alt, id]))
+            }
+          />
+          <PartyRegler
+            beschriftung={s.zeitJeRunde(sekunden)}
+            wert={sekunden}
+            min={30}
+            max={300}
+            schritt={15}
+            onWert={setSekunden}
+          />
           <label className={raum.oeffentlich}>
             <input
               type="checkbox"
@@ -265,9 +271,7 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
               <small>{s.oeffentlichText}</small>
             </span>
           </label>
-          <button
-            type="button"
-            className={styles.btn}
+          <LobbyKnopf
             disabled={busy || spalten.length === 0}
             onClick={() =>
               void run(async () => {
@@ -282,32 +286,22 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
             }
           >
             {s.eroeffnen}
-          </button>
-        </div>
+          </LobbyKnopf>
+        </PartyKarte>
 
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>{s.mitCodeBeitreten}</h2>
-          <input
-            className={styles.input}
-            value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-            maxLength={5}
-            placeholder={s.codePlatzhalter}
-            autoCapitalize="characters"
+        <OderTrenner />
+
+        <PartyKarte titel={s.mitCodeBeitreten}>
+          <CodeFeld
+            wert={code}
+            onWert={setCode}
+            beschriftung={s.mitCodeBeitreten}
+            onFertig={beitreten}
           />
-          <button
-            type="button"
-            className={styles.btnSecondary}
-            disabled={busy || code.trim().length < 5}
-            onClick={() =>
-              void run(async () => {
-                setMatchId(await joinSlfMatch(code, name))
-              })
-            }
-          >
+          <LobbyZweitKnopf disabled={busy || code.trim().length < 5} onClick={beitreten}>
             {s.beitreten}
-          </button>
-        </div>
+          </LobbyZweitKnopf>
+        </PartyKarte>
 
         <OeffentlicheRaeume
           laden={fetchOeffentlicheSlfRaeume}
@@ -320,8 +314,7 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
         />
 
         {open.length > 0 && (
-          <div className={styles.card}>
-            <h2 className={styles.cardTitle}>{s.laufendeRunden}</h2>
+          <PartyKarte titel={s.laufendeRunden}>
             <ul className={styles.list}>
               {open.map((m) => (
                 <li key={m.match_id}>
@@ -338,12 +331,10 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
                 </li>
               ))}
             </ul>
-          </div>
+          </PartyKarte>
         )}
 
-        <button type="button" className={styles.btnSecondary} onClick={onBack}>
-          {s.zurueckEinGeraet}
-        </button>
+        <ZweiterKnopf onClick={onBack}>{s.zurueckEinGeraet}</ZweiterKnopf>
       </>
     )
   }
@@ -360,40 +351,39 @@ export function StadtLandFlussOnline({ onBack }: { onBack: () => void }) {
 
   return (
     <>
-      {error && <p className={styles.error}>{error}</p>}
+      {error && <LobbyMeldung>{error}</LobbyMeldung>}
 
-      <p className={styles.meta}>
-        {s.code} <strong>{m.code}</strong> · {s.dabei(m.size)} · {s.runde(m.round)}
-      </p>
+      {m.phase === 'lobby' ? (
+        <RaumCode code={m.code} spiel={spielName(t, 'stadt-land-fluss', 'Stadt-Land-Fluss')} />
+      ) : (
+        <p className={styles.meta}>
+          {s.code} <strong>{m.code}</strong> · {s.dabei(m.size)} · {s.runde(m.round)}
+        </p>
+      )}
 
       {m.phase === 'lobby' && (
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>{s.vorraum}</h2>
-          <p className={styles.subtitle}>
-            {s.vorraumText(m.columns.map((id) => spalteName(s, id)).join(', '), m.seconds)}
-          </p>
-          <ul className={styles.list}>
-            {state.players.map((p) => (
-              <li key={p.seat}>
-                <span>{p.name}</span>
-                <strong>{p.is_you ? s.du : s.dabeiMarke}</strong>
-              </li>
-            ))}
-          </ul>
-          {m.is_host && (
-            <button
-              type="button"
-              className={styles.btn}
-              disabled={busy || m.size < 2}
-              onClick={() => void run(() => startSlfRound(m.id))}
-            >
-              {m.size < 2 ? s.mindestensMitspielende(2) : s.rundeStarten}
-            </button>
-          )}
-          <button type="button" className={styles.btnSecondary} onClick={verlassen}>
-            {s.verlassen}
-          </button>
-        </div>
+        <>
+          <WarteSpieler
+            spieler={state.players}
+            gastgeberPlatz={GASTGEBER_PLATZ}
+            min={2}
+            ichBinGastgeber={m.is_host}
+          />
+          <PartyKarte titel={s.vorraum}>
+            <p className={styles.subtitle}>
+              {s.vorraumText(m.columns.map((id) => spalteName(s, id)).join(', '), m.seconds)}
+            </p>
+            {m.is_host && (
+              <LobbyKnopf
+                disabled={busy || m.size < 2}
+                onClick={() => void run(() => startSlfRound(m.id))}
+              >
+                {m.size < 2 ? s.mindestensMitspielende(2) : s.rundeStarten}
+              </LobbyKnopf>
+            )}
+            <LobbyZweitKnopf onClick={verlassen}>{s.verlassen}</LobbyZweitKnopf>
+          </PartyKarte>
+        </>
       )}
 
       {m.phase === 'write' && (

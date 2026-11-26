@@ -1,7 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { getCurrentUser } from '@/auth/authService'
-import { useSprache } from '@/i18n/sprache'
+import { spielName, useSprache } from '@/i18n/sprache'
+import {
+  CodeFeld,
+  LobbyHinweis,
+  LobbyKnopf,
+  LobbyKnopfLink,
+  LobbyMeldung,
+  LobbyZweitKnopf,
+  OderTrenner,
+  RaumCode,
+  WarteSpieler,
+} from '@/components/onlineLobby/OnlineLobby'
+import { PartyKarte, ZweiterKnopf } from '@/components/party/PartySetup'
 import {
   isWerBinIchOnlineAvailable,
   createWbiMatchOnline,
@@ -24,6 +35,9 @@ import { OeffentlicheRaeume } from './OeffentlicheRaeume'
 import { gueltigeKategorie, useOnlineKategorien } from './imposter/kategorien'
 import raum from './OeffentlicheRaeume.module.css'
 import styles from './WerBinIchPage.module.css'
+
+/** Wer eröffnet, sitzt auf Platz 1 (`wbi_create_match`, Migration 013). */
+const GASTGEBER_PLATZ = 1
 
 /** Nachfassen, falls Realtime mal nichts liefert. */
 const POLL_MS = 3000
@@ -145,12 +159,12 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
 
   if (!isWerBinIchOnlineAvailable) {
     return (
-      <div className={styles.card}>
-        <p className={styles.subtitle}>{w.keinServer}</p>
-        <button type="button" className={styles.btn} onClick={onBack}>
-          {w.zurueckEinGeraet}
-        </button>
-      </div>
+      <LobbyHinweis
+        icon="📡"
+        aktionen={<LobbyKnopf onClick={onBack}>{w.zurueckEinGeraet}</LobbyKnopf>}
+      >
+        {w.keinServer}
+      </LobbyHinweis>
     )
   }
 
@@ -158,27 +172,32 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
 
   if (!signedIn) {
     return (
-      <div className={styles.card}>
-        <p className={styles.subtitle}>{w.anmeldenGrund}</p>
-        <Link to="/auth" className={styles.btn} style={{ textAlign: 'center' }}>
-          {w.anmelden}
-        </Link>
-        <button type="button" className={styles.btnSecondary} onClick={onBack}>
-          {w.lieberEinGeraet}
-        </button>
-      </div>
+      <LobbyHinweis
+        icon="🔑"
+        aktionen={
+          <>
+            <LobbyKnopfLink to="/auth">{w.anmelden}</LobbyKnopfLink>
+            <LobbyZweitKnopf onClick={onBack}>{w.lieberEinGeraet}</LobbyZweitKnopf>
+          </>
+        }
+      >
+        {w.anmeldenGrund}
+      </LobbyHinweis>
     )
   }
 
   /* ------------------------------ Vorraum ------------------------------ */
 
   if (!matchId || !state) {
+    const beitreten = () =>
+      void run(async () => {
+        setMatchId(await joinWbiMatch(code, name))
+      })
     return (
       <>
-        {error && <p className={styles.error}>{error}</p>}
+        {error && <LobbyMeldung>{error}</LobbyMeldung>}
 
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>{w.neueRundeEroeffnen}</h2>
+        <PartyKarte titel={w.neueRundeEroeffnen}>
           <label className={styles.label}>
             {w.deinName}
             <input
@@ -216,9 +235,7 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
               <small>{w.oeffentlichText}</small>
             </span>
           </label>
-          <button
-            type="button"
-            className={styles.btn}
+          <LobbyKnopf
             disabled={busy}
             onClick={() =>
               void run(async () => {
@@ -228,32 +245,22 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
             }
           >
             {w.eroeffnen}
-          </button>
-        </div>
+          </LobbyKnopf>
+        </PartyKarte>
 
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>{w.mitCodeBeitreten}</h2>
-          <input
-            className={styles.input}
-            value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-            maxLength={5}
-            placeholder={w.codePlatzhalter}
-            autoCapitalize="characters"
+        <OderTrenner />
+
+        <PartyKarte titel={w.mitCodeBeitreten}>
+          <CodeFeld
+            wert={code}
+            onWert={setCode}
+            beschriftung={w.mitCodeBeitreten}
+            onFertig={beitreten}
           />
-          <button
-            type="button"
-            className={styles.btnSecondary}
-            disabled={busy || code.trim().length < 5}
-            onClick={() =>
-              void run(async () => {
-                setMatchId(await joinWbiMatch(code, name))
-              })
-            }
-          >
+          <LobbyZweitKnopf disabled={busy || code.trim().length < 5} onClick={beitreten}>
             {w.beitreten}
-          </button>
-        </div>
+          </LobbyZweitKnopf>
+        </PartyKarte>
 
         <OeffentlicheRaeume
           laden={fetchOeffentlicheWbiRaeume}
@@ -266,8 +273,7 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
         />
 
         {open.length > 0 && (
-          <div className={styles.card}>
-            <h2 className={styles.cardTitle}>{w.laufendeRunden}</h2>
+          <PartyKarte titel={w.laufendeRunden}>
             <ul className={styles.list}>
               {open.map((m) => (
                 <li key={m.match_id}>
@@ -284,12 +290,10 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
                 </li>
               ))}
             </ul>
-          </div>
+          </PartyKarte>
         )}
 
-        <button type="button" className={styles.btnSecondary} onClick={onBack}>
-          {w.zurueckEinGeraet}
-        </button>
+        <ZweiterKnopf onClick={onBack}>{w.zurueckEinGeraet}</ZweiterKnopf>
       </>
     )
   }
@@ -309,41 +313,41 @@ export function WerBinIchOnline({ onBack }: { onBack: () => void }) {
 
   return (
     <>
-      {error && <p className={styles.error}>{error}</p>}
+      {error && <LobbyMeldung>{error}</LobbyMeldung>}
 
-      <p className={styles.meta}>
-        {w.code} <strong>{m.code}</strong> · {w.dabei(m.size)} · {w.runde(m.round)} ·{' '}
-        {m.category_label}
-      </p>
+      {m.phase === 'lobby' ? (
+        <RaumCode code={m.code} spiel={spielName(t, 'wer-bin-ich', 'Wer bin ich?')} />
+      ) : (
+        <p className={styles.meta}>
+          {w.code} <strong>{m.code}</strong> · {w.dabei(m.size)} · {w.runde(m.round)} ·{' '}
+          {m.category_label}
+        </p>
+      )}
 
       {m.phase === 'lobby' && (
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>{w.vorraum}</h2>
-          <p className={styles.subtitle}>
-            {w.codeWeitergeben} {m.is_host ? w.duStartest : w.gastgeberStartet}
-          </p>
-          <ul className={styles.list}>
-            {state.players.map((p) => (
-              <li key={p.seat}>
-                <span>{p.name}</span>
-                <strong>{p.is_you ? w.du : w.dabeiMarke}</strong>
-              </li>
-            ))}
-          </ul>
-          {m.is_host && (
-            <button
-              type="button"
-              className={styles.btn}
-              disabled={busy || m.size < 2}
-              onClick={() => void run(() => startWbiMatch(m.id))}
-            >
-              {m.size < 2 ? w.mindestensMitspielende(2) : w.rundeStarten}
-            </button>
-          )}
-          <button type="button" className={styles.btnSecondary} onClick={verlassen}>
-            {w.verlassen}
-          </button>
-        </div>
+        <>
+          <WarteSpieler
+            spieler={state.players}
+            gastgeberPlatz={GASTGEBER_PLATZ}
+            min={2}
+            ichBinGastgeber={m.is_host}
+          />
+          <PartyKarte titel={w.vorraum}>
+            <p className={styles.subtitle}>
+              {w.codeWeitergeben} {m.is_host ? w.duStartest : w.gastgeberStartet}
+            </p>
+            <p className={styles.meta}>{m.category_label}</p>
+            {m.is_host && (
+              <LobbyKnopf
+                disabled={busy || m.size < 2}
+                onClick={() => void run(() => startWbiMatch(m.id))}
+              >
+                {m.size < 2 ? w.mindestensMitspielende(2) : w.rundeStarten}
+              </LobbyKnopf>
+            )}
+            <LobbyZweitKnopf onClick={verlassen}>{w.verlassen}</LobbyZweitKnopf>
+          </PartyKarte>
+        </>
       )}
 
       {(m.phase === 'ask' || m.phase === 'guess') && (

@@ -23,6 +23,7 @@ import {
   type MatchState,
 } from '@/games/schuetzenrunde'
 import { useSprache, WOERTERBUECHER } from '@/i18n/sprache'
+import { StatusPille } from '@/components/onlineLobby/OnlineLobby'
 import { SchuetzenrundeOnline } from './SchuetzenrundeOnline'
 import {
   aussageText,
@@ -259,19 +260,12 @@ export function SchuetzenrundePage() {
 
   if (online) {
     return (
-      <main className={styles.page}>
-        <header className={shell.header}>
-          <button
-            type="button"
-            className={shell.back}
-            onClick={() => navigate('/')}
-            aria-label={t.allgemein.zurueck}
-          >
-            ←
-          </button>
-          <h1 className={shell.title}>{s.titel}</h1>
-          <span className={styles.roundBadge}>{s.online}</span>
-        </header>
+      <main className={styles.page} style={akzentStil('schuetzenrunde')}>
+        <PartyKopf
+          titel={s.titel}
+          onZurueck={() => navigate('/')}
+          rechts={<StatusPille status="online" />}
+        />
         <SchuetzenrundeOnline onBack={() => setOnline(false)} />
       </main>
     )

@@ -3051,6 +3051,33 @@ export const en: Texte = {
     figurNurOptik: 'Looks only – nothing about the game changes.',
   },
 
+  onlineLobby: {
+    online: 'Online',
+    wartet: 'Waiting',
+    laeuft: 'In play',
+    raumcode: 'Room code',
+    codeKopieren: (code: string) => `Copy code ${code}`,
+    antippen: 'Tap to copy',
+    kopiert: 'Code copied',
+    kopierenGehtNicht: 'Copying didn’t work – just read the code out.',
+    einladen: 'Invite',
+    einladungTitel: (spiel: string) => `${spiel} – come and play!`,
+    einladungText: (spiel: string, code: string) =>
+      `Join my game of ${spiel} in TE-Mini Games! The code: ${code}`,
+    einladungKopiert: 'Invite copied – paste it into a message.',
+    imRaum: 'In the room',
+    anzahl: (n: number) => (n === 1 ? '1 person' : `${n} people`),
+    gastgeber: 'Host',
+    du: 'You',
+    frei: 'open',
+    nochFehlen: (n: number) =>
+      n === 1 ? 'Waiting for one more person' : `Waiting for ${n} more people`,
+    alleDaGastgeber: 'Everyone’s here – you can start.',
+    alleDaGast: 'Everyone’s here – the host will start soon.',
+    codeFeld: 'Enter code',
+    oder: 'or',
+  },
+
   partyGruppe: {
     mitspieler: 'Players',
     neuerName: 'New name',

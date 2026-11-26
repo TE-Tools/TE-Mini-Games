@@ -1,9 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { ONLINE_MODES, modeOf } from '@/games/finde-den-imposter'
 import { loadCustomCategories } from '@/games/finde-den-imposter/customCategories'
 import { getCurrentUser } from '@/auth/authService'
-import { useSprache } from '@/i18n/sprache'
+import { spielName, useSprache } from '@/i18n/sprache'
+import { ChipAuswahl } from '@/components/party/Chips'
+import { PartyKarte, ZweiterKnopf } from '@/components/party/PartySetup'
+import {
+  CodeFeld,
+  LobbyHinweis,
+  LobbyKnopf,
+  LobbyKnopfLink,
+  LobbyMeldung,
+  LobbyZweitKnopf,
+  OderTrenner,
+  RaumCode,
+  WarteSpieler,
+} from '@/components/onlineLobby/OnlineLobby'
 import {
   isImposterOnlineAvailable,
   createOnlineMatch,
@@ -42,6 +54,9 @@ const POLL_MS = 3000
  * Präfix -- eine zweite Auswahl daneben wäre für einen Griff zu viel.
  */
 const EIGEN_PREFIX = 'eigen:'
+
+/** Wer eröffnet, sitzt auf Platz 1 (`fdi_create_match`, Migrationen 011/015). */
+const GASTGEBER_PLATZ = 1
 
 export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
   const { t, sprache } = useSprache()
@@ -211,12 +226,12 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
 
   if (!isImposterOnlineAvailable) {
     return (
-      <div className={styles.card}>
-        <p className={styles.subtitle}>{to.ohneServer}</p>
-        <button type="button" className={styles.btn} onClick={onBack}>
-          {to.zurueckZumGeraet}
-        </button>
-      </div>
+      <LobbyHinweis
+        icon="📡"
+        aktionen={<LobbyKnopf onClick={onBack}>{to.zurueckZumGeraet}</LobbyKnopf>}
+      >
+        {to.ohneServer}
+      </LobbyHinweis>
     )
   }
 
@@ -224,27 +239,32 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
 
   if (!signedIn) {
     return (
-      <div className={styles.card}>
-        <p className={styles.subtitle}>{to.ohneKonto}</p>
-        <Link to="/auth" className={styles.btn} style={{ textAlign: 'center' }}>
-          {to.anmelden}
-        </Link>
-        <button type="button" className={styles.btnSecondary} onClick={onBack}>
-          {to.lieberGeraet}
-        </button>
-      </div>
+      <LobbyHinweis
+        icon="🔑"
+        aktionen={
+          <>
+            <LobbyKnopfLink to="/auth">{to.anmelden}</LobbyKnopfLink>
+            <LobbyZweitKnopf onClick={onBack}>{to.lieberGeraet}</LobbyZweitKnopf>
+          </>
+        }
+      >
+        {to.ohneKonto}
+      </LobbyHinweis>
     )
   }
 
   /* ------------------------------ Vorraum ------------------------------ */
 
   if (!matchId || !state) {
+    const beitreten = () =>
+      void run(async () => {
+        setMatchId(await joinOnlineMatch(code, name))
+      })
     return (
       <>
-        {error && <p className={styles.error}>{error}</p>}
+        {error && <LobbyMeldung>{error}</LobbyMeldung>}
 
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>{to.neueRunde}</h2>
+        <PartyKarte titel={to.neueRunde}>
           <label className={styles.label}>
             {to.deinName}
             <input
@@ -278,21 +298,20 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
               )}
             </select>
           </label>
-          <label className={styles.label}>
-            {tx.modus}
-            <select
-              className={styles.select}
-              value={mode}
-              onChange={(e) => setMode(e.target.value as OnlineMode)}
-            >
-              {ONLINE_MODES.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {modusName(t, m.id)}
-                  {m.minPlayers > 3 ? tx.abSpielern(m.minPlayers) : ''}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className={styles.label}>
+            <span>{tx.modus}</span>
+            <ChipAuswahl<OnlineMode>
+              beschriftung={tx.modus}
+              anordnung={2}
+              wert={mode}
+              onWahl={setMode}
+              optionen={ONLINE_MODES.map((m) => ({
+                wert: m.id,
+                text: modusName(t, m.id),
+                zusatz: m.minPlayers > 3 ? tx.abSpielern(m.minPlayers) : undefined,
+              }))}
+            />
+          </div>
           <p className={styles.subtitle}>{modusText(t, mode)}</p>
           {nochNichtHochgeladen.length > 0 && (
             <div className={styles.meta}>
@@ -328,9 +347,7 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
               <small>{to.oeffentlichText}</small>
             </span>
           </label>
-          <button
-            type="button"
-            className={styles.btn}
+          <LobbyKnopf
             disabled={busy}
             onClick={() =>
               void run(async () => {
@@ -349,32 +366,17 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
             }
           >
             {to.eroeffnen}
-          </button>
-        </div>
+          </LobbyKnopf>
+        </PartyKarte>
 
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>{to.mitCode}</h2>
-          <input
-            className={styles.input}
-            value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-            maxLength={5}
-            placeholder={to.codePlatzhalter}
-            autoCapitalize="characters"
-          />
-          <button
-            type="button"
-            className={styles.btnSecondary}
-            disabled={busy || code.trim().length < 5}
-            onClick={() =>
-              void run(async () => {
-                setMatchId(await joinOnlineMatch(code, name))
-              })
-            }
-          >
+        <OderTrenner />
+
+        <PartyKarte titel={to.mitCode}>
+          <CodeFeld wert={code} onWert={setCode} beschriftung={to.mitCode} onFertig={beitreten} />
+          <LobbyZweitKnopf disabled={busy || code.trim().length < 5} onClick={beitreten}>
             {to.beitreten}
-          </button>
-        </div>
+          </LobbyZweitKnopf>
+        </PartyKarte>
 
         <OeffentlicheRaeume
           laden={fetchOeffentlicheImposterRaeume}
@@ -387,8 +389,7 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
         />
 
         {open.length > 0 && (
-          <div className={styles.card}>
-            <h2 className={styles.cardTitle}>{to.laufendeRunden}</h2>
+          <PartyKarte titel={to.laufendeRunden}>
             <ul className={styles.hintList}>
               {open.map((m) => (
                 <li key={m.match_id}>
@@ -403,12 +404,10 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
                 </li>
               ))}
             </ul>
-          </div>
+          </PartyKarte>
         )}
 
-        <button type="button" className={styles.btnSecondary} onClick={onBack}>
-          {to.zurueckZumGeraet}
-        </button>
+        <ZweiterKnopf onClick={onBack}>{to.zurueckZumGeraet}</ZweiterKnopf>
       </>
     )
   }
@@ -440,46 +439,46 @@ export function FindeDenImposterOnline({ onBack }: { onBack: () => void }) {
 
   return (
     <>
-      {error && <p className={styles.error}>{error}</p>}
+      {error && <LobbyMeldung>{error}</LobbyMeldung>}
 
-      <p className={styles.meta}>
-        {to.code} <strong>{m.code}</strong>
-        {to.kopfzeile(m.size, m.round)}
-        {m.category_label ? ` · ${m.category_label}` : ''}
-      </p>
+      {m.phase === 'lobby' ? (
+        <RaumCode code={m.code} spiel={spielName(t, 'finde-den-imposter', 'Finde den Imposter')} />
+      ) : (
+        <p className={styles.meta}>
+          {to.code} <strong>{m.code}</strong>
+          {to.kopfzeile(m.size, m.round)}
+          {m.category_label ? ` · ${m.category_label}` : ''}
+        </p>
+      )}
       {chaos && <p className={styles.badge}>{tx.chaos(chaos)}</p>}
 
       {m.phase === 'lobby' && (
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>{to.vorraum}</h2>
-          <p className={styles.subtitle}>
-            {to.codeWeitergeben(modusName(t, m.mode))}{' '}
-            {m.is_host ? to.duStartest : to.gastgeberStartet}
-          </p>
-          <ul className={styles.hintList}>
-            {state.players.map((p) => (
-              <li key={p.seat}>
-                <span>{p.name}</span>
-                <strong>{p.is_you ? to.du : to.dabei}</strong>
-              </li>
-            ))}
-          </ul>
-          {m.is_host && (
-            <button
-              type="button"
-              className={styles.btn}
-              disabled={busy || m.size < modeOf(m.mode).minPlayers}
-              onClick={() => void run(() => startOnlineMatch(m.id))}
-            >
-              {m.size < modeOf(m.mode).minPlayers
-                ? to.mindestens(modeOf(m.mode).minPlayers)
-                : to.starten}
-            </button>
-          )}
-          <button type="button" className={styles.btnSecondary} onClick={verlassen}>
-            {to.verlassen}
-          </button>
-        </div>
+        <>
+          <WarteSpieler
+            spieler={state.players}
+            gastgeberPlatz={GASTGEBER_PLATZ}
+            min={modeOf(m.mode).minPlayers}
+            ichBinGastgeber={m.is_host}
+          />
+          <PartyKarte titel={to.vorraum}>
+            <p className={styles.subtitle}>
+              {to.codeWeitergeben(modusName(t, m.mode))}{' '}
+              {m.is_host ? to.duStartest : to.gastgeberStartet}
+            </p>
+            {m.category_label && <p className={styles.meta}>{m.category_label}</p>}
+            {m.is_host && (
+              <LobbyKnopf
+                disabled={busy || m.size < modeOf(m.mode).minPlayers}
+                onClick={() => void run(() => startOnlineMatch(m.id))}
+              >
+                {m.size < modeOf(m.mode).minPlayers
+                  ? to.mindestens(modeOf(m.mode).minPlayers)
+                  : to.starten}
+              </LobbyKnopf>
+            )}
+            <LobbyZweitKnopf onClick={verlassen}>{to.verlassen}</LobbyZweitKnopf>
+          </PartyKarte>
+        </>
       )}
 
       {m.phase !== 'lobby' && m.phase !== 'result' && (

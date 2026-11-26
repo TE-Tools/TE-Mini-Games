@@ -37,6 +37,7 @@ import {
 import setup from '@/components/party/PartySetup.module.css'
 import { SpielerKaertchen, SpielerZahl } from '@/components/party/SpielerKaertchen'
 import { gueltigeKategorie } from './imposter/kategorien'
+import { StatusPille } from '@/components/onlineLobby/OnlineLobby'
 import { WerBinIchOnline } from './WerBinIchOnline'
 import styles from './WerBinIchPage.module.css'
 import { Spielerbild } from './party/Spielerbild'
@@ -108,10 +109,12 @@ export function WerBinIchPage() {
 
   if (online) {
     return (
-      <main className={styles.page}>
-        <p className={styles.meta}>
-          {titel} · {w.online}
-        </p>
+      <main className={setup.seite} style={akzentStil('wer-bin-ich')}>
+        <PartyKopf
+          titel={titel}
+          onZurueck={() => setOnline(false)}
+          rechts={<StatusPille status="online" />}
+        />
         <WerBinIchOnline onBack={() => setOnline(false)} />
       </main>
     )

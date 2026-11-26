@@ -19,7 +19,9 @@ import { Link } from 'react-router-dom'
 import { getCurrentUser } from '@/auth/authService'
 import { ermittleSpielerName, istEchterName } from '@/services/spielername'
 import { besteHand, type Aktion, type Handwert, type Karte } from '@/games/texas-holdem'
-import { useSprache } from '@/i18n/sprache'
+import { spielName, useSprache } from '@/i18n/sprache'
+import { brettAkzent } from '@/components/onlineLobby/akzent'
+import { CodeFeld, RaumCode, StatusPille, WarteSpieler } from '@/components/onlineLobby/OnlineLobby'
 import {
   createTexasMatch,
   fetchMeineTexasRunden,
@@ -45,6 +47,9 @@ import { OeffentlicheRaeume } from './OeffentlicheRaeume'
 import raumStil from './OeffentlicheRaeume.module.css'
 import shell from './PlayShell.module.css'
 import styles from './TexasHoldemPage.module.css'
+
+/** Wer eröffnet, sitzt auf Platz 1 (`th_create_match`, Migration 024). */
+const GASTGEBER_PLATZ = 1
 
 interface Props {
   onZurueck: () => void
@@ -208,7 +213,7 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
 
   if (!matchId || !state) {
     return (
-      <main className={shell.page}>
+      <main className={shell.page} style={brettAkzent('texas-holdem')}>
         <header className={shell.header}>
           <button
             type="button"
@@ -266,19 +271,12 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
               <span>{o.oder}</span>
             </div>
 
-            <label className={styles.feld}>
-              <span>{o.spielcode}</span>
-              <input
-                className={styles.codeEingabe}
-                value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
-                maxLength={5}
-                placeholder="A7K9P"
-                inputMode="text"
-                autoCapitalize="characters"
-                autoComplete="off"
-              />
-            </label>
+            <CodeFeld
+              wert={code}
+              onWert={setCode}
+              beschriftung={o.spielcode}
+              onFertig={() => void beitreten()}
+            />
             <button
               type="button"
               className={styles.grosserKnopf}
@@ -334,7 +332,7 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
 
   if (match.phase === 'lobby') {
     return (
-      <main className={shell.page}>
+      <main className={shell.page} style={brettAkzent('texas-holdem')}>
         <header className={shell.header}>
           <button
             type="button"
@@ -345,12 +343,11 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
             ←
           </button>
           <h1 className={shell.title}>{o.warteraum}</h1>
-          <span aria-hidden="true" />
+          <StatusPille status="online" />
         </header>
 
         <section className={styles.menue}>
-          <p className={styles.codeLabel}>{o.spielcode}</p>
-          <p className={styles.code}>{match.code}</p>
+          <RaumCode code={match.code} spiel={spielName(t, 'texas-holdem', "Texas Hold'em")} />
           <p className={styles.einleitung}>
             {(match.is_host ? o.codeWeitergebenHost : o.codeWeitergebenGast)(
               match.aufbau.start_chips,
@@ -358,15 +355,12 @@ export function TexasHoldemOnline({ onZurueck }: Props) {
             )}
           </p>
 
-          <ul className={styles.spielerListe}>
-            {players.map((p) => (
-              <li key={p.seat}>
-                <span className={styles.platzZahl}>{p.seat}</span>
-                {p.name}
-                {p.is_you && <small> {o.duKlein}</small>}
-              </li>
-            ))}
-          </ul>
+          <WarteSpieler
+            spieler={players}
+            gastgeberPlatz={GASTGEBER_PLATZ}
+            min={2}
+            ichBinGastgeber={match.is_host}
+          />
 
           {match.is_host && (
             <button

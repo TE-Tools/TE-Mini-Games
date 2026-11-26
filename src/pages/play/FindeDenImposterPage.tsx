@@ -39,6 +39,7 @@ import {
 } from '@/components/party/PartySetup'
 import setup from '@/components/party/PartySetup.module.css'
 import { SpielerKaertchen, SpielerZahl } from '@/components/party/SpielerKaertchen'
+import { StatusPille } from '@/components/onlineLobby/OnlineLobby'
 import { FindeDenImposterOnline } from './FindeDenImposterOnline'
 import { ImposterCategoriesEditor } from './ImposterCategoriesEditor'
 import { gueltigeKategorie } from './imposter/kategorien'
@@ -136,8 +137,12 @@ export function FindeDenImposterPage() {
 
   if (online) {
     return (
-      <main className={styles.page}>
-        <p className={styles.meta}>{tx.onlineMeta}</p>
+      <main className={setup.seite} style={akzentStil('finde-den-imposter')}>
+        <PartyKopf
+          titel={spielName(t, 'finde-den-imposter', 'Finde den Imposter')}
+          onZurueck={() => setOnline(false)}
+          rechts={<StatusPille status="online" />}
+        />
         <FindeDenImposterOnline onBack={() => setOnline(false)} />
       </main>
     )

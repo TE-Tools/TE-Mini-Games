@@ -37,8 +37,13 @@ import { Bestenliste } from './kniffel/Bestenliste'
 import { OeffentlicheRaeume } from './OeffentlicheRaeume'
 import raum from './OeffentlicheRaeume.module.css'
 import shell from './PlayShell.module.css'
-import { useSprache } from '@/i18n/sprache'
+import { spielName, useSprache } from '@/i18n/sprache'
+import { brettAkzent } from '@/components/onlineLobby/akzent'
+import { CodeFeld, RaumCode, StatusPille, WarteSpieler } from '@/components/onlineLobby/OnlineLobby'
 import styles from './KniffelPage.module.css'
+
+/** Wer eröffnet, sitzt auf Platz 1 (`kniffel_create_match`, Migration 017). */
+const GASTGEBER_PLATZ = 1
 
 interface KniffelOnlineProps {
   onZurueck: () => void
@@ -234,7 +239,7 @@ export function KniffelOnline({ onZurueck }: KniffelOnlineProps) {
 
   if (!matchId || !state) {
     return (
-      <main className={`${shell.page} ${styles.breiteSeite}`}>
+      <main className={`${shell.page} ${styles.breiteSeite}`} style={brettAkzent('kniffel')}>
         <header className={shell.header}>
           <button
             type="button"
@@ -290,19 +295,12 @@ export function KniffelOnline({ onZurueck }: KniffelOnlineProps) {
               <span>{o.oder}</span>
             </div>
 
-            <label className={styles.feld}>
-              <span>{o.spielcode}</span>
-              <input
-                className={styles.codeEingabe}
-                value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
-                maxLength={5}
-                placeholder="A7K9P"
-                inputMode="text"
-                autoCapitalize="characters"
-                autoComplete="off"
-              />
-            </label>
+            <CodeFeld
+              wert={code}
+              onWert={setCode}
+              beschriftung={o.spielcode}
+              onFertig={() => void beitreten()}
+            />
             <button
               type="button"
               className={styles.wuerfelKnopf}
@@ -402,7 +400,7 @@ export function KniffelOnline({ onZurueck }: KniffelOnlineProps) {
 
   if (match.phase === 'lobby') {
     return (
-      <main className={`${shell.page} ${styles.breiteSeite}`}>
+      <main className={`${shell.page} ${styles.breiteSeite}`} style={brettAkzent('kniffel')}>
         <header className={shell.header}>
           <button
             type="button"
@@ -413,25 +411,21 @@ export function KniffelOnline({ onZurueck }: KniffelOnlineProps) {
             ←
           </button>
           <h1 className={shell.title}>{o.warteraum}</h1>
-          <span aria-hidden="true" />
+          <StatusPille status="online" />
         </header>
 
         <section className={styles.lobby}>
-          <p className={styles.codeLabel}>{o.spielcode}</p>
-          <p className={styles.code}>{match.code}</p>
+          <RaumCode code={match.code} spiel={spielName(t, 'kniffel', 'Kniffel')} />
           <p className={styles.einleitung}>
             {match.is_host ? o.codeWeitergebenHost : o.codeWeitergebenGast}
           </p>
 
-          <ul className={styles.spielerListe}>
-            {players.map((p) => (
-              <li key={p.seat}>
-                <span className={styles.platz}>{p.seat}</span>
-                {p.name}
-                {p.is_you && <small> {o.du}</small>}
-              </li>
-            ))}
-          </ul>
+          <WarteSpieler
+            spieler={players}
+            gastgeberPlatz={GASTGEBER_PLATZ}
+            min={2}
+            ichBinGastgeber={match.is_host}
+          />
 
           {match.is_host && (
             <button
