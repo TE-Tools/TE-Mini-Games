@@ -116,6 +116,8 @@ const RUNDEN_JE_SPIEL: readonly { gameId: GameId; ziel: number }[] = [
   { gameId: 'letzte-karte', ziel: 2 },
   { gameId: 'texas-holdem', ziel: 1 },
   { gameId: 'schach', ziel: 1 },
+  // Eine Partie auf dem mittleren Blatt dauert drei, vier Minuten.
+  { gameId: 'kaesekaestchen', ziel: 2 },
   { gameId: 'schuetzenrunde', ziel: 1 },
 ]
 
@@ -182,7 +184,7 @@ function tagNummer(datum: string): number {
 }
 
 /**
- * Schrittweite durch die Spieleliste. Teilerfremd zu ihrer Länge (15), damit
+ * Schrittweite durch die Spieleliste. Teilerfremd zu ihrer Länge (16), damit
  * jedes Spiel drankommt; kein Vielfaches davon, damit der Folgetag ein
  * anderes Spiel hat. `tests/bindung.test.ts` prüft beides.
  */
@@ -202,7 +204,7 @@ export function aufgabenFuerTag(datum: string): Tagesaufgabe[] {
   const r = zufall(hash(`tagesaufgaben:${datum}`))
 
   // Das Spiel geht nicht nach dem Würfel, sondern in Siebenerschritten
-  // durch die Liste: So kommt jedes Spiel einmal in fünfzehn Tagen dran,
+  // durch die Liste: So kommt jedes Spiel einmal in sechzehn Tagen dran,
   // durcheinander, und nie zweimal hintereinander.
   const n = RUNDEN_JE_SPIEL.length
   const index = (((tagNummer(datum) * SPIEL_SCHRITT) % n) + n) % n

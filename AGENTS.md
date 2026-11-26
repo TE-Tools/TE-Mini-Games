@@ -92,6 +92,16 @@ corresponding feature; do not invent a competing design.
   Schützenopoly nur ein Zugbuch: wer sitzt, wer Weiß hat, wer am Zug ist. Es
   steht dort **keine** Schachregel, und es kommt auch keine hinein – jeder
   Mitspieler spielt das Buch durch dieselbe Engine nach.
+- **Käsekästchen:** `docs/design/kaesekaestchen/` – Regeln gehören ausschließlich
+  nach `src/games/kaesekaestchen/`, Stellwerte (Größen, Stufen, Punkte)
+  ausschließlich in dessen `config.ts`; der Computer ist rein und bekommt seinen
+  Zufall von außen. Online (Migration `032_kaesekaestchen_online.sql`) führt der
+  Server wie bei Schach nur ein Zugbuch. Weil nach einem geschlossenen Kästchen
+  derselbe noch einmal zieht, meldet der Ziehende den nächsten Sitz mit; der
+  Server prüft nur Reihenfolge, freie Linie und gültigen Sitz, die Mitspieler
+  rechnen nach und werten eine falsche Angabe als Aufgabe. Es steht dort
+  **keine** Spielregel, und es kommt auch keine hinein. Die Nummern der Linien
+  (`raster.ts`) stehen im Zugbuch -- wer sie umordnet, bricht laufende Partien.
 - **Rückwärts:** `docs/design/rueckwaerts/` – das einzige Spiel mit Mikrofon.
   Regeln (wer wann was hören darf, Stutzen, Löschen) gehören nach
   `src/games/rueckwaerts/engine.ts`, Stellwerte nach `config.ts`, und nur

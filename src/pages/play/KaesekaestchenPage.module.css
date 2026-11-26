@@ -1,0 +1,172 @@
+/* Käsekästchen – Menü, Partie gegen den Computer und am Gerät, Online-Blatt. */
+
+.seite {
+  max-width: 34rem;
+  --akzent: #a21caf;
+}
+
+.abschnitt {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-2xl);
+  background: rgb(255 255 255 / 0.86);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.abschnitt h2 {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 800;
+}
+
+.groessen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-xl);
+  background: color-mix(in srgb, var(--akzent) 6%, #ffffff);
+  border: 1px solid color-mix(in srgb, var(--akzent) 22%, transparent);
+}
+
+.groessen h2 {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 800;
+  text-align: center;
+}
+
+.wahl {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+}
+
+.wahlVier {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.chip,
+.chipAktiv {
+  min-height: var(--touch-min);
+  padding: var(--space-2) var(--space-1);
+  border-radius: var(--radius-lg);
+  font-weight: 800;
+  font-size: var(--text-sm);
+  border: 1px solid var(--color-border-strong);
+  background: #ffffff;
+  color: var(--color-text);
+}
+
+.chipAktiv {
+  border-color: var(--akzent);
+  background: var(--akzent);
+  color: #ffffff;
+}
+
+.erklaerung {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.status {
+  min-height: 1.6em;
+  margin: 0;
+  font-weight: 800;
+  text-align: center;
+}
+
+.statusNochmal {
+  color: var(--akzent);
+}
+
+.knoepfe {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+/* Die Knöpfe der Spielseiten wollen 12rem breit sein -- im Raster bestimmt die Spalte. */
+.knoepfe > button,
+.knoepfe > a {
+  min-width: 0;
+  padding-inline: var(--space-2);
+}
+
+.einKnopf {
+  grid-template-columns: 1fr;
+}
+
+.ende {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-2xl);
+  background: #ffffff;
+  border: 2px solid var(--akzent);
+  box-shadow: var(--shadow-md);
+  text-align: center;
+}
+
+.ende h2 {
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: 800;
+}
+
+.ende p {
+  margin: 0;
+}
+
+.hinweis {
+  width: 100%;
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--akzent) 8%, #ffffff);
+  border: 1px solid color-mix(in srgb, var(--akzent) 30%, transparent);
+  font-weight: 700;
+  text-align: center;
+}
+
+.hinweis p {
+  margin: 0 0 var(--space-2);
+}
+
+.fehler {
+  color: var(--color-danger);
+  font-weight: 700;
+  text-align: center;
+}
+
+.liste {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.liste button {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: #ffffff;
+  font: inherit;
+  text-align: left;
+}

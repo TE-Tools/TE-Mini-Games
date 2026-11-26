@@ -345,6 +345,158 @@ function BildSchach() {
   )
 }
 
+/* -------------------------------------------------------- Käsekästchen */
+
+function BildKaesekaestchen() {
+  const z = 26
+  const spalten = 4
+  const reihen = 3
+  const x0 = BREITE / 2 - (spalten * z) / 2
+  const y0 = 30
+  const p = (s: number, r: number) => ({ x: x0 + s * z, y: y0 + r * z })
+  // Gezogene Linien: [von Spalte, von Reihe, nach Spalte, nach Reihe, Farbe]
+  const linien: [number, number, number, number, string][] = [
+    [0, 0, 1, 0, '#a21caf'],
+    [0, 0, 0, 1, '#0891b2'],
+    [1, 0, 1, 1, '#a21caf'],
+    [0, 1, 1, 1, '#0891b2'],
+    [1, 0, 2, 0, '#0891b2'],
+    [2, 0, 2, 1, '#a21caf'],
+    [1, 1, 2, 1, '#a21caf'],
+    [2, 1, 2, 2, '#0891b2'],
+    [3, 0, 4, 0, '#a21caf'],
+    [4, 0, 4, 1, '#0891b2'],
+    [0, 2, 0, 3, '#a21caf'],
+    [1, 3, 2, 3, '#0891b2'],
+    [3, 2, 4, 2, '#a21caf'],
+  ]
+  const kaestchen: [number, number, string, string][] = [
+    [0, 0, '#67e8f9', 'B'],
+    [1, 0, '#f0abfc', 'A'],
+  ]
+  const punkte: ReactNode[] = []
+  for (let r = 0; r <= reihen; r++) {
+    for (let s = 0; s <= spalten; s++) {
+      const { x, y } = p(s, r)
+      punkte.push(<circle key={`${s}-${r}`} cx={x} cy={y} r={3.2} fill="#3b0764" />)
+    }
+  }
+  const neu = { von: p(3, 1), nach: p(3, 2) }
+  return (
+    <>
+      <g transform={`rotate(-4 ${BREITE / 2} 70)`}>
+        <rect
+          x={x0 - 18}
+          y={y0 - 18}
+          width={spalten * z + 36}
+          height={reihen * z + 36}
+          rx={10}
+          fill="rgb(0 0 0 / 0.22)"
+          transform="translate(3 5)"
+        />
+        <rect
+          x={x0 - 18}
+          y={y0 - 18}
+          width={spalten * z + 36}
+          height={reihen * z + 36}
+          rx={10}
+          fill="#fdfcff"
+        />
+        {/* Karopapier */}
+        {Array.from({ length: spalten * 2 + 3 }, (_, i) => (
+          <line
+            key={`kv${i}`}
+            x1={x0 - 13 + i * (z / 2)}
+            y1={y0 - 18}
+            x2={x0 - 13 + i * (z / 2)}
+            y2={y0 + reihen * z + 18}
+            stroke="#dbeafe"
+            strokeWidth={0.8}
+          />
+        ))}
+        {Array.from({ length: reihen * 2 + 3 }, (_, i) => (
+          <line
+            key={`kw${i}`}
+            x1={x0 - 18}
+            y1={y0 - 13 + i * (z / 2)}
+            x2={x0 + spalten * z + 18}
+            y2={y0 - 13 + i * (z / 2)}
+            stroke="#dbeafe"
+            strokeWidth={0.8}
+          />
+        ))}
+        {kaestchen.map(([s, r, farbe, buchstabe]) => {
+          const { x, y } = p(s, r)
+          return (
+            <g key={`k${s}-${r}`}>
+              <rect x={x + 3} y={y + 3} width={z - 6} height={z - 6} rx={4} fill={farbe} />
+              <text
+                x={x + z / 2}
+                y={y + z / 2 + 5}
+                fontSize={14}
+                fontWeight={900}
+                textAnchor="middle"
+                fill="#3b0764"
+              >
+                {buchstabe}
+              </text>
+            </g>
+          )
+        })}
+        {linien.map(([s1, r1, s2, r2, farbe], i) => {
+          const a = p(s1, r1)
+          const b = p(s2, r2)
+          return (
+            <line
+              key={`l${i}`}
+              x1={a.x}
+              y1={a.y}
+              x2={b.x}
+              y2={b.y}
+              stroke={farbe}
+              strokeWidth={3.6}
+              strokeLinecap="round"
+            />
+          )
+        })}
+        {/* Die frisch gezogene Linie leuchtet */}
+        <Schwebt verzug={0.2}>
+          <line
+            x1={neu.von.x}
+            y1={neu.von.y}
+            x2={neu.nach.x}
+            y2={neu.nach.y}
+            stroke="#facc15"
+            strokeWidth={9}
+            strokeLinecap="round"
+            opacity={0.55}
+          />
+          <line
+            x1={neu.von.x}
+            y1={neu.von.y}
+            x2={neu.nach.x}
+            y2={neu.nach.y}
+            stroke="#a21caf"
+            strokeWidth={3.6}
+            strokeLinecap="round"
+          />
+        </Schwebt>
+        {punkte}
+      </g>
+      {/* Ein Stift am Rand */}
+      <Schwebt verzug={0.8}>
+        <g transform="translate(205 92) rotate(38)">
+          <rect x={-5} y={-34} width={10} height={44} rx={2} fill="#facc15" />
+          <rect x={-5} y={-40} width={10} height={8} rx={2} fill="#f9a8d4" />
+          <rect x={-5} y={-33} width={10} height={3} fill="#a1a1aa" />
+          <path d="M -5 10 L 5 10 L 0 22 Z" fill="#fde68a" />
+          <path d="M -1.6 18 L 1.6 18 L 0 22 Z" fill="#3b0764" />
+        </g>
+      </Schwebt>
+    </>
+  )
+}
+
 /* ------------------------------------------------------ Schützenopoly */
 
 function BildSchuetzenopoly() {
@@ -439,6 +591,7 @@ const BILDER: Record<MenueSpiel, () => ReactNode> = {
   'letzte-karte': BildLetzteKarte,
   'texas-holdem': BildTexas,
   schach: BildSchach,
+  kaesekaestchen: BildKaesekaestchen,
   schuetzenopoly: BildSchuetzenopoly,
 }
 

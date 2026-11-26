@@ -569,6 +569,15 @@
   --kachel-farbe: #44403c;
 }
 
+:is(.kachel, .held, .ersterSchritt)[data-game='kaesekaestchen'] {
+  /* Fuchsia wie ein Buntstift auf Karopapier: zwischen dem Lila von Wer bin
+     ich? und dem Pink von Scharade, aber von beiden noch klar zu trennen --
+     und im Raster sonst nirgends vergeben. */
+  --kachel-ton: color-mix(in srgb, #a21caf 13%, #ffffff);
+  --kachel-rahmen: color-mix(in srgb, #a21caf 30%, transparent);
+  --kachel-farbe: #a21caf;
+}
+
 :is(.kachel, .held, .ersterSchritt)[data-game='schuetzenopoly'] {
   /* Olivgruen. Das Brett selbst ist dunkles Flaschengruen mit Gold, aber
      beides ist hier schon vergeben: Gruen bei der Schuetzenrunde und bei

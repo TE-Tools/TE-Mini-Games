@@ -17,7 +17,13 @@ import type { Texte } from '@/i18n/sprache'
 /** Die Spiele mit einem Startbildschirm aus diesem Baukasten. */
 export type MenueSpiel = Extract<
   GameId,
-  'kniffel' | 'maumau' | 'letzte-karte' | 'texas-holdem' | 'schach' | 'schuetzenopoly'
+  | 'kniffel'
+  | 'maumau'
+  | 'letzte-karte'
+  | 'texas-holdem'
+  | 'schach'
+  | 'kaesekaestchen'
+  | 'schuetzenopoly'
 >
 
 export interface MenueStatistik {

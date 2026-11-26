@@ -51,6 +51,12 @@
   --akzent-hell: #78716c;
 }
 
+.menue[data-spiel='kaesekaestchen'] {
+  --akzent: #a21caf;
+  --akzent-tief: #6b0f73;
+  --akzent-hell: #d046dc;
+}
+
 .menue[data-spiel='schuetzenopoly'] {
   --akzent: #4d7c0f;
   --akzent-tief: #2c4a06;
