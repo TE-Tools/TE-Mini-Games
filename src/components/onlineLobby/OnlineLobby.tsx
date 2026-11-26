@@ -255,7 +255,7 @@ export function CodeFeld({
   const aktiv = Math.min(zeichen.length, laenge - 1)
   return (
     <div className={styles.codeFeld}>
-      <label htmlFor={id} className={styles.unsichtbar}>
+      <label htmlFor={id} className={styles.codeBeschriftung}>
         {beschriftung ?? l.codeFeld}
       </label>
       <div className={styles.kaestchen} style={{ ['--laenge' as string]: laenge }}>
