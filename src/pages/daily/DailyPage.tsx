@@ -1,7 +1,17 @@
+/**
+ * Das Tagesziel: jeden Tag ein Spiel, für alle dasselbe, ein Versuch.
+ *
+ * Seit 26.11.2026 im Gewand der Party-Einstellungen: oben das Spiel in seiner
+ * Kachelfarbe mit dem, was heute zu tun ist, darunter Stand (offen/erledigt,
+ * das eigene Ergebnis) und wann das nächste kommt. Welche Aufgabe es gibt,
+ * wie sie zählt und wo sie liegt, bleibt in progression/daily und
+ * offline/daily -- hier wird nur gezeigt.
+ */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { getDailyChallenge, type DailyChallengeConfig } from '@/progression/daily'
 import { hasCompletedDaily, getDailyAttempt, saveDailyAttempt } from '@/offline/daily'
+import type { LocalDailyAttempt } from '@/offline/db'
 import {
   createPerfectSecondLevel,
   calculateScore,
@@ -11,8 +21,14 @@ import {
 import { createWhatIsMissingLevel, calculateWhatIsMissingScore } from '@/games/what-is-missing'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
-import styles from './DailyPage.module.css'
 import { useSprache } from '@/i18n/sprache'
+import { PartyKopf, StartKnopf } from '@/components/party/PartySetup'
+import setup from '@/components/party/PartySetup.module.css'
+import party from '@/pages/play/PartyShell.module.css'
+import { kachelFuer } from '@/pages/spiele-katalog'
+import { akzentFuer } from '@/pages/kachelFarbe'
+import { bisMitternacht } from './countdown'
+import styles from './DailyPage.module.css'
 
 type Phase =
   | 'loading'
@@ -23,12 +39,21 @@ type Phase =
   | 'done'
   | 'already'
 
+/** Alle 15 s neu -- der Countdown zeigt Minuten, das reicht dicke. */
+const TAKT_MS = 15_000
+
+function zahlAus(daten: Record<string, unknown> | undefined, feld: string): number | null {
+  const wert = daten?.[feld]
+  return typeof wert === 'number' && Number.isFinite(wert) ? wert : null
+}
+
 export function DailyPage() {
-  const { t } = useSprache()
-  const navigate = useNavigate()
+  const { sprache, t } = useSprache()
+  const a = t.appSeiten
   const [phase, setPhase] = useState<Phase>('loading')
   const [config, setConfig] = useState<DailyChallengeConfig | null>(null)
-  const [score, setScore] = useState<number | null>(null)
+  const [attempt, setAttempt] = useState<LocalDailyAttempt | null>(null)
+  const [jetzt, setJetzt] = useState(() => new Date())
 
   const [psPhase, setPsPhase] = useState<'ready' | 'running'>('ready')
   const timerRef = useRef<ReturnType<typeof createTimer> | null>(null)
@@ -51,8 +76,9 @@ export function DailyPage() {
       const done = await hasCompletedDaily(c.dateKey)
       if (cancelled) return
       if (done) {
-        const attempt = await getDailyAttempt(c.dateKey)
-        setScore(attempt?.score ?? null)
+        const gespielt = await getDailyAttempt(c.dateKey)
+        if (cancelled) return
+        setAttempt(gespielt ?? null)
         setPhase('already')
       } else {
         setPhase('ready')
@@ -61,6 +87,11 @@ export function DailyPage() {
     return () => {
       cancelled = true
     }
+  }, [])
+
+  useEffect(() => {
+    const id = window.setInterval(() => setJetzt(new Date()), TAKT_MS)
+    return () => window.clearInterval(id)
   }, [])
 
   const start = useCallback(() => {
@@ -78,7 +109,7 @@ export function DailyPage() {
     async (finalScore: number, resultData: Record<string, unknown>) => {
       if (!config) return
       const saved = await saveDailyAttempt(config, finalScore, resultData)
-      setScore(saved.score)
+      setAttempt(saved)
       // Bisher ohne Streak-/Abzeichen-Hook – die Daily Challenge sollte
       // genauso zählen wie eine normale Runde im jeweiligen Spiel.
       await processAfterResult({ gameId: config.gameId, level: config.level })
@@ -113,11 +144,11 @@ export function DailyPage() {
   useEffect(() => {
     if (phase !== 'play-missing-memorize') return
     if (wimCountdown <= 0) {
-      const t = window.setTimeout(() => setPhase('play-missing-choose'), 0)
-      return () => window.clearTimeout(t)
+      const id = window.setTimeout(() => setPhase('play-missing-choose'), 0)
+      return () => window.clearTimeout(id)
     }
-    const t = window.setTimeout(() => setWimCountdown((c) => Math.round((c - 0.1) * 10) / 10), 100)
-    return () => window.clearTimeout(t)
+    const id = window.setTimeout(() => setWimCountdown((c) => Math.round((c - 0.1) * 10) / 10), 100)
+    return () => window.clearTimeout(id)
   }, [phase, wimCountdown])
 
   const wimPick = useCallback(
@@ -136,50 +167,82 @@ export function DailyPage() {
     [wimConfig, finish],
   )
 
-  const gameLabel = config?.gameId === 'perfect-second' ? 'Die perfekte Sekunde' : 'Was fehlt?'
-
   if (phase === 'loading' || !config) {
     return (
-      <main className={styles.page}>
+      <main className={setup.seite}>
+        <PartyKopf titel={t.daily.titel} />
         <p className={styles.muted}>{t.allgemein.laden}</p>
       </main>
     )
   }
 
-  return (
-    <main className={styles.page}>
-      <header className={styles.header}>
-        <button
-          type="button"
-          className={styles.back}
-          onClick={() => navigate('/')}
-          aria-label={t.allgemein.zurueck}
-        >
-          ←
-        </button>
-        <h1 className={styles.title}>{t.daily.titel}</h1>
-        <span className={styles.badge}>{config.dateKey}</span>
-      </header>
+  // Wie bisher: Das Tagesziel kennt genau diese zwei Spiele (dailyGameId).
+  const spiel = config.gameId === 'perfect-second' ? 'perfect-second' : 'what-is-missing'
+  const [jahr, monat, tag] = config.dateKey.split('-').map(Number)
+  const datum = new Date(jahr!, monat! - 1, tag!).toLocaleDateString(sprache, {
+    day: 'numeric',
+    month: 'short',
+  })
+  const erledigt = phase === 'done' || phase === 'already'
+  const amSpielen = !erledigt && phase !== 'ready'
+  const ist = zahlAus(attempt?.resultData, 'actualTime')
+  const soll = zahlAus(attempt?.resultData, 'targetTime')
 
-      {phase === 'ready' && (
-        <section className={styles.ready}>
-          <p className={styles.gameName}>{gameLabel}</p>
-          <p className={styles.info}>{t.daily.levelVersuch(config.level)}</p>
-          <p className={styles.hint}>{t.daily.hinweis}</p>
-          <button type="button" className={styles.primaryBtn} onClick={start}>
-            {t.daily.starten}
-          </button>
+  /*
+   * Nur NACH dem Versuch: als Vorfreude auf das nächste, nie als Uhr, die
+   * vor dem Spielen tickt -- „Keine Uhr bis Mitternacht, kein ‚nur noch
+   * heute'" (docs/design/bindung/README.md, Regel 1).
+   */
+  const countdown = (
+    <p className={styles.countdown} data-testid="tagesziel-countdown">
+      <span aria-hidden="true">⏳</span> {a.tagesziel.neuIn(bisMitternacht(jetzt))}
+    </p>
+  )
+
+  return (
+    <main className={`${setup.seite} ${styles.seite}`} style={akzentFuer(spiel)}>
+      <PartyKopf titel={t.daily.titel} rechts={<span className={styles.datum}>{datum}</span>} />
+
+      {!amSpielen && (
+        <section className={styles.held}>
+          <div className={styles.heldKopf}>
+            <span className={styles.heldIcon} aria-hidden="true">
+              {kachelFuer(spiel)?.icon ?? '🎯'}
+            </span>
+            <div className={styles.heldName}>
+              <p className={styles.kicker}>{a.tagesziel.heute}</p>
+              <h2 className={styles.spielName}>{t.spiele[spiel]}</h2>
+            </div>
+            <span className={erledigt ? styles.statusErledigt : styles.statusOffen}>
+              {erledigt ? `✓ ${a.tagesziel.erledigt}` : a.tagesziel.offen}
+            </span>
+          </div>
+          <p className={styles.aufgabe}>{a.tagesziel.aufgabe[spiel]}</p>
+          <ul className={styles.fakten}>
+            <li>{a.tagesziel.level(config.level)}</li>
+            <li>{a.tagesziel.einVersuch}</li>
+            <li>{a.tagesziel.fuerAlle}</li>
+          </ul>
         </section>
       )}
 
+      {phase === 'ready' && (
+        <>
+          <p className={styles.hint}>{t.daily.hinweis}</p>
+          <StartKnopf onClick={start}>{t.daily.starten}</StartKnopf>
+        </>
+      )}
+
       {phase === 'play-perfect' && (
-        <section className={styles.play}>
+        <section className={`${party.card} ${styles.buehne}`}>
           {psPhase === 'ready' && (
             <>
-              <p className={styles.target}>Ziel: {formatTime(psConfig.targetTime, 2)} s</p>
-              <p className={styles.muted}>±{formatTime(psConfig.tolerance, 2)} s</p>
-              <button type="button" className={styles.primaryBtn} onClick={psStart}>
-                Start
+              <p className={styles.target}>{a.runde.ziel(formatTime(psConfig.targetTime, 2))}</p>
+              <p className={styles.muted}>
+                {'±' + a.runde.zeit(formatTime(psConfig.tolerance, 2))}
+              </p>
+              <button type="button" className={styles.losKnopf} onClick={psStart}>
+                {a.runde.start}
               </button>
             </>
           )}
@@ -187,7 +250,7 @@ export function DailyPage() {
             <>
               <p className={styles.running}>{t.daily.timerLaeuft}</p>
               <button type="button" className={styles.stopBtn} onClick={() => void psStop()}>
-                STOP
+                {a.runde.stopp}
               </button>
             </>
           )}
@@ -195,8 +258,8 @@ export function DailyPage() {
       )}
 
       {phase === 'play-missing-memorize' && (
-        <section className={styles.play}>
-          <p className={styles.timer}>{wimCountdown.toFixed(1)} s</p>
+        <section className={`${party.card} ${styles.buehne}`}>
+          <p className={styles.timer}>{a.runde.zeit(wimCountdown.toFixed(1))}</p>
           <ul className={styles.grid}>
             {wimConfig.shownObjects.map((o) => (
               <li key={o.id} className={styles.cell}>
@@ -209,7 +272,7 @@ export function DailyPage() {
       )}
 
       {phase === 'play-missing-choose' && (
-        <section className={styles.play}>
+        <section className={`${party.card} ${styles.buehne}`}>
           <p className={styles.question}>{t.daily.welchesObjekt}</p>
           <ul className={styles.choiceGrid}>
             {wimConfig.choiceObjects.map((o) => (
@@ -228,15 +291,22 @@ export function DailyPage() {
         </section>
       )}
 
-      {(phase === 'done' || phase === 'already') && (
-        <section className={styles.done}>
+      {erledigt && (
+        <section className={`${party.card} ${styles.buehne} ${styles.ergebnis}`}>
           <p className={styles.doneTitle}>
-            {phase === 'already' ? 'Heute schon gespielt' : 'Geschafft!'}
+            {phase === 'already' ? a.tagesziel.heuteGespielt : a.tagesziel.geschafft}
           </p>
-          <p className={styles.score}>{score !== null ? t.daily.punkte(score) : '—'}</p>
+          <p className={styles.kicker}>{a.tagesziel.deinErgebnis}</p>
+          <p className={styles.score}>{attempt ? t.daily.punkte(attempt.score) : '—'}</p>
+          {spiel === 'perfect-second' && ist !== null && soll !== null && (
+            <p className={styles.muted}>
+              {a.runde.zeitMitZiel(formatTime(ist), formatTime(soll, 2))}
+            </p>
+          )}
           <p className={styles.hint}>
             {phase === 'already' ? t.daily.schonGespielt : t.daily.gespeichert}
           </p>
+          {countdown}
           <Link to="/" className={styles.homeLink}>
             {t.daily.zurStartseite}
           </Link>

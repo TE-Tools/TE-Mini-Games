@@ -12,9 +12,13 @@
  *
  * Also bitte nicht "nachziehen", weil es nach einer Lücke aussieht -- es ist
  * keine.
+ *
+ * Die Einstellungen sehen aus wie die der Partyspiele (26.11.2026): Mitspieler
+ * als Kärtchen, die gemerkte Runde (dieselbe wie dort -- am Abend sitzt
+ * dieselbe Familie am Tisch), das Spiel als Karten mit Bild.
  */
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { Link } from 'react-router-dom'
 import {
   createFamilySession,
   getFamilySession,
@@ -24,13 +28,20 @@ import {
   type FamilyStanding,
 } from '@/offline/family'
 import type { LocalFamilySession } from '@/offline/db'
-import type { GameId } from '@/games/types'
 import { createFamilyLevel, calculateScore, createTimer, formatTime } from '@/games/perfect-second'
 import { createWhatIsMissingLevel, calculateWhatIsMissingScore } from '@/games/what-is-missing'
 import { processAfterResult } from '@/progression'
 import { trySyncNow } from '@/services/remoteSync'
-import styles from './FamilyPage.module.css'
 import { useSprache } from '@/i18n/sprache'
+import { ChipAuswahl } from '@/components/party/Chips'
+import { useSpielerGruppe } from '@/components/party/gruppe'
+import { PartyHeld, PartyKarte, PartyKopf, StartKnopf } from '@/components/party/PartySetup'
+import setup from '@/components/party/PartySetup.module.css'
+import { SpielerKaertchen, SpielerZahl } from '@/components/party/SpielerKaertchen'
+import { Spielerbild } from '@/pages/play/party/Spielerbild'
+import party from '@/pages/play/PartyShell.module.css'
+import { kachelFuer } from '@/pages/spiele-katalog'
+import styles from './FamilyPage.module.css'
 
 type Phase =
   | 'setup'
@@ -41,18 +52,39 @@ type Phase =
   | 'player-done'
   | 'finished'
 
+const FAMILIEN_SPIELE = ['perfect-second', 'what-is-missing'] as const
+type FamilienSpiel = (typeof FAMILIEN_SPIELE)[number]
+
+/** Grenzen der Engine (createFamilySession) -- hier nur für Anzeige und Kärtchen. */
+const MIN_SPIELER = 2
+const MAX_SPIELER = 8
+const VORBELEGUNG = ['Thomas', 'Marina', 'Phillip', 'Sonja']
+
+/** Das Violett der Familienrunde, für alle Bausteine darunter. */
+const FARBE = '#7c3aed'
+const AKZENT = {
+  ['--akzent' as string]: FARBE,
+  ['--party-farbe' as string]: `linear-gradient(135deg, color-mix(in srgb, ${FARBE} 72%, #ffffff), ${FARBE})`,
+  ['--party-rand' as string]: FARBE,
+} as CSSProperties
+
+/** Welcher Fehler beim Start -- die Kennung, der Text kommt beim Rendern. */
+type StartFehler = 'wenige' | 'viele' | 'sonst'
+
+const MEDAILLE = ['🥇', '🥈', '🥉']
+
 export function FamilyPage() {
   const { t } = useSprache()
-  const navigate = useNavigate()
+  const a = t.appSeiten
   const [phase, setPhase] = useState<Phase>('setup')
-  const [namesText, setNamesText] = useState('Thomas\nMarina\nPhillip\nSonja')
-  const [gameId, setGameId] = useState<GameId>('perfect-second')
+  const { namen, setNamen, gemerkt, merken } = useSpielerGruppe(VORBELEGUNG)
+  const [gameId, setGameId] = useState<FamilienSpiel>('perfect-second')
   const [session, setSession] = useState<LocalFamilySession | null>(null)
   const [standings, setStandings] = useState<FamilyStanding[]>([])
   const [lastScore, setLastScore] = useState<number | null>(null)
   /** Measured seconds of the player who just went - shown on the hand-off screen. */
   const [lastTime, setLastTime] = useState<number | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<StartFehler | null>(null)
 
   const [psPhase, setPsPhase] = useState<'ready' | 'running'>('ready')
   const timerRef = useRef<ReturnType<typeof createTimer> | null>(null)
@@ -66,22 +98,22 @@ export function FamilyPage() {
 
   const startSession = useCallback(async () => {
     setError(null)
-    const names = namesText
-      .split(/[\n,;]+/)
-      .map((n) => n.trim())
-      .filter(Boolean)
+    const names = namen.map((n) => n.trim()).filter(Boolean)
     try {
       const s = await createFamilySession(gameId, names, 1)
+      merken(names)
       setSession(s)
       setPsConfig(createFamilyLevel())
       if (gameId === 'what-is-missing') {
         setWimConfig(createWhatIsMissingLevel(1, `family-${s.id}`))
       }
       setPhase('handoff')
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Fehler beim Start')
+    } catch {
+      setError(
+        names.length < MIN_SPIELER ? 'wenige' : names.length > MAX_SPIELER ? 'viele' : 'sonst',
+      )
     }
-  }, [namesText, gameId])
+  }, [namen, gameId, merken])
 
   const beginPlay = useCallback(() => {
     if (!session) return
@@ -148,11 +180,11 @@ export function FamilyPage() {
   useEffect(() => {
     if (phase !== 'play-missing-memorize') return
     if (wimCountdown <= 0) {
-      const t = window.setTimeout(() => setPhase('play-missing-choose'), 0)
-      return () => window.clearTimeout(t)
+      const id = window.setTimeout(() => setPhase('play-missing-choose'), 0)
+      return () => window.clearTimeout(id)
     }
-    const t = window.setTimeout(() => setWimCountdown((c) => Math.round((c - 0.1) * 10) / 10), 100)
-    return () => window.clearTimeout(t)
+    const id = window.setTimeout(() => setWimCountdown((c) => Math.round((c - 0.1) * 10) / 10), 100)
+    return () => window.clearTimeout(id)
   }, [phase, wimCountdown])
 
   const wimPick = useCallback(
@@ -173,96 +205,121 @@ export function FamilyPage() {
     setPhase('handoff')
   }, [])
 
-  return (
-    <main className={styles.page}>
-      <header className={styles.header}>
-        <button
-          type="button"
-          className={styles.back}
-          onClick={() => navigate('/')}
-          aria-label={'Zur\u00fcck'}
-        >
-          {'\u2190'}
-        </button>
-        <h1 className={styles.title}>{t.familie.titel}</h1>
-        <span className={styles.badge}>{t.familie.markeLokal}</span>
-      </header>
+  const kopf = (
+    <PartyKopf
+      titel={t.familie.titel}
+      rechts={<span className={styles.marke}>{t.familie.markeLokal}</span>}
+    />
+  )
 
-      {phase === 'setup' && (
-        <section className={styles.setup}>
-          <p className={styles.hint}>
-            {
-              'Namen eintragen (ein Name pro Zeile). Das Ger\u00e4t wird weitergegeben \u2013 kein Konto n\u00f6tig.'
-            }
+  if (phase === 'setup') {
+    return (
+      <main className={setup.seite} style={AKZENT}>
+        {kopf}
+        <PartyHeld icon="👨‍👩‍👧‍👦">{a.familie.held}</PartyHeld>
+
+        <PartyKarte
+          titel={a.familie.spielerTitel(MIN_SPIELER, MAX_SPIELER)}
+          zusatz={<SpielerZahl anzahl={namen.length} max={MAX_SPIELER} />}
+        >
+          <SpielerKaertchen
+            namen={namen}
+            onNamen={setNamen}
+            min={MIN_SPIELER}
+            max={MAX_SPIELER}
+            gemerkt={gemerkt}
+          />
+        </PartyKarte>
+
+        <PartyKarte titel={a.familie.spielTitel}>
+          <ChipAuswahl
+            beschriftung={t.familie.spiel}
+            anordnung={1}
+            wert={gameId}
+            onWahl={setGameId}
+            optionen={FAMILIEN_SPIELE.map((id) => ({
+              wert: id,
+              text: t.spiele[id],
+              icon: kachelFuer(id)?.icon,
+              beschreibung: a.familie.beschreibung[id],
+            }))}
+          />
+        </PartyKarte>
+
+        {error && (
+          <p className={styles.error} role="alert">
+            {error === 'wenige'
+              ? a.familie.zuWenige(MIN_SPIELER)
+              : error === 'viele'
+                ? a.familie.zuViele(MAX_SPIELER)
+                : a.familie.startFehler}
           </p>
-          <label className={styles.label}>
-            Spieler
-            <textarea
-              className={styles.textarea}
-              value={namesText}
-              onChange={(e) => setNamesText(e.target.value)}
-              rows={5}
-              aria-label={t.familie.spielernamen}
-            />
-          </label>
-          <fieldset className={styles.fieldset}>
-            <legend>{t.familie.spiel}</legend>
-            <label className={styles.radio}>
-              <input
-                type="radio"
-                name="game"
-                checked={gameId === 'perfect-second'}
-                onChange={() => setGameId('perfect-second')}
-              />
-              {t.spiele['perfect-second']}
-            </label>
-            <label className={styles.radio}>
-              <input
-                type="radio"
-                name="game"
-                checked={gameId === 'what-is-missing'}
-                onChange={() => setGameId('what-is-missing')}
-              />
-              {t.spiele['what-is-missing']}
-            </label>
-          </fieldset>
-          {error && <p className={styles.error}>{error}</p>}
-          <button type="button" className={styles.primaryBtn} onClick={() => void startSession()}>
-            {t.familie.rundeStarten}
-          </button>
-        </section>
-      )}
+        )}
+
+        <StartKnopf onClick={() => void startSession()}>{t.familie.rundeStarten}</StartKnopf>
+      </main>
+    )
+  }
+
+  const fortschritt = session && (
+    <ol
+      className={styles.reihe}
+      aria-label={a.familie.spielerVon(session.currentPlayerIndex + 1, session.playerNames.length)}
+    >
+      {session.playerNames.map((name, i) => (
+        <li
+          key={`${i}-${name}`}
+          className={
+            i < session.currentPlayerIndex || session.status === 'finished'
+              ? styles.punktFertig
+              : i === session.currentPlayerIndex
+                ? styles.punktDran
+                : styles.punkt
+          }
+          aria-hidden="true"
+        />
+      ))}
+    </ol>
+  )
+
+  return (
+    <main className={`${setup.seite} ${styles.seite}`} style={AKZENT}>
+      {kopf}
 
       {phase === 'handoff' && session && (
-        <section className={styles.handoff}>
-          <p className={styles.bigName}>{currentName}</p>
-          <p className={styles.hint}>{'Du bist dran. Ger\u00e4t \u00fcbernehmen und starten.'}</p>
+        <section className={`${party.card} ${party.cover} ${styles.buehne}`}>
+          <Spielerbild name={currentName} />
+          <p className={party.coverName}>{currentName}</p>
+          <p className={party.subtitle}>{a.familie.duBistDran}</p>
+          {fortschritt}
           <p className={styles.muted}>
-            Spieler {session.currentPlayerIndex + 1} von {session.playerNames.length}
+            {a.familie.spielerVon(session.currentPlayerIndex + 1, session.playerNames.length)}
           </p>
-          <button type="button" className={styles.primaryBtn} onClick={beginPlay}>
+          <button type="button" className={party.btn} onClick={beginPlay}>
             {t.familie.binBereit}
           </button>
         </section>
       )}
 
       {phase === 'play-perfect' && (
-        <section className={styles.play}>
+        <section className={`${party.card} ${styles.buehne}`}>
           <p className={styles.playerTag}>{currentName}</p>
           {psPhase === 'ready' && (
             <>
-              <p className={styles.target}>Ziel: {formatTime(psConfig.targetTime, 2)} s</p>
-              <p className={styles.muted}>{'\u00b1' + formatTime(psConfig.tolerance, 2) + ' s'}</p>
-              <button type="button" className={styles.primaryBtn} onClick={psStart}>
-                Start
+              <p className={styles.target}>{a.runde.ziel(formatTime(psConfig.targetTime, 2))}</p>
+              <p className={styles.muted}>
+                {'±' + a.runde.zeit(formatTime(psConfig.tolerance, 2))}
+              </p>
+              <button type="button" className={party.btn} onClick={psStart}>
+                {a.runde.start}
               </button>
             </>
           )}
           {psPhase === 'running' && (
             <>
-              <p className={styles.running}>{'Timer l\u00e4uft\u2026'}</p>
+              <p className={styles.running}>{t.daily.timerLaeuft}</p>
               <button type="button" className={styles.stopBtn} onClick={() => void psStop()}>
-                STOP
+                {a.runde.stopp}
               </button>
             </>
           )}
@@ -270,9 +327,9 @@ export function FamilyPage() {
       )}
 
       {phase === 'play-missing-memorize' && (
-        <section className={styles.play}>
+        <section className={`${party.card} ${styles.buehne}`}>
           <p className={styles.playerTag}>{currentName}</p>
-          <p className={styles.timer}>{wimCountdown.toFixed(1)} s</p>
+          <p className={styles.timer}>{a.runde.zeit(wimCountdown.toFixed(1))}</p>
           <ul className={styles.grid}>
             {wimConfig.shownObjects.map((o) => (
               <li key={o.id} className={styles.cell}>
@@ -285,7 +342,7 @@ export function FamilyPage() {
       )}
 
       {phase === 'play-missing-choose' && (
-        <section className={styles.play}>
+        <section className={`${party.card} ${styles.buehne}`}>
           <p className={styles.playerTag}>{currentName}</p>
           <p className={styles.question}>{t.familie.welchesObjekt}</p>
           <ul className={styles.choiceGrid}>
@@ -306,35 +363,50 @@ export function FamilyPage() {
       )}
 
       {phase === 'player-done' && (
-        <section className={styles.handoff}>
-          <p className={styles.bigName}>{currentName}</p>
-          <p className={styles.score}>
-            {lastScore !== null ? `${lastScore} Punkte` : '\u2014'}
-            {session?.gameId === 'perfect-second' && lastTime !== null
-              ? ` \u00b7 ${formatTime(lastTime)} s (Ziel ${formatTime(psConfig.targetTime, 2)} s)`
-              : ''}
-          </p>
-          <p className={styles.hint}>{'Ger\u00e4t an den n\u00e4chsten Spieler weitergeben.'}</p>
-          <button type="button" className={styles.primaryBtn} onClick={nextPlayer}>
-            {'N\u00e4chster Spieler'}
+        <section className={`${party.card} ${party.cover} ${styles.buehne}`}>
+          <p className={styles.playerTag}>{currentName}</p>
+          <p className={styles.score}>{lastScore !== null ? a.runde.punkte(lastScore) : '—'}</p>
+          {session?.gameId === 'perfect-second' && lastTime !== null && (
+            <p className={styles.muted}>
+              {a.runde.zeitMitZiel(formatTime(lastTime), formatTime(psConfig.targetTime, 2))}
+            </p>
+          )}
+          {fortschritt}
+          <p className={party.subtitle}>{a.familie.weitergeben}</p>
+          <button type="button" className={party.btn} onClick={nextPlayer}>
+            {a.familie.naechster}
           </button>
         </section>
       )}
 
       {phase === 'finished' && (
-        <section className={styles.finished}>
-          <p className={styles.trophy}>{'\ud83c\udfc6 SIEGER'}</p>
+        <section className={`${party.card} ${styles.buehne}`}>
+          <p className={styles.trophy}>
+            <span aria-hidden="true">🏆 </span>
+            {a.familie.sieger}
+          </p>
+          {standings[0] && <Spielerbild name={standings[0].playerName} />}
           <ol className={styles.ranking}>
             {standings.map((s) => (
               <li key={`${s.playerIndex}-${s.playerName}`} className={styles.rankRow}>
-                <span className={styles.rank}>{s.rank}.</span>
+                <span className={styles.rank}>
+                  {s.rank <= 3 ? (
+                    <>
+                      <span aria-hidden="true">{MEDAILLE[s.rank - 1]}</span>
+                      <span className={styles.unsichtbar}>{s.rank}.</span>
+                    </>
+                  ) : (
+                    `${s.rank}.`
+                  )}
+                </span>
                 <span className={styles.rankName}>{s.playerName}</span>
                 <span className={styles.rankScore}>
-                  <span className={styles.rankPts}>{s.score} Pkt</span>
+                  <span className={styles.rankPts}>{a.runde.pkt(s.score)}</span>
                   {s.actualTime !== null && (
                     <span className={styles.rankTime}>
-                      {formatTime(s.actualTime)} s
-                      {s.targetTime !== null ? ` \u00b7 Ziel ${formatTime(s.targetTime, 2)} s` : ''}
+                      {s.targetTime !== null
+                        ? a.runde.zeitMitZiel(formatTime(s.actualTime), formatTime(s.targetTime, 2))
+                        : a.runde.zeit(formatTime(s.actualTime))}
                     </span>
                   )}
                 </span>
@@ -343,7 +415,7 @@ export function FamilyPage() {
           </ol>
           <button
             type="button"
-            className={styles.primaryBtn}
+            className={party.btn}
             onClick={() => {
               setSession(null)
               setStandings([])
