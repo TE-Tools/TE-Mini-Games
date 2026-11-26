@@ -1,120 +1,269 @@
-.page {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: var(--space-4);
-  max-width: 28rem;
-  margin: 0 auto;
-  width: 100%;
-  gap: var(--space-4);
-  background: radial-gradient(ellipse 70% 40% at 50% 0%, rgb(245 197 24 / 0.22), transparent);
+/*
+ * Tagesziel. Gerüst, Kopf und Startknopf kommen von den Party-Einstellungen
+ * (PartySetup.module.css), Karten von PartyShell.module.css. Die Farbe ist
+ * die Kachelfarbe des heutigen Spiels und kommt als --akzent.
+ */
+
+.seite {
+  align-items: stretch;
 }
 
-.header {
-  display: grid;
-  grid-template-columns: 48px 1fr auto;
-  align-items: center;
-  width: 100%;
-}
-
-.back {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-full);
-  font-size: var(--text-xl);
-  color: var(--color-text-muted);
-  background: var(--color-bg-elevated);
-  border: 2px solid var(--color-border);
-}
-
-.title {
-  font-size: var(--text-lg);
-  font-weight: 800;
-  text-align: center;
-}
-
-.badge {
+.datum {
   font-size: var(--text-xs);
-  font-weight: 700;
-  color: var(--color-gold-deep, #b8860b);
-  background: var(--color-game-a-soft);
-  padding: var(--space-1) var(--space-2);
+  font-weight: 800;
+  color: var(--akzent);
+  background: #ffffff;
+  padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-full);
-  border: 2px solid var(--color-game-a);
+  border: 1px solid color-mix(in srgb, var(--akzent) 30%, transparent);
+  box-shadow: var(--shadow-sm);
+  white-space: nowrap;
 }
 
-.ready,
-.play,
-.done {
+/* ------------------------------------------------------------- Held */
+
+.held {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: var(--space-4);
-  width: 100%;
-  text-align: center;
-  flex: 1;
+  padding: var(--space-5) var(--space-4);
+  border-radius: var(--radius-2xl);
+  color: #ffffff;
+  background:
+    radial-gradient(90% 120% at 100% 0%, rgb(255 255 255 / 0.22), transparent 55%),
+    linear-gradient(
+      150deg,
+      color-mix(in srgb, var(--akzent) 70%, #ffffff) 0%,
+      var(--akzent) 55%,
+      color-mix(in srgb, var(--akzent) 75%, #000000) 100%
+    );
+  box-shadow: 0 18px 36px -16px var(--akzent);
+  animation: heldRein 520ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
 
-.gameName {
-  font-size: var(--text-2xl);
+.heldKopf {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.heldIcon {
+  width: 4rem;
+  height: 4rem;
+  display: grid;
+  place-items: center;
+  border-radius: 1.35rem;
+  font-size: 2.2rem;
+  line-height: 1;
+  background: rgb(255 255 255 / 0.95);
+  box-shadow:
+    inset 0 -3px 0 rgb(0 0 0 / 0.06),
+    0 10px 22px -10px rgb(0 0 0 / 0.45);
+  animation: schweben 3.2s ease-in-out 600ms infinite;
+}
+
+.heldName {
+  min-width: 0;
+}
+
+.kicker {
+  margin: 0;
+  font-size: var(--text-xs);
   font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.85;
 }
 
-.info {
+.spielName {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.statusOffen,
+.statusErledigt {
+  align-self: start;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 800;
+  white-space: nowrap;
+  background: rgb(255 255 255 / 0.2);
+  border: 1px solid rgb(255 255 255 / 0.45);
+}
+
+.statusErledigt {
+  background: #ffffff;
+  color: var(--akzent);
+  border-color: transparent;
+}
+
+.aufgabe {
+  margin: 0;
   font-size: var(--text-base);
   font-weight: 700;
-  color: var(--color-game-a);
+  line-height: 1.45;
 }
+
+.fakten {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.fakten li {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  background: rgb(0 0 0 / 0.14);
+}
+
+@keyframes heldRein {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}
+
+@keyframes schweben {
+  50% {
+    transform: translateY(-4px) rotate(-3deg);
+  }
+}
+
+/* ---------------------------------------------------------- Inhalt */
 
 .hint {
+  margin: 0;
   font-size: var(--text-sm);
   color: var(--color-text-muted);
-  max-width: 22rem;
+  text-align: center;
+  line-height: 1.5;
 }
 
-.primaryBtn {
-  min-height: var(--touch-min);
-  min-width: 12rem;
-  padding: var(--space-4) var(--space-6);
-  background: linear-gradient(135deg, var(--color-game-a), #e6c35c);
-  color: #2d1b4e;
-  border-radius: var(--radius-2xl);
-  font-weight: 800;
-  font-size: var(--text-lg);
-  border: none;
-  box-shadow: var(--shadow-md);
+.muted {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-align: center;
 }
 
-.stopBtn {
-  min-height: 120px;
-  min-width: 120px;
+.countdown {
+  align-self: center;
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-full);
-  background: linear-gradient(145deg, #f43f5e, #e11d48);
-  color: #fff;
-  font-weight: 800;
-  font-size: var(--text-2xl);
-  border: 4px solid var(--color-border-strong);
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
-.target {
+.buehne {
+  align-items: center;
+  text-align: center;
+  gap: var(--space-4);
+}
+
+.ergebnis {
+  gap: var(--space-2);
+}
+
+.doneTitle {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-xl);
+  font-weight: 800;
+}
+
+.score {
+  margin: 0;
   font-size: var(--text-3xl);
   font-weight: 800;
-  color: var(--color-game-a);
+  letter-spacing: -0.02em;
+  color: var(--akzent);
+  font-variant-numeric: tabular-nums;
+}
+
+.homeLink {
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-decoration: underline;
+}
+
+/* ------------------------------------------------------------ Spiel */
+
+.target {
+  margin: 0;
+  font-size: var(--text-3xl);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
 .running {
+  margin: 0;
   font-size: var(--text-xl);
   font-weight: 700;
 }
 
+.losKnopf {
+  min-height: var(--touch-min);
+  min-width: 12rem;
+  padding: var(--space-3) var(--space-6);
+  border: none;
+  border-radius: var(--radius-full);
+  color: #ffffff;
+  font-size: var(--text-lg);
+  font-weight: 800;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--akzent) 72%, #ffffff),
+    var(--akzent)
+  );
+  box-shadow: 0 12px 26px -12px var(--akzent);
+  transition: transform 200ms cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+.losKnopf:active {
+  transform: scale(0.96);
+}
+
+.stopBtn {
+  min-height: 132px;
+  min-width: 132px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(145deg, #f43f5e, #e11d48);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: var(--text-2xl);
+  border: none;
+  box-shadow:
+    inset 0 2px 0 rgb(255 255 255 / 0.3),
+    0 16px 32px -12px #e11d48;
+  transition: transform 160ms cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+.stopBtn:active {
+  transform: scale(0.94);
+}
+
 .timer {
+  margin: 0;
   font-size: var(--text-2xl);
   font-weight: 800;
-  color: var(--color-game-b);
+  color: var(--akzent);
+  font-variant-numeric: tabular-nums;
 }
 
 .grid,
@@ -124,17 +273,37 @@
   grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr));
   gap: var(--space-2);
   width: 100%;
+  margin: 0;
   padding: 0;
 }
 
-.cell {
+.cell,
+.choiceBtn {
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: var(--space-2);
-  background: var(--color-bg-elevated);
-  border: 2px solid var(--color-border);
-  border-radius: var(--radius-md);
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.choiceBtn {
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: var(--space-3);
+  transition:
+    transform 180ms cubic-bezier(0.3, 1.5, 0.5, 1),
+    border-color 160ms ease;
+}
+
+.choiceBtn:hover {
+  border-color: color-mix(in srgb, var(--akzent) 40%, transparent);
+}
+
+.choiceBtn:active {
+  transform: scale(0.95);
 }
 
 .emoji {
@@ -146,130 +315,34 @@
   color: var(--color-text-muted);
 }
 
-.choiceBtn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  min-height: var(--touch-min);
-  padding: var(--space-3);
-  background: var(--color-bg-elevated);
-  border: 2px solid var(--color-border);
-  border-radius: var(--radius-lg);
-}
-
 .question {
+  margin: 0;
   font-size: var(--text-xl);
   font-weight: 800;
 }
 
-.doneTitle {
-  font-size: var(--text-2xl);
-  font-weight: 800;
+/* --------------------------------------------------- weniger Bewegung */
+
+:global(:root[data-sparsam]) .held,
+:global(:root[data-sparsam]) .heldIcon {
+  animation: none;
 }
 
-.score {
-  font-size: var(--text-3xl);
-  font-weight: 800;
-  color: var(--color-game-a);
+:global(:root[data-sparsam]) .losKnopf,
+:global(:root[data-sparsam]) .stopBtn,
+:global(:root[data-sparsam]) .choiceBtn {
+  transition: none;
 }
 
-.homeLink {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-  text-decoration: underline;
-}
-
-.muted {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
-/* Zurück als weiche Pille, wie überall seit dem modernen Layout (30.10.2026). */
-.back {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
-  min-width: 40px;
-  min-height: 40px;
-  padding: 0 var(--space-3);
-  border-radius: var(--radius-full);
-  background: #ffffff;
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
-  color: var(--color-text);
-  font-weight: 700;
-  text-decoration: none;
-  transition:
-    transform 200ms cubic-bezier(0.3, 1.5, 0.5, 1),
-    box-shadow 200ms ease;
-}
-
-.back:hover {
-  transform: translateX(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.back:active {
-  transform: scale(0.94);
-}
-
-/* ------------------------------------------------ Modern (30.10.2026) */
-
-/* Die Einladung als Karte mit Kalenderblatt-Gefühl, statt Text im Leeren. */
-.ready,
-.done {
-  width: 100%;
-  padding: var(--space-6) var(--space-5);
-  border-radius: 28px;
-  background:
-    radial-gradient(120% 80% at 50% 0%, rgb(232 185 58 / 0.18), transparent 60%),
-    rgb(255 255 255 / 0.9);
-  border: 1px solid rgb(255 255 255 / 0.9);
-  box-shadow: var(--shadow-lg);
-  animation: tagesKarte 520ms cubic-bezier(0.2, 0.9, 0.25, 1.05) backwards;
-}
-
-@keyframes tagesKarte {
-  from {
-    opacity: 0;
-    transform: translateY(16px) scale(0.97);
+@media (prefers-reduced-motion: reduce) {
+  .held,
+  .heldIcon {
+    animation: none;
   }
-}
 
-.gameName {
-  letter-spacing: -0.01em;
-}
-
-.primaryBtn {
-  border-radius: var(--radius-full);
-  transition:
-    transform 200ms cubic-bezier(0.3, 1.5, 0.5, 1),
-    box-shadow 200ms ease;
-}
-
-.primaryBtn:hover {
-  transform: translateY(-2px);
-}
-
-.primaryBtn:active {
-  transform: scale(0.97);
-}
-
-.cell,
-.choiceBtn {
-  border-radius: var(--radius-lg);
-  background: #ffffff;
-  box-shadow: var(--shadow-sm);
-}
-
-.choiceBtn {
-  transition:
-    transform 180ms cubic-bezier(0.3, 1.5, 0.5, 1),
-    box-shadow 180ms ease;
-}
-
-.choiceBtn:active {
-  transform: scale(0.95);
+  .losKnopf,
+  .stopBtn,
+  .choiceBtn {
+    transition: none;
+  }
 }

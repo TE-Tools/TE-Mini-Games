@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import {
   getLocalPersonalBests,
   getLocalRecentHighScores,
@@ -18,12 +18,20 @@ import { syncFullNow } from '@/services/remoteSync'
 import { holeVerloreneErgebnisseNach } from '@/services/nachtragen'
 import { getSyncPendingCount } from '@/services/sync'
 import type { GameId } from '@/games/types'
-import styles from './LeaderboardPage.module.css'
 import { useSprache, spielName } from '@/i18n/sprache'
+import { ChipAuswahl } from '@/components/party/Chips'
+import { PartyKopf } from '@/components/party/PartySetup'
+import setup from '@/components/party/PartySetup.module.css'
+import { kachelFuer } from '@/pages/spiele-katalog'
+import { akzentFuer } from '@/pages/kachelFarbe'
+import styles from './LeaderboardPage.module.css'
 
 type Tab = 'overall' | 'mine' | 'global-ps' | 'global-wim' | 'global-sr' | 'global-rf' | 'global-kr'
+type SpielTab = Exclude<Tab, 'mine' | 'overall'>
+/** Oben drei Ansichten; „Je Spiel“ öffnet darunter die Spiele als Chips. */
+type Ansicht = 'overall' | 'mine' | 'spiel'
 
-const TAB_GAME: Record<Exclude<Tab, 'mine' | 'overall'>, GameId> = {
+const TAB_GAME: Record<SpielTab, GameId> = {
   'global-ps': 'perfect-second',
   'global-wim': 'what-is-missing',
   'global-sr': 'schuetzenrunde',
@@ -31,10 +39,18 @@ const TAB_GAME: Record<Exclude<Tab, 'mine' | 'overall'>, GameId> = {
   'global-kr': 'kopfrechnen',
 }
 
+const SPIEL_TABS = Object.keys(TAB_GAME) as SpielTab[]
+
+function istSpielTab(tab: Tab): tab is SpielTab {
+  return tab in TAB_GAME
+}
+
 export function LeaderboardPage() {
   const { sprache, t } = useSprache()
-  const navigate = useNavigate()
+  const a = t.appSeiten.rangliste
   const [tab, setTab] = useState<Tab>('overall')
+  /** Welches Spiel „Je Spiel“ zuletzt zeigte -- beim Zurückwechseln wieder dasselbe. */
+  const [letztesSpiel, setLetztesSpiel] = useState<SpielTab>('global-ps')
   const [personalBests, setPersonalBests] = useState<PersonalBestRow[]>([])
   const [recent, setRecent] = useState<LeaderboardEntry[]>([])
   const [totals, setTotals] = useState<GameTotals[]>([])
@@ -128,94 +144,56 @@ export function LeaderboardPage() {
   const myEntry = remote.find((e) => myName != null && e.displayName === myName)
 
   return (
-    <main className={styles.page}>
-      <header className={styles.header}>
-        <button
-          type="button"
-          className={styles.back}
-          onClick={() => navigate('/')}
-          aria-label={t.rangliste.zurueck}
-        >
-          ←
-        </button>
-        <h1 className={styles.title}>{t.rangliste.titel}</h1>
-        <span className={styles.badge}>
-          {!isSupabaseConfigured
-            ? t.rangliste.markeLokal
-            : signedIn === null
-              ? '…'
-              : !signedIn
-                ? t.rangliste.markeNichtAngemeldet
-                : myName === null
-                  ? 'Ohne Namen'
-                  : 'Angemeldet'}
-        </span>
-      </header>
+    <main
+      className={`${setup.seite} ${styles.seite}`}
+      style={akzentFuer(istSpielTab(tab) ? TAB_GAME[tab] : '')}
+    >
+      <PartyKopf
+        titel={t.rangliste.titel}
+        rechts={
+          <span className={styles.badge}>
+            {!isSupabaseConfigured
+              ? t.rangliste.markeLokal
+              : signedIn === null
+                ? '…'
+                : !signedIn
+                  ? t.rangliste.markeNichtAngemeldet
+                  : myName === null
+                    ? a.ohneNamen
+                    : a.angemeldet}
+          </span>
+        }
+      />
 
-      <div className={styles.tabs} role="tablist">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'overall'}
-          className={tab === 'overall' ? styles.tabActive : styles.tab}
-          onClick={() => setTab('overall')}
-        >
-          {t.rangliste.reiterAlle}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'mine'}
-          className={tab === 'mine' ? styles.tabActive : styles.tab}
-          onClick={() => setTab('mine')}
-        >
-          {t.rangliste.reiterRekorde}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'global-ps'}
-          className={tab === 'global-ps' ? styles.tabActive : styles.tab}
-          onClick={() => setTab('global-ps')}
-        >
-          Global ⏱️
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'global-wim'}
-          className={tab === 'global-wim' ? styles.tabActive : styles.tab}
-          onClick={() => setTab('global-wim')}
-        >
-          Global 👁️
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'global-sr'}
-          className={tab === 'global-sr' ? styles.tabActive : styles.tab}
-          onClick={() => setTab('global-sr')}
-        >
-          Global 🎯
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'global-rf'}
-          className={tab === 'global-rf' ? styles.tabActive : styles.tab}
-          onClick={() => setTab('global-rf')}
-        >
-          Global 🧠
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'global-kr'}
-          className={tab === 'global-kr' ? styles.tabActive : styles.tab}
-          onClick={() => setTab('global-kr')}
-        >
-          Global 🔢
-        </button>
+      <div className={styles.filter}>
+        <ChipAuswahl<Ansicht>
+          beschriftung={a.ansicht}
+          anordnung={3}
+          wert={istSpielTab(tab) ? 'spiel' : tab}
+          onWahl={(ansicht) => setTab(ansicht === 'spiel' ? letztesSpiel : ansicht)}
+          optionen={[
+            { wert: 'overall', text: t.rangliste.reiterAlle },
+            { wert: 'mine', text: t.rangliste.reiterRekorde },
+            { wert: 'spiel', text: a.jeSpiel },
+          ]}
+        />
+        {istSpielTab(tab) && (
+          <div className={styles.spielLeiste}>
+            <ChipAuswahl<SpielTab>
+              beschriftung={a.spielWaehlen}
+              wert={tab}
+              onWahl={(spiel) => {
+                setLetztesSpiel(spiel)
+                setTab(spiel)
+              }}
+              optionen={SPIEL_TABS.map((spiel) => ({
+                wert: spiel,
+                text: a.kurzname[TAB_GAME[spiel] as keyof typeof a.kurzname],
+                icon: kachelFuer(TAB_GAME[spiel])?.icon,
+              }))}
+            />
+          </div>
+        )}
       </div>
 
       {isSupabaseConfigured && signedIn === false && (
@@ -250,12 +228,7 @@ export function LeaderboardPage() {
         eigene XP stehen bleibt, soll den Grund erfahren und nicht nur ein
         stilles Nachladen bemerken.
       */}
-      {nachgereicht > 0 && (
-        <p className={styles.hint}>
-          {nachgereicht} {nachgereicht === 1 ? 'Runde wurde' : 'Runden wurden'} nachgereicht: Ihre
-          Punkte lagen über der alten Grenze von 1000 und waren nie angekommen.
-        </p>
-      )}
+      {nachgereicht > 0 && <p className={styles.hint}>{a.nachgereicht(nachgereicht)}</p>}
 
       {isSupabaseConfigured && (
         <button
@@ -264,7 +237,13 @@ export function LeaderboardPage() {
           disabled={syncing}
           onClick={() => void refresh()}
         >
-          {syncing ? 'Synchronisiere…' : '↻ Aktualisieren'}
+          {syncing ? (
+            a.synchronisiere
+          ) : (
+            <>
+              <span aria-hidden="true">↻</span> {a.aktualisieren}
+            </>
+          )}
         </button>
       )}
 
@@ -329,10 +308,7 @@ export function LeaderboardPage() {
           )}
 
           <h2 className={styles.sectionTitle}>{t.rangliste.besteRundenTitel}</h2>
-          <p className={styles.hint}>
-            Sortiert nach Punkten – eine neue Runde taucht hier nur auf, wenn sie mehr Punkte bringt
-            als eine der {recent.length} besten hier.
-          </p>
+          <p className={styles.hint}>{a.sortiertNachPunkten(recent.length)}</p>
           {recent.length === 0 ? (
             <p className={styles.empty}>{t.rangliste.nochKeineErgebnisse}</p>
           ) : (
@@ -344,7 +320,7 @@ export function LeaderboardPage() {
                     {gameLabel(e.gameId)} · L{e.level}
                   </span>
                   <span className={styles.rowRight}>
-                    <span className={styles.rowScore}>{e.score} Pkt.</span>
+                    <span className={styles.rowScore}>{t.rangliste.punkte(String(e.score))}</span>
                     {typeof e.xp === 'number' && <span className={styles.rowXp}>+{e.xp} XP</span>}
                   </span>
                 </li>
@@ -353,10 +329,7 @@ export function LeaderboardPage() {
           )}
 
           <h2 className={styles.sectionTitle}>{t.rangliste.gesamtpunkteTitel}</h2>
-          <p className={styles.hint}>
-            {t.rangliste.gesamtpunkteText}
-            unabhängig davon, ob sie ein neuer Rekord war.
-          </p>
+          <p className={styles.hint}>{t.rangliste.gesamtpunkteText}</p>
           {totals.length === 0 ? (
             <p className={styles.empty}>{t.rangliste.nochKeineErgebnisse}</p>
           ) : (
@@ -382,8 +355,12 @@ export function LeaderboardPage() {
         </section>
       )}
 
-      {!loading && tab !== 'mine' && tab !== 'overall' && (
+      {!loading && istSpielTab(tab) && (
         <section className={styles.section}>
+          <h2 className={styles.spielTitel}>
+            <span aria-hidden="true">{kachelFuer(TAB_GAME[tab])?.icon}</span>{' '}
+            {a.spielTitel(spielName(t, TAB_GAME[tab], gameLabel(TAB_GAME[tab])))}
+          </h2>
           {!isSupabaseConfigured && (
             <p className={styles.hint}>{t.rangliste.globalBrauchtSupabase}</p>
           )}
@@ -403,11 +380,7 @@ export function LeaderboardPage() {
             </p>
           )}
           {isSupabaseConfigured && !myEntry && remote.length > 0 && (
-            <p className={styles.hint}>
-              {myName
-                ? 'Von dir ist hier noch kein Ergebnis – spiel eine Runde, sie wird automatisch hochgeladen.'
-                : 'Melde dich an, damit deine Ergebnisse hier auftauchen.'}
-            </p>
+            <p className={styles.hint}>{myName ? a.nochNichtsVonDir : a.anmeldenFuerListe}</p>
           )}
           {isSupabaseConfigured && remote.length === 0 && (
             <p className={styles.empty}>{t.rangliste.keineEintraegeSpiel}</p>
@@ -448,7 +421,7 @@ export function LeaderboardPage() {
       )}
 
       <Link to="/" className={styles.homeLink}>
-        Zur Startseite
+        {t.spiel.zurStartseite}
       </Link>
     </main>
   )

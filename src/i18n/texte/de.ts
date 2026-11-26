@@ -520,15 +520,15 @@ export const de = {
   },
 
   daily: {
-    titel: 'Daily Challenge',
+    titel: 'Tagesziel',
     levelVersuch: (level: number) => `Level ${level} · ein Versuch heute`,
     hinweis: 'Alle Spieler bekommen heute dieselbe Aufgabe. Fair und vergleichbar.',
-    starten: 'Challenge starten',
+    starten: 'Jetzt spielen',
     timerLaeuft: 'Timer läuft…',
     welchesObjekt: 'Welches Objekt fehlt?',
     punkte: (p: number) => `${p} Punkte`,
-    schonGespielt: 'Komm morgen für die nächste Challenge zurück.',
-    gespeichert: 'Ergebnis gespeichert. Morgen wartet eine neue Challenge.',
+    schonGespielt: 'Komm morgen wieder – dann wartet das nächste Tagesziel.',
+    gespeichert: 'Ergebnis gespeichert. Morgen wartet ein neues Tagesziel.',
     zurStartseite: 'Zur Startseite',
   },
 
@@ -3118,6 +3118,77 @@ export const de = {
     figurGlut: 'Glut mit Leuchtspur',
     figurGlutBelohnung: 'Figur „Glut“ mit Leuchtspur',
     figurNurOptik: 'Nur Optik – am Spiel ändert sich nichts.',
+  },
+
+  /** Familienrunde, Tagesziel und Rangliste (src/pages/family, daily, leaderboard). */
+  appSeiten: {
+    familie: {
+      held: 'Ein Gerät, eine Aufgabe, alle gegeneinander: Das Handy wandert reihum, am Ende steht die Rangliste. Kein Konto nötig.',
+      spielerTitel: (min: number, max: number) => `Wer spielt mit? (${min}–${max})`,
+      spielTitel: 'Was wird gespielt?',
+      beschreibung: {
+        'perfect-second': 'Alle stoppen dieselbe Zielzeit – wer trifft sie am genauesten?',
+        'what-is-missing': 'Alle sehen dieselben Dinge – wer merkt, was fehlt?',
+      },
+      duBistDran: 'Du bist dran – Gerät übernehmen und starten.',
+      spielerVon: (nr: number, gesamt: number) => `Spieler ${nr} von ${gesamt}`,
+      weitergeben: 'Gerät an den nächsten Spieler weitergeben.',
+      naechster: 'Nächster Spieler',
+      sieger: 'Sieger',
+      zuWenige: (min: number) => `Mindestens ${min} Spieler nötig`,
+      zuViele: (max: number) => `Höchstens ${max} Spieler`,
+      startFehler: 'Die Runde ließ sich nicht starten.',
+    },
+    /** Was in den Spielrunden von Familie und Tagesziel steht. */
+    runde: {
+      ziel: (sekunden: string) => `Ziel: ${sekunden} s`,
+      start: 'Start',
+      stopp: 'STOPP',
+      punkte: (p: number) => `${p} Punkte`,
+      pkt: (p: number) => `${p} Pkt.`,
+      zeit: (sekunden: string) => `${sekunden} s`,
+      zeitMitZiel: (zeit: string, ziel: string) => `${zeit} s · Ziel ${ziel} s`,
+    },
+    tagesziel: {
+      heute: 'Heute',
+      offen: 'Noch offen',
+      erledigt: 'Erledigt',
+      aufgabe: {
+        'perfect-second': 'Stoppe die Uhr so genau wie möglich bei der Zielzeit.',
+        'what-is-missing': 'Präg dir die Dinge ein – dann tippe an, welches fehlt.',
+      },
+      level: (level: number) => `Level ${level}`,
+      einVersuch: 'Ein Versuch',
+      fuerAlle: 'Für alle gleich',
+      neuIn: (zeit: string) => `Nächstes Tagesziel in ${zeit}`,
+      deinErgebnis: 'Dein Ergebnis',
+      geschafft: 'Geschafft!',
+      heuteGespielt: 'Heute schon gespielt',
+    },
+    rangliste: {
+      ansicht: 'Ansicht',
+      jeSpiel: 'Je Spiel',
+      spielWaehlen: 'Spiel wählen',
+      kurzname: {
+        'perfect-second': 'Perfekte Sekunde',
+        'what-is-missing': 'Was fehlt?',
+        schuetzenrunde: 'Schützenrunde',
+        reihenfolge: 'Reihenfolge',
+        kopfrechnen: 'Kopfrechnen',
+      },
+      spielTitel: (spiel: string) => `${spiel} – Bestenliste`,
+      ohneNamen: 'Ohne Namen',
+      angemeldet: 'Angemeldet',
+      synchronisiere: 'Synchronisiere …',
+      aktualisieren: 'Aktualisieren',
+      nachgereicht: (n: number) =>
+        `${n} ${n === 1 ? 'Runde wurde' : 'Runden wurden'} nachgereicht: Ihre Punkte lagen über der alten Grenze von 1000 und waren nie angekommen.`,
+      sortiertNachPunkten: (n: number) =>
+        `Sortiert nach Punkten – eine neue Runde taucht hier nur auf, wenn sie mehr Punkte bringt als eine der ${n} besten hier.`,
+      nochNichtsVonDir:
+        'Von dir ist hier noch kein Ergebnis – spiel eine Runde, sie wird automatisch hochgeladen.',
+      anmeldenFuerListe: 'Melde dich an, damit deine Ergebnisse hier auftauchen.',
+    },
   },
 
   /** Die Bausteine der Online-Vorräume (src/components/onlineLobby): Code, Warteliste, Codefeld. */
