@@ -1,0 +1,220 @@
+.leise {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+/* Die Züge als Leiste zum Wischen; der jüngste ist hervorgehoben. */
+.zugliste {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-2);
+  display: flex;
+  gap: var(--space-1);
+  overflow-x: auto;
+  width: 100%;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  scrollbar-width: none;
+  border-radius: var(--radius-xl);
+  background: rgb(255 255 255 / 0.7);
+  border: 1px solid var(--color-border);
+}
+
+.zugliste::-webkit-scrollbar {
+  display: none;
+}
+
+.zugliste li {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+  flex: none;
+}
+
+.nummer {
+  padding-left: var(--space-1);
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.zug,
+.aktuell {
+  padding: 3px 7px;
+  border-radius: 8px;
+}
+
+.aktuell {
+  background: #213c52;
+  color: #ffffff;
+}
+
+/* Spielerzeilen über und unter dem Brett: wer am Zug ist, leuchtet. */
+.spielerZeile {
+  width: calc(min(100vw - 2rem, 30rem));
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 0.65);
+  border: 1px solid transparent;
+  transition:
+    background 200ms ease,
+    border-color 200ms ease;
+}
+
+.spielerAmZug {
+  background: #ffffff;
+  border-color: color-mix(in srgb, #16a34a 45%, transparent);
+  box-shadow: 0 4px 14px -8px rgb(22 163 74 / 0.6);
+}
+
+.bild {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(160deg, #eef3f8, #d3dfea);
+  font-size: 1.1rem;
+  flex: none;
+}
+
+.farbStein {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: none;
+  filter: drop-shadow(0 1px 1px rgb(15 23 42 / 0.35));
+}
+
+.spielerName {
+  font-weight: 800;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.geschlagen {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 800;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.geschlagenStein {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+/* Die Hausregeln: zugeklappt eine Zeile, aufgeklappt drei Schalter. */
+.regeln {
+  width: 100%;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: #ffffff;
+}
+
+.regeln summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-min);
+  padding: var(--space-2) var(--space-3);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.regeln summary small {
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.regeln ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 var(--space-3) var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.schalter {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+.schalter input {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.15rem;
+  accent-color: var(--akzent, #3b6584);
+  flex: none;
+}
+
+.schalter span {
+  display: flex;
+  flex-direction: column;
+}
+
+.schalter small {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs, 0.78rem);
+}
+
+.klein {
+  margin: 0 var(--space-3) var(--space-2);
+  border: 0;
+  background: none;
+  color: var(--color-text-muted);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  text-decoration: underline;
+}
+
+.regelZeile {
+  width: 100%;
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.spielerText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.bestand {
+  font-size: var(--text-xs, 0.78rem);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* Die Steine in der Hand: ein kleiner, überlappender Stapel rechts. */
+.hand {
+  margin-left: auto;
+  display: inline-flex;
+  flex: none;
+  padding-left: 0.6rem;
+}
+
+.handStein {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-left: -0.55rem;
+  filter: drop-shadow(0 1px 1px rgb(15 23 42 / 0.3));
+}

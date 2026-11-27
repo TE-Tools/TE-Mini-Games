@@ -23,6 +23,7 @@ export type MenueSpiel = Extract<
   | 'texas-holdem'
   | 'schach'
   | 'dame'
+  | 'muehle'
   | 'kaesekaestchen'
   | 'schuetzenopoly'
 >

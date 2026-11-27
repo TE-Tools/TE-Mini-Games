@@ -28,6 +28,7 @@ import { fetchOeffentlicheTexasRaeume } from '@/services/texasOnline'
 import { fetchOeffentlicheSchachRaeume } from '@/services/schachOnline'
 import { fetchOeffentlicheKaesekaestchenRaeume } from '@/services/kaesekaestchenOnline'
 import { fetchOeffentlicheDameRaeume } from '@/services/dameOnline'
+import { fetchOeffentlicheMuehleRaeume } from '@/services/muehleOnline'
 import { OEFFENTLICH_ERNEUERN_MS, RAUM_PARAM, type OeffentlicherRaum } from '@/services/raeume'
 import { kachelFuer } from './spiele-katalog'
 import { spielName, useSprache } from '@/i18n/sprache'
@@ -41,6 +42,7 @@ const ONLINE_SPIELE: { id: GameId; laden: () => Promise<OeffentlicherRaum[]> }[]
   { id: 'schach', laden: fetchOeffentlicheSchachRaeume },
   { id: 'kaesekaestchen', laden: fetchOeffentlicheKaesekaestchenRaeume },
   { id: 'dame', laden: fetchOeffentlicheDameRaeume },
+  { id: 'muehle', laden: fetchOeffentlicheMuehleRaeume },
   { id: 'kniffel', laden: fetchOeffentlicheKniffelRaeume },
   { id: 'texas-holdem', laden: fetchOeffentlicheTexasRaeume },
   { id: 'maumau', laden: fetchOeffentlicheMauMauRaeume },

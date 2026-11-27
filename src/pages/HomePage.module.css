@@ -587,6 +587,15 @@
   --kachel-farbe: #7a4419;
 }
 
+:is(.kachel, .held, .ersterSchritt)[data-game='muehle'] {
+  /* Taubenblau, wie Schiefer mit einem Hauch Himmel. Reines Schiefergrau
+     hat schon Sudoku (#334155), Steingrau Schach; dieses Blau ist heller
+     und blauer als beide und weit weg vom Türkis von Rückwärts. */
+  --kachel-ton: color-mix(in srgb, #3b6584 13%, #ffffff);
+  --kachel-rahmen: color-mix(in srgb, #3b6584 30%, transparent);
+  --kachel-farbe: #3b6584;
+}
+
 :is(.kachel, .held, .ersterSchritt)[data-game='schuetzenopoly'] {
   /* Olivgruen. Das Brett selbst ist dunkles Flaschengruen mit Gold, aber
      beides ist hier schon vergeben: Gruen bei der Schuetzenrunde und bei

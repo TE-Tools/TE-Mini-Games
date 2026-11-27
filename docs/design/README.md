@@ -14,6 +14,7 @@ Verbindliche Gestaltungs- und Umsetzungsvorgaben.
 | **Rückwärts**                      | umgesetzt                  | [rueckwaerts/](./rueckwaerts/)                 |
 | **Schach**                         | umgesetzt                  | [schach/](./schach/)                           |
 | **Dame**                           | umgesetzt                  | [dame/](./dame/)                               |
+| **Mühle**                          | umgesetzt                  | [muehle/](./muehle/)                           |
 
 ## Levelkarte 1–500 (Kurz)
 
@@ -65,6 +66,15 @@ Details: [`schach/README.md`](./schach/README.md)
 - Online wie Schach: nur ein Zugbuch auf dem Server (Migration 033), keine Damregel in SQL
 
 Details: [`dame/README.md`](./dame/README.md)
+
+## Mühle (Kurz)
+
+- Standardmühle gegen den Computer (drei Stufen), zu zweit an einem Gerät oder online
+- Hausregeln (Springen, Schlagen aus Mühlen, Doppelschlag) als Daten; eine Partie trägt ihre
+  Regeln mit; ein Zug samt Schlag ist ein Eintrag (`a1-a4xd7`)
+- Online wie Dame: nur ein Zugbuch auf dem Server (Migration 034), keine Mühleregel in SQL
+
+Details: [`muehle/README.md`](./muehle/README.md)
 
 ## Sudoku (Kurz)
 

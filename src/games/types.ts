@@ -30,6 +30,7 @@ export type GameId =
   | 'schach'
   | 'kaesekaestchen'
   | 'dame'
+  | 'muehle'
 
 export interface GameLevelConfig {
   level: number

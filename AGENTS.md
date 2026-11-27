@@ -111,6 +111,17 @@ corresponding feature; do not invent a competing design.
   gegen die englischen Zahlen). Online (Migration `033_dame_online.sql`) führt
   der Server wie beim Schach nur ein Zugbuch samt den Hausregeln des Tisches; es
   steht dort **keine** Damregel, und es kommt auch keine hinein.
+- **Mühle:** `docs/design/muehle/` – Regeln gehören ausschließlich nach
+  `src/games/muehle/`, Stellwerte (Steinzahlen, Stufen, Bewertung, Punkte,
+  Remis-Grenzen) ausschließlich in dessen `config.ts`. Die Hausregeln (Springen,
+  Schlagen aus Mühlen, Doppelschlag) stehen dort als Daten, nicht als
+  Sonderfälle im Ablauf, und eine laufende Partie trägt ihre Regeln mit. Ein Zug
+  ist ein ganzer Halbzug samt Schlag (`a1-a4xd7`), die Punktnamen a1…g7 stehen
+  im Zugbuch -- wer sie umbenennt, bricht laufende Partien. Online (Migration
+  `034_muehle_online.sql`) führt der Server wie bei Dame nur ein Zugbuch samt den
+  Hausregeln des Tisches; es steht dort **keine** Mühleregel, und es kommt auch
+  keine hinein. Zu zweit an einem Gerät wird nichts gebucht, nur mit
+  `meldePartyRunde` gemeldet.
 - **Rückwärts:** `docs/design/rueckwaerts/` – das einzige Spiel mit Mikrofon.
   Regeln (wer wann was hören darf, Stutzen, Löschen) gehören nach
   `src/games/rueckwaerts/engine.ts`, Stellwerte nach `config.ts`, und nur

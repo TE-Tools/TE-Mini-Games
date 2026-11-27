@@ -123,6 +123,108 @@ function BildDame() {
   )
 }
 
+/* --------------------------------------------------------------- Mühle */
+
+/** Ein Mühlestein von oben: flache Scheibe mit Rille und Glanzlicht. */
+function MuehleStein({ x, y, hell, r = 9 }: { x: number; y: number; hell: boolean; r?: number }) {
+  const flaeche = hell ? '#fbf7ee' : '#334155'
+  const rand = hell ? '#b9ab90' : '#0f172a'
+  const rille = hell ? '#d9ccb2' : '#475569'
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      <circle r={r} fill={rand} />
+      <circle r={r - 1.4} fill={flaeche} />
+      <circle r={r * 0.55} fill="none" stroke={rille} strokeWidth={1.2} />
+      <ellipse
+        cx={-r * 0.35}
+        cy={-r * 0.4}
+        rx={r * 0.32}
+        ry={r * 0.18}
+        fill="#ffffff"
+        opacity={0.45}
+      />
+    </g>
+  )
+}
+
+function BildMuehle() {
+  const mx = 120
+  const my = 70
+  const ringe = [58, 38, 18]
+  // Punkt eines Rings: Linie und Reihe von -1 bis 1.
+  const p = (ring: number, sx: number, sy: number) => ({
+    x: mx + sx * ringe[ring]!,
+    y: my + sy * ringe[ring]!,
+  })
+  const punkte: { x: number; y: number }[] = []
+  for (let ring = 0; ring < 3; ring++) {
+    for (const [sx, sy] of [
+      [-1, -1],
+      [0, -1],
+      [1, -1],
+      [-1, 0],
+      [1, 0],
+      [-1, 1],
+      [0, 1],
+      [1, 1],
+    ] as const) {
+      punkte.push(p(ring, sx, sy))
+    }
+  }
+  const a = p(0, -1, -1)
+  const c = p(0, 1, -1)
+  return (
+    <>
+      <rect x={mx - 70} y={my - 66} width={140} height={132} rx={10} fill="#f3ead9" />
+      <rect
+        x={mx - 70}
+        y={my - 66}
+        width={140}
+        height={132}
+        rx={10}
+        fill="none"
+        stroke="#d6c4a3"
+        strokeWidth={2}
+      />
+      <g fill="none" stroke="#3f3a36" strokeWidth={2}>
+        {ringe.map((h) => (
+          <rect key={h} x={mx - h} y={my - h} width={2 * h} height={2 * h} />
+        ))}
+        <path
+          d={`M ${mx} ${my - 58} V ${my - 18} M ${mx} ${my + 18} V ${my + 58} M ${mx - 58} ${my} H ${mx - 18} M ${mx + 18} ${my} H ${mx + 58}`}
+        />
+      </g>
+      {punkte.map((q, i) => (
+        <circle key={i} cx={q.x} cy={q.y} r={2.6} fill="#3f3a36" />
+      ))}
+      {/* Die Mühle: drei weiße Steine oben, die Linie leuchtet. */}
+      <line
+        x1={a.x}
+        y1={a.y}
+        x2={c.x}
+        y2={c.y}
+        stroke="#fbbf24"
+        strokeWidth={7}
+        strokeLinecap="round"
+        opacity={0.75}
+      />
+      <MuehleStein {...p(0, -1, -1)} hell />
+      <MuehleStein {...p(0, 0, -1)} hell />
+      <MuehleStein {...p(0, 1, -1)} hell />
+      <MuehleStein {...p(1, -1, 0)} hell={false} />
+      <MuehleStein {...p(1, 0, 1)} hell={false} />
+      <MuehleStein {...p(2, 1, 0)} hell />
+      <MuehleStein {...p(2, 0, -1)} hell={false} />
+      <Schwebt verzug={0}>
+        <MuehleStein x={30} y={40} hell={false} r={11} />
+      </Schwebt>
+      <Schwebt verzug={0.9}>
+        <MuehleStein x={210} y={98} hell r={11} />
+      </Schwebt>
+    </>
+  )
+}
+
 /* ------------------------------------------------------------- Würfel */
 
 const AUGEN: Record<number, [number, number][]> = {
@@ -687,6 +789,7 @@ const BILDER: Record<MenueSpiel, () => ReactNode> = {
   'texas-holdem': BildTexas,
   schach: BildSchach,
   dame: BildDame,
+  muehle: BildMuehle,
   kaesekaestchen: BildKaesekaestchen,
   schuetzenopoly: BildSchuetzenopoly,
 }

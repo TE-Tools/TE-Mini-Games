@@ -1,0 +1,293 @@
+/*
+ * Das Mühlebrett: helles Birkenholz, dunkle Linien, Steine in Elfenbein
+ * und Schiefer. Dieselbe Machart wie die anderen Bretter der App (flach,
+ * weicher Schatten, Markierungen als Schichten über dem Punkt), aber ein
+ * eigenes Brett.
+ */
+
+.brett {
+  --gross: calc(min(100vw - 2rem, 27rem));
+  --feld: calc(var(--gross) / 7);
+  --holz-hell: #f8f1e3;
+  --holz-dunkel: #ecdfc6;
+  --linie: #3f3a36;
+  --gold: #f59e0b;
+  --schlag: #dc2626;
+  --auswahl: #3b6584;
+  position: relative;
+  width: var(--gross);
+  height: var(--gross);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 30% 25%, rgb(255 255 255 / 0.55), transparent 55%),
+    linear-gradient(150deg, var(--holz-hell), var(--holz-dunkel));
+  box-shadow:
+    0 0 0 1px rgb(63 58 54 / 0.14),
+    0 18px 40px -14px rgb(33 60 82 / 0.45),
+    0 6px 14px -6px rgb(33 60 82 / 0.28);
+  user-select: none;
+  -webkit-user-select: none;
+  /* Kein Scrollen, solange der Finger einen Stein schiebt. */
+  touch-action: none;
+}
+
+.zeichnung {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.linien {
+  fill: none;
+  stroke: var(--linie);
+  stroke-width: 6;
+  stroke-linejoin: round;
+}
+
+.punkt {
+  fill: var(--linie);
+}
+
+.beschriftung {
+  font-size: 18px;
+  font-weight: 700;
+  fill: rgb(63 58 54 / 0.45);
+}
+
+/* Die Mühle, die auf den Schlag wartet: ruhig leuchtend. */
+.muehleLeuchtet,
+.muehleBlitz {
+  stroke: var(--gold);
+  stroke-width: 22;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 10px rgb(245 158 11 / 0.8));
+}
+
+.muehleLeuchtet {
+  opacity: 0.8;
+  animation: pulsieren 1.4s ease-in-out infinite;
+}
+
+/* Die Mühle eines eben gespielten Zuges: leuchtet kurz auf und verglimmt. */
+.muehleBlitz {
+  opacity: 0;
+  animation: aufleuchten 1600ms ease-out both;
+}
+
+@keyframes aufleuchten {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes pulsieren {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* Ein Knopf je Punkt: so groß wie ein Rasterfeld, durchsichtig. */
+.knopf {
+  position: absolute;
+  z-index: 1;
+  width: var(--feld);
+  height: var(--feld);
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.knopf:disabled {
+  cursor: default;
+}
+
+.knopf:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: -6px;
+  z-index: 3;
+}
+
+.vorn {
+  z-index: 4;
+}
+
+/* Markierungen als Schicht unter dem Stein. */
+.letzterNach::before,
+.letzterVon::before,
+.gewaehlt::before,
+.darueber::before {
+  content: '';
+  position: absolute;
+  inset: 10%;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.letzterNach::before {
+  background: rgb(59 101 132 / 0.18);
+}
+
+.letzterVon::before {
+  inset: 26%;
+  border: 3px dashed rgb(59 101 132 / 0.45);
+}
+
+.gewaehlt::before {
+  inset: 4%;
+  background: rgb(59 101 132 / 0.22);
+  box-shadow: 0 0 0 3px var(--auswahl);
+}
+
+.darueber::before {
+  box-shadow: inset 0 0 0 4px rgb(59 101 132 / 0.6);
+}
+
+/* Ein Ziel: ein Punkt in der Akzentfarbe, über dem Brettpunkt. */
+.ziel::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24%;
+  height: 24%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: rgb(59 101 132 / 0.4);
+  box-shadow: 0 0 0 2px rgb(255 255 255 / 0.8);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Ein Stein, der geschlagen werden darf: roter, pulsierender Ring. */
+.schlagbar::after {
+  content: '';
+  position: absolute;
+  inset: 4%;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 calc(var(--feld) * 0.06) var(--schlag),
+    0 0 calc(var(--feld) * 0.3) rgb(220 38 38 / 0.6);
+  pointer-events: none;
+  z-index: 2;
+  animation: pulsieren 1s ease-in-out infinite;
+}
+
+/* Der Stein liegt in einer Hülle von Feldgröße -- so gleitet er in Feldern. */
+.huelle {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.stein {
+  width: 76%;
+  height: 76%;
+  filter: drop-shadow(0 calc(var(--feld) * 0.05) calc(var(--feld) * 0.04) rgb(15 23 42 / 0.4));
+}
+
+.gleitet {
+  animation: gleiten 280ms cubic-bezier(0.25, 0.8, 0.3, 1) both;
+}
+
+@keyframes gleiten {
+  from {
+    transform: translate(calc(var(--dx) * 100%), calc(var(--dy) * 100%));
+  }
+}
+
+/* Ein gesetzter Stein fällt sanft auf seinen Punkt. */
+.faelltEin {
+  animation: einfallen 260ms cubic-bezier(0.3, 1.4, 0.5, 1) both;
+}
+
+@keyframes einfallen {
+  from {
+    opacity: 0;
+    transform: scale(1.35) translateY(-12%);
+  }
+}
+
+/* Geschlagene Steine schrumpfen und verblassen, nachdem der Zug gelandet ist. */
+.verschwindet {
+  animation: verschwinden 360ms ease-in 300ms both;
+}
+
+@keyframes verschwinden {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.12) rotate(-6deg);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.2) rotate(12deg);
+  }
+}
+
+.angehoben {
+  opacity: 0.25;
+}
+
+.amFinger {
+  position: absolute;
+  z-index: 10;
+  width: calc(var(--feld) * 0.95);
+  height: calc(var(--feld) * 0.95);
+  transform: translate(-50%, -60%);
+  pointer-events: none;
+  filter: drop-shadow(0 calc(var(--feld) * 0.1) calc(var(--feld) * 0.08) rgb(15 23 42 / 0.45));
+}
+
+.ziehtGerade {
+  cursor: grabbing;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gleitet,
+  .faelltEin,
+  .muehleLeuchtet,
+  .schlagbar::after {
+    animation: none;
+  }
+
+  .verschwindet,
+  .muehleBlitz {
+    display: none;
+  }
+}
+
+:global(:root[data-sparsam]) .gleitet,
+:global(:root[data-sparsam]) .faelltEin,
+:global(:root[data-sparsam]) .muehleLeuchtet,
+:global(:root[data-sparsam]) .schlagbar::after {
+  animation: none;
+}
+
+:global(:root[data-sparsam]) .verschwindet,
+:global(:root[data-sparsam]) .muehleBlitz {
+  display: none;
+}
+
+:global(:root[data-sparsam]) .muehleLeuchtet,
+:global(:root[data-sparsam]) .muehleBlitz {
+  filter: none;
+}

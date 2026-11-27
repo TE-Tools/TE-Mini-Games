@@ -79,6 +79,7 @@ export const SPIELE_KACHELN: readonly KachelEintrag[] = [
   },
   { id: 'schach', name: 'Schach', pfad: '/play/schach', icon: '♞', art: 'Brettspiel' },
   { id: 'dame', name: 'Dame', pfad: '/play/dame', icon: '🔴', art: 'Brettspiel' },
+  { id: 'muehle', name: 'Mühle', pfad: '/play/muehle', icon: '⚪', art: 'Brettspiel' },
   {
     id: 'kaesekaestchen',
     name: 'Käsekästchen',
@@ -165,6 +166,7 @@ const GRUPPE: Partial<Record<GameId, SpielGruppe>> = {
   schach: 'tisch',
   kaesekaestchen: 'tisch',
   dame: 'tisch',
+  muehle: 'tisch',
   schuetzenrunde: 'party',
   'finde-den-imposter': 'party',
   'wer-bin-ich': 'party',
