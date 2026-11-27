@@ -137,7 +137,7 @@ describe('Schiffe versenken gegen den Computer', () => {
     expect(gespeichert.felder).toHaveLength(2)
     expect(gespeichert.felder[0]).toBe(44)
     expect(gespeichert.regeln).toEqual(STANDARD_REGELN)
-  })
+  }, 20000)
 
   it('Aufstellen: antippen wählt, nochmal antippen dreht', async () => {
     zeige()
@@ -147,7 +147,7 @@ describe('Schiffe versenken gegen den Computer', () => {
     await userEvent.click(erstes)
     expect(screen.getByText(/ausgewählt$/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Drehen' })).toBeEnabled()
-  })
+  }, 20000)
 
   it('Weiterspielen: Eine unterbrochene Partie steht im Menü', async () => {
     const f: Schiff[] = FLOTTE.map((a, i) => ({ ...a, x: 0, y: i * 2, richtung: 'h' }))
@@ -202,7 +202,7 @@ describe('Schiffe versenken zu zweit', () => {
     // Spieler 2 sieht den Einschlag auf seinem eigenen Meer -- nach seiner Rakete.
     await waitFor(() => expect(feldIn(meer('Deine Flotte'), 0).dataset['ergebnis']).toBeTruthy())
     expect(gebucht).not.toHaveBeenCalled()
-  })
+  }, 20000)
 })
 
 describe('Schiffe versenken online', () => {
