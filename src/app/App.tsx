@@ -21,6 +21,7 @@ import { SchuetzenopolyPage } from '@/pages/play/SchuetzenopolyPage'
 import { SchachPage } from '@/pages/play/SchachPage'
 import { KaesekaestchenPage } from '@/pages/play/KaesekaestchenPage'
 import { DamePage } from '@/pages/play/DamePage'
+import { SchiffeVersenkenPage } from '@/pages/play/SchiffeVersenkenPage'
 import { KniffelPage } from '@/pages/play/KniffelPage'
 import { BienenFlowPage } from '@/pages/play/BienenFlowPage'
 import { SquishyDumplingsPage } from '@/pages/play/SquishyDumplingsPage'
@@ -207,6 +208,7 @@ export function App() {
             <Route path="/play/schach" element={<SchachPage />} />
             <Route path="/play/kaesekaestchen" element={<KaesekaestchenPage />} />
             <Route path="/play/dame" element={<DamePage />} />
+            <Route path="/play/schiffe-versenken" element={<SchiffeVersenkenPage />} />
             <Route path="/play/schuetzenopoly" element={<SchuetzenopolyPage />} />
             <Route path="/play/kniffel" element={<KniffelPage />} />
             <Route path="/play/texas-holdem" element={<TexasHoldemPage />} />

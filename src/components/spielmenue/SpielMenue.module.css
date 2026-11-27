@@ -63,6 +63,12 @@
   --akzent-hell: #a8662c;
 }
 
+.menue[data-spiel='schiffe-versenken'] {
+  --akzent: #0369a1;
+  --akzent-tief: #0c4a6e;
+  --akzent-hell: #0284c7;
+}
+
 .menue[data-spiel='schuetzenopoly'] {
   --akzent: #4d7c0f;
   --akzent-tief: #2c4a06;

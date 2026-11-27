@@ -680,6 +680,110 @@ function BildSchuetzenopoly() {
   )
 }
 
+/* --------------------------------------------------- Schiffe versenken */
+
+/** Ein Schiff von der Seite: Rumpf, Aufbau, Mast. Eigener Entwurf. */
+function Seitenschiff({ x, y, s = 1 }: { x: number; y: number; s?: number }) {
+  return (
+    <g transform={`translate(${x} ${y}) scale(${s})`}>
+      <path d="M -34 0 L 34 0 L 26 12 L -28 12 Z" fill="#475569" />
+      <path d="M -34 0 L 34 0 L 32 3 L -32 3 Z" fill="#cbd5e1" />
+      <rect
+        x={-12}
+        y={-12}
+        width={22}
+        height={12}
+        rx={2}
+        fill="#f1f5f9"
+        stroke="#64748b"
+        strokeWidth={1}
+      />
+      <rect x={-7} y={-8} width={4} height={3} fill="#0ea5e9" />
+      <rect x={0} y={-8} width={4} height={3} fill="#0ea5e9" />
+      <line x1={-1} y1={-12} x2={-1} y2={-24} stroke="#64748b" strokeWidth={1.5} />
+      <path d="M -1 -24 l 9 3 l -9 3 z" fill="#0369a1" />
+      <rect x={16} y={-5} width={9} height={5} rx={1.5} fill="#94a3b8" />
+      <line x1={25} y1={-3} x2={33} y2={-5} stroke="#475569" strokeWidth={1.6} />
+    </g>
+  )
+}
+
+function BildSchiffeVersenken() {
+  return (
+    <>
+      {/* Meer mit zwei Wellenlinien. */}
+      <rect x={0} y={96} width={BREITE} height={HOEHE - 96} fill="#0284c7" />
+      <path
+        d="M 0 96 Q 15 92 30 96 T 60 96 T 90 96 T 120 96 T 150 96 T 180 96 T 210 96 T 240 96"
+        fill="none"
+        stroke="#bae6fd"
+        strokeWidth={2}
+      />
+      <path
+        d="M 0 112 Q 20 108 40 112 T 80 112 T 120 112 T 160 112 T 200 112 T 240 112"
+        fill="none"
+        stroke="#7dd3fc"
+        strokeWidth={1.5}
+        opacity={0.7}
+      />
+      <Schwebt>
+        <Seitenschiff x={52} y={92} s={0.85} />
+      </Schwebt>
+      {/* Der Bogen der Rakete mit Rauchspur. */}
+      <path
+        d="M 70 70 Q 120 -6 176 74"
+        fill="none"
+        stroke="#e2e8f0"
+        strokeWidth={5}
+        strokeLinecap="round"
+        opacity={0.85}
+        strokeDasharray="1 7"
+      />
+      <g transform="translate(160 46) rotate(52)">
+        <path
+          d="M -16 -3 L 6 -3 Q 13 -2 14 0 Q 13 2 6 3 L -16 3 Z"
+          fill="#f8fafc"
+          stroke="#94a3b8"
+          strokeWidth={0.8}
+        />
+        <path d="M 6 -3 Q 13 -2 14 0 Q 13 2 6 3 Z" fill="#dc2626" />
+        <path d="M -12 -3 L -17 -8 L -16 -3 Z M -12 3 L -17 8 L -16 3 Z" fill="#b91c1c" />
+        <path d="M -16 -2.5 Q -24 0 -16 2.5 Z" fill="#fbbf24" />
+        <path d="M -16 -1.5 Q -30 0 -16 1.5 Z" fill="#f97316" opacity={0.8} />
+      </g>
+      {/* Links eine Fontäne, rechts ein Feuerball. */}
+      <g transform="translate(206 98)">
+        <circle r={20} fill="#f97316" opacity={0.35} />
+        <circle r={13} fill="#fb923c" />
+        <circle cx={-4} cy={-4} r={8} fill="#fde047" />
+        <circle cx={-6} cy={-6} r={3.5} fill="#fffbeb" />
+        <circle cx={8} cy={-16} r={7} fill="#57534e" opacity={0.7} />
+        <circle cx={-2} cy={-24} r={6} fill="#78716c" opacity={0.55} />
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <line
+            key={i}
+            x1={Math.cos(i * 1.05) * 16}
+            y1={Math.sin(i * 1.05) * 16}
+            x2={Math.cos(i * 1.05) * 24}
+            y2={Math.sin(i * 1.05) * 24}
+            stroke="#fde047"
+            strokeWidth={2}
+            strokeLinecap="round"
+          />
+        ))}
+      </g>
+      <g transform="translate(128 98)" fill="#e0f2fe">
+        <path d="M -6 0 Q -4 -26 0 -34 Q 4 -26 6 0 Z" fill="#f0f9ff" />
+        <circle cx={-10} cy={-18} r={2.2} />
+        <circle cx={11} cy={-22} r={2} />
+        <circle cx={-14} cy={-8} r={1.6} />
+        <circle cx={15} cy={-10} r={1.8} />
+        <ellipse cx={0} cy={2} rx={16} ry={3.5} fill="none" stroke="#f0f9ff" strokeWidth={1.5} />
+      </g>
+    </>
+  )
+}
+
 const BILDER: Record<MenueSpiel, () => ReactNode> = {
   kniffel: BildKniffel,
   maumau: BildMauMau,
@@ -687,6 +791,7 @@ const BILDER: Record<MenueSpiel, () => ReactNode> = {
   'texas-holdem': BildTexas,
   schach: BildSchach,
   dame: BildDame,
+  'schiffe-versenken': BildSchiffeVersenken,
   kaesekaestchen: BildKaesekaestchen,
   schuetzenopoly: BildSchuetzenopoly,
 }

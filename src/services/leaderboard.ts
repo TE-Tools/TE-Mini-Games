@@ -281,5 +281,6 @@ export function gameLabel(gameId: string): string {
   if (gameId === 'schach') return 'Schach'
   if (gameId === 'kaesekaestchen') return 'Käsekästchen'
   if (gameId === 'dame') return 'Dame'
+  if (gameId === 'schiffe-versenken') return 'Schiffe versenken'
   return gameId
 }

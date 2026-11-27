@@ -14,6 +14,7 @@ Verbindliche Gestaltungs- und Umsetzungsvorgaben.
 | **Rückwärts**                      | umgesetzt                  | [rueckwaerts/](./rueckwaerts/)                 |
 | **Schach**                         | umgesetzt                  | [schach/](./schach/)                           |
 | **Dame**                           | umgesetzt                  | [dame/](./dame/)                               |
+| **Schiffe versenken**              | umgesetzt                  | [schiffe-versenken/](./schiffe-versenken/)     |
 
 ## Levelkarte 1–500 (Kurz)
 
@@ -65,6 +66,16 @@ Details: [`schach/README.md`](./schach/README.md)
 - Online wie Schach: nur ein Zugbuch auf dem Server (Migration 033), keine Damregel in SQL
 
 Details: [`dame/README.md`](./dame/README.md)
+
+## Schiffe versenken (Kurz)
+
+- Gegen den Computer (drei Stufen bis zur Wahrscheinlichkeitskarte), zu zweit mit Übergabe, online
+- Flotte und Hausregeln („nicht berühren", „nach Treffer noch einmal") als Daten
+- Online hält der Server die Flotten und wertet jeden Schuss (Migration 035); `sv_get_state`
+  verrät die fremde Flotte nie vor dem Ende. Regeln zweimal, `scripts/pruefe-schiffe-sql.mjs`
+- Rakete im Bogen, Fontäne bei Wasser, Explosion bei Treffer, Folgeexplosionen bei versenkt
+
+Details: [`schiffe-versenken/README.md`](./schiffe-versenken/README.md)
 
 ## Sudoku (Kurz)
 
