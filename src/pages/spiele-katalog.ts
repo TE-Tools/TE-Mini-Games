@@ -81,6 +81,13 @@ export const SPIELE_KACHELN: readonly KachelEintrag[] = [
   { id: 'dame', name: 'Dame', pfad: '/play/dame', icon: '🔴', art: 'Brettspiel' },
   { id: 'muehle', name: 'Mühle', pfad: '/play/muehle', icon: '⚪', art: 'Brettspiel' },
   {
+    id: 'schiffe-versenken',
+    name: 'Schiffe versenken',
+    pfad: '/play/schiffe-versenken',
+    icon: '🚢',
+    art: 'Stift & Papier',
+  },
+  {
     id: 'kaesekaestchen',
     name: 'Käsekästchen',
     pfad: '/play/kaesekaestchen',
@@ -167,6 +174,7 @@ const GRUPPE: Partial<Record<GameId, SpielGruppe>> = {
   kaesekaestchen: 'tisch',
   dame: 'tisch',
   muehle: 'tisch',
+  'schiffe-versenken': 'tisch',
   schuetzenrunde: 'party',
   'finde-den-imposter': 'party',
   'wer-bin-ich': 'party',

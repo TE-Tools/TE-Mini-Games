@@ -31,6 +31,9 @@ export type Klang =
   | 'geheimnis'
   | 'knopf'
   | 'knall'
+  | 'abschuss'
+  | 'platsch'
+  | 'versenkt'
 
 interface Ton {
   frequenz: number
@@ -100,6 +103,22 @@ const KLAENGE: Record<Klang, Ton[]> = {
     { frequenz: 240, dauer: 0.35, typ: 'sawtooth', lautstaerke: 0.2, nach: 38 },
     { frequenz: 110, dauer: 0.45, typ: 'square', lautstaerke: 0.12, ab: 0.03, nach: 28 },
     { frequenz: 600, dauer: 0.08, typ: 'square', lautstaerke: 0.08, nach: 120 },
+  ],
+  // Schiffe versenken: das Zischen beim Abschuss -- ein steigendes Fauchen.
+  abschuss: [
+    { frequenz: 140, dauer: 0.55, typ: 'sawtooth', lautstaerke: 0.07, nach: 520 },
+    { frequenz: 90, dauer: 0.4, typ: 'square', lautstaerke: 0.04, ab: 0.02, nach: 260 },
+  ],
+  // Ins Wasser: ein tiefer Plopp und ein kurzes, fallendes Rauschen.
+  platsch: [
+    { frequenz: 420, dauer: 0.12, typ: 'sine', lautstaerke: 0.16, nach: 90 },
+    { frequenz: 900, dauer: 0.22, typ: 'triangle', lautstaerke: 0.05, ab: 0.04, nach: 300 },
+  ],
+  // Versenkt: ein schwerer Schlag, dann ein langes Absinken.
+  versenkt: [
+    { frequenz: 180, dauer: 0.5, typ: 'sawtooth', lautstaerke: 0.22, nach: 30 },
+    { frequenz: 90, dauer: 0.7, typ: 'square', lautstaerke: 0.12, ab: 0.05, nach: 24 },
+    { frequenz: 330, dauer: 0.5, typ: 'sine', lautstaerke: 0.08, ab: 0.35, nach: 110 },
   ],
 }
 

@@ -16,6 +16,7 @@ export type BrettSpiel =
   | 'kaesekaestchen'
   | 'dame'
   | 'muehle'
+  | 'schiffe-versenken'
   | 'schuetzenopoly'
 
 const AKZENT: Record<BrettSpiel, string> = {
@@ -27,6 +28,7 @@ const AKZENT: Record<BrettSpiel, string> = {
   kaesekaestchen: '#a21caf',
   dame: '#7a4419',
   muehle: '#3b6584',
+  'schiffe-versenken': '#0369a1',
   schuetzenopoly: '#4d7c0f',
 }
 

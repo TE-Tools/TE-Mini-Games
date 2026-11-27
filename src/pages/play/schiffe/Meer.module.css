@@ -1,0 +1,283 @@
+/* Ein Meer: Wasser, Gitter, Schiffe, Spuren der Schüsse, Knöpfe darüber. */
+
+.rahmen {
+  --leiste: 0px;
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--leiste) 1fr;
+  grid-template-rows: var(--leiste) auto;
+  width: 100%;
+}
+
+.rahmen[data-groesse='gross'] {
+  --leiste: 1.1rem;
+  width: min(100%, 30rem);
+  margin-inline: auto;
+}
+
+.rahmen[data-groesse='klein'] {
+  width: min(64%, 17rem);
+  margin-inline: auto;
+}
+
+.kopfLeiste,
+.seitenLeiste {
+  display: grid;
+  font-size: 0.66rem;
+  font-weight: 800;
+  color: #0e4d6b;
+  text-align: center;
+  align-items: center;
+}
+
+.kopfLeiste {
+  grid-column: 2;
+  grid-row: 1;
+  grid-template-columns: repeat(10, 1fr);
+}
+
+.seitenLeiste {
+  grid-column: 1;
+  grid-row: 2;
+  grid-template-rows: repeat(10, 1fr);
+}
+
+.meer {
+  grid-column: 2;
+  grid-row: 2;
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 0.9rem;
+  overflow: hidden;
+  touch-action: manipulation;
+  background:
+    radial-gradient(120% 90% at 30% 15%, rgb(255 255 255 / 0.28), transparent 55%),
+    linear-gradient(160deg, #38bdf8 0%, #0284c7 45%, #075985 100%);
+  box-shadow:
+    inset 0 0 0 2px rgb(255 255 255 / 0.35),
+    0 10px 24px -14px rgb(7 89 133 / 0.8);
+}
+
+.rahmen[data-groesse='klein'] .meer {
+  border-radius: 0.6rem;
+}
+
+/* Leichte Bewegung: zwei Lagen Lichtwellen, die gegeneinander treiben. */
+.wellen {
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+  opacity: 0.5;
+  background:
+    repeating-radial-gradient(
+      ellipse 40% 14% at 30% 40%,
+      rgb(255 255 255 / 0.18) 0 2px,
+      transparent 3px 26px
+    ),
+    repeating-radial-gradient(
+      ellipse 30% 10% at 70% 70%,
+      rgb(255 255 255 / 0.12) 0 2px,
+      transparent 3px 22px
+    );
+  animation: treiben 9s ease-in-out infinite alternate;
+}
+
+@keyframes treiben {
+  from {
+    transform: translate(-3%, -2%);
+  }
+  to {
+    transform: translate(3%, 2%);
+  }
+}
+
+.ebene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.gitter line {
+  stroke: rgb(255 255 255 / 0.22);
+  stroke-width: 0.25;
+}
+
+.knoepfe {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  grid-template-rows: repeat(10, 1fr);
+}
+
+.feld {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: default;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.zielbar .feld:not(:disabled) {
+  cursor: crosshair;
+}
+
+@media (hover: hover) {
+  .zielbar .feld:not(:disabled):hover {
+    background: rgb(255 255 255 / 0.22);
+    box-shadow: inset 0 0 0 2px rgb(254 240 138 / 0.9);
+    border-radius: 0.3rem;
+  }
+}
+
+.zielbar .feld:not(:disabled):focus-visible {
+  outline: 3px solid #fde047;
+  outline-offset: -3px;
+}
+
+.schiff {
+  transition: opacity 0.2s;
+}
+
+.gewaehlt {
+  filter: drop-shadow(0 0 1.2px #fde047) drop-shadow(0 0 1.2px #fde047);
+}
+
+.vorschau {
+  opacity: 0.88;
+}
+
+/* Spuren: Boje, Feuer, Wrackrauch. */
+
+.boje {
+  animation: auftauchen 0.35s ease-out both;
+}
+
+.kringel {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: kringeln 3.2s ease-in-out infinite;
+}
+
+@keyframes kringeln {
+  0%,
+  100% {
+    transform: scale(0.85);
+    opacity: 0.75;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.35;
+  }
+}
+
+@keyframes auftauchen {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+}
+
+.brand {
+  animation: auftauchen 0.3s ease-out both;
+}
+
+.flamme {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: flackern var(--tempo, 0.6s) ease-in-out infinite alternate;
+}
+
+.innen {
+  animation-duration: calc(var(--tempo, 0.6s) * 0.7);
+}
+
+@keyframes flackern {
+  0% {
+    transform: scale(0.9, 0.85) skewX(-4deg);
+  }
+  50% {
+    transform: scale(1.05, 1.12) skewX(3deg);
+  }
+  100% {
+    transform: scale(0.95, 1) skewX(-2deg);
+  }
+}
+
+.rauchPuff {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: aufsteigen calc(var(--tempo, 0.6s) * 3.2) ease-out infinite;
+}
+
+.spaet {
+  animation-delay: calc(var(--tempo, 0.6s) * 1.5);
+}
+
+@keyframes aufsteigen {
+  0% {
+    opacity: 0.55;
+    transform: translate(0, 0) scale(0.5);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(1.5px, -7px) scale(1.6);
+  }
+}
+
+.wrackRauch {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: aufsteigen var(--tempo, 2.4s) ease-out infinite;
+}
+
+.ziel {
+  fill: none;
+  stroke: #fde047;
+  stroke-width: 0.8;
+  animation: zielen 1.1s ease-in-out infinite alternate;
+}
+
+@keyframes zielen {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.35;
+  }
+}
+
+.markiert {
+  position: relative;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wellen,
+  .kringel,
+  .flamme,
+  .rauchPuff,
+  .wrackRauch,
+  .ziel,
+  .boje,
+  .brand {
+    animation: none;
+  }
+  .rauchPuff,
+  .wrackRauch {
+    opacity: 0.4;
+  }
+}
+
+:global(:root[data-sparsam]) .wellen,
+:global(:root[data-sparsam]) .kringel,
+:global(:root[data-sparsam]) .rauchPuff,
+:global(:root[data-sparsam]) .wrackRauch {
+  animation: none;
+}

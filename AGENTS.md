@@ -122,6 +122,22 @@ corresponding feature; do not invent a competing design.
   Hausregeln des Tisches; es steht dort **keine** Mühleregel, und es kommt auch
   keine hinein. Zu zweit an einem Gerät wird nichts gebucht, nur mit
   `meldePartyRunde` gemeldet.
+- **Schiffe versenken:** `docs/design/schiffe-versenken/` – Regeln gehören
+  ausschließlich nach `src/games/schiffe-versenken/`, Stellwerte (Flotte, Stufen,
+  Punkte) ausschließlich in dessen `config.ts`; die Hausregeln stehen dort als
+  Daten, und eine Partie trägt ihre Regeln mit. Anders als bei Schach und Dame
+  führt der Server online **kein** Zugbuch: Weil die Flotten verdeckt sind, hält
+  er sie, prüft jede Aufstellung und wertet jeden Schuss aus (Migration
+  `035_schiffe_versenken_online.sql`) – wie bei den Kartenspielen und aus
+  demselben Grund. `sv_get_state` gibt jedem nur seine Sicht (`sv_sicht`): die
+  eigene Flotte, die Schüsse, von der fremden Flotte nur die versenkten Schiffe
+  – die ganze erst nach dem Ende. Wer daran etwas ändert, lässt das so. Damit
+  stehen die Regeln zweimal da (`flotte.ts`/`partie.ts` und SQL); die
+  SQL-Regelfunktionen sind rein und fassen keine Tabelle an, und
+  `scripts/pruefe-schiffe-sql.mjs` rechnet beide Fassungen gegeneinander nach.
+  Die Rakete (`src/pages/play/schiffe/effekte.ts`) zeigt ein Ergebnis erst beim
+  Einschlag und tritt bei reduzierter Bewegung und im Sparmodus zurück. Englisch
+  heißt das Spiel „Sea Battle", nie nach einem Handelsprodukt.
 - **Rückwärts:** `docs/design/rueckwaerts/` – das einzige Spiel mit Mikrofon.
   Regeln (wer wann was hören darf, Stutzen, Löschen) gehören nach
   `src/games/rueckwaerts/engine.ts`, Stellwerte nach `config.ts`, und nur

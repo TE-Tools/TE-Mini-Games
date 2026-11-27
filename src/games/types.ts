@@ -31,6 +31,7 @@ export type GameId =
   | 'kaesekaestchen'
   | 'dame'
   | 'muehle'
+  | 'schiffe-versenken'
 
 export interface GameLevelConfig {
   level: number
