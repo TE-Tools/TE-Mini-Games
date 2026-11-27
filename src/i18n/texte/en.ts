@@ -3444,6 +3444,14 @@ export const en: Texte = {
       mittel: 'Takes every free box and never gives away a third side while it can avoid it.',
       schwer: 'Counts the chains at the end and sacrifices on purpose. Beat it if you can.',
     },
+    gegnerZahl: 'Opponents',
+    gegner: (n: number) => (n === 1 ? '1 computer' : `${n} computers`),
+    mehrGegnerText:
+      'Every computer takes what you leave it – a win counts for more. With several, even the hard one stops counting chains.',
+    fortsetzen: (stufe: string, gegner: number, linien: number) =>
+      `Continue game – ${stufe}${gegner > 1 ? `, ${gegner} computers` : ''}, ${linien} ${linien === 1 ? 'line' : 'lines'}`,
+    fortsetzenAmGeraet: (namen: string, linien: number) =>
+      `Continue game – ${namen}, ${linien} ${linien === 1 ? 'line' : 'lines'}`,
     groesse: 'Grid size',
     groessen: { klein: 'Small', mittel: 'Medium', gross: 'Large', riesig: 'Huge' },
     groesseText: (breite: number, hoehe: number) => `${breite} × ${hoehe} boxes`,
@@ -3460,6 +3468,7 @@ export const en: Texte = {
     duBistDran: 'Your turn',
     duNochmal: 'Box! Your turn again.',
     computerDenkt: 'The computer is thinking …',
+    denkt: (name: string) => `${name} is thinking …`,
     istDran: (name: string) => `${name}’s turn`,
     istNochmalDran: (name: string) => `Box for ${name} – again!`,
     blatt: 'Playing grid',

@@ -157,6 +157,10 @@ describe('Käsekästchen: Wertung', () => {
     expect(partiePunkte('sieg', 'schwer', 'riesig')).toBe(360)
     expect(partiePunkte('remis', 'mittel', 'mittel')).toBe(60)
     expect(partiePunkte('niederlage', 'schwer', 'riesig')).toBe(10)
+    // Gegen mehrere Computer: je weiterem ein Viertel mehr, eine Niederlage bleibt gleich.
+    expect(partiePunkte('sieg', 'mittel', 'mittel', 3)).toBe(180)
+    expect(partiePunkte('remis', 'mittel', 'mittel', 2)).toBe(75)
+    expect(partiePunkte('niederlage', 'mittel', 'mittel', 3)).toBe(10)
     expect(partieXp(240)).toBe(60)
   })
 

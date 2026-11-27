@@ -46,6 +46,9 @@ export const KANTE = { min: 2, max: 8 } as const
 /** Wie viele an einem Blatt mitspielen -- am Gerät und online. */
 export const SPIELER = { min: 2, max: 4 } as const
 
+/** Gegen wie viele Computer man spielen kann -- mit einem selbst höchstens SPIELER.max. */
+export const GEGNER = { min: 1, max: 3 } as const
+
 export interface StufenWerte {
   /** So oft nimmt er ein Kästchen, das nur noch eine Linie braucht. */
   nimmFrei: number
@@ -85,6 +88,11 @@ export const PUNKTE = {
   sieg: { leicht: 60, mittel: 120, schwer: 240, online: 150 },
   /** Gleichstand ist die Hälfte eines Siegs. */
   remisAnteil: 0.5,
+  /**
+   * Zuschlag auf einen Sieg je weiterem Computer: Gegen drei ist der Sieg
+   * schwerer, denn jeder von ihnen nimmt, was man ihm lässt.
+   */
+  mehrGegner: 0.25,
   niederlage: 10,
 } as const
 

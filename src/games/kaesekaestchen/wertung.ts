@@ -26,8 +26,14 @@ export function groesseVon(breite: number, hoehe: number): KaestchenGroesse {
   return passend[0] ?? 'klein'
 }
 
-export function partiePunkte(ausgang: Ausgang, gegner: Gegner, groesse: KaestchenGroesse): number {
-  const faktor = GROESSEN[groesse].punkteFaktor
+/** `gegnerZahl`: wie viele Computer am Blatt saßen (online immer 1). */
+export function partiePunkte(
+  ausgang: Ausgang,
+  gegner: Gegner,
+  groesse: KaestchenGroesse,
+  gegnerZahl = 1,
+): number {
+  const faktor = GROESSEN[groesse].punkteFaktor * (1 + PUNKTE.mehrGegner * (gegnerZahl - 1))
   if (ausgang === 'niederlage') return PUNKTE.niederlage
   const sieg = Math.round(PUNKTE.sieg[gegner] * faktor)
   return ausgang === 'sieg' ? sieg : Math.round(sieg * PUNKTE.remisAnteil)

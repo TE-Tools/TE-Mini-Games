@@ -165,6 +165,29 @@ describe('Käsekästchen-Rechner: schwer zählt Ketten', () => {
     expect(frage(3, 2, [...geoeffnet, 10], 'mittel')).toBe(11)
   })
 
+  it('zu dritt kein Doppelkreuz: Die Kette ginge an den Übernächsten', () => {
+    const auftrag = { breite: 3, hoehe: 2, gezogen: [...geoeffnet, 10], stufe: 'schwer' as const }
+    expect(waehleLinie({ ...auftrag, seed: 1, spielerZahl: 3 })).toBe(11)
+    expect(waehleLinie({ ...auftrag, seed: 1, spielerZahl: 2 })).toBe(12)
+  })
+
+  it('spielt zu viert eine ganze Partie bis zum Ende', () => {
+    let p = neuePartie(4, 4, 4)
+    let n = 0
+    while (!p.vorbei) {
+      const l = waehleLinie({
+        breite: 4,
+        hoehe: 4,
+        gezogen: p.zuege.map((z) => z.linie),
+        stufe: ALLE[p.amZug % 3]!,
+        seed: n++,
+        spielerZahl: 4,
+      })
+      p = ziehe(p, l!)!
+    }
+    expect(p.punkte.reduce((a, b) => a + b, 0)).toBe(16)
+  })
+
   it('nimmt alles, wenn danach nichts mehr kommt', () => {
     // Die untere Reihe ist schon zu: Liegenlassen brächte nichts.
     expect(frage(3, 2, [...geoeffnet, 13, 14, 15, 16, 10], 'schwer')).toBe(11)

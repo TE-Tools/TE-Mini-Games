@@ -41,7 +41,9 @@ waagrechten Zeile für Zeile, dann alle senkrechten. Wer die Reihenfolge
 
 ## Der Computer
 
-Nur gegen einen Menschen (zwei Spieler). Er ist rein: gleicher Auftrag,
+Gegen einen Menschen, allein oder zu mehreren: Man spielt gegen einen, zwei
+oder drei Computer (`GEGNER` in `config.ts`), alle in derselben Stufe; der
+Mensch sitzt auf Platz 0. Er ist rein: gleicher Auftrag,
 gleicher Zufall, gleiche Linie. In Tests bekommt er den Zufall von außen
 (`waehleLinie(auftrag, zufall)`), sonst einen aus dem Startwert der Partie.
 
@@ -86,6 +88,13 @@ Gemessen (`tests/kaesekaestchen-rechner.test.ts`, 4 × 4, je 12 Partien):
 schwer gewinnt gegen leicht mindestens 11, gegen mittel mehr als die Hälfte.
 Eine ganze 6 × 6-Partie schwer gegen schwer läuft in Vitest in Millisekunden;
 der Worker ist für alte Handys da.
+
+**Zu mehreren** bekommt er `spielerZahl` im Auftrag. Die Kettenrechnung gilt
+nur zu zweit: Wer die Kontrolle behält, hängt dort an der Reihe der Züge, und
+zu dritt schenkt ein Doppelkreuz die Kette nicht dem Gegner, sondern dem
+Übernächsten. Ab drei Spielern spielt die schwere Stufe deshalb wie die
+mittlere -- nimmt alles, gibt keine dritte Seite her, opfert das Wenigste.
+Das Menü sagt das, sobald mehr als ein Computer gewählt ist.
 
 ## Online
 
@@ -146,7 +155,19 @@ keins zur Verfügung -- sie ist noch nicht gelaufen.
 
 `config.ts`, `PUNKTE`: Sieg gegen leicht 60, mittel 120, schwer 240, online
 150; mal Größenfaktor (klein 0,75, mittel 1, groß 1,25, riesig 1,5).
-Gleichstand ist die Hälfte, eine Niederlage 10. XP = Punkte / 4.
+Gleichstand ist die Hälfte, eine Niederlage 10. XP = Punkte / 4. Gegen
+mehrere Computer gibt es je weiterem ein Viertel mehr (`PUNKTE.mehrGegner`):
+Jeder von ihnen nimmt, was man liegen lässt. Im Ergebnis steht `gegnerZahl`.
+
+## Unterbrochene Partie
+
+Gegen den Computer und am Gerät liegt eine laufende Partie im Gerät
+(`te-kaesekaestchen-partie`): Modus, Blatt, Namen, Beginner, Startwert und die
+Linien in Zugreihenfolge -- nie das Blatt selbst. Beim Laden spielt die Engine
+die Linien nach; was sich nicht nachspielen lässt oder schon vorbei ist, gilt
+nicht als Spielstand. Im Menü steht dann „Weiterspielen" ganz oben. Gespeichert
+wird ab der ersten Linie, gelöscht mit dem Ende oder dem Aufgeben. Online gibt
+es das nicht: Dort ist das Zugbuch auf dem Server der Spielstand.
 
 Gebucht wird gegen den Computer und online über `processAfterResult`
 (`kaesekaestchen/partieBuchen.ts`), damit XP, Serie, Tagesaufgaben und

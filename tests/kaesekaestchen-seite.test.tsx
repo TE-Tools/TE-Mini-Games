@@ -122,6 +122,74 @@ describe('Käsekästchen gegen den Computer', () => {
   })
 })
 
+describe('Käsekästchen: mehrere Computer und Fortsetzen', () => {
+  it('gegen drei Computer sitzen vier am Blatt, und alle drei ziehen', async () => {
+    zeige()
+    await userEvent.click(screen.getByRole('button', { name: 'Klein' }))
+    await userEvent.click(screen.getByRole('button', { name: '3 Computer' }))
+    expect(screen.getByText(/ein Sieg zählt mehr/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Partie starten' }))
+    for (const n of ['Computer 1', 'Computer 2', 'Computer 3']) {
+      expect(screen.getAllByText(n).length).toBeGreaterThan(0)
+    }
+    await userEvent.click(linie(0))
+    expect(screen.getByText('Computer 1 überlegt …')).toBeInTheDocument()
+    await screen.findByText(/Du bist dran/, {}, { timeout: 8000 })
+    // Keiner kann auf leerem Blatt etwas schließen: eine Linie von jedem.
+    expect(document.querySelectorAll('[data-linie]:disabled')).toHaveLength(4)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Aufgeben' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Ja, aufgeben' }))
+    await waitFor(() => expect(gebucht).toHaveBeenCalledTimes(1))
+    expect(gebucht.mock.calls[0]![5]).toBe(3)
+  }, 15000)
+
+  it('eine unterbrochene Partie lässt sich fortsetzen', async () => {
+    const { unmount } = zeige()
+    await userEvent.click(screen.getByRole('button', { name: 'Klein' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Los geht’s' }))
+    await userEvent.click(linie(0))
+    await userEvent.click(linie(5))
+    unmount()
+
+    zeige()
+    const karte = screen.getByRole('button', { name: /Partie fortsetzen – Anna, Ben, 2 Linien/ })
+    await userEvent.click(karte)
+    expect(linie(0)).toBeDisabled()
+    expect(linie(5)).toBeDisabled()
+    expect(freieLinien()).toHaveLength(22)
+    expect(screen.getByText('Anna ist dran')).toBeInTheDocument()
+  })
+
+  it('Aufgeben löscht den Spielstand, Müll im Speicher zeigt keine Karte', async () => {
+    zeige()
+    await userEvent.click(screen.getByRole('button', { name: 'Partie starten' }))
+    await userEvent.click(linie(0))
+    await screen.findByText(/Du bist dran/, {}, { timeout: 4000 })
+    expect(localStorage.getItem('te-kaesekaestchen-partie')).not.toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Aufgeben' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Ja, aufgeben' }))
+    expect(localStorage.getItem('te-kaesekaestchen-partie')).toBeNull()
+
+    localStorage.setItem(
+      'te-kaesekaestchen-partie',
+      JSON.stringify({
+        modus: { art: 'geraet' },
+        groesse: 'klein',
+        namen: ['A', 'B'],
+        spielerZahl: 2,
+        beginner: 0,
+        linien: [0, 0],
+        seed: 1,
+        partieId: 'x',
+      }),
+    )
+    // Zweimal dieselbe Linie lässt sich nicht nachspielen: keine Karte.
+    zeige()
+    expect(screen.queryByRole('button', { name: /Partie fortsetzen/ })).toBeNull()
+  })
+})
+
 describe('Käsekästchen an einem Gerät', () => {
   it('spielt reihum bis zum Ende, mit Extrazug beim Schließen', async () => {
     zeige()

@@ -34,8 +34,9 @@ export async function buchePartie(
   gegner: Gegner,
   groesse: KaestchenGroesse,
   kaestchen: { meine: number; gesamt: number },
+  gegnerZahl = 1,
 ): Promise<Buchung> {
-  const punkte = partiePunkte(ausgang, gegner, groesse)
+  const punkte = partiePunkte(ausgang, gegner, groesse, gegnerZahl)
   const xp = partieXp(punkte)
 
   const gespeichert = await saveGameResult({
@@ -43,7 +44,7 @@ export async function buchePartie(
     level: 1,
     score: punkte,
     xp,
-    resultData: { partieId, ausgang, gegner, groesse, ...kaestchen },
+    resultData: { partieId, ausgang, gegner, gegnerZahl, groesse, ...kaestchen },
     stars: 0,
   })
   await addXp('guest', xp)

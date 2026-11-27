@@ -9,8 +9,15 @@ export function farbeVon(spieler: number): string {
   return SPIELER_FARBEN[spieler % SPIELER_FARBEN.length]!
 }
 
-/** Der erste Buchstabe eines Namens, groß -- fürs Kästchen. */
+/**
+ * Der erste Buchstabe eines Namens, groß -- fürs Kästchen. Endet der Name
+ * auf eine Zahl („Computer 2"), kommt sie dazu: Sonst stünde bei drei
+ * Computern dreimal dasselbe C auf dem Blatt.
+ */
 export function initiale(name: string): string {
-  const erster = [...name.trim()][0]
-  return erster ? erster.toLocaleUpperCase() : '?'
+  const getrimmt = name.trim()
+  const erster = [...getrimmt][0]
+  if (!erster) return '?'
+  const zahl = /\s(\d)$/.exec(getrimmt)?.[1] ?? ''
+  return erster.toLocaleUpperCase() + zahl
 }

@@ -3537,6 +3537,14 @@ export const de = {
       mittel: 'Nimmt jedes freie Kästchen und gibt keine dritte Seite her, solange es geht.',
       schwer: 'Zählt am Ende die Ketten und opfert gezielt. Schlag ihn, wenn du kannst.',
     },
+    gegnerZahl: 'Gegner',
+    gegner: (n: number) => (n === 1 ? '1 Computer' : `${n} Computer`),
+    mehrGegnerText:
+      'Jeder Computer nimmt, was man ihm lässt – ein Sieg zählt mehr. Zu mehreren rechnet auch der schwere nicht mehr mit Ketten.',
+    fortsetzen: (stufe: string, gegner: number, linien: number) =>
+      `Partie fortsetzen – ${stufe}${gegner > 1 ? `, ${gegner} Computer` : ''}, ${linien} ${linien === 1 ? 'Linie' : 'Linien'}`,
+    fortsetzenAmGeraet: (namen: string, linien: number) =>
+      `Partie fortsetzen – ${namen}, ${linien} ${linien === 1 ? 'Linie' : 'Linien'}`,
     groesse: 'Blattgröße',
     groessen: { klein: 'Klein', mittel: 'Mittel', gross: 'Groß', riesig: 'Riesig' },
     groesseText: (breite: number, hoehe: number) => `${breite} × ${hoehe} Kästchen`,
@@ -3553,6 +3561,7 @@ export const de = {
     duBistDran: 'Du bist dran',
     duNochmal: 'Kästchen! Du bist noch einmal dran.',
     computerDenkt: 'Der Computer überlegt …',
+    denkt: (name: string) => `${name} überlegt …`,
     istDran: (name: string) => `${name} ist dran`,
     istNochmalDran: (name: string) => `Kästchen für ${name} – noch einmal!`,
     blatt: 'Spielfeld',

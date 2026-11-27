@@ -33,6 +33,13 @@ export interface KiAuftrag {
   gezogen: readonly number[]
   stufe: KaestchenStufe
   seed: number
+  /**
+   * Wie viele am Blatt sitzen (Standard 2). Die Kettenrechnung der schweren
+   * Stufe gilt nur zu zweit: Wer die Kontrolle behält, hängt dort an der
+   * Reihe der Züge, und zu dritt schenkt ein Doppelkreuz die Kette dem
+   * Übernächsten. Zu mehreren spielt er deshalb wie die mittlere Stufe.
+   */
+  spielerZahl?: number
 }
 
 /** Liefert Zahlen in [0, 1) -- in Tests von außen vorgegeben. */
@@ -408,7 +415,8 @@ export function waehleLinie(auftrag: KiAuftrag, zufall?: Zufall): number | null 
   const r = raster(auftrag.breite, auftrag.hoehe)
   const lage = new Lage(r, auftrag.gezogen)
   const z = zufall ?? zufallAus(auftrag.seed)
-  const w = STUFEN[auftrag.stufe]
+  const stufe = STUFEN[auftrag.stufe]
+  const w = (auftrag.spielerZahl ?? 2) > 2 ? { ...stufe, kettenRegel: false } : stufe
   const merker: Merker = new Map()
 
   const frei = lage.frei()

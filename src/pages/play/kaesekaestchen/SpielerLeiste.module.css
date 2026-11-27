@@ -4,7 +4,8 @@
   padding: 0;
   width: min(100%, 30rem);
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  /* Breit genug für „Computer 3" -- zu viert auf dem Handy zwei mal zwei. */
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
   gap: var(--space-2);
 }
 
