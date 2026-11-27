@@ -238,6 +238,14 @@
     background: var(--bad);
     animation: ew-pulse 0.7s infinite alternate;
   }
+  /* Prozent und Verbrauch in einer Zeile -- untereinander ragten sie in die Aufgabe. */
+  .core-zeile {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 8px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  }
   .core-pct {
     font-family: var(--mono);
     font-size: 13px;
@@ -292,6 +300,9 @@
     font-size: 13px;
     color: var(--ink-dim);
     max-width: 70vw;
+    text-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.8),
+      0 0 10px rgba(0, 0, 0, 0.45);
   }
   .hud-objective .obj-primary {
     color: var(--ink);

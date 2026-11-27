@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import { Rng } from '@/games/emberwake/core/Rng'
+import { RAUSCHEN_GLSL, WELTPOS_VERTEX } from './rauschen'
+import { flamme, type Flamme } from './feuer'
 
 /**
  * Prozedurale Low-Poly-Modelle mit Vertex-Farben.
@@ -50,8 +52,57 @@ function merge(parts: THREE.BufferGeometry[]): THREE.BufferGeometry {
   const merged = mergeGeometries(nonIndexed, false)
   if (!merged) throw new Error('mergeGeometries fehlgeschlagen')
   merged.computeVertexNormals()
+  glatteNormalen(merged)
   for (const p of nonIndexed) p.dispose()
   return merged
+}
+
+/**
+ * Weiche Kanten, wo es keine Kante gibt (27.11.2026).
+ *
+ * Eine zusammengefügte Geometrie hat jede Ecke einmal je Dreieck, und
+ * `computeVertexNormals` gibt jedem Dreieck seine eigene Normale -- alles
+ * facettiert, auch eine Tannenetage oder ein Stamm. Hier mitteln sich die
+ * Normalen aller Ecken an derselben Stelle, sofern ihre Flächen weniger als
+ * `knick` Grad auseinanderstehen: Ein Stamm wird rund, die Kante eines
+ * Felsens bleibt scharf. Auf NIEDRIG schattiert das Material ohnehin flach.
+ */
+function glatteNormalen(geo: THREE.BufferGeometry, knick = 50): void {
+  const pos = geo.attributes.position as THREE.BufferAttribute
+  const nor = geo.attributes.normal as THREE.BufferAttribute
+  const grenze = Math.cos((knick * Math.PI) / 180)
+  const gruppen = new Map<string, number[]>()
+  for (let i = 0; i < pos.count; i++) {
+    const k = `${Math.round(pos.getX(i) * 1e3)},${Math.round(pos.getY(i) * 1e3)},${Math.round(pos.getZ(i) * 1e3)}`
+    const g = gruppen.get(k)
+    if (g) g.push(i)
+    else gruppen.set(k, [i])
+  }
+  const flach = Float32Array.from(nor.array as ArrayLike<number>)
+  for (const g of gruppen.values()) {
+    if (g.length < 2) continue
+    for (const i of g) {
+      const ax = flach[i * 3]!
+      const ay = flach[i * 3 + 1]!
+      const az = flach[i * 3 + 2]!
+      let sx = 0
+      let sy = 0
+      let sz = 0
+      for (const j of g) {
+        const bx = flach[j * 3]!
+        const by = flach[j * 3 + 1]!
+        const bz = flach[j * 3 + 2]!
+        if (ax * bx + ay * by + az * bz >= grenze) {
+          sx += bx
+          sy += by
+          sz += bz
+        }
+      }
+      const l = Math.hypot(sx, sy, sz) || 1
+      nor.setXYZ(i, sx / l, sy / l, sz / l)
+    }
+  }
+  nor.needsUpdate = true
 }
 
 /**
@@ -66,12 +117,37 @@ export function vertexMaterial(
   hochwertig = false,
 ): THREE.MeshLambertMaterial | THREE.MeshStandardMaterial {
   if (hochwertig) {
-    return new THREE.MeshStandardMaterial({
+    const mat = new THREE.MeshStandardMaterial({
       vertexColors: true,
-      flatShading: true,
-      roughness: 0.88,
+      flatShading: false,
+      roughness: 0.9,
       metalness: 0,
     })
+    /*
+     * Struktur statt Farbe aus dem Eimer (27.11.2026): Rinde, Fels und
+     * Nadeln bekommen pro Pixel ein Rauschen aus der Weltposition --
+     * gestreckt in der Höhe, damit Stämme Längsrillen haben wie Borke.
+     */
+    mat.onBeforeCompile = (shader) => {
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', '#include <common>\nvarying vec3 vEwWelt;')
+        .replace('#include <project_vertex>', '#include <project_vertex>\n' + WELTPOS_VERTEX)
+      shader.fragmentShader = shader.fragmentShader
+        .replace('#include <common>', `#include <common>\nvarying vec3 vEwWelt;\n${RAUSCHEN_GLSL}`)
+        .replace(
+          '#include <color_fragment>',
+          `#include <color_fragment>
+{
+  vec3 w = vEwWelt;
+  float rille = ew_fbm(vec2(w.x * 6.0 + w.z * 6.0, w.y * 1.4));
+  float korn = ew_noise(vec2(w.x + w.y * 0.7, w.z - w.y * 0.5) * 9.0);
+  float flecken = ew_fbm(w.xz * 0.9 + w.y * 0.6);
+  diffuseColor.rgb *= 0.78 + rille * 0.22 + korn * 0.14 + flecken * 0.12;
+}`,
+        )
+    }
+    mat.customProgramCacheKey = () => 'ew-struktur'
+    return mat
   }
   return new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true })
 }
@@ -234,16 +310,27 @@ export function stoneNodeGeometry(): THREE.BufferGeometry {
 /** Nahrung: ein Busch mit hellen Beeren. */
 export function foodNodeGeometry(): THREE.BufferGeometry {
   const rng = new Rng(3003)
-  const bush = new THREE.IcosahedronGeometry(0.5, 0)
-  jitterVertices(bush, 0.12, rng)
-  bush.translate(0, 0.45, 0)
-  paint(bush, 0x4f7a4a, 0.2, rng)
-  const parts: THREE.BufferGeometry[] = [bush]
+  // Ein Strauch aus mehreren Blattballen statt einem Vieleck (27.11.2026),
+  // innen dunkel, außen heller -- daran sitzen rote Beeren.
+  const parts: THREE.BufferGeometry[] = []
   for (let i = 0; i < 6; i++) {
-    const berry = new THREE.IcosahedronGeometry(0.07, 0)
+    const r = 0.26 + rng.next() * 0.14
+    const ballen = new THREE.IcosahedronGeometry(r, 1)
+    jitterVertices(ballen, 0.07, rng)
     const a = rng.angle()
-    berry.translate(Math.cos(a) * 0.42, 0.45 + rng.range(-0.25, 0.3), Math.sin(a) * 0.42)
-    paint(berry, 0xd9e07a)
+    const d = i === 0 ? 0 : 0.18 + rng.next() * 0.16
+    ballen.translate(Math.cos(a) * d, 0.3 + rng.next() * 0.28, Math.sin(a) * d)
+    paint(ballen, i % 2 === 0 ? 0x41663a : 0x34552f, 0.2, rng)
+    tiefe(ballen, 0, 0.8, 0.4)
+    parts.push(ballen)
+  }
+  for (let i = 0; i < 11; i++) {
+    const berry = new THREE.IcosahedronGeometry(0.05, 1)
+    const a = rng.angle()
+    const y = 0.25 + rng.next() * 0.45
+    const r = 0.38 + rng.next() * 0.08 - Math.abs(y - 0.45) * 0.3
+    berry.translate(Math.cos(a) * r, y, Math.sin(a) * r)
+    paint(berry, rng.next() < 0.7 ? 0xb3202a : 0x7d1420, 0.15, rng)
     parts.push(berry)
   }
   return merge(parts)
@@ -350,25 +437,93 @@ export interface CoreModel {
   glowRing: THREE.Mesh
   glowMaterial: THREE.MeshBasicMaterial
   lightRing: THREE.Mesh
+  /** Die Flammen über den Scheiten, groß und klein. */
+  flammen: Flamme[]
+  /** Glut zwischen den Scheiten -- leuchtet mit der Ladung. */
+  glutMaterial: THREE.MeshBasicMaterial
 }
 
-/** Der Kern: gefasster Kristall auf Steinsockel, Glut-Ring am Boden, Lichtradius-Ring. */
-export function coreModel(): CoreModel {
+/**
+ * Das Lagerfeuer mit dem Kern (27.11.2026, vorher ein Sechseck-Sockel).
+ *
+ * Ein Kreis aus Feldsteinen, darin ein Bett aus Asche und Glut, darüber
+ * Scheite zum Zelt gestellt, und zwischen ihnen züngeln Flammen aus dem
+ * Shader (`feuer.ts`). Der Kernkristall schwebt im Feuer -- er bleibt das,
+ * woran man die Ladung abliest. Die Maße bleiben im alten Fußabdruck
+ * (Radius knapp 1 m), damit Kollision und Bauplätze stimmen.
+ */
+export function coreModel(material?: THREE.Material): CoreModel {
   const group = new THREE.Group()
   const rng = new Rng(5555)
+  const fest = material ?? new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true })
 
-  const baseGeo = new THREE.CylinderGeometry(0.75, 0.95, 0.5, 7)
-  jitterVertices(baseGeo, 0.06, rng)
-  const base = new THREE.Mesh(
-    baseGeo,
-    new THREE.MeshLambertMaterial({ color: 0x4a4f5c, flatShading: true }),
-  )
-  base.position.y = 0.25
-  base.receiveShadow = true
+  // Feldsteine im Kreis, jeder anders, grau mit etwas Ruß nach innen.
+  const steine: THREE.BufferGeometry[] = []
+  const zahl = 11
+  for (let i = 0; i < zahl; i++) {
+    const a = (i / zahl) * Math.PI * 2 + rng.next() * 0.2
+    const g = new THREE.DodecahedronGeometry(0.2 + rng.next() * 0.08, 1)
+    jitterVertices(g, 0.07, rng)
+    g.scale(1.25, 0.72 + rng.next() * 0.3, 1)
+    g.rotateY(-a + rng.next() * 0.6)
+    g.translate(Math.cos(a) * 0.86, 0.11, Math.sin(a) * 0.86)
+    paint(g, rng.next() < 0.5 ? 0x5e5b56 : 0x4f4d49, 0.22, rng)
+    tiefe(g, 0, 0.32, 0.4)
+    steine.push(g)
+  }
+  // Scheite zum Zelt gestellt, die Spitzen über der Mitte.
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2 + 0.4
+    const g = new THREE.CylinderGeometry(0.06, 0.08, 1.05, 7)
+    g.translate(0, 0.52, 0)
+    g.rotateZ(0.62 + rng.next() * 0.12)
+    g.rotateY(a)
+    g.translate(Math.cos(a) * 0.5, 0.02, -Math.sin(a) * 0.5)
+    paint(g, 0x3e2c1d, 0.2, rng)
+    // Verkohlt, wo das Feuer sitzt: zur Spitze hin schwarz.
+    const pos = g.attributes.position as THREE.BufferAttribute
+    const col = g.attributes.color as THREE.BufferAttribute
+    for (let k = 0; k < pos.count; k++) {
+      const brand = Math.min(1, Math.max(0, (pos.getY(k) - 0.25) / 0.45))
+      const f = 1 - brand * 0.9
+      col.setXYZ(k, col.getX(k) * f, col.getY(k) * f, col.getZ(k) * f)
+    }
+    steine.push(g)
+  }
+  const ring = new THREE.Mesh(merge(steine), fest)
+  ring.castShadow = true
+  ring.receiveShadow = true
+
+  // Asche und Glut: ein flacher Hügel, dunkel, mit glühenden Adern.
+  const glutMaterial = new THREE.MeshBasicMaterial({ color: 0xff6a2a })
+  const glutGeo = new THREE.CircleGeometry(0.66, 20)
+  glutGeo.rotateX(-Math.PI / 2)
+  const gp = glutGeo.attributes.position as THREE.BufferAttribute
+  const glutFarben = new Float32Array(gp.count * 3)
+  for (let k = 0; k < gp.count; k++) {
+    const r = Math.hypot(gp.getX(k), gp.getZ(k))
+    gp.setY(k, 0.08 * (1 - r / 0.66) + 0.02)
+    // Innen glühend, außen graue Asche.
+    const heiss = Math.max(0, 1 - r / 0.5) * (0.6 + rng.next() * 0.4)
+    glutFarben[k * 3] = 0.12 + heiss * 0.9
+    glutFarben[k * 3 + 1] = 0.1 + heiss * 0.32
+    glutFarben[k * 3 + 2] = 0.09 + heiss * 0.08
+  }
+  glutGeo.setAttribute('color', new THREE.BufferAttribute(glutFarben, 3))
+  glutMaterial.vertexColors = true
+  const glut = new THREE.Mesh(glutGeo, glutMaterial)
+
+  const flammen = [flamme(1.0, 1.55, 0), flamme(0.7, 1.15, 3.7), flamme(0.55, 0.85, 7.3)]
+  flammen[0]!.mesh.position.set(0, 0.06, 0)
+  flammen[1]!.mesh.position.set(0.16, 0.05, 0.1)
+  flammen[2]!.mesh.position.set(-0.15, 0.05, -0.08)
 
   const crystalMaterial = new THREE.MeshBasicMaterial({ color: 0xff9a4d })
-  const crystal = new THREE.Mesh(new THREE.OctahedronGeometry(0.42, 0), crystalMaterial)
+  const crystal = new THREE.Mesh(new THREE.OctahedronGeometry(0.26, 0), crystalMaterial)
   crystal.position.y = 1.05
+  crystal.renderOrder = 7
+  const base = new THREE.Group()
+  base.add(ring, glut, ...flammen.map((f) => f.mesh))
 
   const glowMaterial = new THREE.MeshBasicMaterial({
     color: 0xff8f45,
@@ -395,7 +550,16 @@ export function coreModel(): CoreModel {
   lightRing.position.y = 0.06
 
   group.add(base, crystal, glowRing, lightRing)
-  return { group, crystal, crystalMaterial, glowRing, glowMaterial, lightRing }
+  return {
+    group,
+    crystal,
+    crystalMaterial,
+    glowRing,
+    glowMaterial,
+    lightRing,
+    flammen,
+    glutMaterial,
+  }
 }
 
 /** Werkbank: Tisch mit Werkzeugen. */

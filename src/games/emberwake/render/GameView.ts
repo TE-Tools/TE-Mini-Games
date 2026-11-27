@@ -10,6 +10,8 @@ import { lerp, clamp01 } from '@/games/emberwake/core/math'
 import { Rng } from '@/games/emberwake/core/Rng'
 import { Particles } from './Particles'
 import { Sky, halo } from './atmosphere'
+import { bodenMaterial } from './boden'
+import { Gluehwuermchen } from './gluehwuermchen'
 import { menschModell } from './figur'
 import {
   coreModel,
@@ -58,6 +60,7 @@ export class GameView {
   private readonly lanternLight: THREE.PointLight
   private readonly fog: THREE.Fog
   readonly particles: Particles
+  private readonly gluehwuermchen: Gluehwuermchen
   private readonly sky: Sky
   private readonly coreHalo: THREE.Sprite
   private readonly lanternHalo: THREE.Sprite
@@ -95,10 +98,10 @@ export class GameView {
 
   constructor(private quality: QualitySettings) {
     this.staticMaterial = vertexMaterial(quality.tier !== 'low')
-    this.bodenMaterial = vertexMaterial(quality.tier !== 'low')
-    if (quality.tier !== 'low') this.bodenMaterial.flatShading = false
-    this.hemi = new THREE.HemisphereLight(0xb9c4d6, 0x3a3f36, 0.9)
-    this.sun = new THREE.DirectionalLight(0xffffff, 1.4)
+    this.bodenMaterial = bodenMaterial(quality.tier)
+    // Himmel bläulich, Boden erdbraun: Das Streulicht von unten ist warm wie Waldboden.
+    this.hemi = new THREE.HemisphereLight(0xbcd2ea, 0x4a3d2c, 0.9)
+    this.sun = new THREE.DirectionalLight(0xfff0d8, 1.4)
     this.sun.position.set(30, 50, 20)
     this.sun.castShadow = quality.shadows
     this.sun.shadow.mapSize.set(quality.shadowMapSize, quality.shadowMapSize)
@@ -109,6 +112,9 @@ export class GameView {
     this.sun.shadow.camera.top = 22
     this.sun.shadow.camera.bottom = -22
     this.sun.shadow.bias = -0.0015
+    this.sun.shadow.normalBias = 0.03
+    // Weicher Halbschatten wie unter echtem Himmel (nur mit PCFSoft wirksam).
+    this.sun.shadow.radius = 3
     this.scene.add(this.hemi, this.sun, this.sun.target)
 
     this.coreLight = new THREE.PointLight(0xff9a4d, 60, 24, 1.6)
@@ -122,6 +128,10 @@ export class GameView {
 
     this.particles = new Particles(quality.particleBudget)
     this.scene.add(this.particles.points)
+    this.gluehwuermchen = new Gluehwuermchen(
+      quality.tier === 'low' ? 0 : quality.tier === 'medium' ? 24 : 48,
+    )
+    this.scene.add(this.gluehwuermchen.points)
 
     this.sky = new Sky()
     this.coreHalo = halo(0xff9a4d)
@@ -130,7 +140,7 @@ export class GameView {
 
     this.player = menschModell()
     this.scene.add(this.player.group)
-    this.core = coreModel()
+    this.core = coreModel(this.staticMaterial)
     this.scene.add(this.core.group)
   }
 
@@ -220,22 +230,33 @@ export class GameView {
    * biegt die Spitzen im Vertex-Shader, die CPU tut dafür nichts.
    */
   private buildGrass(w: World): void {
-    const anzahl = Math.round(this.quality.grassDensity * Math.min(3000, w.size * w.size * 0.5))
+    // Seit 27.11.2026 dreimal so dicht: Erst eine geschlossene Grasnarbe
+    // sieht nach Wiese aus und nicht nach einzelnen Büscheln.
+    const anzahl = Math.round(this.quality.grassDensity * Math.min(9000, w.size * w.size * 1.2))
     if (anzahl <= 0) return
     const pal = w.worldDef.palette
 
     const geo = new THREE.BufferGeometry()
     const halme: number[] = []
     const hoehe: number[] = []
-    for (let k = 0; k < 3; k++) {
-      const a = (k / 3) * Math.PI + 0.3
-      const dx = Math.cos(a) * 0.09
-      const dz = Math.sin(a) * 0.09
-      const lean = 0.08 * (k - 1)
+    // Sieben schmale Halme je Büschel, jeder an eigener Stelle und anders
+    // geneigt (27.11.2026) -- vorher drei breite Dreiecke, die wie Stacheln
+    // aussahen.
+    const hr = new Rng(0x6a55)
+    for (let k = 0; k < 7; k++) {
+      const a = hr.angle()
+      const ox = Math.cos(a) * hr.next() * 0.16
+      const oz = Math.sin(a) * hr.next() * 0.16
+      const b = hr.angle()
+      const dx = Math.cos(b) * 0.028
+      const dz = Math.sin(b) * 0.028
+      const lx = Math.cos(a) * (0.06 + hr.next() * 0.12)
+      const lz = Math.sin(a) * (0.06 + hr.next() * 0.12)
+      const h = 0.26 + hr.next() * 0.26
       // Jeder Halm zweimal, einmal je Seite: Mit DoubleSide würde die
       // Rückseite ihre Normale umdrehen und schwarz erscheinen.
-      halme.push(-dx, 0, -dz, dx, 0, dz, lean, 0.42 + k * 0.06, lean * 0.5)
-      halme.push(dx, 0, dz, -dx, 0, -dz, lean, 0.42 + k * 0.06, lean * 0.5)
+      halme.push(ox - dx, 0, oz - dz, ox + dx, 0, oz + dz, ox + lx, h, oz + lz)
+      halme.push(ox + dx, 0, oz + dz, ox - dx, 0, oz - dz, ox + lx, h, oz + lz)
       hoehe.push(0, 0, 1, 0, 0, 1)
     }
     geo.setAttribute('position', new THREE.Float32BufferAttribute(halme, 3))
@@ -252,17 +273,26 @@ export class GameView {
 
     const mat = new THREE.MeshLambertMaterial()
     const zeit = { value: 0 }
+    mat.customProgramCacheKey = () => 'ew-gras'
     mat.onBeforeCompile = (shader) => {
       shader.uniforms.zeit = zeit
+      // Unten im Schatten der Narbe dunkel, die Spitzen im Licht hell und gelblich.
+      shader.fragmentShader = shader.fragmentShader
+        .replace('#include <common>', '#include <common>\nvarying float vHoehe;')
+        .replace(
+          '#include <color_fragment>',
+          '#include <color_fragment>\ndiffuseColor.rgb *= mix(vec3(0.34, 0.38, 0.32), vec3(1.04, 1.04, 0.84), vHoehe);',
+        )
       shader.vertexShader = shader.vertexShader
         .replace(
           '#include <common>',
-          '#include <common>\nattribute float hoehe;\nuniform float zeit;',
+          '#include <common>\nattribute float hoehe;\nuniform float zeit;\nvarying float vHoehe;',
         )
         .replace(
           '#include <begin_vertex>',
           [
             '#include <begin_vertex>',
+            'vHoehe = hoehe;',
             'vec4 wurzel = instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);',
             'float wind = sin(zeit * 1.7 + wurzel.x * 0.35 + wurzel.z * 0.22) * 0.5 + 0.5;',
             'transformed.x += hoehe * (0.06 + wind * 0.1);',
@@ -529,9 +559,10 @@ export class GameView {
     this.fog.near = range * 0.28
     this.fog.far = range
 
-    this.sun.intensity = lerp(0.12, 1.5, sun)
-    this.sun.color.setHex(sun > 0.5 ? 0xfff1dc : 0x7d8fc4)
-    this.hemi.intensity = lerp(0.18, 0.95, sun)
+    this.sun.intensity = lerp(0.14, 1.65, sun)
+    sonnenFarbe(sun, this.sun.color)
+    this.hemi.intensity = lerp(0.16, 0.9, sun)
+    this.hemi.color.setHex(0x26345a).lerp(_colB.setHex(0xbcd2ea), sun)
 
     // Spieler (interpoliert)
     const p = w.player
@@ -659,10 +690,35 @@ export class GameView {
     const pulse = 1 + Math.sin(this.time * 2.2) * 0.04 * (0.4 + charge)
     this.core.crystal.scale.setScalar(pulse * (0.75 + charge * 0.4))
     this.core.crystal.rotation.y = this.time * 0.6
-    this.core.crystal.position.y = 1.05 + Math.sin(this.time * 1.3) * 0.05
+    this.core.crystal.position.y = 1.15 + charge * 0.35 + Math.sin(this.time * 1.3) * 0.05
     _colA.setHex(0x5a3020).lerp(_colB.setHex(0xffa85a), Math.sqrt(charge))
     this.core.crystalMaterial.color.copy(_colA)
-    this.coreLight.intensity = lerp(4, 70, charge) * lerp(1.0, 0.75, sun)
+    /*
+     * Flackern wie echtes Feuer: drei Schwingungen übereinander, die nie im
+     * Takt sind. Licht, Flammen und Glut flackern gemeinsam, sonst wirkt
+     * das Licht wie eine Lampe neben einem Bild von Feuer.
+     */
+    const flackern =
+      0.86 +
+      Math.sin(this.time * 9.1) * 0.05 +
+      Math.sin(this.time * 15.7 + 1.3) * 0.04 +
+      Math.sin(this.time * 4.3 + 0.4) * 0.05
+    const feuer = Math.min(1, 0.4 + charge * 0.75)
+    this.core.flammen.forEach((f, i) => {
+      f.zeit.value = this.time
+      f.kraft.value = feuer * (i === 0 ? flackern : 1.05 - (flackern - 0.86))
+      const s = 0.55 + feuer * 0.6
+      f.mesh.scale.set(s, s * (0.9 + (flackern - 0.86) * 1.2), 1)
+    })
+    this.core.glutMaterial.color.setScalar(0.55 + charge * 0.6 * flackern)
+    this.coreLight.position.set(
+      CAMP_POS.x + Math.sin(this.time * 7.3) * 0.06,
+      // Über den Flammen, nicht zwischen den Scheiten: Sonst brennt es
+      // Steine und Holz aus, und der Boden ringsum bliebe dunkel.
+      2.1 + charge * 0.3,
+      CAMP_POS.z + Math.cos(this.time * 6.1) * 0.06,
+    )
+    this.coreLight.intensity = lerp(4, 70, charge) * lerp(1.0, 0.75, sun) * flackern
     this.coreLight.distance = w.ember.lightRadius * 2.2
     this.core.glowMaterial.opacity = lerp(0.05, 0.4, charge) * lerp(1, 0.35, sun)
     this.core.glowRing.scale.setScalar(0.4 + charge * 0.8)
@@ -694,6 +750,7 @@ export class GameView {
 
     if (this.grassZeit) this.grassZeit.value = this.time
     this.particles.update(dt)
+    this.gluehwuermchen.update(this.time, px, pz, 1 - sun, w.terrain)
   }
 
   private syncEnemies(w: World, alpha: number): void {
@@ -792,4 +849,18 @@ export class GameView {
     this.enemyActive.clear()
     this.world = null
   }
+}
+
+const _mond = new THREE.Color(0x7088c8)
+const _morgen = new THREE.Color(0xff9a58)
+const _tag = new THREE.Color(0xfff0d8)
+
+/**
+ * Die Farbe der Sonne über den Tag: nachts kühles Mondlicht, in der
+ * Dämmerung tiefes Orange, am Tag warmes Weiß -- fließend, nicht mit einem
+ * Sprung bei halber Höhe wie bis zum 27.11.2026.
+ */
+function sonnenFarbe(sun: number, ziel: THREE.Color): void {
+  if (sun < 0.42) ziel.copy(_mond).lerp(_morgen, clamp01((sun - 0.18) / 0.24))
+  else ziel.copy(_morgen).lerp(_tag, clamp01((sun - 0.42) / 0.3))
 }

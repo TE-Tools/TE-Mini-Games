@@ -108,8 +108,10 @@ export class UiRoot {
           <div class="hud-core">
             <span class="label">${tx.kern}</span>
             <div class="bar core-bar" data-el="coreBar"><i data-el="core"></i></div>
-            <span class="core-pct" data-el="corePct">–</span>
-            <span class="core-drain" data-el="coreDrain"></span>
+            <span class="core-zeile">
+              <span class="core-pct" data-el="corePct">–</span>
+              <span class="core-drain" data-el="coreDrain"></span>
+            </span>
           </div>
           <div class="hud-clock">
             <div class="phase" data-el="phase"></div>

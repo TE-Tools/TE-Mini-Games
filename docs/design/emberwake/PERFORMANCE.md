@@ -195,3 +195,28 @@ Was seitdem im Renderer steckt, und was es kostet:
 
 Das Bloom-Modul (`render/post.ts`) wird nur per dynamischem Import geladen,
 wenn die Stufe es verlangt (§5).
+
+## 9. Optik-Stand 27.11.2026 („viel realistischer")
+
+Thomas wollte es „fast wie die Unreal Engine". Das geht im Browser auf dem
+Handy nicht -- keine Fotoscans, kein Echtzeit-Lichtwurf. Was geht, ist
+Struktur pro Pixel statt Farbe pro Ecke, und ein Feuer, das brennt:
+
+| Effekt                                  | Stufe       | Kosten                                               |
+| --------------------------------------- | ----------- | ---------------------------------------------------- |
+| Waldboden pro Pixel (`render/boden.ts`) | MITTEL/HOCH | Rauschen im Fragment-Shader, 3 Reliefproben je Pixel |
+| Struktur auf Rinde, Fels, Nadeln        | MITTEL/HOCH | Rauschen im Fragment-Shader (`vertexMaterial`)       |
+| Weiche Normalen (`glatteNormalen`)      | MITTEL/HOCH | einmal beim Laden, kein Laufzeitpreis                |
+| Lagerfeuer mit Shader-Flammen           | alle        | 3 Flächen, additiv; Licht flackert mit               |
+| Gras: 7 schmale Halme je Büschel        | MITTEL/HOCH | bis 9000 Büschel (je 14 Dreiecke), 1 Draw Call       |
+| Glühwürmchen nachts                     | MITTEL/HOCH | 1 Draw Call, 24/48 Punkte                            |
+| Sonnenfarbe fließend über den Tag       | alle        | keine                                                |
+| Weiche Schattenränder (PCFSoft)         | HOCH        | mehr Schattenproben je Pixel                         |
+| Farbabstimmung und Korn (`FILMLOOK`)    | HOCH        | ein Vollbild-Durchgang nach dem Leuchten             |
+
+Gemessen im Testbrowser ohne Grafikkarte: HOCH etwa 370 000 Dreiecke und
+140 Draw Calls, NIEDRIG 130 000 und 75. Auf echten Geräten nicht gemessen --
+fällt die Bildrate, stuft der Renderer wie bisher selbst herunter (§4).
+Rauschen und Flammenform stehen in `render/rauschen.ts` und `render/feuer.ts`;
+die Flamme wandelt ihre Farbe selbst nach sRGB, weil auf NIEDRIG und MITTEL
+keine Nachbearbeitung das übernimmt -- ohne diese Zeile war sie dort fahl.

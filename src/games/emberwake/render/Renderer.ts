@@ -41,7 +41,8 @@ export class Renderer {
       stencil: false,
     })
     this.gl.shadowMap.enabled = quality.shadows
-    this.gl.shadowMap.type = THREE.PCFShadowMap
+    // Auf HOCH weiche Schattenränder wie unter echtem Himmel (27.11.2026).
+    this.gl.shadowMap.type = quality.tier === 'high' ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap
     // Filmischer Kontrast: Lichter laufen weich aus, statt hart auszubrennen.
     this.gl.toneMapping = THREE.ACESFilmicToneMapping
     this.gl.toneMappingExposure = 1.35
