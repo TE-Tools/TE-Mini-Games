@@ -220,3 +220,17 @@ fällt die Bildrate, stuft der Renderer wie bisher selbst herunter (§4).
 Rauschen und Flammenform stehen in `render/rauschen.ts` und `render/feuer.ts`;
 die Flamme wandelt ihre Farbe selbst nach sRGB, weil auf NIEDRIG und MITTEL
 keine Nachbearbeitung das übernimmt -- ohne diese Zeile war sie dort fahl.
+
+### Nachtrag 27.11.2026: die Stillen und der Träger
+
+Die Gegner sind keine Klumpen mehr, sondern vier Gestalten aus Schatten
+(`render/gegner.ts`, Material `render/schatten.ts`): Schleicher (gebeugter
+Umhang, Krallenarme), Hetzer (geduckter Läufer, vier Augen), Brecher (Koloss
+mit Steinplatten und Fäusten), Nachtmahr (schwebt, Hörnerkrone). Glühende
+Adern, kalter Saum, wehende Fetzen im Vertex-Shader, Auflösen mit brennender
+Kante statt Ausblenden. Je Gegner ein Material, ein paar Dutzend Teile und
+etwa 2 000–4 000 Dreiecke; GameView hält je Typ einen eigenen Vorrat.
+
+Der Träger (`render/figur.ts`) hat Stoff, Leder, Haut und Haar als Oberfläche
+im Shader, einen vorn offenen Mantel bis über die Wade, schmalere Schultern
+und einen kleineren Kopf.

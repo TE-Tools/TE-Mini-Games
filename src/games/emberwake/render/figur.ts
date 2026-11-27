@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js'
 import type { PlayerModel } from './models'
+import { RAUSCHEN_GLSL } from './rauschen'
 
 /**
  * Der Träger, so menschlich wie es ohne Modelldatei geht (30.10.2026).
@@ -23,8 +24,52 @@ import type { PlayerModel } from './models'
 /** Höhe der Hüfte: Dort sitzt der Drehpunkt des Oberkörpers. */
 export const HUEFTE = 0.86
 
-function stoff(farbe: number, rauheit = 0.95): THREE.MeshStandardMaterial {
-  return new THREE.MeshStandardMaterial({ color: farbe, roughness: rauheit, metalness: 0 })
+type Oberflaeche = 'stoff' | 'leder' | 'haut' | 'haar'
+
+/**
+ * Material mit Oberfläche statt Farbe aus dem Eimer (27.11.2026).
+ *
+ * Aus der Lage im Modell (nicht in der Welt -- die Struktur läuft mit der
+ * Figur mit) entsteht im Shader: bei Stoff Webung und weiche Falten, bei
+ * Leder Narben und abgegriffene Stellen, bei Haut ein lebendiger Wechsel von
+ * Rot und Blässe, bei Haar Strähnen. Das kostet ein paar Rauschwerte je
+ * Pixel für eine einzige Figur.
+ */
+function stoff(
+  farbe: number,
+  rauheit = 0.95,
+  art: Oberflaeche = 'stoff',
+): THREE.MeshStandardMaterial {
+  const m = new THREE.MeshStandardMaterial({ color: farbe, roughness: rauheit, metalness: 0 })
+  const muster: Record<Oberflaeche, string> = {
+    stoff: `
+      float web = ew_noise(vec2(p.x + p.z, p.y) * 140.0) * 0.5 + ew_noise(vec2(p.y, p.x - p.z) * 140.0) * 0.5;
+      float falte = ew_fbm(vec2(p.y * 9.0, (p.x + p.z) * 5.0));
+      diffuseColor.rgb *= 0.8 + web * 0.12 + falte * 0.22;`,
+    leder: `
+      float narbe = ew_noise(p.xy * 90.0 + p.z * 40.0);
+      float abgegriffen = ew_fbm(p.xz * 14.0 + p.y * 6.0);
+      diffuseColor.rgb *= 0.78 + narbe * 0.12 + abgegriffen * 0.3;`,
+    haut: `
+      float rot = ew_fbm(p.xy * 22.0 + p.z * 10.0);
+      diffuseColor.rgb *= vec3(1.0 + rot * 0.08, 0.97 - rot * 0.03, 0.96 - rot * 0.04);`,
+    haar: `
+      float straehne = ew_noise(vec2((p.x + p.z) * 120.0, p.y * 18.0));
+      diffuseColor.rgb *= 0.7 + straehne * 0.5;`,
+  }
+  m.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vEwLokal;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvEwLokal = position;')
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', `#include <common>\nvarying vec3 vEwLokal;\n${RAUSCHEN_GLSL}`)
+      .replace(
+        '#include <color_fragment>',
+        `#include <color_fragment>\n{\n  vec3 p = vEwLokal;\n${muster[art]}\n}`,
+      )
+  }
+  m.customProgramCacheKey = () => `ew-figur-${art}`
+  return m
 }
 
 /** Ein Glied: Kapsel, die vom Drehpunkt nach unten hängt. */
@@ -58,10 +103,15 @@ function gedreht(
   material: THREE.Material,
   tiefe = 0.78,
   breite = 1.3,
+  /** Vorn offen lassen (Bogenmaß) -- für den Mantel, der vorn aufgeht. */
+  vornOffen = 0,
 ): THREE.Mesh {
+  // Bei LatheGeometry liegt vorn (+x) bei phi = PI/2.
   const geo = new THREE.LatheGeometry(
     profil.map(([r, y]) => new THREE.Vector2(r, y)),
-    20,
+    24,
+    Math.PI / 2 + vornOffen,
+    Math.PI * 2 - vornOffen * 2,
   )
   geo.scale(tiefe, 1, breite)
   geo.computeVertexNormals()
@@ -72,14 +122,16 @@ function gedreht(
 }
 
 export function menschModell(): PlayerModel {
-  const haut = stoff(0xd8a487, 0.55)
+  const haut = stoff(0xd8a487, 0.55, 'haut')
+  // Dunklere Haut am Kinn: Bartschatten von ein paar Tagen unterwegs.
+  const bart = stoff(0x9a7460, 0.75, 'haut')
   const mantel = stoff(0x3f4d68)
   const mantelDunkel = stoff(0x2c3549)
   const schal = stoff(0x8e3a2c)
   const hose = stoff(0x3a3b40)
-  const leder = stoff(0x5a3e2a, 0.7)
-  const stiefelLeder = stoff(0x2f241b, 0.65)
-  const haar = stoff(0x3a2818, 0.8)
+  const leder = stoff(0x5a3e2a, 0.7, 'leder')
+  const stiefelLeder = stoff(0x2f241b, 0.65, 'leder')
+  const haar = stoff(0x3a2818, 0.8, 'haar')
   const decke = stoff(0x6b5a3e)
   const metall = new THREE.MeshStandardMaterial({
     color: 0xa3abb6,
@@ -101,25 +153,31 @@ export function menschModell(): PlayerModel {
       [0.19, o(0.82)],
       [0.2, o(0.92)],
       [0.175, o(1.0)],
-      [0.2, o(1.16)],
-      [0.215, o(1.3)],
-      [0.19, o(1.4)],
+      [0.195, o(1.16)],
+      [0.2, o(1.3)],
+      [0.15, o(1.4)],
       [0.08, o(1.46)],
       [0.001, o(1.47)],
     ],
     mantel,
+    0.78,
+    1.2,
   )
 
-  // Mantelsaum: weitet sich nach unten, reicht übers Knie.
+  // Mantelschöße: weiten sich nach unten, reichen bis über die Wade und
+  // gehen vorn auf -- dazwischen sieht man die Beine, wie bei einem echten
+  // Reisemantel (27.11.2026; vorher ein geschlossener Rock).
   const saum = gedreht(
     [
-      [0.24, o(0.5)],
-      [0.215, o(0.68)],
+      [0.29, o(0.34)],
+      [0.255, o(0.52)],
+      [0.225, o(0.7)],
       [0.2, o(0.86)],
     ],
     mantelDunkel,
     0.85,
     1.25,
+    0.42,
   )
   ;(saum.material as THREE.Material).side = THREE.DoubleSide
 
@@ -161,7 +219,7 @@ export function menschModell(): PlayerModel {
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.105, 20, 16), haut)
   head.scale.set(1.0, 1.14, 0.86)
   head.castShadow = true
-  const kinn = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 8), haut)
+  const kinn = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 8), bart)
   kinn.scale.set(1, 0.8, 1.1)
   kinn.position.set(0.045, -0.075, 0)
   const nase = new THREE.Mesh(new THREE.ConeGeometry(0.018, 0.05, 8), haut)
@@ -190,7 +248,18 @@ export function menschModell(): PlayerModel {
   haarKappe.scale.set(1.04, 1.12, 0.92)
   haarKappe.position.set(-0.012, 0.012, 0)
   haarKappe.castShadow = true
-  kopf.add(hals, head, kinn, nase, ...ohren, ...augen, ...brauen, haarKappe)
+  // Ein paar lose Strähnen über der Kappe -- vom Wind zerzaust.
+  const straehnen = [0, 1, 2, 3, 4].map((i) => {
+    const g = new THREE.SphereGeometry(0.03, 8, 6)
+    g.scale(1.9, 0.7, 0.9)
+    const st = new THREE.Mesh(g, haar)
+    st.position.set(0.02 - i * 0.03, 0.1 - Math.abs(i - 2) * 0.008, (i % 2 ? 1 : -1) * 0.03)
+    st.rotation.set(0.3 * (i - 2), 0.4 * i, -0.3)
+    return st
+  })
+  kopf.add(hals, head, kinn, nase, ...ohren, ...augen, ...brauen, haarKappe, ...straehnen)
+  // Der Kopf etwas kleiner: Bei 1,75 m ist er ein Siebtel, kein Fünftel.
+  kopf.scale.setScalar(0.92)
 
   // Rucksack mit Riemen und aufgerollter Decke.
   const rucksack = new THREE.Mesh(new RoundedBoxGeometry(0.2, 0.34, 0.28, 3, 0.05), leder)
@@ -211,7 +280,7 @@ export function menschModell(): PlayerModel {
   // Arme: Schulter, Ellbogen, Hand. Ärmel aus Mantelstoff mit Stulpe.
   const arm = (seite: number) => {
     const ober = glied(mantel, 0.3, 0.062, 0.05)
-    ober.pivot.position.set(0, o(1.38), seite * 0.27)
+    ober.pivot.position.set(0, o(1.36), seite * 0.245)
     const unter = glied(mantel, 0.28, 0.05, 0.042)
     unter.pivot.position.y = -0.3
     ober.pivot.add(unter.pivot)

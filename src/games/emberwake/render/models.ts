@@ -389,47 +389,6 @@ export interface PlayerModel {
 
 // Die Figur selbst steht seit dem 30.10.2026 in figur.ts (menschModell).
 
-export interface EnemyModel {
-  group: THREE.Group
-  body: THREE.Mesh
-  bodyMaterial: THREE.MeshLambertMaterial
-  eyeMaterial: THREE.MeshBasicMaterial
-  eyes: THREE.Group
-}
-
-/** Ein Stiller: dunkle, kantige Silhouette mit leuchtenden Augen. */
-export function enemyModel(): EnemyModel {
-  const group = new THREE.Group()
-  const bodyMaterial = new THREE.MeshLambertMaterial({
-    color: 0x1a1d2a,
-    flatShading: true,
-    transparent: true,
-    opacity: 1,
-  })
-  const rng = new Rng(4444)
-  const geo = new THREE.IcosahedronGeometry(0.55, 0)
-  jitterVertices(geo, 0.22, rng)
-  geo.scale(1, 1.6, 1)
-  geo.translate(0, 0.9, 0)
-  const body = new THREE.Mesh(geo, bodyMaterial)
-  body.castShadow = true
-
-  const eyeMaterial = new THREE.MeshBasicMaterial({
-    color: 0x8fb3ff,
-    transparent: true,
-    opacity: 1,
-  })
-  const eyes = new THREE.Group()
-  for (const side of [-1, 1]) {
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.07, 6, 4), eyeMaterial)
-    eye.position.set(0.32, 1.25, side * 0.16)
-    eyes.add(eye)
-  }
-
-  group.add(body, eyes)
-  return { group, body, bodyMaterial, eyeMaterial, eyes }
-}
-
 export interface CoreModel {
   group: THREE.Group
   crystal: THREE.Mesh

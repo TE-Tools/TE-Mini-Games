@@ -13,9 +13,9 @@ import { Sky, halo } from './atmosphere'
 import { bodenMaterial } from './boden'
 import { Gluehwuermchen } from './gluehwuermchen'
 import { menschModell } from './figur'
+import { gegnerModell, type GegnerModell } from './gegner'
 import {
   coreModel,
-  enemyModel,
   foodNodeGeometry,
   genericNodeGeometry,
   rockGeometry,
@@ -28,7 +28,6 @@ import {
   woodNodeGeometry,
   workbenchGeometry,
   type CoreModel,
-  type EnemyModel,
   type PlayerModel,
 } from './models'
 
@@ -48,8 +47,14 @@ const _kippAchse = new THREE.Vector3()
 const _colA = new THREE.Color()
 const _colB = new THREE.Color()
 
-interface EnemyVisual extends EnemyModel {
+interface EnemyVisual extends GegnerModell {
   id: number
+  /** Zurückgelegter Weg -- treibt die Schritte. */
+  schritt: number
+  letztX: number
+  letztZ: number
+  /** Bis zum nächsten Funken, der von ihm aufsteigt. */
+  funke: number
 }
 
 export class GameView {
@@ -80,7 +85,8 @@ export class GameView {
   private slotMarkers: THREE.Mesh[] = []
   private buildingMeshes = new Map<string, THREE.Mesh>()
   private secretMesh: THREE.Mesh | null = null
-  private enemyPool: EnemyVisual[] = []
+  /** Je Typ ein eigener Vorrat -- ein Brecher sieht nicht aus wie ein Hetzer. */
+  private enemyPool = new Map<string, EnemyVisual[]>()
   private enemyActive = new Map<number, EnemyVisual>()
   private readonly staticMaterial: THREE.MeshLambertMaterial | THREE.MeshStandardMaterial
   /** Der Boden glatt schattiert -- Hügel statt Facetten (ab MITTEL). */
@@ -741,7 +747,7 @@ export class GameView {
     }
 
     // Gegner
-    this.syncEnemies(w, alpha)
+    this.syncEnemies(w, alpha, dt)
 
     // Knoten und Gebäude
     this.syncNodes(w)
@@ -753,7 +759,7 @@ export class GameView {
     this.gluehwuermchen.update(this.time, px, pz, 1 - sun, w.terrain)
   }
 
-  private syncEnemies(w: World, alpha: number): void {
+  private syncEnemies(w: World, alpha: number, dt: number): void {
     // Aktive Visuals markieren
     for (const v of this.enemyActive.values()) v.group.visible = false
 
@@ -769,17 +775,30 @@ export class GameView {
       const ez = lerp(e.prevPos.z, e.pos.z, alpha)
       v.group.position.set(ex, w.terrain.heightAt(ex, ez), ez)
       v.group.rotation.y = -e.facing
-      const s = e.def.scale * (0.6 + 0.4 * e.dissolve)
-      v.group.scale.setScalar(s)
-      v.bodyMaterial.opacity = e.dissolve
-      v.eyeMaterial.opacity = e.dissolve
-      v.bodyMaterial.color.setHex(e.hitFlash > 0 ? 0xffffff : e.def.color)
-      v.eyeMaterial.color.setHex(e.def.eyeColor)
-      // Angriffsanimation: Vorstoß
-      v.body.position.x = Math.max(0, e.attackAnim) * 0.35
-      // Im Licht leiden sie sichtbar
-      if (e.exposure > e.def.lightTolerance && e.alive) {
-        v.bodyMaterial.color.lerp(_colA.setHex(0xff6a3c), 0.5)
+      v.group.scale.setScalar(e.def.scale)
+      const weg = Math.hypot(ex - v.letztX, ez - v.letztZ)
+      if (weg < 2) v.schritt += weg
+      v.letztX = ex
+      v.letztZ = ez
+      v.schatten.aufloesen.value = e.dissolve
+      v.schatten.treffer.value = e.hitFlash > 0 ? 1 : 0
+      // Im Licht leiden sie sichtbar: Saum und Adern werden heiß.
+      const leiden = e.alive ? clamp01((e.exposure - e.def.lightTolerance) / 0.3) : 0
+      v.schatten.leiden.value += (leiden - v.schatten.leiden.value) * Math.min(1, dt * 6)
+      v.augenMaterial.opacity = e.dissolve
+      v.hofMaterial.opacity = 0.8 * e.dissolve
+      v.animiere({
+        zeit: this.time + e.id * 1.7,
+        schritt: v.schritt,
+        tempo: Math.hypot(e.vel.x, e.vel.z),
+        angriff: Math.max(0, e.attackAnim),
+      })
+      // Hin und wieder steigt ein kalter Funke von ihm auf.
+      v.funke -= dt
+      if (v.funke <= 0 && e.alive) {
+        v.funke = 0.25 + ((e.id * 0.37) % 0.3)
+        _colA.setHex(e.def.eyeColor).multiplyScalar(0.55)
+        this.particles.ember(ex, 0.9 * e.def.scale, ez, _colA.getHex(), 0.35 * e.def.scale)
       }
     }
 
@@ -787,21 +806,34 @@ export class GameView {
     for (const [id, v] of this.enemyActive) {
       if (!v.group.visible) {
         this.enemyActive.delete(id)
-        this.enemyPool.push(v)
+        this.legeZurueck(v)
       }
     }
   }
 
   private acquireEnemyVisual(e: EnemyState): EnemyVisual {
-    let v = this.enemyPool.pop()
+    let v = this.enemyPool.get(e.def.id)?.pop()
     if (!v) {
-      const model = enemyModel()
+      const model = gegnerModell(e.def)
+      model.group.traverse((o) => {
+        if (o instanceof THREE.Mesh) o.castShadow = this.quality.shadows
+      })
       this.scene.add(model.group)
-      v = { ...model, id: e.id }
+      v = { ...model, id: e.id, schritt: 0, letztX: e.pos.x, letztZ: e.pos.z, funke: 0 }
     }
     v.id = e.id
+    v.letztX = e.pos.x
+    v.letztZ = e.pos.z
+    v.schatten.leiden.value = 0
     v.group.position.set(e.pos.x, 0, e.pos.z)
     return v
+  }
+
+  private legeZurueck(v: EnemyVisual): void {
+    v.group.visible = false
+    const vorrat = this.enemyPool.get(v.typ) ?? []
+    vorrat.push(v)
+    this.enemyPool.set(v.typ, vorrat)
   }
 
   /** Höhe des Bodens an einer Stelle — für Kamera und Partikel. */
@@ -842,10 +874,7 @@ export class GameView {
     this.slotMarkers = []
     this.buildingMeshes.clear()
     this.secretMesh = null
-    for (const v of this.enemyActive.values()) {
-      v.group.visible = false
-      this.enemyPool.push(v)
-    }
+    for (const v of this.enemyActive.values()) this.legeZurueck(v)
     this.enemyActive.clear()
     this.world = null
   }
