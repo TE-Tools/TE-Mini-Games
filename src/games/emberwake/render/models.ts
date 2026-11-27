@@ -376,6 +376,8 @@ export interface PlayerModel {
   armRight: THREE.Group
   /** Ellbogen des Axtarms -- knickt beim Ausholen. */
   elbowRight: THREE.Group
+  /** Handgelenk des Axtarms -- kippt beim Ausholen zurück, schnappt beim Schlag vor. */
+  wristRight: THREE.Group
   legLeft: THREE.Group
   legRight: THREE.Group
   /** Knie. Knicken nur nach hinten, und nur im Rückschwung. */

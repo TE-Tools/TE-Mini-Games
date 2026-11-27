@@ -287,15 +287,20 @@ export function menschModell(): PlayerModel {
     const stulpe = new THREE.Mesh(new THREE.TorusGeometry(0.043, 0.014, 6, 14), mantelDunkel)
     stulpe.rotation.x = Math.PI / 2
     stulpe.position.y = -0.26
+    // Das Handgelenk: Die Hand kippt für sich, statt starr am Unterarm zu
+    // hängen -- beim Hieb klappt sie erst nach hinten und schnappt dann vor.
+    const handgelenk = new THREE.Group()
+    handgelenk.position.y = -0.29
     const hand = new THREE.Mesh(new THREE.CapsuleGeometry(0.034, 0.05, 4, 10), haut)
     hand.scale.set(0.75, 1, 1.05)
-    hand.position.y = -0.33
+    hand.position.y = -0.04
     hand.castShadow = true
     const daumen = new THREE.Mesh(new THREE.CapsuleGeometry(0.013, 0.03, 3, 6), haut)
-    daumen.position.set(0.025, -0.3, -seite * 0.025)
+    daumen.position.set(0.025, -0.01, -seite * 0.025)
     daumen.rotation.z = -0.5
-    unter.pivot.add(stulpe, hand, daumen)
-    return { schulter: ober.pivot, ellbogen: unter.pivot, hand }
+    handgelenk.add(hand, daumen)
+    unter.pivot.add(stulpe, handgelenk)
+    return { schulter: ober.pivot, ellbogen: unter.pivot, handgelenk, hand }
   }
   const links = arm(1)
   const rechts = arm(-1)
@@ -346,8 +351,11 @@ export function menschModell(): PlayerModel {
   links.ellbogen.add(laterne)
 
   // Die Axt in der rechten Hand: Holzstiel, Stahlkopf mit Schneide.
+  // In der Faust gegriffen: Der Stiel steht etwas nach vorn aus der Hand,
+  // nicht in Verlängerung des Unterarms -- so hält man eine Axt.
   const axe = new THREE.Group()
-  axe.position.y = -0.33
+  axe.position.y = -0.045
+  axe.rotation.z = 0.55
   const stiel = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.022, 0.46, 10), leder)
   stiel.geometry.translate(0, -0.2, 0)
   const form = new THREE.Shape()
@@ -367,15 +375,20 @@ export function menschModell(): PlayerModel {
     bevelSize: 0.004,
     bevelSegments: 2,
   })
+  /*
+   * Die Schneide quer zum Stiel, in der Ebene des Hiebs, nach -x: Dorthin
+   * bewegt sich der Axtkopf, wenn der Arm nach vorn unten schlägt
+   * (axtHieb.ts). Bis 27.11.2026 lag das Blatt längs am Stiel wie eine
+   * Speerspitze -- die Schneide zeigte zur Hand.
+   */
   blattGeo.translate(0, 0, -0.009)
-  blattGeo.rotateZ(Math.PI / 2)
-  blattGeo.rotateY(Math.PI / 2)
-  blattGeo.translate(0, -0.38, 0.02)
+  blattGeo.rotateY(Math.PI)
+  blattGeo.translate(0, -0.38, 0)
   const blatt = new THREE.Mesh(blattGeo, metall)
   blatt.castShadow = true
   axe.add(stiel, blatt)
   axe.visible = false
-  rechts.ellbogen.add(axe)
+  rechts.handgelenk.add(axe)
 
   torso.add(
     body,
@@ -408,6 +421,7 @@ export function menschModell(): PlayerModel {
     arm: links.schulter,
     armRight: rechts.schulter,
     elbowRight: rechts.ellbogen,
+    wristRight: rechts.handgelenk,
     legLeft: beine[0]!,
     legRight: beine[1]!,
     kneeLeft: knie[0]!,

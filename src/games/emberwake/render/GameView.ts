@@ -13,6 +13,7 @@ import { Sky, halo } from './atmosphere'
 import { bodenMaterial } from './boden'
 import { Gluehwuermchen } from './gluehwuermchen'
 import { menschModell } from './figur'
+import { axtStellung, kampfStellung, type ArmStellung } from './axtHieb'
 import { gegnerModell, type GegnerModell } from './gegner'
 import {
   coreModel,
@@ -101,6 +102,9 @@ export class GameView {
   /** Geglättete Blickrichtung, die die Figur tatsächlich zeigt. */
   private blick = 0
   private ersterBlick = true
+  /** Die Stellung des Axtarms, geglättet zwischen Gehen und Hieb. */
+  private arm: ArmStellung = { schulter: 0, ellbogen: 0.2, handgelenk: 0.1, rumpf: 0 }
+  private warImHieb = false
 
   constructor(private quality: QualitySettings) {
     this.staticMaterial = vertexMaterial(quality.tier !== 'low')
@@ -626,7 +630,7 @@ export class GameView {
     const bob = moving ? Math.abs(Math.sin(p.stride * 5)) * 0.04 * kraft : 0
     const atmen = moving ? 0 : Math.sin(this.time * 1.8) * 0.006
     this.player.torso.position.y = this.player.huefte + bob + atmen
-    this.player.torso.rotation.z = -0.12 * kraft + p.attackAnim * 0.12
+    this.player.torso.rotation.z = -0.12 * kraft + this.arm.rumpf
     this.player.torso.rotation.y = schwung * 0.14 * kraft
 
     // Steigt `facing`, dreht die Figur zu ihrer +z-Seite; positives
@@ -651,27 +655,36 @@ export class GameView {
      * Fällen zählt `gatherProgress`: Aus dem stetigen Fortschritt wird ein
      * Takt, damit man Hiebe sieht und nicht ein Drücken.
      */
-    // Beim Hacken steht der Arm zu Beginn eines Hiebes oben und trifft,
-    // wenn der Fortschritt voll ist -- genau dann fällt auch das Scheit.
+    // Der Hieb als Ablauf (axtHieb.ts): Beim Hacken ist der Sammelfortschritt
+    // die Phase -- bei 1 trifft die Axt, genau dann fällt das Scheit. Im Kampf
+    // schlägt sie sofort durch und federt zurück.
     const hacken = w.interactable?.kind === 'node' && p.gatherProgress > 0
-    const hieb = Math.max(p.attackAnim, hacken ? 1 - p.gatherProgress : 0)
+    const imHieb = p.attackAnim > 0 || hacken
     // Die Laterne schwingt weniger als ein freier Arm -- man hält sie ruhig.
     this.player.arm.rotation.z = -schwung * 0.35 * kraft
     this.player.arm.rotation.x = 0.16
-    /*
-     * Ausholen heißt: über die Schulter nach hinten, nicht nach vorn.
-     *
-     * Mit positivem Winkel stand der Arm gerade vor dem Körper -- das sah
-     * aus wie angelegtes Gewehr, nicht wie Holzhacken (nachgesehen am
-     * 27.09. im Schauglas). Negativ dreht ihn nach hinten oben, und der
-     * Ellbogen knickt dabei ein, sodass die Axt hinter dem Kopf steht.
-     */
-    // Beim Treffer kommt die Axt vorn herunter, nicht neben dem Körper zur
-    // Ruhe -- sonst schlägt man neben den Baum.
-    const durchzug = hacken || p.attackAnim > 0 ? 1 - hieb : 0
-    this.player.armRight.rotation.z = schwung * 0.55 * kraft - hieb * 2.5 + durchzug * 0.55
-    this.player.armRight.rotation.x = 0
-    this.player.elbowRight.rotation.z = hieb * 1.3
+    let ziel: ArmStellung
+    if (p.attackAnim > 0) ziel = kampfStellung(p.attackAnim)
+    else if (hacken) ziel = axtStellung(p.gatherProgress)
+    else
+      ziel = {
+        schulter: schwung * 0.55 * kraft,
+        ellbogen: 0.2 + kraft * 0.15,
+        handgelenk: 0.1,
+        rumpf: 0,
+      }
+    // Mitten im Hieb folgt der Arm genau -- der Schlag soll scharf sein. Beim
+    // Wechsel zwischen Gehen und Hacken gleitet er, statt zu springen.
+    const folge = imHieb && this.warImHieb ? 1 : 1 - Math.exp(-dt * 14)
+    this.arm.schulter += (ziel.schulter - this.arm.schulter) * folge
+    this.arm.ellbogen += (ziel.ellbogen - this.arm.ellbogen) * folge
+    this.arm.handgelenk += (ziel.handgelenk - this.arm.handgelenk) * folge
+    this.arm.rumpf += (ziel.rumpf - this.arm.rumpf) * folge
+    this.warImHieb = imHieb
+    this.player.armRight.rotation.z = this.arm.schulter
+    this.player.armRight.rotation.x = imHieb ? 0.12 : 0
+    this.player.elbowRight.rotation.z = this.arm.ellbogen
+    this.player.wristRight.rotation.z = this.arm.handgelenk
     this.player.axe.visible = p.tools.has('axe')
 
     const lantern = lanternRadius(w)
